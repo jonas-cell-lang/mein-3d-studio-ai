@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mein 3D Studio AI</title>
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #11151d;
+  color: #f2f5fa;
+  font-family: Arial, sans-serif;
+}
+
+header {
+  padding: 16px 20px;
+  background: #1b2230;
+  border-bottom: 1px solid #343d50;
+}
+
+h1 { font-size: 21px; margin: 0; }
+
+main {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr) 270px;
+  height: calc(100vh - 58px);
+  min-height: 440px;
+}
+
+aside {
+  padding: 14px;
+  background: #191f2b;
+  overflow: auto;
+}
+
+aside:first-child { border-right: 1px solid #343d50; }
+aside:last-child { border-left: 1px solid #343d50; }
+
+h2 {
+  font-size: 14px;
+  color: #aab7cc;
+  margin: 8px 0 15px;
+}
+
+button {
+  padding: 10px;
+  border: 1px solid #43516a;
+  background: #273247;
+  color: white;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+button:hover { background: #354661; }
+
+.wide {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin: 5px 0;
+}
+
+.active {
+  background: #315b94 !important;
+  border-color: #78a9ff !important;
+}
+
+#viewport {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+
+#hint {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  color: #aab7cc;
+  font-size: 12px;
+  pointer-events: none;
+  line-height: 1.5;
+}
+
+.field { margin: 12px 0; }
+
+label {
+  display: block;
+  font-size: 12px;
+  color: #b8c5d9;
+  margin-bottom: 5px;
+}
+
+input {
+  width: 100%;
+  padding: 9px;
+  background: #101722;
+  color: white;
+  border: 1px solid #3c4960;
+  border-radius: 5px;
+}
+
+input:focus { outline: 1px solid #78a9ff; }
+
+#scaleLock {
+  width: 100%;
+  margin: 5px 0 10px;
+  text-align: center;
+}
+
+.note {
+  font-size: 12px;
+  color: #aab7cc;
+  line-height: 1.5;
+}
+
+#status {
+  font-size: 12px;
+  color: #9fdbb3;
+  margin-top: 12px;
+}
+
+@media (max-width: 800px) {
+  main {
+    grid-template-columns: 130px minmax(0, 1fr);
+    height: auto;
+  }
+
+  #viewport { min-height: 55vh; }
+
+  aside:last-child {
+    grid-column: 1 / -1;
+    border-left: 0;
+    border-top: 1px solid #343d50;
+  }
+}
+</style>
+</head>
+
+<body>
+<header>
+  <h1>🧊 Mein 3D Studio AI</h1>
+</header>
+
+<main>
+  <aside>
+    <h2>Objekte</h2>
+    <button class="wide" id="addCube">＋ Würfel</button>
+    <button class="wide" id="addSphere">＋ Kugel</button>
+    <button class="wide" id="addCylinder">＋ Zylinder</button>
+    <button class="wide" id="delete">🗑 Löschen</button>
+    <button class="wide" id="dropToBed">⬇ Auf Arbeitsplatte stellen</button>
+
+    <h2>Objektliste</h2>
+    <div id="objects"></div>
+    <div id="status">Bereit</div>
+  </aside>
+
+  <section id="viewport">
+    <div id="hint">Maus ziehen: drehen<br>Scrollrad: zoomen</div>
+  </section>
+
+  <aside>
+    <h2>Position</h2>
+    <div id="positionFields"></div>
+
+    <h2>Grösse (mm)</h2>
+    <button id="scaleLock" class="active" aria-pressed="true">
+      🔒 Einheitlich: EIN
+    </button>
+    <p class="note">
+      Mit aktivierter Sperre bleiben die Proportionen erhalten.
+      Die drei Masse werden proportional angepasst.
+    </p>
+    <div id="sizeFields"></div>
+
+    <h2>Skalierung (%)</h2>
+    <div id="percentFields"></div>
+
+    <h2>Darstellung</h2>
+    <div class="field">
+      <label for="color">Objektfarbe</label>
+      <input id="color" type="color" value="#4b91ed" disabled>
+    </div>
+  </aside>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const viewport = $('viewport');
+  const status = $('status');
+
+  if (typeof THREE === 'undefined') {
+    status.textContent =
+      'Three.js konnte nicht geladen werden. Internet prüfen.';
+    return;
+  }
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x101722);
+
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.001, 10000);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+  // Farbausgabe für passendere Farben im Browser.
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+  viewport.appendChild(renderer.domElement);
+
+  const hemisphereLight =
+    new THREE.HemisphereLight(0xffffff, 0x526078, 1.15);
+  scene.add(hemisphereLight);
+
+  const light = new THREE.DirectionalLight(0xffffff, 1.25);
+  light.position.set(5, 8, 5);
+  scene.add(light);
+
+  // Arbeitsplatte als Raster bei Y = 0.
+  const grid = new THREE.GridHelper(20, 20, 0x526987, 0x29364a);
+  scene.add(grid);
+
+  const objects = [];
+  let selected = null;
+  let nextId = 1;
+  let uniform = true;
+
+  // 1 Szene-Einheit entspricht 10 mm.
+  const MM_PER_UNIT = 10;
+
+  function resize() {
+    const w = viewport.clientWidth;
+    const h = viewport.clientHeight;
+    if (!w || !h) return;
+
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  }
+
+  window.addEventListener('resize', resize);
+
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(resize).observe(viewport);
+  }
+
+  resize();
+
+  function originalSize(obj) {
+    return obj.userData.baseDimensions;
+  }
+
+  function currentSizeMM(obj, axis) {
+    return originalSize(obj)[axis] * obj.scale[axis] * MM_PER_UNIT;
+  }
+
+  function createObject(type) {
+    let geometry;
+
+    if (type === 'Würfel') {
+      geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+    } else if (type === 'Kugel') {
+      geometry = new THREE.SphereGeometry(0.8, 32, 24);
+    } else {
+      geometry = new THREE.CylinderGeometry(0.7, 0.7, 1.5, 32);
+    }
+
+    const material = new THREE.MeshStandardMaterial({
+      color: new THREE.Color().setHSL(Math.random(), 0.65, 0.55),
+      roughness: 0.45,
+      metalness: 0.1
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+
+    mesh.position.set(0, 0, 0);
+    mesh.userData.label = type + ' ' + nextId++;
+
+    // Ausgangsgrösse anhand der echten Geometrie bestimmen.
+    geometry.computeBoundingBox();
+    const box = geometry.boundingBox;
+    const size = new THREE.Vector3();
+    box.getSize(size);
+
+    mesh.userData.baseDimensions = {
+      x: size.x,
+      y: size.y,
+      z: size.z
+    };
+
+    mesh.userData.percent = { x: 100, y: 100, z: 100 };
+
+    scene.add(mesh);
+    objects.push(mesh);
+    selectObject(mesh);
+
+    status.textContent = 'Objekt erstellt';
+  }
+
+  function selectObject(obj) {
+    selected = obj;
+    updateObjects();
+    showProperties();
+  }
+
+  function updateObjects() {
+    const list = $('objects');
+    list.replaceChildren();
+
+    objects.forEach(obj => {
+      const btn = document.createElement('button');
+      btn.className = 'wide' + (obj === selected ? ' active' : '');
+      btn.textContent = obj.userData.label;
+      btn.onclick = () => selectObject(obj);
+      list.appendChild(btn);
+    });
+  }
+
+  function makeInput(parent, labelText, value, step, onChange) {
+    const wrap = document.createElement('div');
+    wrap.className = 'field';
+
+    const label = document.createElement('label');
+    label.textContent = labelText;
+
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.step = step;
+    input.value = Number(value).toFixed(2);
+
+    wrap.append(label, input);
+    parent.appendChild(wrap);
+
+    input.addEventListener('change', () => {
+      onChange(Number(input.value));
+    });
+
+    return input;
+  }
+
+  function applySizeAxis(axis, newMM) {
+    if (!selected || !Number.isFinite(newMM) || newMM <= 0) return;
+
+    const obj = selected;
+    const base = originalSize(obj);
+
+    if (uniform) {
+      const factor = newMM / currentSizeMM(obj, axis);
+
+      ['x', 'y', 'z'].forEach(a => {
+        obj.scale[a] *= factor;
+        obj.userData.percent[a] = obj.scale[a] * 100;
+      });
+    } else {
+      obj.scale[axis] = newMM / (base[axis] * MM_PER_UNIT);
+      obj.userData.percent[axis] = obj.scale[axis] * 100;
+    }
+
+    showProperties();
+  }
+
+  function applyPercentAxis(axis, percent) {
+    if (!selected || !Number.isFinite(percent) || percent <= 0) return;
+
+    const obj = selected;
+
+    if (uniform) {
+      const factor = percent / obj.userData.percent[axis];
+
+      ['x', 'y', 'z'].forEach(a => {
+        obj.userData.percent[a] *= factor;
+        obj.scale[a] = obj.userData.percent[a] / 100;
+      });
+    } else {
+      obj.userData.percent[axis] = percent;
+      obj.scale[axis] = percent / 100;
+    }
+
+    showProperties();
+  }
+
+  function showProperties() {
+    $('positionFields').replaceChildren();
+    $('sizeFields').replaceChildren();
+    $('percentFields').replaceChildren();
+
+    const color = $('color');
+
+    if (!selected) {
+      color.disabled = true;
+      return;
+    }
+
+    const obj = selected;
+    color.disabled = false;
+    color.value = '#' + obj.material.color.getHexString();
+
+    ['x', 'y', 'z'].forEach(axis => {
+      makeInput(
+        $('positionFields'),
+        'Position ' + axis.toUpperCase(),
+        obj.position[axis],
+        0.01,
+        value => {
+          if (Number.isFinite(value)) {
+            obj.position[axis] = value;
+          }
+        }
+      );
+    });
+
+    ['x', 'y', 'z'].forEach(axis => {
+      makeInput(
+        $('sizeFields'),
+        'Grösse ' + axis.toUpperCase() + ' (mm)',
+        currentSizeMM(obj, axis),
+        0.01,
+        value => applySizeAxis(axis, value)
+      );
+    });
+
+    ['x', 'y', 'z'].forEach(axis => {
+      makeInput(
+        $('percentFields'),
+        'Skalierung ' + axis.toUpperCase() + ' (%)',
+        obj.userData.percent[axis],
+        0.01,
+        value => applyPercentAxis(axis, value)
+      );
+    });
+
+    $('scaleLock').classList.toggle('active', uniform);
+    $('scaleLock').textContent = uniform
+      ? '🔒 Einheitlich: EIN'
+      : '🔓 Einheitlich: AUS';
+    $('scaleLock').setAttribute('aria-pressed', String(uniform));
+  }
+
+  $('scaleLock').onclick = () => {
+    uniform = !uniform;
+    showProperties();
+
+    status.textContent = uniform
+      ? 'Proportionen gesperrt'
+      : 'Achsen separat einstellbar';
+  };
+
+  $('color').addEventListener('input', () => {
+    if (selected) {
+      selected.material.color.set($('color').value);
+    }
+  });
+
+  $('addCube').onclick = () => createObject('Würfel');
+  $('addSphere').onclick = () => createObject('Kugel');
+  $('addCylinder').onclick = () => createObject('Zylinder');
+
+  // Setzt die Unterseite des ausgewählten Objekts auf Y = 0.
+  $('dropToBed').onclick = () => {
+    if (!selected) {
+      status.textContent = 'Bitte zuerst ein Objekt auswählen';
+      return;
+    }
+
+    selected.updateMatrixWorld(true);
+
+    const bounds = new THREE.Box3().setFromObject(selected);
+    selected.position.y -= bounds.min.y;
+
+    selected.updateMatrixWorld(true);
+    showProperties();
+
+    status.textContent = 'Objekt steht auf der Arbeitsplatte';
+  };
+
+  $('delete').onclick = () => {
+    if (!selected) return;
+
+    scene.remove(selected);
+    selected.geometry.dispose();
+    selected.material.dispose();
+
+    const index = objects.indexOf(selected);
+    if (index !== -1) objects.splice(index, 1);
+
+    selected = null;
+    updateObjects();
+    showProperties();
+
+    status.textContent = 'Objekt gelöscht';
+  };
+
+  // Kamera drehen und zoomen.
+  let rx = 0.3;
+  let ry = 0;
+  let targetRX = rx;
+  let targetRY = ry;
+  let distance = 9;
+  let targetDistance = 9;
+
+  const focus = new THREE.Vector3(0, 0.5, 0);
+  const canvas = renderer.domElement;
+
+  let dragging = false;
+  let lastX = 0;
+  let lastY = 0;
+  let pointerId = null;
+
+  canvas.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+    dragging = true;
+    pointerId = e.pointerId;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    canvas.setPointerCapture(e.pointerId);
+  });
+
+  canvas.addEventListener('pointermove', e => {
+    if (!dragging || e.pointerId !== pointerId) return;
+
+    targetRY += (e.clientX - lastX) * 0.006;
+    targetRX += (e.clientY - lastY) * 0.006;
+
+    targetRX = Math.max(
+      -Math.PI / 2 + 0.01,
+      Math.min(Math.PI / 2 - 0.01, targetRX)
+    );
+
+    lastX = e.clientX;
+    lastY = e.clientY;
+  });
+
+  function stopDrag() {
+    dragging = false;
+    pointerId = null;
+  }
+
+  canvas.addEventListener('pointerup', stopDrag);
+  canvas.addEventListener('pointercancel', stopDrag);
+  canvas.addEventListener('lostpointercapture', stopDrag);
+
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+
+    targetDistance = Math.max(
+      0.001,
+      Math.min(
+        10000,
+        targetDistance * Math.exp(
+          Math.max(-2, Math.min(2, e.deltaY * 0.001))
+        )
+      )
+    );
+  }, { passive: false });
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    rx += (targetRX - rx) * 0.18;
+    ry += (targetRY - ry) * 0.18;
+    distance += (targetDistance - distance) * 0.18;
+
+    camera.position.set(
+      focus.x + distance * Math.sin(ry) * Math.cos(rx),
+      focus.y + distance * Math.sin(rx),
+      focus.z + distance * Math.cos(ry) * Math.cos(rx)
+    );
+
+    camera.lookAt(focus);
+    renderer.render(scene, camera);
+  }
+
+  createObject('Würfel');
+  animate();
+})();
+</script>
+</body>
+</html>
