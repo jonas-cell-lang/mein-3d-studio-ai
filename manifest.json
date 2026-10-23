@@ -1,0 +1,18 @@
+
+{
+  "name": "SILMO BAU – Mein 3D Studio AI",
+  "short_name": "SILMO 3D",
+  "description": "3D-Modellierungsstudio der Schülerfirma SILMO BAU",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#06132e",
+  "theme_color": "#06132e",
+  "icons": [
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
