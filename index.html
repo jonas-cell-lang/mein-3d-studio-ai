@@ -420,7 +420,7 @@ input[type=color]{height:40px;padding:4px}
   canvas.addEventListener('lostpointercapture',stopDrag);
   canvas.addEventListener('wheel',e=>{
     e.preventDefault();
-    targetDistance=Math.max(0.001,Math.min(10000,targetDistance*Math.exp(Math.max(-2,Math.min(2,e.deltaY*0.001))));
+   targetDistance=Math.max(0.001,Math.min(10000,targetDistance*Math.exp(Math.max(-2,Math.min(2,e.deltaY*0.001)))));
   },{passive:false});
 
   function animate(){
