@@ -1,697 +1,443 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <link rel="apple-touch-icon" href="https://jonas-cell-lang.github.io/mein-3d-studio-ai/icon-512.png?v=3">
-  <meta charset="UTF-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SILMO 3D Studio AI</title>
-
 <style>
-:root {
-  color-scheme: dark;
-  --bg: #080f1d;
-  --panel: #101a2b;
-  --line: #263953;
-  --text: #edf4ff;
-  --blue: #3986f6;
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font: 14px/1.5 Arial, sans-serif;
-}
-header {
-  padding: 16px 22px;
-  background: #142742;
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.logo {
-  background: linear-gradient(135deg,#327af2,#48d4e2);
-  border-radius: 10px;
-  padding: 8px 12px;
-  font-size: 22px;
-}
-h1 { font-size: 19px; margin: 0; }
-.subtitle { color: #9db0ca; font-size: 12px; }
-main {
-  display: grid;
-  grid-template-columns: 210px minmax(200px,1fr) 250px;
-  height: calc(100vh - 70px);
-  min-height: 500px;
-}
-aside { background: var(--panel); padding: 14px; overflow: auto; }
-aside:first-child { border-right: 1px solid var(--line); }
-aside:last-child { border-left: 1px solid var(--line); }
-h2 {
-  font-size: 12px;
-  text-transform: uppercase;
-  color: #a9bdd7;
-  margin: 12px 0;
-}
-button, input {
-  font: inherit;
-  border-radius: 8px;
-}
-button {
-  padding: 9px;
-  color: var(--text);
-  background: #1a2b43;
-  border: 1px solid #344965;
-  cursor: pointer;
-}
-button:hover { background: #294563; }
-.tool {
-  width: 100%;
-  margin-bottom: 7px;
-  text-align: left;
-}
-.primary { background: #2869d9; }
-input {
-  width: 100%;
-  padding: 8px;
-  color: white;
-  background: #0b1422;
-  border: 1px solid #344965;
-}
-label {
-  display: block;
-  margin: 10px 0 4px;
-  font-size: 12px;
-  color: #b2c4dc;
-}
-#viewport {
-  position: relative;
-  min-width: 0;
-  overflow: hidden;
-  background: radial-gradient(#1a2c44,#08111e);
-}
-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  touch-action: none;
-  cursor: grab;
-}
-#hint {
-  position: absolute;
-  left: 12px;
-  bottom: 12px;
-  background: #0b1422dd;
-  border: 1px solid #344965;
-  border-radius: 8px;
-  padding: 10px;
-  font-size: 11px;
-  pointer-events: none;
-}
-#status {
-  margin-top: 14px;
-  padding: 9px;
-  background: #102b28;
-  border-radius: 8px;
-  color: #8ee5b1;
-  font-size: 12px;
-}
-.object-item {
-  width: 100%;
-  text-align: left;
-  margin: 3px 0;
-}
-.selected { border-color: #63a6ff; background: #234d78; }
-.fields {
-  display: grid;
-  grid-template-columns: repeat(3,minmax(0,1fr));
-  gap: 6px;
-}
-.fields label { font-size: 10px; }
-.fields input { padding: 7px 4px; font-size: 12px; }
-.note { color: #9db0ca; font-size: 11px; }
-@media(max-width:800px) {
-  main {
-    grid-template-columns: 130px minmax(0,1fr);
-    height: auto;
-  }
-  aside { padding: 9px; }
-  #viewport { height: 55vh; min-height: 330px; }
-  main > aside:last-child {
-    grid-column: 1/-1;
-    border-top: 1px solid var(--line);
-    border-left: 0;
-  }
-  header { padding: 12px; }
-  h1 { font-size: 16px; }
-}
+:root{color-scheme:dark;--bg:#080f1d;--panel:#101a2b;--line:#263953;--muted:#9db0ca;--text:#edf4ff;--cyan:#53d8e8;--green:#8ee5b1}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,Segoe UI,Arial,sans-serif}
+header{height:66px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:linear-gradient(100deg,#101d32,#142742);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,#327af2,#48d4e2);font-size:21px}
+h1{font-size:17px;margin:0}.subtitle{font-size:11px;color:var(--muted)}
+.top-status{color:var(--green);font-size:12px}
+main{display:grid;grid-template-columns:220px minmax(0,1fr) 270px;height:calc(100vh - 66px);min-height:520px}
+aside{padding:16px;background:var(--panel);overflow:auto}
+aside:first-child{border-right:1px solid var(--line)}aside:last-child{border-left:1px solid var(--line)}
+h2{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#a9bdd7;margin:7px 0 12px}
+button{font:inherit;padding:9px 11px;border:1px solid #344965;background:#1a2b43;color:var(--text);border-radius:9px;cursor:pointer}
+button:hover{background:#243b59}
+.wide{display:flex;align-items:center;width:100%;text-align:left;margin:6px 0}
+.active{background:#234d78!important;border-color:#63a6ff!important}
+#viewport{position:relative;min-width:0;overflow:hidden;touch-action:none;background:radial-gradient(ellipse at 50% 42%,#182b43 0%,#0d1728 55%,#08111e 100%)}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#hint,.viewport-label{position:absolute;padding:9px 11px;border:1px solid #32465d;border-radius:9px;background:#0b1422dc;color:#b5c8df;font-size:11px;pointer-events:none}
+#hint{left:12px;bottom:12px;line-height:1.7}.viewport-label{top:12px;left:12px}
+.field{margin:12px 0}
+label{display:block;font-size:11px;color:#b2c4dc;margin-bottom:5px}
+input{width:100%;padding:9px 10px;background:#0b1422;color:white;border:1px solid #2b405a;border-radius:8px;font:inherit}
+input[type=color]{height:40px;padding:4px}
+.note{font-size:11px;color:var(--muted);line-height:1.55}
+#status{font-size:11px;color:var(--green);margin-top:14px;padding:9px;background:#102b28;border:1px solid #23473f;border-radius:8px}
+@media(max-width:900px){main{grid-template-columns:175px minmax(0,1fr) 230px}}
+@media(max-width:680px){header{height:58px;padding:0 10px}h1{font-size:14px}main{grid-template-columns:118px minmax(0,1fr);height:auto;min-height:0}#viewport{height:58vh;min-height:350px;grid-column:2;grid-row:1}aside:last-child{grid-column:1/-1;border-left:0;border-top:1px solid var(--line)}}
 </style>
 </head>
-
 <body>
 <header>
-  <div class="logo">⬡</div>
-  <div>
-    <h1>SILMO 3D Studio AI</h1>
-    <div class="subtitle">Einfach bauen. Präzise modellieren.</div>
+  <div class="brand">
+    <div class="brand-mark">⬡</div>
+    <div><h1>SILMO 3D Studio AI</h1><div class="subtitle">Einfach bauen. Präzise modellieren.</div></div>
   </div>
+  <div class="top-status">● 3D-Arbeitsplatz bereit</div>
 </header>
-
 <main>
   <aside>
-    <h2>Objekte erstellen</h2>
-    <button class="tool" id="addCube">＋ Würfel</button>
-    <button class="tool" id="addSphere">＋ Kugel</button>
-    <button class="tool" id="addCylinder">＋ Zylinder</button>
-    <button class="tool" id="duplicate">▣ Duplizieren</button>
-    <button class="tool" id="delete">🗑 Löschen</button>
-    <button class="tool" id="drop">⬇ Auf Arbeitsplatte</button>
+    <h2>Objekte</h2>
+    <button class="wide" id="addCube">＋ Würfel</button>
+    <button class="wide" id="addSphere">＋ Kugel</button>
+    <button class="wide" id="addCylinder">＋ Zylinder</button>
+    <button class="wide" id="duplicate">▣ Duplizieren</button>
+    <button class="wide" id="importModel">⬆ STL importieren</button>
+    <button class="wide" id="exportModel">⬇ STL exportieren</button>
+    <input id="fileInput" type="file" accept=".stl,model/stl" hidden>
+    <button class="wide" id="delete">🗑 Löschen</button>
+    <button class="wide" id="dropToBed">⬇ Auf Arbeitsplatte stellen</button>
 
-    <h2>STL-Dateien</h2>
-    <button class="tool" id="import">⬆ STL importieren</button>
-    <button class="tool" id="export">⬇ STL exportieren</button>
-    <input id="file" type="file" accept=".stl" hidden>
+    <h2>Druckbett (mm)</h2>
+    <div class="field"><label for="bedWidth">Breite X (mm)</label><input id="bedWidth" type="number" min="10" max="2000" step="1" value="200"></div>
+    <div class="field"><label for="bedDepth">Tiefe Y (mm)</label><input id="bedDepth" type="number" min="10" max="2000" step="1" value="200"></div>
+    <button class="wide" id="applyBedSize">Druckbettgrösse übernehmen</button>
+    <p class="note">Breite und Tiefe passend zu deinem Drucker einstellen.</p>
 
-    <h2>Objektliste</h2>
-    <div id="objects"></div>
+    <h2>Objektliste</h2><div id="objects"></div>
     <div id="status">Bereit</div>
   </aside>
 
   <section id="viewport">
-    <div id="hint">
-      <strong>Bedienung</strong><br>
-      Objekt ziehen: verschieben<br>
-      Freie Fläche ziehen: drehen<br>
-      Mausrad: zoomen<br>
-      X = links/rechts<br>
-      Y = Tiefe<br>
-      Z = Höhe
-    </div>
+    <div class="viewport-label">3D-Ansicht</div>
+    <div id="hint"><strong>Bedienung</strong><br>Pfeile ziehen: X / Y / Z verschieben<br>Objekt ziehen: in X/Y verschieben<br>Freie Fläche ziehen: Ansicht drehen<br>Scrollrad: zoomen</div>
   </section>
 
   <aside>
-    <h2>Position</h2>
-    <div class="fields" id="position"></div>
-
+    <h2>Position</h2><div id="positionFields"></div>
     <h2>Grösse (mm)</h2>
-    <button class="tool selected" id="lock">🔒 Einheitlich: EIN</button>
+    <button id="scaleLock" class="active">🔒 Einheitlich: EIN</button>
     <p class="note">Bei aktivierter Sperre bleiben die Proportionen erhalten.</p>
-    <div class="fields" id="size"></div>
-
-    <h2>Skalierung (%)</h2>
-    <div class="fields" id="percent"></div>
-
+    <div id="sizeFields"></div>
+    <h2>Skalierung (%)</h2><div id="percentFields"></div>
     <h2>Darstellung</h2>
-    <label for="color">Objektfarbe</label>
-    <input id="color" type="color" value="#4b91ed">
+    <div class="field"><label for="color">Objektfarbe</label><input id="color" type="color" value="#4b91ed" disabled></div>
   </aside>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
-
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const viewport = $("viewport");
-  const status = $("status");
+  const viewport = $('viewport'), status = $('status');
+  const MM_PER_UNIT = 10;
 
-  if (!window.THREE) {
-    status.textContent = "Three.js fehlt. Bitte Internetverbindung prüfen.";
+  if (typeof THREE === 'undefined') {
+    status.textContent = 'Three.js konnte nicht geladen werden. Internet prüfen.';
     return;
   }
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x101722);
-
-  const camera = new THREE.PerspectiveCamera(50, 1, 0.01, 10000);
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.001, 10000);
   camera.up.set(0, 0, 1);
 
   const renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   viewport.appendChild(renderer.domElement);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x526078,1.15));
+  const light = new THREE.DirectionalLight(0xffffff,1.25);
+  light.position.set(5,5,8); scene.add(light);
 
-  scene.add(new THREE.HemisphereLight(0xffffff,0x526078,1.5));
-  const light = new THREE.DirectionalLight(0xffffff,1.5);
-  light.position.set(5,5,8);
-  scene.add(light);
+  let bedWidthMM=200, bedDepthMM=200, grid=null, bedOutline=null;
+  const objects=[];
+  let selected=null, nextId=1, uniform=true, moveGizmo=null;
+  let activeAxis=null, axisStartParameter=0;
+  const axisDragStart=new THREE.Vector3(), objectDragStart=new THREE.Vector3();
+  const focus=new THREE.Vector3(0,0,0.5);
+  let rx=0.3, ry=0, targetRX=rx, targetRY=ry, distance=9, targetDistance=9;
 
-  const grid = new THREE.GridHelper(20,20,0x526987,0x29364a);
-  grid.rotation.x = Math.PI / 2;
-  scene.add(grid);
-
-  const objects = [];
-  let selected = null;
-  let nextId = 1;
-  let uniform = true;
-
-  // Ein App-Einheit entspricht 10 mm.
-  const MM = 10;
-
-  let rx = 0.45, ry = 0.6;
-  let distance = 9;
-  const focus = new THREE.Vector3(0,0,0.5);
-
-  function resize() {
-    const w = viewport.clientWidth;
-    const h = viewport.clientHeight;
-    if (!w || !h) return;
-    camera.aspect = w/h;
-    camera.updateProjectionMatrix();
-    renderer.setSize(w,h);
+  function rebuildBed() {
+    if(grid){scene.remove(grid);grid.geometry.dispose();grid.material.dispose();}
+    if(bedOutline){scene.remove(bedOutline);bedOutline.geometry.dispose();bedOutline.material.dispose();}
+    const w=bedWidthMM/MM_PER_UNIT, d=bedDepthMM/MM_PER_UNIT;
+    const divisions=Math.max(2,Math.min(400,Math.round(Math.max(bedWidthMM,bedDepthMM)/10)));
+    grid=new THREE.GridHelper(Math.max(w,d),divisions,0x526987,0x29364a);
+    grid.rotation.x=Math.PI/2;
+    grid.scale.set(w/Math.max(w,d),d/Math.max(w,d),1);
+    scene.add(grid);
+    const pts=[
+      new THREE.Vector3(-w/2,-d/2,0.005),new THREE.Vector3(w/2,-d/2,0.005),
+      new THREE.Vector3(w/2,d/2,0.005),new THREE.Vector3(-w/2,d/2,0.005)
+    ];
+    bedOutline=new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({color:0x53d8e8})
+    );
+    scene.add(bedOutline);
   }
-  window.addEventListener("resize",resize);
-  if ("ResizeObserver" in window)
-    new ResizeObserver(resize).observe(viewport);
+  rebuildBed();
+
+  function resize(){
+    const w=viewport.clientWidth,h=viewport.clientHeight;
+    if(!w||!h)return;
+    camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h);
+  }
+  window.addEventListener('resize',resize);
+  if('ResizeObserver' in window)new ResizeObserver(resize).observe(viewport);
   resize();
 
-  function setStatus(message) {
-    status.textContent = message;
-  }
+  function currentSizeMM(obj,axis){return obj.userData.baseDimensions[axis]*obj.scale[axis]*MM_PER_UNIT;}
 
-  function dimensions(obj) {
-    obj.geometry.computeBoundingBox();
-    const b = obj.geometry.boundingBox;
-    return {
-      x: (b.max.x-b.min.x)*obj.scale.x*MM,
-      y: (b.max.y-b.min.y)*obj.scale.y*MM,
-      z: (b.max.z-b.min.z)*obj.scale.z*MM
-    };
-  }
-
-  function makeObject(type, geometry, name) {
-    geometry.computeBoundingBox();
-
-    const material = new THREE.MeshStandardMaterial({
-      color: 0x4b91ed,
-      roughness: 0.45,
-      metalness: 0.05
-    });
-
-    const obj = new THREE.Mesh(geometry,material);
-    obj.userData.label = name || type + " " + nextId++;
-    obj.userData.percent = {x:100,y:100,z:100};
-    obj.position.set(0,0,0);
-
-    scene.add(obj);
-    objects.push(obj);
-    selectObject(obj);
-    setStatus(obj.userData.label + " erstellt");
-  }
-
-  function createObject(type) {
+  function createObject(type){
     let geometry;
-
-    if (type === "Würfel") {
-      geometry = new THREE.BoxGeometry(2,2,2);
-    } else if (type === "Kugel") {
-      geometry = new THREE.SphereGeometry(1,32,24);
-    } else {
-      geometry = new THREE.CylinderGeometry(0.8,0.8,2,32);
-    }
-
-    // Die App verwendet Z als Hochachse.
-    geometry.rotateX(Math.PI/2);
-    makeObject(type,geometry);
+    if(type==='Würfel')geometry=new THREE.BoxGeometry(1.5,1.5,1.5);
+    else if(type==='Kugel')geometry=new THREE.SphereGeometry(0.8,32,24);
+    else geometry=new THREE.CylinderGeometry(0.7,0.7,1.5,32);
+    geometry.rotateX(Math.PI/2);geometry.computeBoundingBox();
+    const material=new THREE.MeshStandardMaterial({
+      color:new THREE.Color().setHSL(Math.random(),0.65,0.55),roughness:0.45,metalness:0.1
+    });
+    const mesh=new THREE.Mesh(geometry,material);
+    const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
+    mesh.position.set(0,0,size.z/2);
+    mesh.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
+    mesh.userData.percent={x:100,y:100,z:100};
+    mesh.userData.label=type+' '+nextId++;
+    scene.add(mesh);objects.push(mesh);selectObject(mesh);
+    status.textContent='Objekt erstellt';
   }
 
-  function selectObject(obj) {
-    selected = obj;
-    updateObjects();
-    showProperties();
-
-    if (obj) {
-      $("color").value = "#" + obj.material.color.getHexString();
-    }
-  }
-
-  function updateObjects() {
-    const list = $("objects");
-    list.replaceChildren();
-
-    if (!objects.length) {
-      list.textContent = "Noch keine Objekte";
-      return;
-    }
-
-    objects.forEach(obj => {
-      const button = document.createElement("button");
-      button.className = "object-item" +
-        (obj === selected ? " selected" : "");
-      button.textContent = obj.userData.label;
-      button.onclick = () => selectObject(obj);
-      list.appendChild(button);
+  function updateObjects(){
+    const list=$('objects');list.replaceChildren();
+    if(!objects.length){const empty=document.createElement('div');empty.textContent='Noch keine Objekte vorhanden.';list.appendChild(empty);}
+    objects.forEach(obj=>{
+      const btn=document.createElement('button');
+      btn.className='wide'+(obj===selected?' active':'');
+      btn.textContent=obj.userData.label;btn.onclick=()=>selectObject(obj);list.appendChild(btn);
     });
   }
 
-  function addField(container, label, value, callback, step="0.1") {
-    const wrap = document.createElement("div");
-    const lab = document.createElement("label");
-    const input = document.createElement("input");
-
-    lab.textContent = label;
-    input.type = "number";
-    input.step = step;
-    input.value = Number(value.toFixed(3));
-    input.disabled = !selected;
-
-    input.addEventListener("change",() => {
-      const n = Number(input.value);
-      if (Number.isFinite(n)) {
-        callback(n);
-        showProperties();
-      }
-    });
-
-    wrap.append(lab,input);
-    container.appendChild(wrap);
+  function makeInput(parent,labelText,value,step,onChange){
+    const wrap=document.createElement('div');wrap.className='field';
+    const label=document.createElement('label');label.textContent=labelText;
+    const input=document.createElement('input');input.type='number';input.step=step;input.value=Number(value).toFixed(2);
+    wrap.append(label,input);parent.appendChild(wrap);
+    input.addEventListener('change',()=>onChange(Number(input.value)));
+    return input;
   }
 
-  function showProperties() {
-    ["position","size","percent"].forEach(id =>
-      $(id).replaceChildren()
-    );
-
-    if (!selected) {
-      $("color").disabled = true;
-      return;
-    }
-
-    $("color").disabled = false;
-    const obj = selected;
-
-    ["x","y","z"].forEach(axis => {
-      addField($("position"),axis.toUpperCase(),
-        obj.position[axis],v => {
-          obj.position[axis] = v;
-          setStatus("Position geändert");
-        });
-    });
-
-    const size = dimensions(obj);
-
-    ["x","y","z"].forEach(axis => {
-      addField($("size"),axis.toUpperCase(),size[axis],v => {
-        if (v <= 0) return;
-
-        const old = dimensions(obj);
-        const factor = v / old[axis];
-
-        if (uniform) {
-          obj.scale.multiplyScalar(factor);
-          ["x","y","z"].forEach(a =>
-            obj.userData.percent[a] *= factor
-          );
-        } else {
-          obj.scale[axis] *= factor;
-          obj.userData.percent[axis] *= factor;
-        }
-
-        setStatus("Grösse geändert");
+  function updateMoveGizmo(){
+    if(moveGizmo){
+      scene.remove(moveGizmo);
+      moveGizmo.traverse(part=>{
+        if(part.geometry)part.geometry.dispose();
+        if(part.material)part.material.dispose();
       });
+      moveGizmo=null;
+    }
+    if(!selected)return;
+    moveGizmo=new THREE.Group();
+    const box=new THREE.Box3().setFromObject(selected),size=new THREE.Vector3();
+    box.getSize(size);
+    const len=Math.max(0.7,Math.min(2.5,Math.max(size.x,size.y,size.z)*1.25));
+    [
+      {name:'x',dir:new THREE.Vector3(1,0,0),color:0xff5555},
+      {name:'y',dir:new THREE.Vector3(0,1,0),color:0x55e58a},
+      {name:'z',dir:new THREE.Vector3(0,0,1),color:0x55aaff}
+    ].forEach(a=>{
+      const arrow=new THREE.ArrowHelper(a.dir,new THREE.Vector3(),len,a.color,len*0.22,len*0.13);
+      arrow.userData.axis=a.name;arrow.line.userData.axis=a.name;arrow.cone.userData.axis=a.name;
+      moveGizmo.add(arrow);
     });
-
-    ["x","y","z"].forEach(axis => {
-      addField($("percent"),axis.toUpperCase(),
-        obj.userData.percent[axis],v => {
-          if (v <= 0) return;
-
-          const factor = v / obj.userData.percent[axis];
-
-          if (uniform) {
-            obj.scale.multiplyScalar(factor);
-            ["x","y","z"].forEach(a =>
-              obj.userData.percent[a] *= factor
-            );
-          } else {
-            obj.scale[axis] *= factor;
-            obj.userData.percent[axis] = v;
-          }
-
-          setStatus("Skalierung geändert");
-        });
-    });
-
-    $("lock").textContent = uniform
-      ? "🔒 Einheitlich: EIN"
-      : "🔓 Einheitlich: AUS";
-
-    $("lock").classList.toggle("selected",uniform);
+    moveGizmo.position.copy(selected.position);
+    scene.add(moveGizmo);
   }
 
-  $("lock").onclick = () => {
-    uniform = !uniform;
-    showProperties();
-  };
+  function selectObject(obj){selected=obj;updateObjects();showProperties();updateMoveGizmo();}
 
-  $("color").addEventListener("input",() => {
-    if (selected) selected.material.color.set($("color").value);
-  });
+  function showProperties(){
+    ['positionFields','sizeFields','percentFields'].forEach(id=>$(id).replaceChildren());
+    const color=$('color');
+    if(!selected){color.disabled=true;return;}
+    const obj=selected;color.disabled=false;color.value='#'+obj.material.color.getHexString();
 
-  $("addCube").onclick = () => createObject("Würfel");
-  $("addSphere").onclick = () => createObject("Kugel");
-  $("addCylinder").onclick = () => createObject("Zylinder");
+    ['x','y','z'].forEach(axis=>makeInput($('positionFields'),'Position '+axis.toUpperCase(),obj.position[axis],0.01,value=>{
+      if(Number.isFinite(value)){obj.position[axis]=value;updateMoveGizmo();}
+    }));
+    ['x','y','z'].forEach(axis=>makeInput($('sizeFields'),'Grösse '+axis.toUpperCase()+' (mm)',currentSizeMM(obj,axis),0.01,value=>applySizeAxis(axis,value)));
+    ['x','y','z'].forEach(axis=>makeInput($('percentFields'),'Skalierung '+axis.toUpperCase()+' (%)',obj.userData.percent[axis],0.01,value=>applyPercentAxis(axis,value)));
+    $('scaleLock').classList.toggle('active',uniform);
+    $('scaleLock').textContent=uniform?'🔒 Einheitlich: EIN':'🔓 Einheitlich: AUS';
+    updateMoveGizmo();
+  }
 
-  $("duplicate").onclick = () => {
-    if (!selected) {
-      setStatus("Bitte zuerst ein Objekt auswählen");
-      return;
+  function applySizeAxis(axis,newMM){
+    if(!selected||!Number.isFinite(newMM)||newMM<=0)return;
+    const obj=selected,base=obj.userData.baseDimensions;
+    if(uniform){
+      const factor=newMM/currentSizeMM(obj,axis);
+      ['x','y','z'].forEach(a=>{obj.scale[a]*=factor;obj.userData.percent[a]=obj.scale[a]*100;});
+    }else{
+      obj.scale[axis]=newMM/(base[axis]*MM_PER_UNIT);obj.userData.percent[axis]=obj.scale[axis]*100;
     }
-
-    const copy = new THREE.Mesh(
-      selected.geometry.clone(),
-      selected.material.clone()
-    );
-
-    copy.position.copy(selected.position);
-    copy.position.x += 0.5;
-    copy.rotation.copy(selected.rotation);
-    copy.scale.copy(selected.scale);
-
-    copy.userData.label = selected.userData.label +
-      " (Kopie " + nextId++ + ")";
-    copy.userData.percent = {...selected.userData.percent};
-
-    scene.add(copy);
-    objects.push(copy);
-    selectObject(copy);
-    setStatus("Objekt dupliziert");
-  };
-
-  $("delete").onclick = () => {
-    if (!selected) return;
-
-    scene.remove(selected);
-    selected.geometry.dispose();
-    selected.material.dispose();
-
-    objects.splice(objects.indexOf(selected),1);
-    selected = null;
-
-    updateObjects();
     showProperties();
-    setStatus("Objekt gelöscht");
-  };
+  }
 
-  $("drop").onclick = () => {
-    if (!selected) return;
-
-    selected.updateMatrixWorld(true);
-    const bounds = new THREE.Box3().setFromObject(selected);
-    selected.position.z -= bounds.min.z;
-
+  function applyPercentAxis(axis,percent){
+    if(!selected||!Number.isFinite(percent)||percent<=0)return;
+    const obj=selected;
+    if(uniform){
+      const factor=percent/obj.userData.percent[axis];
+      ['x','y','z'].forEach(a=>{obj.userData.percent[a]*=factor;obj.scale[a]=obj.userData.percent[a]/100;});
+    }else{obj.userData.percent[axis]=percent;obj.scale[axis]=percent/100;}
     showProperties();
-    setStatus("Objekt auf Arbeitsplatte gestellt");
-  };
+  }
 
-  $("import").onclick = () => {
-    if (!THREE.STLLoader) {
-      setStatus("STL-Import konnte nicht geladen werden");
-      return;
+  function setBedSize(){
+    const width=Number($('bedWidth').value),depth=Number($('bedDepth').value);
+    if(!Number.isFinite(width)||!Number.isFinite(depth)||width<10||depth<10||width>2000||depth>2000){
+      status.textContent='Druckbett: Werte zwischen 10 und 2000 mm eingeben.';return;
     }
-    $("file").click();
+    bedWidthMM=width;bedDepthMM=depth;rebuildBed();
+    focus.set(0,0,0);
+    targetDistance=Math.max(5,Math.max(width,depth)/MM_PER_UNIT*1.15);
+    status.textContent=`Druckbett eingestellt: ${width} × ${depth} mm`;
+  }
+  $('applyBedSize').onclick=setBedSize;
+  ['bedWidth','bedDepth'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')setBedSize();}));
+
+  $('scaleLock').onclick=()=>{uniform=!uniform;showProperties();status.textContent=uniform?'Proportionen gesperrt':'Achsen separat einstellbar';};
+  $('color').addEventListener('input',()=>{if(selected)selected.material.color.set($('color').value);});
+  $('addCube').onclick=()=>createObject('Würfel');
+  $('addSphere').onclick=()=>createObject('Kugel');
+  $('addCylinder').onclick=()=>createObject('Zylinder');
+
+  $('duplicate').onclick=()=>{
+    if(!selected){status.textContent='Bitte zuerst ein Objekt auswählen';return;}
+    const copy=new THREE.Mesh(selected.geometry.clone(),selected.material.clone());
+    copy.position.copy(selected.position);copy.position.x+=0.3;
+    copy.rotation.copy(selected.rotation);copy.scale.copy(selected.scale);
+    copy.userData.baseDimensions={...selected.userData.baseDimensions};
+    copy.userData.percent={...selected.userData.percent};
+    copy.userData.label=selected.userData.label+' (Kopie '+nextId++ +')';
+    scene.add(copy);objects.push(copy);selectObject(copy);status.textContent='Objekt dupliziert';
   };
 
-  $("file").addEventListener("change",event => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      try {
-        const geometry = new THREE.STLLoader().parse(reader.result);
-
-        // STL-Dateien werden als Millimeter interpretiert.
-        geometry.scale(1/MM,1/MM,1/MM);
-        geometry.computeVertexNormals();
-        geometry.computeBoundingBox();
-
-        const b = geometry.boundingBox;
-        geometry.translate(
-          -(b.min.x+b.max.x)/2,
-          -(b.min.y+b.max.y)/2,
-          -b.min.z
-        );
-
-        makeObject("STL",geometry,file.name.replace(/\.stl$/i,""));
-        setStatus("STL-Modell importiert");
-      } catch(error) {
-        console.error(error);
-        setStatus("STL-Datei konnte nicht gelesen werden");
-      }
-      $("file").value = "";
+  $('importModel').onclick=()=>{
+    if(typeof THREE.STLLoader==='undefined'){status.textContent='STL-Import nicht geladen. Internet prüfen.';return;}
+    $('fileInput').click();
+  };
+  $('fileInput').addEventListener('change',event=>{
+    const file=event.target.files&&event.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const geometry=new THREE.STLLoader().parse(reader.result);
+        geometry.computeVertexNormals();geometry.computeBoundingBox();
+        geometry.scale(1/MM_PER_UNIT,1/MM_PER_UNIT,1/MM_PER_UNIT);geometry.computeBoundingBox();
+        const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
+        const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:0x4b91ed,roughness:0.5,metalness:0.05}));
+        mesh.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
+        mesh.userData.percent={x:100,y:100,z:100};
+        mesh.userData.label=file.name.replace(/\.stl$/i,'')||'STL-Modell';
+        geometry.translate(-(geometry.boundingBox.min.x+geometry.boundingBox.max.x)/2,-(geometry.boundingBox.min.y+geometry.boundingBox.max.y)/2,-geometry.boundingBox.min.z);
+        mesh.position.set(0,0,size.z/2);
+        scene.add(mesh);objects.push(mesh);selectObject(mesh);status.textContent='STL-Modell importiert (Einheit: mm)';
+      }catch(error){console.error(error);status.textContent='STL-Datei konnte nicht gelesen werden.';}
+      $('fileInput').value='';
     };
-
     reader.readAsArrayBuffer(file);
   });
 
-  $("export").onclick = () => {
-    if (!objects.length) {
-      setStatus("Keine Objekte zum Exportieren");
-      return;
-    }
-
-    if (!THREE.STLExporter) {
-      setStatus("STL-Export konnte nicht geladen werden");
-      return;
-    }
-
-    try {
-      const exportScene = new THREE.Scene();
-
-      objects.forEach(obj => {
-        const mesh = new THREE.Mesh(
-          obj.geometry,
-          new THREE.MeshStandardMaterial()
-        );
-
-        mesh.position.copy(obj.position).multiplyScalar(MM);
-        mesh.rotation.copy(obj.rotation);
-        mesh.scale.copy(obj.scale).multiplyScalar(MM);
-        exportScene.add(mesh);
+  $('exportModel').onclick=()=>{
+    if(typeof THREE.STLExporter==='undefined'){status.textContent='STL-Export nicht geladen. Internet prüfen.';return;}
+    if(!objects.length){status.textContent='Es gibt keine Objekte zum Exportieren.';return;}
+    try{
+      const exportScene=new THREE.Scene();
+      objects.forEach(obj=>{
+        const clone=new THREE.Mesh(obj.geometry,obj.material);
+        clone.position.copy(obj.position);clone.rotation.copy(obj.rotation);
+        clone.scale.copy(obj.scale).multiplyScalar(MM_PER_UNIT);exportScene.add(clone);
       });
-
-      const result = new THREE.STLExporter().parse(
-        exportScene,{binary:false}
-      );
-
-      const blob = new Blob([result],{type:"model/stl"});
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-
-      link.href = url;
-      link.download = "silmo-3d-modell.stl";
-      link.click();
-
-      setTimeout(() => URL.revokeObjectURL(url),1000);
-      setStatus("STL-Datei exportiert");
-    } catch(error) {
-      console.error(error);
-      setStatus("STL-Export fehlgeschlagen");
-    }
+      const stlText=new THREE.STLExporter().parse(exportScene,{binary:false});
+      const blob=new Blob([stlText],{type:'model/stl'}),url=URL.createObjectURL(blob);
+      const link=document.createElement('a');link.href=url;link.download='silmo-3d-modell.stl';
+      document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+      status.textContent='STL exportiert (alle Modelle)';
+    }catch(error){console.error(error);status.textContent='STL-Export fehlgeschlagen.';}
   };
 
-  const raycaster = new THREE.Raycaster();
-  const pointer = new THREE.Vector2();
-  const plane = new THREE.Plane();
-  const point = new THREE.Vector3();
-  const offset = new THREE.Vector3();
+  $('dropToBed').onclick=()=>{
+    if(!selected){status.textContent='Bitte zuerst ein Objekt auswählen';return;}
+    selected.updateMatrixWorld(true);
+    const bounds=new THREE.Box3().setFromObject(selected);
+    selected.position.z-=bounds.min.z;
+    showProperties();updateMoveGizmo();status.textContent='Objekt steht auf der Arbeitsplatte';
+  };
 
-  let dragging = false;
-  let movingObject = false;
-  let rotating = false;
-  let lastX = 0;
-  let lastY = 0;
+  $('delete').onclick=()=>{
+    if(!selected)return;
+    scene.remove(selected);selected.geometry.dispose();selected.material.dispose();
+    const index=objects.indexOf(selected);if(index!==-1)objects.splice(index,1);
+    selected=null;updateMoveGizmo();updateObjects();showProperties();status.textContent='Objekt gelöscht';
+  };
 
-  function setRay(event) {
-    const rect = renderer.domElement.getBoundingClientRect();
+  const canvas=renderer.domElement,raycaster=new THREE.Raycaster(),pointerNDC=new THREE.Vector2();
+  const dragPlane=new THREE.Plane(),dragOffset=new THREE.Vector3(),dragPoint=new THREE.Vector3();
+  let dragging=false,rotatingView=false,draggingObject=false,lastX=0,lastY=0,pointerId=null;
 
-    pointer.x = ((event.clientX-rect.left)/rect.width)*2-1;
-    pointer.y = -((event.clientY-rect.top)/rect.height)*2+1;
-
-    raycaster.setFromCamera(pointer,camera);
+  function setPointerRay(e){
+    const rect=canvas.getBoundingClientRect();
+    pointerNDC.x=((e.clientX-rect.left)/rect.width)*2-1;
+    pointerNDC.y=-((e.clientY-rect.top)/rect.height)*2+1;
+    raycaster.setFromCamera(pointerNDC,camera);
   }
 
-  renderer.domElement.addEventListener("pointerdown",event => {
-    if (event.button !== 0) return;
+  function closestAxisParameter(ray,origin,direction){
+    const w0=ray.origin.clone().sub(origin);
+    const a=ray.direction.dot(ray.direction),b=ray.direction.dot(direction),c=direction.dot(direction);
+    const d=ray.direction.dot(w0),e=direction.dot(w0),denom=a*c-b*b;
+    if(Math.abs(denom)<1e-6)return -e/c;
+    return (a*e-b*d)/denom;
+  }
 
-    setRay(event);
-    const hits = raycaster.intersectObjects(objects,false);
+  canvas.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    setPointerRay(e);
+    const gizmoHits=moveGizmo?raycaster.intersectObjects(moveGizmo.children,true):[];
+    const axisHit=gizmoHits.find(hit=>hit.object.userData.axis||(hit.object.parent&&hit.object.parent.userData.axis));
+    const hits=raycaster.intersectObjects(objects,false);
+    pointerId=e.pointerId;lastX=e.clientX;lastY=e.clientY;dragging=true;
 
-    dragging = true;
-    lastX = event.clientX;
-    lastY = event.clientY;
-
-    if (hits.length) {
-      selectObject(hits[0].object);
-      movingObject = true;
-      rotating = false;
-
-      plane.set(new THREE.Vector3(0,0,1),-selected.position.z);
-
-      if (raycaster.ray.intersectPlane(plane,point)) {
-        offset.copy(selected.position).sub(point);
-      }
-    } else {
-      movingObject = false;
-      rotating = true;
-    }
-
-    renderer.domElement.setPointerCapture(event.pointerId);
+    if(axisHit&&selected){
+      const hitObject=axisHit.object;
+      activeAxis=hitObject.userData.axis||hitObject.parent.userData.axis;
+      draggingObject=false;rotatingView=false;
+      axisDragStart.copy(selected.position);objectDragStart.copy(selected.position);
+      const direction=activeAxis==='x'?new THREE.Vector3(1,0,0):activeAxis==='y'?new THREE.Vector3(0,1,0):new THREE.Vector3(0,0,1);
+      axisStartParameter=closestAxisParameter(raycaster.ray,selected.position,direction);
+      canvas.style.cursor='grabbing';
+    }else if(hits.length){
+      selectObject(hits[0].object);draggingObject=true;rotatingView=false;activeAxis=null;
+      dragPlane.set(new THREE.Vector3(0,0,1),-selected.position.z);
+      if(raycaster.ray.intersectPlane(dragPlane,dragPoint))dragOffset.copy(selected.position).sub(dragPoint);
+      else dragOffset.set(0,0,0);
+      canvas.style.cursor='grabbing';
+    }else{draggingObject=false;rotatingView=true;canvas.style.cursor='grabbing';}
+    canvas.setPointerCapture(e.pointerId);
   });
 
-  renderer.domElement.addEventListener("pointermove",event => {
-    if (!dragging) return;
-
-    if (movingObject && selected) {
-      setRay(event);
-
-      if (raycaster.ray.intersectPlane(plane,point)) {
-        selected.position.x = point.x+offset.x;
-        selected.position.y = point.y+offset.y;
+  canvas.addEventListener('pointermove',e=>{
+    if(!dragging||e.pointerId!==pointerId)return;
+    if(activeAxis&&selected){
+      setPointerRay(e);
+      const direction=activeAxis==='x'?new THREE.Vector3(1,0,0):activeAxis==='y'?new THREE.Vector3(0,1,0):new THREE.Vector3(0,0,1);
+      const parameter=closestAxisParameter(raycaster.ray,axisDragStart,direction);
+      selected.position.copy(objectDragStart).addScaledVector(direction,parameter-axisStartParameter);
+      showProperties();
+    }else if(draggingObject&&selected){
+      setPointerRay(e);
+      if(raycaster.ray.intersectPlane(dragPlane,dragPoint)){
+        selected.position.x=dragPoint.x+dragOffset.x;
+        selected.position.y=dragPoint.y+dragOffset.y;
         showProperties();
       }
-    } else if (rotating) {
-      ry += (event.clientX-lastX)*0.006;
-      rx += (event.clientY-lastY)*0.006;
-      rx = Math.max(-1.5,Math.min(1.5,rx));
+    }else if(rotatingView){
+      targetRY+=(e.clientX-lastX)*0.006;targetRX+=(e.clientY-lastY)*0.006;
+      targetRX=Math.max(-Math.PI/2+0.01,Math.min(Math.PI/2-0.01,targetRX));
     }
-
-    lastX = event.clientX;
-    lastY = event.clientY;
+    lastX=e.clientX;lastY=e.clientY;
   });
 
-  function stopDragging() {
-    dragging = false;
-    movingObject = false;
-    rotating = false;
+  function stopDrag(){
+    dragging=false;rotatingView=false;draggingObject=false;activeAxis=null;pointerId=null;canvas.style.cursor='grab';
   }
-
-  renderer.domElement.addEventListener("pointerup",stopDragging);
-  renderer.domElement.addEventListener("pointercancel",stopDragging);
-
-  renderer.domElement.addEventListener("wheel",event => {
-    event.preventDefault();
-    distance *= Math.exp(event.deltaY*0.001);
-    distance = Math.max(0.2,Math.min(1000,distance));
+  canvas.addEventListener('pointerup',stopDrag);
+  canvas.addEventListener('pointercancel',stopDrag);
+  canvas.addEventListener('lostpointercapture',stopDrag);
+  canvas.addEventListener('wheel',e=>{
+    e.preventDefault();
+    targetDistance=Math.max(0.001,Math.min(10000,targetDistance*Math.exp(Math.max(-2,Math.min(2,e.deltaY*0.001))));
   },{passive:false});
 
-  function animate() {
+  function animate(){
     requestAnimationFrame(animate);
-
+    rx+=(targetRX-rx)*0.18;ry+=(targetRY-ry)*0.18;distance+=(targetDistance-distance)*0.18;
     camera.position.set(
       focus.x+distance*Math.sin(ry)*Math.cos(rx),
       focus.y+distance*Math.cos(ry)*Math.cos(rx),
       focus.z+distance*Math.sin(rx)
     );
-
     camera.lookAt(focus);
+    if(moveGizmo&&selected)moveGizmo.position.copy(selected.position);
     renderer.render(scene,camera);
   }
 
-  createObject("Würfel");
+  createObject('Würfel');
+  targetDistance=Math.max(5,Math.max(bedWidthMM,bedDepthMM)/MM_PER_UNIT*1.15);
   animate();
 })();
 </script>
