@@ -1052,7 +1052,7 @@ input:focus{outline:1px solid var(--cyan)}
         // Die Geometrie liegt intern in Einheiten vor; die Skalierung
         // wandelt diese in Millimeter um.
         clone.rotation.copy(obj.rotation);
-        clone.scale.copy(obj.scale).multiplyScalar(MM_PER_UNIT);
+        clone.scale.copy(obj.scale);
 
         exportScene.add(clone);
       });
