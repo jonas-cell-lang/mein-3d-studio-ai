@@ -1,0 +1,16 @@
+{
+  "name": "SILMO 3D Studio AI",
+  "short_name": "SILMO 3D",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#080f1d",
+  "theme_color": "#101d32",
+  "icons": [
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
