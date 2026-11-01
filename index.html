@@ -1225,15 +1225,30 @@ input:focus{outline:1px solid var(--cyan)}
     status.textContent = 'Skalierung angepasst.';
   }
 
+  function getSelectedTargets() {
+    const targets = selectedObjects.filter(obj => objects.includes(obj));
+    if (targets.length) return targets;
+    return selected && objects.includes(selected) ? [selected] : [];
+  }
+
+  function getSelectionCenter(targets = getSelectedTargets()) {
+    if (!targets.length) return new THREE.Vector3();
+    const center = new THREE.Vector3();
+    targets.forEach(obj => center.add(obj.position));
+    return center.multiplyScalar(1 / targets.length);
+  }
+
   function updateMoveGizmo() {
     if (moveGizmo) {
       scene.remove(moveGizmo);
       moveGizmo.traverse(part => { if (part.geometry) part.geometry.dispose(); if (part.material) part.material.dispose(); });
       moveGizmo = null;
     }
-    if (!selected) return;
+    const targets = getSelectedTargets();
+    if (!targets.length) return;
     moveGizmo = new THREE.Group();
-    const box = new THREE.Box3().setFromObject(selected);
+    const box = new THREE.Box3();
+    targets.forEach(obj => { obj.updateMatrixWorld(true); box.union(new THREE.Box3().setFromObject(obj)); });
     const size = new THREE.Vector3(); box.getSize(size);
     const length = Math.max(0.7, Math.min(2.5, Math.max(size.x, size.y, size.z) * 1.25));
     // Alle drei Bewegungsachsen sind sichtbar: X = rot, Y = grün, Z = blau.
@@ -1249,7 +1264,7 @@ input:focus{outline:1px solid var(--cyan)}
       arrow.cone.userData.axis = axis.name;
       moveGizmo.add(arrow);
     });
-    moveGizmo.position.copy(selected.position);
+    moveGizmo.position.copy(getSelectionCenter(targets));
     moveGizmo.userData.isMoveGizmo = true;
     scene.add(moveGizmo);
   }
@@ -1513,6 +1528,8 @@ input:focus{outline:1px solid var(--cyan)}
   const dragPoint = new THREE.Vector3();
   let dragging = false, rotatingView = false, draggingObject = false;
   let lastX = 0, lastY = 0, pointerId = null;
+  let dragTargets = [];
+  let dragStartPositions = [];
 
   function setPointerRay(e) {
     const rect = canvas.getBoundingClientRect();
@@ -1553,20 +1570,29 @@ input:focus{outline:1px solid var(--cyan)}
       if (axisHit && selected) {
         const hitObject = axisHit.object;
         activeAxis = hitObject.userData.axis || hitObject.parent.userData.axis;
+        dragTargets = getSelectedTargets();
+        dragStartPositions = dragTargets.map(obj => obj.position.clone());
+        recordHistory();
         draggingObject = false;
         rotatingView = false;
-        axisDragStart.copy(selected.position);
-        objectDragStart.copy(selected.position);
+        axisDragStart.copy(getSelectionCenter(dragTargets));
+        objectDragStart.copy(axisDragStart);
         const direction = activeAxis === 'x' ? new THREE.Vector3(1,0,0) : activeAxis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
         axisStartParameter = closestAxisParameter(raycaster.ray, selected.position, direction);
         canvas.style.cursor = 'grabbing';
       } else if (hits.length) {
-        selectObject(hits[0].object);
+        const hitObject = hits[0].object;
+        if (!selectedObjects.includes(hitObject)) selectObject(hitObject);
+        else { selected = hitObject; updateObjects(); showProperties(); updateMoveGizmo(); }
+        dragTargets = getSelectedTargets();
+        dragStartPositions = dragTargets.map(obj => obj.position.clone());
+        recordHistory();
         draggingObject = true;
         rotatingView = false;
         activeAxis = null;
-        dragPlane.set(new THREE.Vector3(0, 0, 1), -selected.position.z);
-        if (raycaster.ray.intersectPlane(dragPlane, dragPoint)) dragOffset.copy(selected.position).sub(dragPoint);
+        const center = getSelectionCenter(dragTargets);
+        dragPlane.set(new THREE.Vector3(0, 0, 1), -center.z);
+        if (raycaster.ray.intersectPlane(dragPlane, dragPoint)) dragOffset.copy(center).sub(dragPoint);
         else dragOffset.set(0, 0, 0);
         canvas.style.cursor = 'grabbing';
       } else {
@@ -1585,16 +1611,24 @@ input:focus{outline:1px solid var(--cyan)}
       setPointerRay(e);
       const direction = activeAxis === 'x' ? new THREE.Vector3(1,0,0) : activeAxis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
       const parameter = closestAxisParameter(raycaster.ray, axisDragStart, direction);
-      selected.position.copy(objectDragStart).addScaledVector(direction, parameter - axisStartParameter);
+      const delta = parameter - axisStartParameter;
+      dragTargets.forEach((obj, index) => {
+        obj.position.copy(dragStartPositions[index]).addScaledVector(direction, delta);
+        notifyPositionChanged(obj);
+      });
       showProperties();
-      notifyPositionChanged(selected);
+      updateMoveGizmo();
     } else if (draggingObject && selected) {
       setPointerRay(e);
       if (raycaster.ray.intersectPlane(dragPlane, dragPoint)) {
-        selected.position.x = dragPoint.x + dragOffset.x;
-        selected.position.y = dragPoint.y + dragOffset.y;
+        const center = dragPoint.clone().add(dragOffset);
+        const delta = center.sub(getSelectionCenter(dragStartPositions.map((position, index) => ({position}))));
+        dragTargets.forEach((obj, index) => {
+          obj.position.copy(dragStartPositions[index]).add(delta);
+          notifyPositionChanged(obj);
+        });
         showProperties();
-        notifyPositionChanged(selected);
+        updateMoveGizmo();
       }
     } else if (rotatingView) {
       targetRY += (e.clientX - lastX) * 0.006;
@@ -1611,6 +1645,8 @@ input:focus{outline:1px solid var(--cyan)}
     draggingObject = false;
     activeAxis = null;
     pointerId = null;
+    dragTargets = [];
+    dragStartPositions = [];
     canvas.style.cursor = 'grab';
   }
   canvas.addEventListener('pointerup', stopDrag);
@@ -1635,7 +1671,7 @@ input:focus{outline:1px solid var(--cyan)}
       focus.z + distance * Math.sin(rx)
     );
     camera.lookAt(focus);
-    if (moveGizmo && selected) moveGizmo.position.copy(selected.position);
+    if (moveGizmo && getSelectedTargets().length) moveGizmo.position.copy(getSelectionCenter());
     try {
       renderer.render(scene, camera);
     } catch (error) {
@@ -1860,14 +1896,17 @@ input:focus{outline:1px solid var(--cyan)}
       return;
     }
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key) && selected) {
-      e.preventDefault(); recordHistory();
+      e.preventDefault();
+      const targets = getSelectedTargets();
+      if (!targets.length) return;
+      recordHistory();
       const stepMM = Number(document.getElementById('moveStepMM')?.value);
       const step = (Number.isFinite(stepMM) && stepMM > 0 ? stepMM : 1) / MM_PER_UNIT * (e.shiftKey ? 10 : 1);
-      if (e.key === 'ArrowLeft') selected.position.x -= step;
-      if (e.key === 'ArrowRight') selected.position.x += step;
-      if (e.key === 'ArrowUp') selected.position.y += step;
-      if (e.key === 'ArrowDown') selected.position.y -= step;
+      const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+      const dy = e.key === 'ArrowUp' ? step : e.key === 'ArrowDown' ? -step : 0;
+      targets.forEach(obj => { obj.position.x += dx; obj.position.y += dy; notifyPositionChanged(obj); });
       showProperties(); updateMoveGizmo();
+      status.textContent = targets.length > 1 ? targets.length + ' Objekte gemeinsam verschoben' : 'Objekt verschoben';
     }
   }, true);
   // Ctrl + mouse wheel zooms the camera; ordinary wheel is also supported.
