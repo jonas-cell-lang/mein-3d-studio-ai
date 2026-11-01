@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v27 Entwicklerdiagnose</title>
+<title>SILMO 3D Studio AI – v29 iPad-Steuerung</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png">
 <link rel="apple-touch-icon" sizes="512x512" href="./icon-512.png">
@@ -74,6 +74,8 @@ input:focus{outline:1px solid var(--cyan)}
 .note{font-size:11px;color:var(--muted);line-height:1.55;margin:7px 0 12px}
 #status{font-size:11px;color:var(--green);margin-top:14px;padding:9px 10px;background:#102b28;border:1px solid #23473f;border-radius:8px}
 #objects button{font-size:12px;padding:8px 9px}
+/* iPad: ausreichend grosse Touch-Ziele für die Objekt-Mehrfachauswahl. */
+.left-panel #objects button,.left-panel #multiSelectToggle{min-height:44px;touch-action:manipulation}
 .object-empty{font-size:12px;color:#7f93ad;padding:8px 0}
 .tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .tool-grid button{font-size:12px}
@@ -101,7 +103,7 @@ input:focus{outline:1px solid var(--cyan)}
 @media(max-width:680px){#tutorialCard{left:12px;right:12px;width:auto}.header-actions button{min-height:36px}.tutorial-highlight{outline-width:3px;outline-offset:2px}}
 
 
-/* SILMO v28: Ausrichtungswerkzeuge + Entwickler-Diagnose – per F9 oder Strg+Umschalt+D ein-/ausblenden */
+/* SILMO v28: Ausrichtungswerkzeuge + Entwickler-Diagnose – per F9 oder Cmd/Strg+Umschalt+D ein-/ausblenden */
 #silmoDiagToggle{border:1px solid #d6a64a!important;background:#3b2d14!important;color:#ffe3a0!important}
 #silmoDiagPanel{position:fixed;z-index:20000;inset:7vh 4vw auto auto;width:min(680px,92vw);max-height:86vh;display:flex;flex-direction:column;background:#091321;border:1px solid #d6a64a;border-radius:14px;box-shadow:0 20px 70px #000c;color:#edf4ff;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}
 #silmoDiagPanel[hidden]{display:none!important}
@@ -117,7 +119,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v28 – Ausrichtungswerkzeuge auf Basis v27 -->
+<!-- SILMO BUILD: v29 – iPad-Tastatur und Touch-Mehrfachauswahl auf Basis v28 -->
 <script id="silmoDeveloperDiagnostics">
 /* Entwicklermodus: unabhängige Fehlererfassung, standardmäßig eingeklappt. Entfernen: diesen Scriptblock und den CSS-Block #silmoDiagToggle/#silmoDiagPanel löschen. */
 (function(){
@@ -139,7 +141,7 @@ input:focus{outline:1px solid var(--cyan)}
   function renderLog(){
     if(!logEl) return;
     logEl.textContent = entries.length ? entries.map((e,i)=>String(i+1).padStart(3,'0')+' ['+e.time+'] '+e.type+'\n'+e.message).join('\n\n') : 'Noch keine Fehler oder Ereignisse erfasst. Öffne die Diagnose und reproduziere den Fehler.';
-    if(summaryEl) summaryEl.textContent='Einträge: '+entries.length+' · Seit: '+startedAt.toLocaleTimeString('de-CH',{hour12:false})+' · Taste F9 oder Strg+Umschalt+D';
+    if(summaryEl) summaryEl.textContent='Einträge: '+entries.length+' · Seit: '+startedAt.toLocaleTimeString('de-CH',{hour12:false})+' · Taste F9 oder Cmd/Strg+Umschalt+D';
   }
   // Capture uncaught JS errors immediately, before the main app scripts execute.
   window.addEventListener('error',function(e){
@@ -193,21 +195,21 @@ input:focus{outline:1px solid var(--cyan)}
   function createUI(){
     if(document.getElementById('silmoDiagPanel'))return;
     const actions=document.querySelector('.header-actions');
-    openButton=document.createElement('button');openButton.id='silmoDiagToggle';openButton.type='button';openButton.textContent='🛠 Diagnose (F9)';openButton.title='Fehlerdiagnose öffnen (F9 oder Strg+Umschalt+D)';
+    openButton=document.createElement('button');openButton.id='silmoDiagToggle';openButton.type='button';openButton.textContent='🛠 Diagnose (F9)';openButton.title='Fehlerdiagnose öffnen (F9 oder Cmd/Strg+Umschalt+D)';
     openButton.addEventListener('click',toggle);
     if(actions) actions.insertBefore(openButton,actions.firstChild); else {openButton.style.position='fixed';openButton.style.right='10px';openButton.style.top='10px';openButton.style.zIndex='19999';document.body.appendChild(openButton);}
     panel=document.createElement('section');panel.id='silmoDiagPanel';panel.hidden=true;panel.setAttribute('aria-label','SILMO Fehlerdiagnose');
-    panel.innerHTML='<div class="sd-head"><span>🛠 SILMO – Entwicklerdiagnose</span><button type="button" data-sd="close" aria-label="Diagnose schliessen">Schliessen ✕</button></div><div class="sd-summary" id="silmoDiagSummary"></div><div class="sd-actions"><button type="button" data-sd="snapshot">Status erfassen</button><button type="button" data-sd="copy">Bericht kopieren</button><button type="button" data-sd="download">Bericht herunterladen</button><button type="button" data-sd="clear">Protokoll leeren</button></div><pre id="silmoDiagLog" aria-live="polite"></pre><div class="sd-foot">Öffnen/Schliessen: F9 oder Strg+Umschalt+D. Fehler werden lokal im aktuellen Browserfenster protokolliert.</div>';
+    panel.innerHTML='<div class="sd-head"><span>🛠 SILMO – Entwicklerdiagnose</span><button type="button" data-sd="close" aria-label="Diagnose schliessen">Schliessen ✕</button></div><div class="sd-summary" id="silmoDiagSummary"></div><div class="sd-actions"><button type="button" data-sd="snapshot">Status erfassen</button><button type="button" data-sd="copy">Bericht kopieren</button><button type="button" data-sd="download">Bericht herunterladen</button><button type="button" data-sd="clear">Protokoll leeren</button></div><pre id="silmoDiagLog" aria-live="polite"></pre><div class="sd-foot">Öffnen/Schliessen: F9 oder Cmd/Strg+Umschalt+D. Fehler werden lokal im aktuellen Browserfenster protokolliert.</div>';
     document.body.appendChild(panel);logEl=panel.querySelector('#silmoDiagLog');summaryEl=panel.querySelector('#silmoDiagSummary');
     panel.addEventListener('click',function(e){const b=e.target.closest('button[data-sd]');if(!b)return;switch(b.dataset.sd){case'close':toggle(false);break;case'snapshot':add('STATUS-SNAPSHOT',snapshot().split('Fehler-/Ereignisprotokoll:')[0]);break;case'copy':copyReport();break;case'download':downloadReport();break;case'clear':entries.length=0;renderLog();add('DIAGNOSE','Protokoll wurde manuell geleert.');break;}});
-    renderLog();add('START','Diagnose aktiv. Öffne sie mit F9 oder Strg+Umschalt+D.');
+    renderLog();add('START','Diagnose aktiv. Öffne sie mit F9 oder Cmd/Strg+Umschalt+D.');
     setTimeout(()=>{const missing=['#viewport','#status','#objects','#tutorialLaunch'].filter(sel=>!document.querySelector(sel));if(missing.length)add('APP-STRUKTUR','Nicht gefundene Elemente: '+missing.join(', '));},1500);
   }
   function toggle(force){if(!panel)return;const show=typeof force==='boolean'?force:panel.hidden;panel.hidden=!show;if(show){add('STATUS-SNAPSHOT',snapshot().split('Fehler-/Ereignisprotokoll:')[0]);}}
-  document.addEventListener('keydown',function(e){if(e.key==='F9'||(e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==='d')){e.preventDefault();toggle();}});
+  document.addEventListener('keydown',function(e){if(e.key==='F9'||((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key.toLowerCase()==='d')){e.preventDefault();toggle();}});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',createUI,{once:true});else createUI();
   // Public helper for a developer console: window.SILMO_DIAG.report()
-  window.SILMO_DIAG={report:snapshot,log:(label,value)=>add(String(label||'MANUELL'),safeString(value)),open:()=>toggle(true),close:()=>toggle(false),clear:()=>{entries.length=0;renderLog();},version:'v27'};
+  window.SILMO_DIAG={report:snapshot,log:(label,value)=>add(String(label||'MANUELL'),safeString(value)),open:()=>toggle(true),close:()=>toggle(false),clear:()=>{entries.length=0;renderLog();},version:'v29'};
 })();
 </script>
 <header>
@@ -258,7 +260,7 @@ input:focus{outline:1px solid var(--cyan)}
   </aside>
   <section id="viewport">
     <button id="expandViewport" type="button" aria-label="3D-Ansicht maximieren">⛶</button>
-    <div class="viewport-label">3D-Ansicht <span style="color:#6ee7f9">●</span> · Kamera frei</div><div id="hint"><strong>Bedienung</strong><br>Pfeile am Objekt ziehen: X / Y / Z verschieben<br>Objektkörper ziehen: in X/Y verschieben<br>Freie Fläche ziehen: Ansicht drehen<br>Maus rechts ziehen oder Shift + Ziehen: Kamera drehen<br>Touch: freie Fläche ziehen, auf Modell ziehen zum Verschieben<br>Scrollrad: zoomen<br>Strg+S: Projekt speichern · Strg+O: Projekt öffnen</div>
+    <div class="viewport-label">3D-Ansicht <span style="color:#6ee7f9">●</span> · Kamera frei</div><div id="hint"><strong>Bedienung</strong><br>Pfeile am Objekt ziehen: X / Y / Z verschieben<br>Objektkörper ziehen: in X/Y verschieben<br>Freie Fläche ziehen: Ansicht drehen<br>Maus rechts ziehen oder Shift + Ziehen: Kamera drehen<br>Touch: freie Fläche ziehen, auf Modell ziehen zum Verschieben<br>Scrollrad: zoomen<br>Strg/Cmd+S: Projekt speichern · Strg/Cmd+O: Projekt öffnen</div>
   </section>
   <aside class="right-panel" aria-label="Eigenschaften des ausgewählten Modells">
     <h2>Position</h2><div id="positionFields"></div>
@@ -1774,8 +1776,20 @@ input:focus{outline:1px solid var(--cyan)}
     updateObjects(); showProperties(); updateMoveGizmo();
     status.textContent = 'Ausgewählte Objekte gelöscht';
   }
+  function duplicateSelectedObjects() {
+    const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    if (!targets.length) return false;
+    recordHistory();
+    selectedObjects = targets.map(obj => cloneObject(obj, 0.3));
+    selected = selectedObjects[selectedObjects.length - 1] || null;
+    updateObjects(); showProperties(); updateMoveGizmo();
+    status.textContent = selectedObjects.length + ' Objekt(e) dupliziert';
+    return true;
+  }
+  // Eingabefelder behalten ihre native Textauswahl (insbesondere Cmd+A auf iPad).
   // Capture the shortcut before the browser can select all page text.
   document.addEventListener('keydown', e => {
+    if (isTypingTarget(e.target)) return;
     const mod = e.ctrlKey || e.metaKey;
     const key = String(e.key || '').toLowerCase();
 
@@ -1792,7 +1806,12 @@ input:focus{outline:1px solid var(--cyan)}
       return;
     }
 
-    if (isTypingTarget(e.target)) return;
+    // Cmd+Shift+D ist für die Diagnose reserviert und wird dort verarbeitet.
+    if (mod && e.shiftKey && key === 'd') return;
+    if (mod && key === 'd') {
+      if (duplicateSelectedObjects()) e.preventDefault();
+      return;
+    }
     if (mod && key === 'z') {
       e.preventDefault(); undo(); return;
     }
