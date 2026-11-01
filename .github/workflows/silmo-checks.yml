@@ -8,6 +8,7 @@ on:
       - development/v31-multi-object-move
       - development/v32-object-lock
       - development/v33-object-groups-mirror
+      - development/v34-individual-group-edit
   pull_request:
     branches:
       - main
@@ -132,5 +133,15 @@ jobs:
           missing = [item for item in required_group_mirror if item not in html]
           if missing:
               raise SystemExit("Gruppen/Spiegel-Funktionen unvollständig: " + ", ".join(missing))
-          print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung, Objektsperre, Gruppen und Spiegeln sind statisch geprüft.")
+          required_individual_group_edit = [
+              "let individualGroupEdit = false;",
+              "Nur dieses Gruppenobjekt bearbeiten",
+              "selectedObjects = [obj];",
+              "Änderungen betreffen nur dieses Gruppenobjekt",
+              "individualGroupEdit = false;",
+          ]
+          missing = [item for item in required_individual_group_edit if item not in html]
+          if missing:
+              raise SystemExit("Einzelbearbeitung in Gruppen unvollständig: " + ", ".join(missing))
+          print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung, Objektsperre, Gruppen, Spiegeln und Einzelbearbeitung in Gruppen sind statisch geprüft.")
           PY
