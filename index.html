@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v33 Gruppen &amp; Spiegeln</title>
+<title>SILMO 3D Studio AI – v34 Einzelbearbeitung in Gruppen</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
@@ -75,7 +75,9 @@ input:focus{outline:1px solid var(--cyan)}
 #objects button{font-size:12px;padding:8px 9px}
 #objects .object-row{display:flex;align-items:stretch;gap:5px;margin:5px 0}
 #objects .object-select{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#objects .object-lock{flex:0 0 44px;min-width:44px;padding:6px;border:1px solid var(--line);border-radius:8px;background:#14243a;color:#dceaff;font-size:17px;cursor:pointer}
+#objects .object-lock{flex:0 0 40px;min-width:40px;padding:6px;border:1px solid var(--line);border-radius:8px;background:#14243a;color:#dceaff;font-size:17px;cursor:pointer}
+#objects .object-edit{flex:0 0 40px;min-width:40px;padding:6px;border:1px solid var(--line);border-radius:8px;background:#14243a;color:#bfe9ff;font-size:17px;cursor:pointer}
+#objects .object-edit.is-editing{border-color:#53d8e8;background:#123b4a;color:#8ff3ff}
 #objects .object-lock.is-locked{border-color:#e6a23c;background:#3a2b18;color:#ffd58a}
 #objects .object-lock:focus-visible,#objects .object-select:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 /* iPad: ausreichend grosse Touch-Ziele für die Objekt-Mehrfachauswahl. */
@@ -123,7 +125,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v33 – Objektgruppen und Spiegelwerkzeuge auf Basis v32 -->
+<!-- SILMO BUILD: v34 – Einzelobjekte innerhalb von Gruppen bearbeiten -->
 <script id="silmoDeveloperDiagnostics">
 /* Entwicklermodus: unabhängige Fehlererfassung, standardmäßig eingeklappt. Entfernen: diesen Scriptblock und den CSS-Block #silmoDiagToggle/#silmoDiagPanel löschen. */
 (function(){
@@ -796,6 +798,7 @@ input:focus{outline:1px solid var(--cyan)}
   // Tastenkürzel, Auswahl mehrerer Objekte und einfacher Änderungsverlauf
   let selectedObjects = [];
   let multiSelectMode = false;
+  let individualGroupEdit = false;
   let clipboardObjects = [];
   const undoStack = [];
   const redoStack = [];
@@ -840,6 +843,7 @@ input:focus{outline:1px solid var(--cyan)}
       objects.push(mesh);
     });
     selectedObjects = [];
+    individualGroupEdit = false;
     selected = objects.length ? objects[objects.length - 1] : null;
     updateObjects();
     showProperties();
@@ -1031,6 +1035,7 @@ input:focus{outline:1px solid var(--cyan)}
         if (typeof project.uniform === 'boolean') uniform = project.uniform;
         rebuildBed();
         selectedObjects = [];
+        individualGroupEdit = false;
         selected = objects.length ? objects[objects.length - 1] : null;
         updateObjects();
         showProperties();
@@ -1056,6 +1061,7 @@ input:focus{outline:1px solid var(--cyan)}
   $('projectFileInput').addEventListener('change', event => openProjectFile(event.target.files && event.target.files[0]));
 
   function selectObject(obj) {
+    individualGroupEdit = false;
     selected = obj;
     selectedObjects = obj ? (obj.userData.groupId ? objects.filter(item => item.userData.groupId === obj.userData.groupId) : [obj]) : [];
     updateObjects();
@@ -1093,6 +1099,26 @@ input:focus{outline:1px solid var(--cyan)}
           status.textContent = current.length + ' Objekt(e) ausgewählt';
         } else selectObject(obj);
       };
+      if (obj.userData.groupId) {
+        const editButton = document.createElement('button');
+        editButton.type = 'button';
+        editButton.className = 'object-edit' + (individualGroupEdit && selected === obj ? ' is-editing' : '');
+        editButton.textContent = '✎';
+        editButton.title = 'Nur dieses Gruppenobjekt bearbeiten';
+        editButton.setAttribute('aria-label', 'Einzelobjekt bearbeiten: ' + (obj.userData.label || 'Objekt'));
+        editButton.setAttribute('aria-pressed', String(individualGroupEdit && selected === obj));
+        editButton.onclick = event => {
+          event.stopPropagation();
+          individualGroupEdit = true;
+          selected = obj;
+          selectedObjects = [obj];
+          updateObjects();
+          showProperties();
+          updateMoveGizmo();
+          status.textContent = 'Einzelbearbeitung: „' + (obj.userData.label || 'Objekt') + '“ – Änderungen betreffen nur dieses Gruppenobjekt. Tippe den Objektnamen an, um wieder die ganze Gruppe auszuwählen.';
+        };
+        row.appendChild(editButton);
+      }
       const lockButton = document.createElement('button');
       lockButton.type = 'button';
       const locked = obj.userData.locked === true;
