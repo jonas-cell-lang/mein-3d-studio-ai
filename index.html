@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v31 Mehrfachbewegung</title>
+<title>SILMO 3D Studio AI – v32 Objektsperre</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
@@ -73,6 +73,11 @@ input:focus{outline:1px solid var(--cyan)}
 .note{font-size:11px;color:var(--muted);line-height:1.55;margin:7px 0 12px}
 #status{font-size:11px;color:var(--green);margin-top:14px;padding:9px 10px;background:#102b28;border:1px solid #23473f;border-radius:8px}
 #objects button{font-size:12px;padding:8px 9px}
+#objects .object-row{display:flex;align-items:stretch;gap:5px;margin:5px 0}
+#objects .object-select{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#objects .object-lock{flex:0 0 44px;min-width:44px;padding:6px;border:1px solid var(--line);border-radius:8px;background:#14243a;color:#dceaff;font-size:17px;cursor:pointer}
+#objects .object-lock.is-locked{border-color:#e6a23c;background:#3a2b18;color:#ffd58a}
+#objects .object-lock:focus-visible,#objects .object-select:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 /* iPad: ausreichend grosse Touch-Ziele für die Objekt-Mehrfachauswahl. */
 .left-panel #objects button,.left-panel #multiSelectToggle{min-height:44px;touch-action:manipulation}
 .object-empty{font-size:12px;color:#7f93ad;padding:8px 0}
@@ -1049,9 +1054,13 @@ input:focus{outline:1px solid var(--cyan)}
       list.appendChild(empty);
     }
     objects.forEach(obj => {
+      const row = document.createElement('div');
+      row.className = 'object-row';
       const btn = document.createElement('button');
-      btn.className = 'wide' + (selectedObjects.includes(obj) || obj === selected ? ' active' : '');
-      btn.textContent = obj.userData.label;
+      btn.type = 'button';
+      btn.className = 'wide object-select' + (selectedObjects.includes(obj) || obj === selected ? ' active' : '');
+      btn.textContent = obj.userData.label || 'Objekt';
+      btn.setAttribute('aria-pressed', String(selectedObjects.includes(obj) || obj === selected));
       btn.onclick = event => {
         if (multiSelectMode || event.ctrlKey || event.metaKey) {
           const current = selectedObjects.slice();
@@ -1063,7 +1072,25 @@ input:focus{outline:1px solid var(--cyan)}
           status.textContent = current.length + ' Objekt(e) ausgewählt';
         } else selectObject(obj);
       };
-      list.appendChild(btn);
+      const lockButton = document.createElement('button');
+      lockButton.type = 'button';
+      const locked = obj.userData.locked === true;
+      lockButton.className = 'object-lock' + (locked ? ' is-locked' : '');
+      lockButton.textContent = locked ? '🔒' : '🔓';
+      lockButton.title = locked ? 'Objekt entsperren' : 'Objekt sperren';
+      lockButton.setAttribute('aria-label', lockButton.title + ': ' + (obj.userData.label || 'Objekt'));
+      lockButton.setAttribute('aria-pressed', String(locked));
+      lockButton.onclick = event => {
+        event.stopPropagation();
+        recordHistory();
+        obj.userData.locked = !locked;
+        updateObjects();
+        showProperties();
+        updateMoveGizmo();
+        status.textContent = obj.userData.locked ? 'Objekt gesperrt: ' + (obj.userData.label || 'Objekt') : 'Objekt entsperrt: ' + (obj.userData.label || 'Objekt');
+      };
+      row.append(btn, lockButton);
+      list.appendChild(row);
     });
   }
 
@@ -1226,9 +1253,9 @@ input:focus{outline:1px solid var(--cyan)}
   }
 
   function getSelectedTargets() {
-    const targets = selectedObjects.filter(obj => objects.includes(obj));
+    const targets = selectedObjects.filter(obj => objects.includes(obj) && obj.userData.locked !== true);
     if (targets.length) return targets;
-    return selected && objects.includes(selected) ? [selected] : [];
+    return selected && objects.includes(selected) && selected.userData.locked !== true ? [selected] : [];
   }
 
   function getSelectionCenter(targets = getSelectedTargets()) {
@@ -1294,11 +1321,16 @@ input:focus{outline:1px solid var(--cyan)}
 
     if (!selected) {
       color.disabled = true;
+      $('scaleLock').disabled = true;
       return;
     }
 
     const obj = selected;
-    color.disabled = false;
+    const objectLocked = obj.userData.locked === true;
+    color.disabled = objectLocked;
+    $('scaleLock').disabled = objectLocked;
+    if (objectLocked) color.title = 'Objekt ist gesperrt. Zum Bearbeiten zuerst entsperren.';
+    else color.removeAttribute('title');
     color.value = '#' + obj.material.color.getHexString();
 
     // Position X/Y zeigen die Objektmitte; Position Z zeigt die Unterseite auf dem Druckbett.
@@ -1306,9 +1338,9 @@ input:focus{outline:1px solid var(--cyan)}
       const displayedValue = axis === 'z'
         ? obj.position.z - obj.userData.baseDimensions.z * obj.scale.z / 2
         : obj.position[axis];
-      makeInput($('positionFields'), 'Position ' + axis.toUpperCase(),
+      const field = makeInput($('positionFields'), 'Position ' + axis.toUpperCase(),
         displayedValue, 0.01, value => {
-          if (!Number.isFinite(value)) return;
+          if (obj.userData.locked === true || !Number.isFinite(value)) return;
           if (axis === 'z') {
             obj.position.z = value + obj.userData.baseDimensions.z * obj.scale.z / 2;
           } else {
@@ -1322,8 +1354,8 @@ input:focus{outline:1px solid var(--cyan)}
 
     const dimensionLabels = { x: 'Breite X (mm)', y: 'Tiefe Y (mm)', z: 'Höhe Z (mm)' };
     ['x', 'y', 'z'].forEach(axis => {
-      makeInput($('sizeFields'), dimensionLabels[axis],
-        currentSizeMM(obj, axis), 0.1, value => applySizeAxis(axis, value), {
+      const field = makeInput($('sizeFields'), dimensionLabels[axis],
+        currentSizeMM(obj, axis), 0.1, value => { if (obj.userData.locked !== true) applySizeAxis(axis, value); }, {
           min: 0.1,
           max: 2000,
           title: 'Masse in Millimetern. Erlaubt sind 0,1 bis 2000 mm.'
@@ -1332,12 +1364,18 @@ input:focus{outline:1px solid var(--cyan)}
 
     ['x', 'y', 'z'].forEach(axis => {
       makeInput($('percentFields'), 'Skalierung ' + axis.toUpperCase() + ' (%)',
-        obj.userData.percent[axis], 0.01, value => applyPercentAxis(axis, value));
+        obj.userData.percent[axis], 0.01, value => { if (obj.userData.locked !== true) applyPercentAxis(axis, value); });
     });
 
     $('scaleLock').classList.toggle('active', uniform);
     $('scaleLock').textContent = uniform ? '🔒 Einheitlich: EIN' : '🔓 Einheitlich: AUS';
     $('scaleLock').setAttribute('aria-pressed', String(uniform));
+    ['positionFields','sizeFields','percentFields'].forEach(id => {
+      $(id).querySelectorAll('input').forEach(input => {
+        input.disabled = objectLocked;
+        if (objectLocked) input.title = 'Objekt ist gesperrt. Zum Bearbeiten zuerst entsperren.';
+      });
+    });
     updateMoveGizmo();
   }
 
@@ -1567,7 +1605,7 @@ input:focus{outline:1px solid var(--cyan)}
       const gizmoHits = moveGizmo ? raycaster.intersectObjects(moveGizmo.children, true) : [];
       const axisHit = gizmoHits.find(hit => hit.object.userData.axis || (hit.object.parent && hit.object.parent.userData.axis));
       const hits = raycaster.intersectObjects(objects, false);
-      if (axisHit && selected) {
+      if (axisHit && selected && getSelectedTargets().length) {
         const hitObject = axisHit.object;
         activeAxis = hitObject.userData.axis || hitObject.parent.userData.axis;
         dragTargets = getSelectedTargets();
@@ -1582,6 +1620,14 @@ input:focus{outline:1px solid var(--cyan)}
         canvas.style.cursor = 'grabbing';
       } else if (hits.length) {
         const hitObject = hits[0].object;
+        if (hitObject.userData.locked === true) {
+          selectObject(hitObject);
+          draggingObject = false;
+          rotatingView = false;
+          activeAxis = null;
+          canvas.style.cursor = 'not-allowed';
+          status.textContent = 'Objekt ist gesperrt. Zum Verschieben zuerst entsperren.';
+        } else {
         if (!selectedObjects.includes(hitObject)) selectObject(hitObject);
         else { selected = hitObject; updateObjects(); showProperties(); updateMoveGizmo(); }
         dragTargets = getSelectedTargets();
@@ -1595,6 +1641,7 @@ input:focus{outline:1px solid var(--cyan)}
         if (raycaster.ray.intersectPlane(dragPlane, dragPoint)) dragOffset.copy(center).sub(dragPoint);
         else dragOffset.set(0, 0, 0);
         canvas.style.cursor = 'grabbing';
+        }
       } else {
         draggingObject = false;
         rotatingView = true;
@@ -1795,8 +1842,12 @@ input:focus{outline:1px solid var(--cyan)}
     return target && (target.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(target.tagName));
   }
   function deleteSelectedObjects() {
-    const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
-    if (!targets.length) return;
+    const requested = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    const targets = requested.filter(obj => obj.userData.locked !== true);
+    if (!targets.length) {
+      status.textContent = requested.length ? 'Gesperrte Objekte können nicht gelöscht werden. Bitte zuerst entsperren.' : 'Bitte zuerst ein Objekt auswählen.';
+      return;
+    }
     recordHistory();
     targets.forEach(obj => {
       const idx = objects.indexOf(obj);
@@ -1806,10 +1857,10 @@ input:focus{outline:1px solid var(--cyan)}
       if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
       else obj.material.dispose();
     });
-    selectedObjects = [];
-    selected = null;
+    selectedObjects = selectedObjects.filter(obj => objects.includes(obj));
+    selected = selectedObjects.length ? selectedObjects[selectedObjects.length - 1] : null;
     updateObjects(); showProperties(); updateMoveGizmo();
-    status.textContent = 'Ausgewählte Objekte gelöscht';
+    status.textContent = targets.length + ' Objekt(e) gelöscht' + (requested.length > targets.length ? '; gesperrte Objekte blieben erhalten' : '');
   }
   function duplicateSelectedObjects() {
     const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
@@ -1898,7 +1949,7 @@ input:focus{outline:1px solid var(--cyan)}
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key) && selected) {
       e.preventDefault();
       const targets = getSelectedTargets();
-      if (!targets.length) return;
+      if (!targets.length) { status.textContent = 'Kein verschiebbares Objekt ausgewählt (gesperrt oder keine Auswahl).'; return; }
       recordHistory();
       const stepMM = Number(document.getElementById('moveStepMM')?.value);
       const step = (Number.isFinite(stepMM) && stepMM > 0 ? stepMM : 1) / MM_PER_UNIT * (e.shiftKey ? 10 : 1);
