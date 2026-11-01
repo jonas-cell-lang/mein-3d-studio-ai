@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v32 Objektsperre</title>
+<title>SILMO 3D Studio AI – v33 Gruppen &amp; Spiegeln</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
@@ -123,7 +123,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v29 – iPad-Tastatur und Touch-Mehrfachauswahl auf Basis v28 -->
+<!-- SILMO BUILD: v33 – Objektgruppen und Spiegelwerkzeuge auf Basis v32 -->
 <script id="silmoDeveloperDiagnostics">
 /* Entwicklermodus: unabhängige Fehlererfassung, standardmäßig eingeklappt. Entfernen: diesen Scriptblock und den CSS-Block #silmoDiagToggle/#silmoDiagPanel löschen. */
 (function(){
@@ -344,6 +344,16 @@ input:focus{outline:1px solid var(--cyan)}
   const alignMode=document.createElement('select'); alignMode.id='alignMode'; alignMode.innerHTML='<option value="min">An einer Seite ausrichten</option><option value="center">Mittig ausrichten</option><option value="max">An der anderen Seite ausrichten</option>';
   alignModeWrap.append(alignModeLabel,alignMode); paneMap.edit.left.appendChild(alignModeWrap);
   const alignButton=document.createElement('button'); alignButton.type='button'; alignButton.id='alignSelected'; alignButton.className='wide primary'; alignButton.textContent='⇔ Ausgewählte Objekte ausrichten'; paneMap.edit.left.appendChild(alignButton);
+
+  const groupHeading=document.createElement('h2'); groupHeading.textContent='Objektgruppen'; paneMap.edit.left.appendChild(groupHeading);
+  const groupHelp=document.createElement('p'); groupHelp.className='note'; groupHelp.textContent='Wähle mindestens zwei Objekte aus. Gruppen lassen sich gemeinsam bewegen und bleiben beim Speichern erhalten.'; paneMap.edit.left.appendChild(groupHelp);
+  const groupButton=document.createElement('button'); groupButton.type='button'; groupButton.id='createObjectGroup'; groupButton.className='wide primary'; groupButton.textContent='▣ Auswahl gruppieren'; paneMap.edit.left.appendChild(groupButton);
+  const ungroupButton=document.createElement('button'); ungroupButton.type='button'; ungroupButton.id='ungroupObjects'; ungroupButton.className='wide'; ungroupButton.textContent='▤ Gruppierung aufheben'; paneMap.edit.left.appendChild(ungroupButton);
+  const mirrorHeading=document.createElement('h2'); mirrorHeading.textContent='Spiegeln'; paneMap.edit.left.appendChild(mirrorHeading);
+  const mirrorHelp=document.createElement('p'); mirrorHelp.className='note'; mirrorHelp.textContent='Spiegelt die Form. Bei mehreren Objekten wird die ganze Auswahl an ihrer gemeinsamen Mitte gespiegelt.'; paneMap.edit.left.appendChild(mirrorHelp);
+  const mirrorButtons=document.createElement('div'); mirrorButtons.className='tool-grid';
+  [['x','↔ X'],['y','↕ Y'],['z','⇅ Z']].forEach(([axis,label])=>{const b=document.createElement('button');b.type='button';b.id='mirror'+axis.toUpperCase();b.textContent=label;b.title='Auswahl an der '+axis.toUpperCase()+'-Achse spiegeln';b.addEventListener('click',()=>mirrorSelectedObjects(axis));mirrorButtons.appendChild(b);});
+  paneMap.edit.left.appendChild(mirrorButtons);
   const moveStepWrap=document.createElement('div'); moveStepWrap.className='field';
   const moveStepLabel=document.createElement('label'); moveStepLabel.htmlFor='moveStepMM'; moveStepLabel.textContent='Pfeiltasten-Schritt (mm)';
   const moveStepInput=document.createElement('input'); moveStepInput.id='moveStepMM'; moveStepInput.type='number'; moveStepInput.min='0.1'; moveStepInput.max='100'; moveStepInput.step='0.1'; moveStepInput.value='1'; moveStepInput.title='Bewegung pro Pfeiltastendruck in Millimetern';
@@ -859,6 +869,7 @@ input:focus{outline:1px solid var(--cyan)}
     copy.rotation.copy(source.rotation);
     copy.scale.copy(source.scale);
     copy.userData = JSON.parse(JSON.stringify(source.userData));
+    delete copy.userData.groupId;
     copy.userData.label = source.userData.label || 'Objekt';
     scene.add(copy); objects.push(copy);
     return copy;
@@ -931,6 +942,7 @@ input:focus{outline:1px solid var(--cyan)}
           baseDimensions: obj.userData.baseDimensions || { x: 1, y: 1, z: 1 },
           percent: obj.userData.percent || { x: 100, y: 100, z: 100 },
           locked: obj.userData.locked === true,
+          groupId: typeof obj.userData.groupId === 'string' ? obj.userData.groupId : null,
           geometry: serializeGeometry(obj.geometry)
         }))
       };
@@ -991,7 +1003,8 @@ input:focus{outline:1px solid var(--cyan)}
             percent: item.percent && ['x','y','z'].every(a => Number.isFinite(item.percent[a]))
               ? { x: item.percent.x, y: item.percent.y, z: item.percent.z }
               : { x: scale[0] * 100, y: scale[1] * 100, z: scale[2] * 100 },
-            locked: item.locked === true
+            locked: item.locked === true,
+            groupId: typeof item.groupId === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(item.groupId) ? item.groupId : null
           };
           return mesh;
         });
@@ -1044,7 +1057,7 @@ input:focus{outline:1px solid var(--cyan)}
 
   function selectObject(obj) {
     selected = obj;
-    selectedObjects = obj ? [obj] : [];
+    selectedObjects = obj ? (obj.userData.groupId ? objects.filter(item => item.userData.groupId === obj.userData.groupId) : [obj]) : [];
     updateObjects();
     showProperties();
     updateMoveGizmo();
@@ -1070,8 +1083,10 @@ input:focus{outline:1px solid var(--cyan)}
       btn.onclick = event => {
         if (multiSelectMode || event.ctrlKey || event.metaKey) {
           const current = selectedObjects.slice();
-          const index = current.indexOf(obj);
-          if (index >= 0) current.splice(index, 1); else current.push(obj);
+          const members = obj.userData.groupId ? objects.filter(item => item.userData.groupId === obj.userData.groupId) : [obj];
+          const allSelected = members.every(item => current.includes(item));
+          if (allSelected) members.forEach(item => { const index = current.indexOf(item); if (index >= 0) current.splice(index, 1); });
+          else members.forEach(item => { if (!current.includes(item)) current.push(item); });
           selectedObjects = current;
           selected = current.length ? current[current.length - 1] : null;
           updateObjects(); showProperties(); updateMoveGizmo();
@@ -1143,6 +1158,60 @@ input:focus{outline:1px solid var(--cyan)}
     status.textContent = targets.length + ' Objekte auf Achse ' + axisName + ' ' + modeName + ' ausgerichtet.';
   }
 
+
+  // SILMO v33: Gruppierung bleibt als Metadatum an den Meshes erhalten.
+  // Dadurch bleiben bestehende Auswahl-, Export- und Transformationspfade intakt.
+  function createObjectGroup() {
+    const targets = selectedObjects.length ? selectedObjects.filter(obj => objects.includes(obj)) : (selected ? [selected] : []);
+    if (targets.length < 2) { status.textContent = 'Bitte mindestens zwei Objekte auswählen, um eine Gruppe zu erstellen.'; return; }
+    if (targets.some(obj => obj.userData.locked === true)) { status.textContent = 'Gesperrte Objekte können nicht gruppiert werden. Bitte zuerst entsperren.'; return; }
+    recordHistory();
+    const groupId = 'grp-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+    targets.forEach(obj => { obj.userData.groupId = groupId; });
+    selectedObjects = targets.slice();
+    selected = targets[targets.length - 1];
+    updateObjects(); showProperties(); updateMoveGizmo();
+    status.textContent = targets.length + ' Objekte zu einer Gruppe zusammengefasst.';
+  }
+
+  function ungroupSelectedObjects() {
+    const requested = selectedObjects.length ? selectedObjects.filter(obj => objects.includes(obj)) : (selected ? [selected] : []);
+    const groupIds = new Set(requested.map(obj => obj.userData.groupId).filter(Boolean));
+    if (!groupIds.size) { status.textContent = 'Die Auswahl enthält keine Gruppe.'; return; }
+    const members = objects.filter(obj => groupIds.has(obj.userData.groupId));
+    recordHistory();
+    members.forEach(obj => { delete obj.userData.groupId; });
+    selectedObjects = members;
+    selected = members[members.length - 1] || null;
+    updateObjects(); showProperties(); updateMoveGizmo();
+    status.textContent = 'Gruppierung von ' + members.length + ' Objekten aufgehoben.';
+  }
+
+  function mirrorSelectedObjects(axis) {
+    if (!['x','y','z'].includes(axis)) return;
+    const requested = selectedObjects.length ? selectedObjects.filter(obj => objects.includes(obj)) : (selected ? [selected] : []);
+    const targets = requested.filter(obj => obj.userData.locked !== true);
+    if (!targets.length) {
+      status.textContent = requested.length ? 'Gesperrte Objekte können nicht gespiegelt werden. Bitte zuerst entsperren.' : 'Bitte zuerst ein Objekt auswählen.';
+      return;
+    }
+    const bounds = new THREE.Box3();
+    targets.forEach(obj => { obj.updateMatrixWorld(true); bounds.expandByObject(obj); });
+    const center = new THREE.Vector3();
+    bounds.getCenter(center);
+    recordHistory();
+    targets.forEach(obj => {
+      // Positionen werden um die gemeinsame Mitte gespiegelt; das Vorzeichen der
+      // lokalen Skalierung spiegelt die Form, ohne die Geometrie zu zerstören.
+      obj.position[axis] = center[axis] * 2 - obj.position[axis];
+      obj.scale[axis] *= -1;
+      obj.updateMatrixWorld(true);
+      notifyPositionChanged(obj);
+    });
+    updateObjects(); showProperties(); updateMoveGizmo();
+    status.textContent = targets.length + ' Objekt(e) an der ' + axis.toUpperCase() + '-Achse gespiegelt.';
+  }
+
   const multiSelectToggle = $('multiSelectToggle');
   if (multiSelectToggle) multiSelectToggle.addEventListener('click', () => {
     multiSelectMode = !multiSelectMode;
@@ -1154,6 +1223,8 @@ input:focus{outline:1px solid var(--cyan)}
       : 'Mehrfachauswahl ausgeschaltet.';
   });
   $('alignSelected').addEventListener('click', alignSelectedObjects);
+  $('createObjectGroup').addEventListener('click', createObjectGroup);
+  $('ungroupObjects').addEventListener('click', ungroupSelectedObjects);
 
   function makeInput(parent, labelText, value, step, onChange, options = {}) {
     const wrap = document.createElement('div');
