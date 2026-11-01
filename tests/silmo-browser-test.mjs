@@ -24,7 +24,7 @@ try {
   assert.equal(await page.locator('#objects .object-row').count(), 2, 'Objekte wurden nicht erstellt');
 
   // Ein Objekt versetzen, damit die Ausrichtung tatsächlich etwas verändern muss.
-  await page.locator('[data-tab="measure"]').click();
+  await page.locator('[data-tab="edit"]').click();
   const xField = page.locator('#positionFields input').first();
   await xField.fill('2');
   await xField.press('Enter');
