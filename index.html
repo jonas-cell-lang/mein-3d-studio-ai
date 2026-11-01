@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v27 Entwicklerdiagnose</title>
+<title>SILMO 3D Studio AI – v32 Objektsperre</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
-<link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png">
-<link rel="apple-touch-icon" sizes="512x512" href="./icon-512.png">
+<link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -74,6 +73,13 @@ input:focus{outline:1px solid var(--cyan)}
 .note{font-size:11px;color:var(--muted);line-height:1.55;margin:7px 0 12px}
 #status{font-size:11px;color:var(--green);margin-top:14px;padding:9px 10px;background:#102b28;border:1px solid #23473f;border-radius:8px}
 #objects button{font-size:12px;padding:8px 9px}
+#objects .object-row{display:flex;align-items:stretch;gap:5px;margin:5px 0}
+#objects .object-select{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#objects .object-lock{flex:0 0 44px;min-width:44px;padding:6px;border:1px solid var(--line);border-radius:8px;background:#14243a;color:#dceaff;font-size:17px;cursor:pointer}
+#objects .object-lock.is-locked{border-color:#e6a23c;background:#3a2b18;color:#ffd58a}
+#objects .object-lock:focus-visible,#objects .object-select:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+/* iPad: ausreichend grosse Touch-Ziele für die Objekt-Mehrfachauswahl. */
+.left-panel #objects button,.left-panel #multiSelectToggle{min-height:44px;touch-action:manipulation}
 .object-empty{font-size:12px;color:#7f93ad;padding:8px 0}
 .tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .tool-grid button{font-size:12px}
@@ -101,7 +107,7 @@ input:focus{outline:1px solid var(--cyan)}
 @media(max-width:680px){#tutorialCard{left:12px;right:12px;width:auto}.header-actions button{min-height:36px}.tutorial-highlight{outline-width:3px;outline-offset:2px}}
 
 
-/* SILMO v28: Ausrichtungswerkzeuge + Entwickler-Diagnose – per F9 oder Strg+Umschalt+D ein-/ausblenden */
+/* SILMO v28: Ausrichtungswerkzeuge + Entwickler-Diagnose – per F9 oder Cmd/Strg+Umschalt+D ein-/ausblenden */
 #silmoDiagToggle{border:1px solid #d6a64a!important;background:#3b2d14!important;color:#ffe3a0!important}
 #silmoDiagPanel{position:fixed;z-index:20000;inset:7vh 4vw auto auto;width:min(680px,92vw);max-height:86vh;display:flex;flex-direction:column;background:#091321;border:1px solid #d6a64a;border-radius:14px;box-shadow:0 20px 70px #000c;color:#edf4ff;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}
 #silmoDiagPanel[hidden]{display:none!important}
@@ -117,7 +123,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v28 – Ausrichtungswerkzeuge auf Basis v27 -->
+<!-- SILMO BUILD: v29 – iPad-Tastatur und Touch-Mehrfachauswahl auf Basis v28 -->
 <script id="silmoDeveloperDiagnostics">
 /* Entwicklermodus: unabhängige Fehlererfassung, standardmäßig eingeklappt. Entfernen: diesen Scriptblock und den CSS-Block #silmoDiagToggle/#silmoDiagPanel löschen. */
 (function(){
@@ -139,7 +145,7 @@ input:focus{outline:1px solid var(--cyan)}
   function renderLog(){
     if(!logEl) return;
     logEl.textContent = entries.length ? entries.map((e,i)=>String(i+1).padStart(3,'0')+' ['+e.time+'] '+e.type+'\n'+e.message).join('\n\n') : 'Noch keine Fehler oder Ereignisse erfasst. Öffne die Diagnose und reproduziere den Fehler.';
-    if(summaryEl) summaryEl.textContent='Einträge: '+entries.length+' · Seit: '+startedAt.toLocaleTimeString('de-CH',{hour12:false})+' · Taste F9 oder Strg+Umschalt+D';
+    if(summaryEl) summaryEl.textContent='Einträge: '+entries.length+' · Seit: '+startedAt.toLocaleTimeString('de-CH',{hour12:false})+' · Taste F9 oder Cmd/Strg+Umschalt+D';
   }
   // Capture uncaught JS errors immediately, before the main app scripts execute.
   window.addEventListener('error',function(e){
@@ -193,21 +199,21 @@ input:focus{outline:1px solid var(--cyan)}
   function createUI(){
     if(document.getElementById('silmoDiagPanel'))return;
     const actions=document.querySelector('.header-actions');
-    openButton=document.createElement('button');openButton.id='silmoDiagToggle';openButton.type='button';openButton.textContent='🛠 Diagnose (F9)';openButton.title='Fehlerdiagnose öffnen (F9 oder Strg+Umschalt+D)';
+    openButton=document.createElement('button');openButton.id='silmoDiagToggle';openButton.type='button';openButton.textContent='🛠 Diagnose (F9)';openButton.title='Fehlerdiagnose öffnen (F9 oder Cmd/Strg+Umschalt+D)';
     openButton.addEventListener('click',toggle);
     if(actions) actions.insertBefore(openButton,actions.firstChild); else {openButton.style.position='fixed';openButton.style.right='10px';openButton.style.top='10px';openButton.style.zIndex='19999';document.body.appendChild(openButton);}
     panel=document.createElement('section');panel.id='silmoDiagPanel';panel.hidden=true;panel.setAttribute('aria-label','SILMO Fehlerdiagnose');
-    panel.innerHTML='<div class="sd-head"><span>🛠 SILMO – Entwicklerdiagnose</span><button type="button" data-sd="close" aria-label="Diagnose schliessen">Schliessen ✕</button></div><div class="sd-summary" id="silmoDiagSummary"></div><div class="sd-actions"><button type="button" data-sd="snapshot">Status erfassen</button><button type="button" data-sd="copy">Bericht kopieren</button><button type="button" data-sd="download">Bericht herunterladen</button><button type="button" data-sd="clear">Protokoll leeren</button></div><pre id="silmoDiagLog" aria-live="polite"></pre><div class="sd-foot">Öffnen/Schliessen: F9 oder Strg+Umschalt+D. Fehler werden lokal im aktuellen Browserfenster protokolliert.</div>';
+    panel.innerHTML='<div class="sd-head"><span>🛠 SILMO – Entwicklerdiagnose</span><button type="button" data-sd="close" aria-label="Diagnose schliessen">Schliessen ✕</button></div><div class="sd-summary" id="silmoDiagSummary"></div><div class="sd-actions"><button type="button" data-sd="snapshot">Status erfassen</button><button type="button" data-sd="copy">Bericht kopieren</button><button type="button" data-sd="download">Bericht herunterladen</button><button type="button" data-sd="clear">Protokoll leeren</button></div><pre id="silmoDiagLog" aria-live="polite"></pre><div class="sd-foot">Öffnen/Schliessen: F9 oder Cmd/Strg+Umschalt+D. Fehler werden lokal im aktuellen Browserfenster protokolliert.</div>';
     document.body.appendChild(panel);logEl=panel.querySelector('#silmoDiagLog');summaryEl=panel.querySelector('#silmoDiagSummary');
     panel.addEventListener('click',function(e){const b=e.target.closest('button[data-sd]');if(!b)return;switch(b.dataset.sd){case'close':toggle(false);break;case'snapshot':add('STATUS-SNAPSHOT',snapshot().split('Fehler-/Ereignisprotokoll:')[0]);break;case'copy':copyReport();break;case'download':downloadReport();break;case'clear':entries.length=0;renderLog();add('DIAGNOSE','Protokoll wurde manuell geleert.');break;}});
-    renderLog();add('START','Diagnose aktiv. Öffne sie mit F9 oder Strg+Umschalt+D.');
+    renderLog();add('START','Diagnose aktiv. Öffne sie mit F9 oder Cmd/Strg+Umschalt+D.');
     setTimeout(()=>{const missing=['#viewport','#status','#objects','#tutorialLaunch'].filter(sel=>!document.querySelector(sel));if(missing.length)add('APP-STRUKTUR','Nicht gefundene Elemente: '+missing.join(', '));},1500);
   }
   function toggle(force){if(!panel)return;const show=typeof force==='boolean'?force:panel.hidden;panel.hidden=!show;if(show){add('STATUS-SNAPSHOT',snapshot().split('Fehler-/Ereignisprotokoll:')[0]);}}
-  document.addEventListener('keydown',function(e){if(e.key==='F9'||(e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==='d')){e.preventDefault();toggle();}});
+  document.addEventListener('keydown',function(e){if(e.key==='F9'||((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key.toLowerCase()==='d')){e.preventDefault();toggle();}});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',createUI,{once:true});else createUI();
   // Public helper for a developer console: window.SILMO_DIAG.report()
-  window.SILMO_DIAG={report:snapshot,log:(label,value)=>add(String(label||'MANUELL'),safeString(value)),open:()=>toggle(true),close:()=>toggle(false),clear:()=>{entries.length=0;renderLog();},version:'v27'};
+  window.SILMO_DIAG={report:snapshot,log:(label,value)=>add(String(label||'MANUELL'),safeString(value)),open:()=>toggle(true),close:()=>toggle(false),clear:()=>{entries.length=0;renderLog();},version:'v29'};
 })();
 </script>
 <header>
@@ -258,7 +264,7 @@ input:focus{outline:1px solid var(--cyan)}
   </aside>
   <section id="viewport">
     <button id="expandViewport" type="button" aria-label="3D-Ansicht maximieren">⛶</button>
-    <div class="viewport-label">3D-Ansicht <span style="color:#6ee7f9">●</span> · Kamera frei</div><div id="hint"><strong>Bedienung</strong><br>Pfeile am Objekt ziehen: X / Y / Z verschieben<br>Objektkörper ziehen: in X/Y verschieben<br>Freie Fläche ziehen: Ansicht drehen<br>Maus rechts ziehen oder Shift + Ziehen: Kamera drehen<br>Touch: freie Fläche ziehen, auf Modell ziehen zum Verschieben<br>Scrollrad: zoomen<br>Strg+S: Projekt speichern · Strg+O: Projekt öffnen</div>
+    <div class="viewport-label">3D-Ansicht <span style="color:#6ee7f9">●</span> · Kamera frei</div><div id="hint"><strong>Bedienung</strong><br>Pfeile am Objekt ziehen: X / Y / Z verschieben<br>Objektkörper ziehen: in X/Y verschieben<br>Freie Fläche ziehen: Ansicht drehen<br>Maus rechts ziehen oder Shift + Ziehen: Kamera drehen<br>Touch: freie Fläche ziehen, auf Modell ziehen zum Verschieben<br>Scrollrad: zoomen<br>Strg/Cmd+S: Projekt speichern · Strg/Cmd+O: Projekt öffnen</div>
   </section>
   <aside class="right-panel" aria-label="Eigenschaften des ausgewählten Modells">
     <h2>Position</h2><div id="positionFields"></div>
@@ -700,6 +706,10 @@ input:focus{outline:1px solid var(--cyan)}
   }
   function runBooleanOperation(operation) {
     const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    if (targets.some(obj => obj.userData.locked === true)) {
+      status.textContent = 'Gesperrte Objekte können nicht mit Booleschen Werkzeugen verändert werden. Bitte zuerst entsperren.';
+      return;
+    }
     if (targets.length < 2) {
       status.textContent = 'Bitte mindestens zwei Objekte auswählen (Strg-Klick in der Objektliste).';
       return;
@@ -920,6 +930,7 @@ input:focus{outline:1px solid var(--cyan)}
           color: '#' + obj.material.color.getHexString(),
           baseDimensions: obj.userData.baseDimensions || { x: 1, y: 1, z: 1 },
           percent: obj.userData.percent || { x: 100, y: 100, z: 100 },
+          locked: obj.userData.locked === true,
           geometry: serializeGeometry(obj.geometry)
         }))
       };
@@ -979,7 +990,8 @@ input:focus{outline:1px solid var(--cyan)}
               : { x: measured.x, y: measured.y, z: measured.z },
             percent: item.percent && ['x','y','z'].every(a => Number.isFinite(item.percent[a]))
               ? { x: item.percent.x, y: item.percent.y, z: item.percent.z }
-              : { x: scale[0] * 100, y: scale[1] * 100, z: scale[2] * 100 }
+              : { x: scale[0] * 100, y: scale[1] * 100, z: scale[2] * 100 },
+            locked: item.locked === true
           };
           return mesh;
         });
@@ -1048,9 +1060,13 @@ input:focus{outline:1px solid var(--cyan)}
       list.appendChild(empty);
     }
     objects.forEach(obj => {
+      const row = document.createElement('div');
+      row.className = 'object-row';
       const btn = document.createElement('button');
-      btn.className = 'wide' + (selectedObjects.includes(obj) || obj === selected ? ' active' : '');
-      btn.textContent = obj.userData.label;
+      btn.type = 'button';
+      btn.className = 'wide object-select' + (selectedObjects.includes(obj) || obj === selected ? ' active' : '');
+      btn.textContent = obj.userData.label || 'Objekt';
+      btn.setAttribute('aria-pressed', String(selectedObjects.includes(obj) || obj === selected));
       btn.onclick = event => {
         if (multiSelectMode || event.ctrlKey || event.metaKey) {
           const current = selectedObjects.slice();
@@ -1062,15 +1078,34 @@ input:focus{outline:1px solid var(--cyan)}
           status.textContent = current.length + ' Objekt(e) ausgewählt';
         } else selectObject(obj);
       };
-      list.appendChild(btn);
+      const lockButton = document.createElement('button');
+      lockButton.type = 'button';
+      const locked = obj.userData.locked === true;
+      lockButton.className = 'object-lock' + (locked ? ' is-locked' : '');
+      lockButton.textContent = locked ? '🔒' : '🔓';
+      lockButton.title = locked ? 'Objekt entsperren' : 'Objekt sperren';
+      lockButton.setAttribute('aria-label', lockButton.title + ': ' + (obj.userData.label || 'Objekt'));
+      lockButton.setAttribute('aria-pressed', String(locked));
+      lockButton.onclick = event => {
+        event.stopPropagation();
+        recordHistory();
+        obj.userData.locked = !locked;
+        updateObjects();
+        showProperties();
+        updateMoveGizmo();
+        status.textContent = obj.userData.locked ? 'Objekt gesperrt: ' + (obj.userData.label || 'Objekt') : 'Objekt entsperrt: ' + (obj.userData.label || 'Objekt');
+      };
+      row.append(btn, lockButton);
+      list.appendChild(row);
     });
   }
 
   // SILMO v28: Weltachsen-Ausrichtung mehrerer ausgewählter Meshes.
   function alignSelectedObjects() {
-    const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    const requested = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    const targets = requested.filter(obj => obj.userData.locked !== true);
     if (targets.length < 2) {
-      status.textContent = 'Bitte mindestens zwei Objekte auswählen.';
+      status.textContent = 'Bitte mindestens zwei entsperrte Objekte auswählen.';
       return;
     }
     const axis = $('alignAxis').value;
@@ -1148,7 +1183,7 @@ input:focus{outline:1px solid var(--cyan)}
   }
 
   function applySizeAxis(axis, newMM) {
-    if (!selected) return;
+    if (!selected || selected.userData.locked === true) return;
     if (!Number.isFinite(newMM) || newMM < 0.1 || newMM > 2000) {
       status.textContent = 'Masse müssen zwischen 0,1 und 2000 mm liegen.';
       showProperties();
@@ -1190,7 +1225,7 @@ input:focus{outline:1px solid var(--cyan)}
   }
 
   function applyPercentAxis(axis, percent) {
-    if (!selected) return;
+    if (!selected || selected.userData.locked === true) return;
     if (!Number.isFinite(percent) || percent < 1 || percent > 2000) {
       status.textContent = 'Skalierung muss zwischen 1 % und 2000 % liegen.';
       showProperties();
@@ -1224,15 +1259,30 @@ input:focus{outline:1px solid var(--cyan)}
     status.textContent = 'Skalierung angepasst.';
   }
 
+  function getSelectedTargets() {
+    const targets = selectedObjects.filter(obj => objects.includes(obj) && obj.userData.locked !== true);
+    if (targets.length) return targets;
+    return selected && objects.includes(selected) && selected.userData.locked !== true ? [selected] : [];
+  }
+
+  function getSelectionCenter(targets = getSelectedTargets()) {
+    if (!targets.length) return new THREE.Vector3();
+    const center = new THREE.Vector3();
+    targets.forEach(obj => center.add(obj.position));
+    return center.multiplyScalar(1 / targets.length);
+  }
+
   function updateMoveGizmo() {
     if (moveGizmo) {
       scene.remove(moveGizmo);
       moveGizmo.traverse(part => { if (part.geometry) part.geometry.dispose(); if (part.material) part.material.dispose(); });
       moveGizmo = null;
     }
-    if (!selected) return;
+    const targets = getSelectedTargets();
+    if (!targets.length) return;
     moveGizmo = new THREE.Group();
-    const box = new THREE.Box3().setFromObject(selected);
+    const box = new THREE.Box3();
+    targets.forEach(obj => { obj.updateMatrixWorld(true); box.union(new THREE.Box3().setFromObject(obj)); });
     const size = new THREE.Vector3(); box.getSize(size);
     const length = Math.max(0.7, Math.min(2.5, Math.max(size.x, size.y, size.z) * 1.25));
     // Alle drei Bewegungsachsen sind sichtbar: X = rot, Y = grün, Z = blau.
@@ -1248,7 +1298,7 @@ input:focus{outline:1px solid var(--cyan)}
       arrow.cone.userData.axis = axis.name;
       moveGizmo.add(arrow);
     });
-    moveGizmo.position.copy(selected.position);
+    moveGizmo.position.copy(getSelectionCenter(targets));
     moveGizmo.userData.isMoveGizmo = true;
     scene.add(moveGizmo);
   }
@@ -1278,11 +1328,16 @@ input:focus{outline:1px solid var(--cyan)}
 
     if (!selected) {
       color.disabled = true;
+      $('scaleLock').disabled = true;
       return;
     }
 
     const obj = selected;
-    color.disabled = false;
+    const objectLocked = obj.userData.locked === true;
+    color.disabled = objectLocked;
+    $('scaleLock').disabled = objectLocked;
+    if (objectLocked) color.title = 'Objekt ist gesperrt. Zum Bearbeiten zuerst entsperren.';
+    else color.removeAttribute('title');
     color.value = '#' + obj.material.color.getHexString();
 
     // Position X/Y zeigen die Objektmitte; Position Z zeigt die Unterseite auf dem Druckbett.
@@ -1290,9 +1345,9 @@ input:focus{outline:1px solid var(--cyan)}
       const displayedValue = axis === 'z'
         ? obj.position.z - obj.userData.baseDimensions.z * obj.scale.z / 2
         : obj.position[axis];
-      makeInput($('positionFields'), 'Position ' + axis.toUpperCase(),
+      const field = makeInput($('positionFields'), 'Position ' + axis.toUpperCase(),
         displayedValue, 0.01, value => {
-          if (!Number.isFinite(value)) return;
+          if (obj.userData.locked === true || !Number.isFinite(value)) return;
           if (axis === 'z') {
             obj.position.z = value + obj.userData.baseDimensions.z * obj.scale.z / 2;
           } else {
@@ -1306,8 +1361,8 @@ input:focus{outline:1px solid var(--cyan)}
 
     const dimensionLabels = { x: 'Breite X (mm)', y: 'Tiefe Y (mm)', z: 'Höhe Z (mm)' };
     ['x', 'y', 'z'].forEach(axis => {
-      makeInput($('sizeFields'), dimensionLabels[axis],
-        currentSizeMM(obj, axis), 0.1, value => applySizeAxis(axis, value), {
+      const field = makeInput($('sizeFields'), dimensionLabels[axis],
+        currentSizeMM(obj, axis), 0.1, value => { if (obj.userData.locked !== true) applySizeAxis(axis, value); }, {
           min: 0.1,
           max: 2000,
           title: 'Masse in Millimetern. Erlaubt sind 0,1 bis 2000 mm.'
@@ -1316,12 +1371,18 @@ input:focus{outline:1px solid var(--cyan)}
 
     ['x', 'y', 'z'].forEach(axis => {
       makeInput($('percentFields'), 'Skalierung ' + axis.toUpperCase() + ' (%)',
-        obj.userData.percent[axis], 0.01, value => applyPercentAxis(axis, value));
+        obj.userData.percent[axis], 0.01, value => { if (obj.userData.locked !== true) applyPercentAxis(axis, value); });
     });
 
     $('scaleLock').classList.toggle('active', uniform);
     $('scaleLock').textContent = uniform ? '🔒 Einheitlich: EIN' : '🔓 Einheitlich: AUS';
     $('scaleLock').setAttribute('aria-pressed', String(uniform));
+    ['positionFields','sizeFields','percentFields'].forEach(id => {
+      $(id).querySelectorAll('input').forEach(input => {
+        input.disabled = objectLocked;
+        if (objectLocked) input.title = 'Objekt ist gesperrt. Zum Bearbeiten zuerst entsperren.';
+      });
+    });
     updateMoveGizmo();
   }
 
@@ -1335,7 +1396,7 @@ input:focus{outline:1px solid var(--cyan)}
 
   $('color').addEventListener('focus', () => recordHistory());
   $('color').addEventListener('input', () => {
-    if (selected) selected.material.color.set($('color').value);
+    if (selected && selected.userData.locked !== true) selected.material.color.set($('color').value);
   });
 
   $('addCube').onclick = () => createObject('Würfel');
@@ -1472,9 +1533,10 @@ input:focus{outline:1px solid var(--cyan)}
   };
 
   $('dropToBed').onclick = () => {
-    const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    const requested = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    const targets = requested.filter(obj => obj.userData.locked !== true);
     if (!targets.length) {
-      status.textContent = 'Bitte zuerst mindestens ein Objekt auswählen';
+      status.textContent = requested.length ? 'Alle ausgewählten Objekte sind gesperrt.' : 'Bitte zuerst mindestens ein Objekt auswählen';
       return;
     }
     // Einen gemeinsamen Undo-Schritt für alle ausgewählten Objekte anlegen.
@@ -1488,9 +1550,9 @@ input:focus{outline:1px solid var(--cyan)}
     });
     showProperties();
     updateMoveGizmo();
-    status.textContent = targets.length === 1
+    status.textContent = (targets.length === 1
       ? 'Objekt auf die Arbeitsplatte gestellt'
-      : targets.length + ' Objekte auf die Arbeitsplatte gestellt';
+      : targets.length + ' Objekte auf die Arbeitsplatte gestellt') + (requested.length > targets.length ? '; gesperrte Objekte unverändert' : '');
   };
 
   $('booleanUnion').addEventListener('click', () => runBooleanOperation('union'));
@@ -1512,6 +1574,8 @@ input:focus{outline:1px solid var(--cyan)}
   const dragPoint = new THREE.Vector3();
   let dragging = false, rotatingView = false, draggingObject = false;
   let lastX = 0, lastY = 0, pointerId = null;
+  let dragTargets = [];
+  let dragStartPositions = [];
 
   function setPointerRay(e) {
     const rect = canvas.getBoundingClientRect();
@@ -1549,25 +1613,43 @@ input:focus{outline:1px solid var(--cyan)}
       const gizmoHits = moveGizmo ? raycaster.intersectObjects(moveGizmo.children, true) : [];
       const axisHit = gizmoHits.find(hit => hit.object.userData.axis || (hit.object.parent && hit.object.parent.userData.axis));
       const hits = raycaster.intersectObjects(objects, false);
-      if (axisHit && selected) {
+      if (axisHit && selected && getSelectedTargets().length) {
         const hitObject = axisHit.object;
         activeAxis = hitObject.userData.axis || hitObject.parent.userData.axis;
+        dragTargets = getSelectedTargets();
+        dragStartPositions = dragTargets.map(obj => obj.position.clone());
+        recordHistory();
         draggingObject = false;
         rotatingView = false;
-        axisDragStart.copy(selected.position);
-        objectDragStart.copy(selected.position);
+        axisDragStart.copy(getSelectionCenter(dragTargets));
+        objectDragStart.copy(axisDragStart);
         const direction = activeAxis === 'x' ? new THREE.Vector3(1,0,0) : activeAxis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
-        axisStartParameter = closestAxisParameter(raycaster.ray, selected.position, direction);
+        axisStartParameter = closestAxisParameter(raycaster.ray, axisDragStart, direction);
         canvas.style.cursor = 'grabbing';
       } else if (hits.length) {
-        selectObject(hits[0].object);
+        const hitObject = hits[0].object;
+        if (hitObject.userData.locked === true) {
+          selectObject(hitObject);
+          draggingObject = false;
+          rotatingView = false;
+          activeAxis = null;
+          canvas.style.cursor = 'not-allowed';
+          status.textContent = 'Objekt ist gesperrt. Zum Verschieben zuerst entsperren.';
+        } else {
+        if (!selectedObjects.includes(hitObject)) selectObject(hitObject);
+        else { selected = hitObject; updateObjects(); showProperties(); updateMoveGizmo(); }
+        dragTargets = getSelectedTargets();
+        dragStartPositions = dragTargets.map(obj => obj.position.clone());
+        recordHistory();
         draggingObject = true;
         rotatingView = false;
         activeAxis = null;
-        dragPlane.set(new THREE.Vector3(0, 0, 1), -selected.position.z);
-        if (raycaster.ray.intersectPlane(dragPlane, dragPoint)) dragOffset.copy(selected.position).sub(dragPoint);
+        const center = getSelectionCenter(dragTargets);
+        dragPlane.set(new THREE.Vector3(0, 0, 1), -center.z);
+        if (raycaster.ray.intersectPlane(dragPlane, dragPoint)) dragOffset.copy(center).sub(dragPoint);
         else dragOffset.set(0, 0, 0);
         canvas.style.cursor = 'grabbing';
+        }
       } else {
         draggingObject = false;
         rotatingView = true;
@@ -1584,16 +1666,24 @@ input:focus{outline:1px solid var(--cyan)}
       setPointerRay(e);
       const direction = activeAxis === 'x' ? new THREE.Vector3(1,0,0) : activeAxis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
       const parameter = closestAxisParameter(raycaster.ray, axisDragStart, direction);
-      selected.position.copy(objectDragStart).addScaledVector(direction, parameter - axisStartParameter);
+      const delta = parameter - axisStartParameter;
+      dragTargets.forEach((obj, index) => {
+        obj.position.copy(dragStartPositions[index]).addScaledVector(direction, delta);
+        notifyPositionChanged(obj);
+      });
       showProperties();
-      notifyPositionChanged(selected);
+      updateMoveGizmo();
     } else if (draggingObject && selected) {
       setPointerRay(e);
       if (raycaster.ray.intersectPlane(dragPlane, dragPoint)) {
-        selected.position.x = dragPoint.x + dragOffset.x;
-        selected.position.y = dragPoint.y + dragOffset.y;
+        const center = dragPoint.clone().add(dragOffset);
+        const delta = center.sub(getSelectionCenter(dragStartPositions.map((position, index) => ({position}))));
+        dragTargets.forEach((obj, index) => {
+          obj.position.copy(dragStartPositions[index]).add(delta);
+          notifyPositionChanged(obj);
+        });
         showProperties();
-        notifyPositionChanged(selected);
+        updateMoveGizmo();
       }
     } else if (rotatingView) {
       targetRY += (e.clientX - lastX) * 0.006;
@@ -1610,6 +1700,8 @@ input:focus{outline:1px solid var(--cyan)}
     draggingObject = false;
     activeAxis = null;
     pointerId = null;
+    dragTargets = [];
+    dragStartPositions = [];
     canvas.style.cursor = 'grab';
   }
   canvas.addEventListener('pointerup', stopDrag);
@@ -1634,7 +1726,7 @@ input:focus{outline:1px solid var(--cyan)}
       focus.z + distance * Math.sin(rx)
     );
     camera.lookAt(focus);
-    if (moveGizmo && selected) moveGizmo.position.copy(selected.position);
+    if (moveGizmo && getSelectedTargets().length) moveGizmo.position.copy(getSelectionCenter());
     try {
       renderer.render(scene, camera);
     } catch (error) {
@@ -1758,8 +1850,12 @@ input:focus{outline:1px solid var(--cyan)}
     return target && (target.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(target.tagName));
   }
   function deleteSelectedObjects() {
-    const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
-    if (!targets.length) return;
+    const requested = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    const targets = requested.filter(obj => obj.userData.locked !== true);
+    if (!targets.length) {
+      status.textContent = requested.length ? 'Gesperrte Objekte können nicht gelöscht werden. Bitte zuerst entsperren.' : 'Bitte zuerst ein Objekt auswählen.';
+      return;
+    }
     recordHistory();
     targets.forEach(obj => {
       const idx = objects.indexOf(obj);
@@ -1769,13 +1865,25 @@ input:focus{outline:1px solid var(--cyan)}
       if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
       else obj.material.dispose();
     });
-    selectedObjects = [];
-    selected = null;
+    selectedObjects = selectedObjects.filter(obj => objects.includes(obj));
+    selected = selectedObjects.length ? selectedObjects[selectedObjects.length - 1] : null;
     updateObjects(); showProperties(); updateMoveGizmo();
-    status.textContent = 'Ausgewählte Objekte gelöscht';
+    status.textContent = targets.length + ' Objekt(e) gelöscht' + (requested.length > targets.length ? '; gesperrte Objekte blieben erhalten' : '');
   }
+  function duplicateSelectedObjects() {
+    const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    if (!targets.length) return false;
+    recordHistory();
+    selectedObjects = targets.map(obj => cloneObject(obj, 0.3));
+    selected = selectedObjects[selectedObjects.length - 1] || null;
+    updateObjects(); showProperties(); updateMoveGizmo();
+    status.textContent = selectedObjects.length + ' Objekt(e) dupliziert';
+    return true;
+  }
+  // Eingabefelder behalten ihre native Textauswahl (insbesondere Cmd+A auf iPad).
   // Capture the shortcut before the browser can select all page text.
   document.addEventListener('keydown', e => {
+    if (isTypingTarget(e.target)) return;
     const mod = e.ctrlKey || e.metaKey;
     const key = String(e.key || '').toLowerCase();
 
@@ -1792,7 +1900,12 @@ input:focus{outline:1px solid var(--cyan)}
       return;
     }
 
-    if (isTypingTarget(e.target)) return;
+    // Cmd+Shift+D ist für die Diagnose reserviert und wird dort verarbeitet.
+    if (mod && e.shiftKey && key === 'd') return;
+    if (mod && key === 'd') {
+      if (duplicateSelectedObjects()) e.preventDefault();
+      return;
+    }
     if (mod && key === 'z') {
       e.preventDefault(); undo(); return;
     }
@@ -1842,14 +1955,17 @@ input:focus{outline:1px solid var(--cyan)}
       return;
     }
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key) && selected) {
-      e.preventDefault(); recordHistory();
+      e.preventDefault();
+      const targets = getSelectedTargets();
+      if (!targets.length) { status.textContent = 'Kein verschiebbares Objekt ausgewählt (gesperrt oder keine Auswahl).'; return; }
+      recordHistory();
       const stepMM = Number(document.getElementById('moveStepMM')?.value);
       const step = (Number.isFinite(stepMM) && stepMM > 0 ? stepMM : 1) / MM_PER_UNIT * (e.shiftKey ? 10 : 1);
-      if (e.key === 'ArrowLeft') selected.position.x -= step;
-      if (e.key === 'ArrowRight') selected.position.x += step;
-      if (e.key === 'ArrowUp') selected.position.y += step;
-      if (e.key === 'ArrowDown') selected.position.y -= step;
+      const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+      const dy = e.key === 'ArrowUp' ? step : e.key === 'ArrowDown' ? -step : 0;
+      targets.forEach(obj => { obj.position.x += dx; obj.position.y += dy; notifyPositionChanged(obj); });
       showProperties(); updateMoveGizmo();
+      status.textContent = targets.length > 1 ? targets.length + ' Objekte gemeinsam verschoben' : 'Objekt verschoben';
     }
   }, true);
   // Ctrl + mouse wheel zooms the camera; ordinary wheel is also supported.
