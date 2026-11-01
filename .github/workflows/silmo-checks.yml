@@ -6,6 +6,7 @@ on:
       - development/v30-pwa-ipad-polish
       - development/v29-ipad
       - development/v31-multi-object-move
+      - development/v32-object-lock
   pull_request:
     branches:
       - main
@@ -97,5 +98,24 @@ jobs:
           missing = [item for item in required_group_move if item not in html]
           if missing:
               raise SystemExit("Gruppenverschiebung unvollständig: " + ", ".join(missing))
-          print("Manifest, App-Symbole, HTML-IDs und Gruppenverschiebung sind statisch geprüft.")
+          required_group_move = [
+              "function getSelectedTargets()",
+              "function getSelectionCenter(",
+              "dragTargets.forEach((obj, index)",
+              "targets.forEach(obj => { obj.position.x += dx; obj.position.y += dy; notifyPositionChanged(obj); });",
+          ]
+          missing = [item for item in required_group_move if item not in html]
+          if missing:
+              raise SystemExit("Gruppenverschiebung unvollständig: " + ", ".join(missing))
+          required_lock_features = [
+              "obj.userData.locked = !locked",
+              "locked: obj.userData.locked === true",
+              "locked: item.locked === true",
+              "Gesperrte Objekte können nicht gelöscht werden",
+              "Objekt ist gesperrt. Zum Verschieben zuerst entsperren.",
+          ]
+          missing = [item for item in required_lock_features if item not in html]
+          if missing:
+              raise SystemExit("Objektsperre unvollständig: " + ", ".join(missing))
+          print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung und Objektsperre sind statisch geprüft.")
           PY
