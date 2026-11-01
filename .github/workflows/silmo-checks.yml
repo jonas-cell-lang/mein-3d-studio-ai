@@ -5,6 +5,7 @@ on:
     branches:
       - development/v30-pwa-ipad-polish
       - development/v29-ipad
+      - development/v31-multi-object-move
   pull_request:
     branches:
       - main
@@ -87,5 +88,14 @@ jobs:
           for asset in ("silmo-icon.svg", "icon-512.png", "manifest.webmanifest"):
               if not Path(asset).is_file():
                   raise SystemExit(f"Fehlende App-Datei: {asset}")
-          print("Manifest, App-Symbole und HTML-IDs sind in Ordnung.")
+          required_group_move = [
+              "function getSelectedTargets()",
+              "function getSelectionCenter(",
+              "dragTargets.forEach((obj, index)",
+              "targets.forEach(obj => { obj.position.x += dx; obj.position.y += dy; notifyPositionChanged(obj); });",
+          ]
+          missing = [item for item in required_group_move if item not in html]
+          if missing:
+              raise SystemExit("Gruppenverschiebung unvollständig: " + ", ".join(missing))
+          print("Manifest, App-Symbole, HTML-IDs und Gruppenverschiebung sind statisch geprüft.")
           PY
