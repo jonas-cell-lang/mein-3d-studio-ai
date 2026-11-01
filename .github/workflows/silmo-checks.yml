@@ -127,9 +127,7 @@ jobs:
               "groupId: typeof item.groupId === 'string'",
               "id='createObjectGroup'",
               "id='ungroupObjects'",
-              "id='mirrorX'",
-              "id='mirrorY'",
-              "id='mirrorZ'",
+              "b.id='mirror'+axis.toUpperCase()",
           ]
           missing = [item for item in required_group_mirror if item not in html]
           if missing:
