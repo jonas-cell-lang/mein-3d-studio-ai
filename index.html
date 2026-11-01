@@ -575,7 +575,7 @@ input:focus{outline:1px solid var(--cyan)}
 
   function originalSize(obj) { return obj.userData.baseDimensions; }
   function currentSizeMM(obj, axis) {
-    return originalSize(obj)[axis] * obj.scale[axis] * MM_PER_UNIT;
+    return originalSize(obj)[axis] * Math.abs(obj.scale[axis]) * MM_PER_UNIT;
   }
 
   // Robuste polygonbasierte CSG-Operationen (BSP), ohne zusätzliche Bibliothek.
@@ -1279,11 +1279,11 @@ input:focus{outline:1px solid var(--cyan)}
       const factor = newMM / oldMM;
       ['x', 'y', 'z'].forEach(a => {
         obj.scale[a] *= factor;
-        obj.userData.percent[a] = obj.scale[a] * 100;
+        obj.userData.percent[a] = Math.abs(obj.scale[a]) * 100;
       });
     } else {
-      obj.scale[axis] = newMM / (base[axis] * MM_PER_UNIT);
-      obj.userData.percent[axis] = obj.scale[axis] * 100;
+      obj.scale[axis] = Math.sign(obj.scale[axis] || 1) * newMM / (base[axis] * MM_PER_UNIT);
+      obj.userData.percent[axis] = Math.abs(obj.scale[axis]) * 100;
     }
 
     obj.updateMatrixWorld(true);
@@ -1316,11 +1316,11 @@ input:focus{outline:1px solid var(--cyan)}
       const factor = percent / oldPercent;
       ['x', 'y', 'z'].forEach(a => {
         obj.userData.percent[a] *= factor;
-        obj.scale[a] = obj.userData.percent[a] / 100;
+        obj.scale[a] = Math.sign(obj.scale[a] || 1) * obj.userData.percent[a] / 100;
       });
     } else {
       obj.userData.percent[axis] = percent;
-      obj.scale[axis] = percent / 100;
+      obj.scale[axis] = Math.sign(obj.scale[axis] || 1) * percent / 100;
     }
     obj.updateMatrixWorld(true);
     const afterBounds = new THREE.Box3().setFromObject(obj);
@@ -1414,13 +1414,13 @@ input:focus{outline:1px solid var(--cyan)}
     // Position X/Y zeigen die Objektmitte; Position Z zeigt die Unterseite auf dem Druckbett.
     ['x', 'y', 'z'].forEach(axis => {
       const displayedValue = axis === 'z'
-        ? obj.position.z - obj.userData.baseDimensions.z * obj.scale.z / 2
+        ? obj.position.z - obj.userData.baseDimensions.z * Math.abs(obj.scale.z) / 2
         : obj.position[axis];
       const field = makeInput($('positionFields'), 'Position ' + axis.toUpperCase(),
         displayedValue, 0.01, value => {
           if (obj.userData.locked === true || !Number.isFinite(value)) return;
           if (axis === 'z') {
-            obj.position.z = value + obj.userData.baseDimensions.z * obj.scale.z / 2;
+            obj.position.z = value + obj.userData.baseDimensions.z * Math.abs(obj.scale.z) / 2;
           } else {
             obj.position[axis] = value;
           }
@@ -2004,6 +2004,7 @@ input:focus{outline:1px solid var(--cyan)}
         copy.position.copy(item.position); copy.position.x += 0.3;
         copy.rotation.copy(item.rotation); copy.scale.copy(item.scale);
         copy.userData = JSON.parse(JSON.stringify(item.userData));
+        delete copy.userData.groupId;
         copy.userData.label = copy.userData.label || 'Objekt';
         scene.add(copy); objects.push(copy); return copy;
       });
