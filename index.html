@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI</title>
+<title>SILMO 3D Studio AI – v27 Entwicklerdiagnose</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png">
 <link rel="apple-touch-icon" sizes="512x512" href="./icon-512.png">
@@ -94,14 +94,122 @@ input:focus{outline:1px solid var(--cyan)}
 #tutorialProgress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#3986f6,#53d8e8);transition:width .2s}
 #tutorialFeedback{padding:9px;border-radius:9px;background:#0b1b2d;border:1px solid #314965;font-size:12px;margin:10px 0;color:#c5d8ee}
 #tutorialFeedback.success{border-color:#38d6a3;color:#8ee5b1}
+#tutorialDebug{margin:8px 0 0;padding:8px;border:1px dashed #6583a7;border-radius:8px;background:#07111f;color:#c5d8ee;font:10px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:125px;overflow:auto}
 .tutorial-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.tutorial-actions button{flex:1}
 #tutorialClose{float:right;padding:4px 8px}
 @media(max-width:820px){#tutorialCard{top:auto;bottom:max(12px,env(safe-area-inset-bottom));right:12px;width:min(390px,calc(100vw - 24px));max-height:72dvh;overflow:auto;padding:15px}.tutorial-actions button{min-height:42px;touch-action:manipulation}}
 @media(max-width:680px){#tutorialCard{left:12px;right:12px;width:auto}.header-actions button{min-height:36px}.tutorial-highlight{outline-width:3px;outline-offset:2px}}
 
+
+/* SILMO v28: Ausrichtungswerkzeuge + Entwickler-Diagnose – per F9 oder Strg+Umschalt+D ein-/ausblenden */
+#silmoDiagToggle{border:1px solid #d6a64a!important;background:#3b2d14!important;color:#ffe3a0!important}
+#silmoDiagPanel{position:fixed;z-index:20000;inset:7vh 4vw auto auto;width:min(680px,92vw);max-height:86vh;display:flex;flex-direction:column;background:#091321;border:1px solid #d6a64a;border-radius:14px;box-shadow:0 20px 70px #000c;color:#edf4ff;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}
+#silmoDiagPanel[hidden]{display:none!important}
+#silmoDiagPanel .sd-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid #4b3d24;font:600 14px/1.4 Inter,Segoe UI,Arial,sans-serif}
+#silmoDiagPanel .sd-actions{display:flex;flex-wrap:wrap;gap:7px;padding:10px 12px;border-bottom:1px solid #25354a}
+#silmoDiagPanel button{cursor:pointer;border:1px solid #405775;border-radius:7px;padding:7px 10px;background:#172a42;color:#edf4ff;font:12px Inter,Segoe UI,Arial,sans-serif}
+#silmoDiagPanel button:hover{background:#234368}
+#silmoDiagPanel .sd-summary{padding:9px 12px;color:#bcd5f2;background:#101f32;font:12px Inter,Segoe UI,Arial,sans-serif}
+#silmoDiagLog{overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;padding:12px;min-height:140px;max-height:45vh;color:#d9e8f9}
+#silmoDiagPanel .sd-foot{padding:8px 12px;border-top:1px solid #25354a;color:#9db0ca;font:11px Inter,Segoe UI,Arial,sans-serif}
+@media(max-width:680px){#silmoDiagPanel{inset:8px;width:calc(100vw - 16px);max-height:calc(100vh - 16px)}#silmoDiagLog{max-height:48vh}}
+
 </style>
 </head>
 <body>
+<!-- SILMO BUILD: v28 – Ausrichtungswerkzeuge auf Basis v27 -->
+<script id="silmoDeveloperDiagnostics">
+/* Entwicklermodus: unabhängige Fehlererfassung, standardmäßig eingeklappt. Entfernen: diesen Scriptblock und den CSS-Block #silmoDiagToggle/#silmoDiagPanel löschen. */
+(function(){
+  'use strict';
+  const startedAt = new Date();
+  const entries = [];
+  let panel, logEl, summaryEl, openButton;
+  const maxEntries = 300;
+  function safeString(value){
+    try { if(value instanceof Error) return value.stack || (value.name+': '+value.message); if(typeof value==='string') return value; return JSON.stringify(value); }
+    catch(_){ return String(value); }
+  }
+  function add(type, message){
+    const time = new Date().toLocaleTimeString('de-CH',{hour12:false});
+    entries.push({time,type,message:String(message)});
+    if(entries.length>maxEntries) entries.splice(0,entries.length-maxEntries);
+    renderLog();
+  }
+  function renderLog(){
+    if(!logEl) return;
+    logEl.textContent = entries.length ? entries.map((e,i)=>String(i+1).padStart(3,'0')+' ['+e.time+'] '+e.type+'\n'+e.message).join('\n\n') : 'Noch keine Fehler oder Ereignisse erfasst. Öffne die Diagnose und reproduziere den Fehler.';
+    if(summaryEl) summaryEl.textContent='Einträge: '+entries.length+' · Seit: '+startedAt.toLocaleTimeString('de-CH',{hour12:false})+' · Taste F9 oder Strg+Umschalt+D';
+  }
+  // Capture uncaught JS errors immediately, before the main app scripts execute.
+  window.addEventListener('error',function(e){
+    const target=e.target;
+    if(target && target!==window){add('RESSOURCE FEHLER',(target.tagName||'Element')+' '+(target.src||target.href||'unbekannte Ressource'));return;}
+    add('JAVASCRIPT FEHLER',(e.message||'Unbekannter Fehler')+'\nDatei: '+(e.filename||'?')+'\nZeile: '+(e.lineno||'?')+':'+(e.colno||'?')+(e.error?'\n'+safeString(e.error):''));
+  },true);
+  window.addEventListener('unhandledrejection',function(e){add('PROMISE FEHLER',safeString(e.reason));});
+  const originalConsoleError=console.error.bind(console);
+  console.error=function(){
+    try { add('console.error',Array.from(arguments).map(safeString).join(' ')); } catch(_){}
+    originalConsoleError.apply(console,arguments);
+  };
+  window.addEventListener('securitypolicyviolation',e=>add('SICHERHEITSRICHTLINIE',e.violatedDirective+' · '+e.blockedURI));
+  function snapshot(){
+    const canvas=document.querySelector('canvas');
+    let webgl='Canvas nicht gefunden';
+    if(canvas){try{const gl=canvas.getContext('webgl2')||canvas.getContext('webgl')||canvas.getContext('experimental-webgl');webgl=gl?'WebGL verfügbar ('+canvas.width+'×'+canvas.height+')':'WebGL-Kontext nicht verfügbar';}catch(e){webgl='WebGL-Prüfung: '+e.message;}}
+    const status=document.querySelector('#status');
+    const tut=document.querySelector('#tutorialDebug');
+    const active=document.activeElement;
+    return [
+      'SILMO 3D STUDIO AI – DIAGNOSEBERICHT',
+      'Zeit: '+new Date().toISOString(),
+      'URL: '+location.href,
+      'Browser: '+navigator.userAgent,
+      'Online: '+navigator.onLine,
+      'Dokumentstatus: '+document.readyState,
+      'WebGL: '+webgl,
+      'Canvas: '+(canvas?canvas.outerHTML.slice(0,500):'nicht gefunden'),
+      'Statusmeldung: '+(status?status.textContent.trim():'nicht gefunden'),
+      'Tutorial-Diagnose: '+(tut?tut.textContent.trim():'nicht eingeblendet / nicht vorhanden'),
+      'Fokuselement: '+(active?(active.tagName+'#'+(active.id||'')+'.'+(typeof active.className==='string'?active.className:'')):'keines'),
+      'Objektlisteinträge: '+document.querySelectorAll('#objects button, #objects [data-object-id]').length,
+      'Fehler-/Ereignisprotokoll:',
+      entries.length?entries.map((e,i)=>String(i+1).padStart(3,'0')+' ['+e.time+'] '+e.type+'\n'+e.message).join('\n\n'):'Keine Einträge erfasst.'
+    ].join('\n');
+  }
+  function copyReport(){
+    const report=snapshot();
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(report).then(()=>add('DIAGNOSE','Bericht in Zwischenablage kopiert.')).catch(()=>fallbackCopy(report));}
+    else fallbackCopy(report);
+  }
+  function fallbackCopy(text){
+    const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+    try{const ok=document.execCommand('copy');add('DIAGNOSE',ok?'Bericht in Zwischenablage kopiert.':'Kopieren blockiert – bitte Bericht herunterladen.');}catch(e){add('DIAGNOSE','Kopieren nicht möglich: '+e.message);}ta.remove();
+  }
+  function downloadReport(){
+    const blob=new Blob([snapshot()],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='SILMO_Diagnose_'+new Date().toISOString().replace(/[:.]/g,'-')+'.txt';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);add('DIAGNOSE','Berichtdownload gestartet.');
+  }
+  function createUI(){
+    if(document.getElementById('silmoDiagPanel'))return;
+    const actions=document.querySelector('.header-actions');
+    openButton=document.createElement('button');openButton.id='silmoDiagToggle';openButton.type='button';openButton.textContent='🛠 Diagnose (F9)';openButton.title='Fehlerdiagnose öffnen (F9 oder Strg+Umschalt+D)';
+    openButton.addEventListener('click',toggle);
+    if(actions) actions.insertBefore(openButton,actions.firstChild); else {openButton.style.position='fixed';openButton.style.right='10px';openButton.style.top='10px';openButton.style.zIndex='19999';document.body.appendChild(openButton);}
+    panel=document.createElement('section');panel.id='silmoDiagPanel';panel.hidden=true;panel.setAttribute('aria-label','SILMO Fehlerdiagnose');
+    panel.innerHTML='<div class="sd-head"><span>🛠 SILMO – Entwicklerdiagnose</span><button type="button" data-sd="close" aria-label="Diagnose schliessen">Schliessen ✕</button></div><div class="sd-summary" id="silmoDiagSummary"></div><div class="sd-actions"><button type="button" data-sd="snapshot">Status erfassen</button><button type="button" data-sd="copy">Bericht kopieren</button><button type="button" data-sd="download">Bericht herunterladen</button><button type="button" data-sd="clear">Protokoll leeren</button></div><pre id="silmoDiagLog" aria-live="polite"></pre><div class="sd-foot">Öffnen/Schliessen: F9 oder Strg+Umschalt+D. Fehler werden lokal im aktuellen Browserfenster protokolliert.</div>';
+    document.body.appendChild(panel);logEl=panel.querySelector('#silmoDiagLog');summaryEl=panel.querySelector('#silmoDiagSummary');
+    panel.addEventListener('click',function(e){const b=e.target.closest('button[data-sd]');if(!b)return;switch(b.dataset.sd){case'close':toggle(false);break;case'snapshot':add('STATUS-SNAPSHOT',snapshot().split('Fehler-/Ereignisprotokoll:')[0]);break;case'copy':copyReport();break;case'download':downloadReport();break;case'clear':entries.length=0;renderLog();add('DIAGNOSE','Protokoll wurde manuell geleert.');break;}});
+    renderLog();add('START','Diagnose aktiv. Öffne sie mit F9 oder Strg+Umschalt+D.');
+    setTimeout(()=>{const missing=['#viewport','#status','#objects','#tutorialLaunch'].filter(sel=>!document.querySelector(sel));if(missing.length)add('APP-STRUKTUR','Nicht gefundene Elemente: '+missing.join(', '));},1500);
+  }
+  function toggle(force){if(!panel)return;const show=typeof force==='boolean'?force:panel.hidden;panel.hidden=!show;if(show){add('STATUS-SNAPSHOT',snapshot().split('Fehler-/Ereignisprotokoll:')[0]);}}
+  document.addEventListener('keydown',function(e){if(e.key==='F9'||(e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==='d')){e.preventDefault();toggle();}});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',createUI,{once:true});else createUI();
+  // Public helper for a developer console: window.SILMO_DIAG.report()
+  window.SILMO_DIAG={report:snapshot,log:(label,value)=>add(String(label||'MANUELL'),safeString(value)),open:()=>toggle(true),close:()=>toggle(false),clear:()=>{entries.length=0;renderLog();},version:'v27'};
+})();
+</script>
 <header>
   <div class="brand">
     <div class="brand-mark">⬡</div>
@@ -218,6 +326,18 @@ input:focus{outline:1px solid var(--cyan)}
 
   heading(paneMap.edit.left,'Bearbeiten');
   ['delete','fitView'].forEach(id=>put(paneMap.edit.left,id));
+  const multiSelectButton=document.createElement('button'); multiSelectButton.type='button'; multiSelectButton.id='multiSelectToggle'; multiSelectButton.className='wide'; multiSelectButton.textContent='☷ Mehrfachauswahl: AUS'; multiSelectButton.setAttribute('aria-pressed','false'); paneMap.edit.left.appendChild(multiSelectButton);
+  const alignHeading=document.createElement('h2'); alignHeading.textContent='Objekte ausrichten'; paneMap.edit.left.appendChild(alignHeading);
+  const alignHelp=document.createElement('p'); alignHelp.className='note'; alignHelp.textContent='Wähle mindestens zwei Objekte. Auf dem iPad zuerst Mehrfachauswahl einschalten und dann die Objekte antippen.'; paneMap.edit.left.appendChild(alignHelp);
+  const alignAxisWrap=document.createElement('div'); alignAxisWrap.className='field';
+  const alignAxisLabel=document.createElement('label'); alignAxisLabel.htmlFor='alignAxis'; alignAxisLabel.textContent='Achse';
+  const alignAxis=document.createElement('select'); alignAxis.id='alignAxis'; alignAxis.innerHTML='<option value="x">X – links / rechts</option><option value="y">Y – vorne / hinten</option><option value="z">Z – unten / oben</option>';
+  alignAxisWrap.append(alignAxisLabel,alignAxis); paneMap.edit.left.appendChild(alignAxisWrap);
+  const alignModeWrap=document.createElement('div'); alignModeWrap.className='field';
+  const alignModeLabel=document.createElement('label'); alignModeLabel.htmlFor='alignMode'; alignModeLabel.textContent='Ausrichtung';
+  const alignMode=document.createElement('select'); alignMode.id='alignMode'; alignMode.innerHTML='<option value="min">An einer Seite ausrichten</option><option value="center">Mittig ausrichten</option><option value="max">An der anderen Seite ausrichten</option>';
+  alignModeWrap.append(alignModeLabel,alignMode); paneMap.edit.left.appendChild(alignModeWrap);
+  const alignButton=document.createElement('button'); alignButton.type='button'; alignButton.id='alignSelected'; alignButton.className='wide primary'; alignButton.textContent='⇔ Ausgewählte Objekte ausrichten'; paneMap.edit.left.appendChild(alignButton);
   const moveStepWrap=document.createElement('div'); moveStepWrap.className='field';
   const moveStepLabel=document.createElement('label'); moveStepLabel.htmlFor='moveStepMM'; moveStepLabel.textContent='Pfeiltasten-Schritt (mm)';
   const moveStepInput=document.createElement('input'); moveStepInput.id='moveStepMM'; moveStepInput.type='number'; moveStepInput.min='0.1'; moveStepInput.max='100'; moveStepInput.step='0.1'; moveStepInput.value='1'; moveStepInput.title='Bewegung pro Pfeiltastendruck in Millimetern';
@@ -403,8 +523,18 @@ input:focus{outline:1px solid var(--cyan)}
 
   const objects = [];
   let selected = null;
+  // Send the actual object coordinates with every position-change event. The tutorial
+  // must not depend only on a later polling pass to notice movement of the 3D gizmo.
+  function notifyPositionChanged(obj = selected) {
+    if (!obj || !obj.position || typeof obj.uuid !== 'string') return;
+    window.dispatchEvent(new CustomEvent('silmo-position-changed', {
+      detail: { uuid: obj.uuid, x: obj.position.x, y: obj.position.y, z: obj.position.z }
+    }));
+  }
   // Read-only snapshot for the tutorial: detects real 3D movement, including gizmo/keyboard drags.
   window.__silmoTutorialPositionSnapshot = () => selected ? { uuid: selected.uuid, x: selected.position.x, y: selected.position.y, z: selected.position.z } : null;
+  // Tutorial-safe snapshot of every model object; selection changes do not hide real movement.
+  window.__silmoTutorialAllPositions = () => objects.map(obj => ({ uuid: obj.uuid, x: obj.position.x, y: obj.position.y, z: obj.position.z }));
   let uniform = true;
   const MM_PER_UNIT = 10;
   let moveGizmo = null;
@@ -645,6 +775,7 @@ input:focus{outline:1px solid var(--cyan)}
 
   // Tastenkürzel, Auswahl mehrerer Objekte und einfacher Änderungsverlauf
   let selectedObjects = [];
+  let multiSelectMode = false;
   let clipboardObjects = [];
   const undoStack = [];
   const redoStack = [];
@@ -921,7 +1052,7 @@ input:focus{outline:1px solid var(--cyan)}
       btn.className = 'wide' + (selectedObjects.includes(obj) || obj === selected ? ' active' : '');
       btn.textContent = obj.userData.label;
       btn.onclick = event => {
-        if (event.ctrlKey || event.metaKey) {
+        if (multiSelectMode || event.ctrlKey || event.metaKey) {
           const current = selectedObjects.slice();
           const index = current.indexOf(obj);
           if (index >= 0) current.splice(index, 1); else current.push(obj);
@@ -934,6 +1065,60 @@ input:focus{outline:1px solid var(--cyan)}
       list.appendChild(btn);
     });
   }
+
+  // SILMO v28: Weltachsen-Ausrichtung mehrerer ausgewählter Meshes.
+  function alignSelectedObjects() {
+    const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    if (targets.length < 2) {
+      status.textContent = 'Bitte mindestens zwei Objekte auswählen.';
+      return;
+    }
+    const axis = $('alignAxis').value;
+    const mode = $('alignMode').value;
+    if (!['x','y','z'].includes(axis) || !['min','center','max'].includes(mode)) {
+      status.textContent = 'Bitte eine gültige Ausrichtung auswählen.';
+      return;
+    }
+    const bounds = targets.map(obj => {
+      obj.updateMatrixWorld(true);
+      return new THREE.Box3().setFromObject(obj);
+    });
+    const allMin = Math.min(...bounds.map(box => box.min[axis]));
+    const allMax = Math.max(...bounds.map(box => box.max[axis]));
+    const targetValue = mode === 'min' ? allMin : mode === 'max' ? allMax : (allMin + allMax) / 2;
+    const deltas = bounds.map(box => {
+      const ownValue = mode === 'min' ? box.min[axis] : mode === 'max' ? box.max[axis] : (box.min[axis] + box.max[axis]) / 2;
+      return targetValue - ownValue;
+    });
+    if (deltas.every(delta => Math.abs(delta) < 1e-8)) {
+      status.textContent = 'Die ausgewählten Objekte sind bereits so ausgerichtet.';
+      return;
+    }
+    recordHistory();
+    targets.forEach((obj, index) => {
+      obj.position[axis] += deltas[index];
+      obj.updateMatrixWorld(true);
+      notifyPositionChanged(obj);
+    });
+    updateObjects();
+    showProperties();
+    updateMoveGizmo();
+    const axisName = axis.toUpperCase();
+    const modeName = mode === 'min' ? 'an einer Seite' : mode === 'max' ? 'an der anderen Seite' : 'mittig';
+    status.textContent = targets.length + ' Objekte auf Achse ' + axisName + ' ' + modeName + ' ausgerichtet.';
+  }
+
+  const multiSelectToggle = $('multiSelectToggle');
+  if (multiSelectToggle) multiSelectToggle.addEventListener('click', () => {
+    multiSelectMode = !multiSelectMode;
+    multiSelectToggle.textContent = multiSelectMode ? '☷ Mehrfachauswahl: EIN' : '☷ Mehrfachauswahl: AUS';
+    multiSelectToggle.setAttribute('aria-pressed', String(multiSelectMode));
+    multiSelectToggle.classList.toggle('active', multiSelectMode);
+    status.textContent = multiSelectMode
+      ? 'Mehrfachauswahl aktiv: Objekte in der Liste antippen, um sie hinzuzufügen oder abzuwählen.'
+      : 'Mehrfachauswahl ausgeschaltet.';
+  });
+  $('alignSelected').addEventListener('click', alignSelectedObjects);
 
   function makeInput(parent, labelText, value, step, onChange, options = {}) {
     const wrap = document.createElement('div');
@@ -1115,6 +1300,7 @@ input:focus{outline:1px solid var(--cyan)}
           }
           updateMoveGizmo();
           showProperties();
+          notifyPositionChanged(obj);
         });
     });
 
@@ -1400,12 +1586,14 @@ input:focus{outline:1px solid var(--cyan)}
       const parameter = closestAxisParameter(raycaster.ray, axisDragStart, direction);
       selected.position.copy(objectDragStart).addScaledVector(direction, parameter - axisStartParameter);
       showProperties();
+      notifyPositionChanged(selected);
     } else if (draggingObject && selected) {
       setPointerRay(e);
       if (raycaster.ray.intersectPlane(dragPlane, dragPoint)) {
         selected.position.x = dragPoint.x + dragOffset.x;
         selected.position.y = dragPoint.y + dragOffset.y;
         showProperties();
+        notifyPositionChanged(selected);
       }
     } else if (rotatingView) {
       targetRY += (e.clientX - lastX) * 0.006;
@@ -1705,20 +1893,30 @@ input:focus{outline:1px solid var(--cyan)}
   const shade = document.createElement('div'); shade.id='tutorialShade'; shade.hidden=true;
   const card = document.createElement('section'); card.id='tutorialCard'; card.hidden=true;
   card.setAttribute('role','dialog'); card.setAttribute('aria-modal','false'); card.setAttribute('aria-label','SILMO Tutorial');
-  card.innerHTML = '<button id="tutorialClose" type="button" aria-label="Tutorial schliessen">✕</button><div id="tutorialStepLabel" style="color:#80c7ff;font-size:11px;font-weight:700;letter-spacing:.08em"></div><h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div><div id="tutorialFeedback" aria-live="polite"></div><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialNext" type="button" class="primary">Prüfen</button><button id="tutorialSkip" type="button">Beenden</button></div>';
+  card.innerHTML = '<button id="tutorialClose" type="button" aria-label="Tutorial schliessen">✕</button><div style="font-size:10px;color:#ffcf70;margin-bottom:6px">DIAGNOSEBUILD v26 · BASELINE-FIX</div><div id="tutorialStepLabel" style="color:#80c7ff;font-size:11px;font-weight:700;letter-spacing:.08em"></div><h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div><div id="tutorialFeedback" aria-live="polite"></div><pre id="tutorialDebug" aria-live="polite">Diagnose wird gestartet …</pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialNext" type="button" class="primary">Prüfen</button><button id="tutorialSkip" type="button">Beenden</button></div>';
   document.body.append(shade,card);
   const steps = [
     {title:'Würfel erstellen',text:'Klicke auf „＋ Würfel“. Die Aufgabe ist bestanden, wenn tatsächlich ein weiteres Objekt in der Objektliste erscheint.',target:'addCube',tab:'create',check:()=>objectCount()>tutorialStartCount,initialise:()=>{tutorialStartCount=objectCount();feedback('Klicke auf die markierte Schaltfläche.');}},
-    {title:'Objekt bewegen',text:'Wähle ein Objekt aus und ändere seine Position mit den Pfeilen in der 3D-Ansicht oder den Positionsfeldern. Die Position muss sich wirklich ändern.',target:'positionFields',tab:'edit',check:()=>{positionChanged=hasSelectedObjectMoved();return positionChanged;},initialise:()=>{positionChanged=false;ensureTutorialObjectSelected();positionStart=positionSnapshot();if(positionStart){feedback('Verändere die Position des ausgewählten Objekts.');}else{feedback('Wähle zuerst ein Objekt in der Objektliste aus.');}}},
+    {title:'Objekt bewegen',text:'Wähle ein Objekt aus und ändere seine Position mit den Pfeilen in der 3D-Ansicht oder den Positionsfeldern. Die Position muss sich wirklich ändern.',target:'positionFields',tab:'edit',check:()=>{positionChanged=hasSelectedObjectMoved();return positionChanged;},initialise:()=>{positionChanged=false;positionAdvanceQueued=false;ensureTutorialObjectSelected();positionStart=positionSnapshot();positionStartMap=allPositionSnapshot();if(positionStartMap.length){feedback('Bewege ein Objekt mit den 3D-Pfeilen oder ändere X, Y oder Z. Der Schritt wechselt nach erkannter Bewegung automatisch weiter.');}else{feedback('Es ist noch kein 3D-Objekt vorhanden. Gehe zurück und erstelle zuerst einen Würfel.');}}},
     {title:'Grösse verändern',text:'Ändere eine der exakten Objektmassen. SILMO prüft, ob sich der Wert gegenüber dem Startwert verändert hat.',target:'sizeFields',tab:'measure',check:()=>sizeChanged,initialise:()=>{sizeChanged=false;sizeStart=sizeSnapshot();feedback('Ändere eine Objektmasse und bestätige den Wert.');}},
     {title:'Druckbett einstellen',text:'Stelle Breite oder Tiefe auf einen anderen gültigen Wert zwischen 5 und 2000 mm und klicke auf „Druckbettgrösse übernehmen“.',target:'applyBedSize',tab:'print',check:()=>bedApplied,initialise:()=>{bedApplied=false;bedStart=bedSnapshot();feedback('Ändere Breite oder Tiefe und übernimm die neue Grösse.');}},
     {title:'STL exportieren',text:'Klicke auf „STL exportieren“. Die Aufgabe gilt nur als bestanden, wenn SILMO den Export erfolgreich meldet.',target:'exportModel',tab:'print',check:()=>exportSucceeded,initialise:()=>{exportSucceeded=false;feedback('Starte den STL-Export.');}},
     {title:'Geschafft!',text:'Du hast alle Tutorial-Aufgaben abgeschlossen. Du kannst das Tutorial später jederzeit erneut starten.',target:null,tab:'create',check:()=>true,initialise:()=>{feedback('Alle Lernschritte wurden erfolgreich abgeschlossen.',true);}}
   ];
-  let index=0, highlight=null, tutorialStartCount=0, positionStart='', sizeStart='', bedStart='', positionChanged=false, sizeChanged=false, bedApplied=false, exportSucceeded=false;
+  let index=0, highlight=null, tutorialStartCount=0, positionStart='', positionStartMap=null, sizeStart='', bedStart='', positionChanged=false, sizeChanged=false, bedApplied=false, exportSucceeded=false, positionAdvanceQueued=false;
+  let diagnosticEventCount=0, diagnosticLastEvent='Noch kein Positionssignal empfangen', diagnosticLastError='keiner';
+  function updateTutorialDebug(){
+    const el=$('tutorialDebug'); if(!el)return;
+    let selectedText='nicht verfügbar', currentList='nicht verfügbar', moved='nicht geprüft';
+    try { const p=window.__silmoTutorialPositionSnapshot?.(); if(p) selectedText=`${p.uuid.slice(0,8)} x=${p.x.toFixed(4)} y=${p.y.toFixed(4)} z=${p.z.toFixed(4)}`; } catch(e){diagnosticLastError='Snapshot: '+String(e);}
+    try { const now=allPositionSnapshot(); currentList=String(now.length)+' Objekt(e)'; moved=Array.isArray(positionStartMap)?String(hasSelectedObjectMoved()):'keine Startwerte'; } catch(e){diagnosticLastError='Positionsvergleich: '+String(e);}
+    const base=Array.isArray(positionStartMap)?positionStartMap.map(p=>`${p.uuid.slice(0,8)}(${p.x.toFixed(3)},${p.y.toFixed(3)},${p.z.toFixed(3)})`).join(' | ')||'leer':'nicht gesetzt';
+    el.textContent=`Build: v28 Ausrichten\nTutorial-Schritt intern: ${index+1} (Objekt bewegen = 2)\nKarte sichtbar: ${!card.hidden} | Position geändert: ${positionChanged} | Wechsel vorgemerkt: ${positionAdvanceQueued}\nObjekte aktuell: ${currentList} | Vergleich erkennt Bewegung: ${moved}\nAusgewählt: ${selectedText}\nStartpositionen: ${base}\nPositionssignale: ${diagnosticEventCount} | letztes Signal: ${diagnosticLastEvent}\nLetzter Diagnosefehler: ${diagnosticLastError}`;
+  }
   function objectCount(){const el=$('objects');return el?el.querySelectorAll('button').length:0;}
   function fieldSnapshot(id){const el=$(id);return el?[...el.querySelectorAll('input,select')].map(n=>n.value).join('|'):'';}
   function positionSnapshot(){const p=window.__silmoTutorialPositionSnapshot?.();return p&&typeof p.uuid==='string'&&[p.x,p.y,p.z].every(Number.isFinite)?JSON.stringify({uuid:p.uuid,x:p.x,y:p.y,z:p.z}):'';}
+  function allPositionSnapshot(){const list=window.__silmoTutorialAllPositions?.();return Array.isArray(list)?list.filter(p=>p&&typeof p.uuid==='string'&&[p.x,p.y,p.z].every(Number.isFinite)):[];}
   function ensureTutorialObjectSelected(){
     const current=window.__silmoTutorialPositionSnapshot?.();
     if(current)return true;
@@ -1727,11 +1925,30 @@ input:focus{outline:1px solid var(--cyan)}
     return !!window.__silmoTutorialPositionSnapshot?.();
   }
   function hasSelectedObjectMoved(){
-    if(!positionStart)return false;
-    let start;try{start=JSON.parse(positionStart);}catch(_){return false;}
-    const now=window.__silmoTutorialPositionSnapshot?.();
-    if(!now||!start||start.uuid!==now.uuid||![now.x,now.y,now.z].every(Number.isFinite))return false;
-    return Math.abs(now.x-start.x)>1e-5||Math.abs(now.y-start.y)>1e-5||Math.abs(now.z-start.z)>1e-5;
+    if(!Array.isArray(positionStartMap))return false;
+    const now=allPositionSnapshot();
+    // Compare every object that existed when the step began, independent of current selection.
+    for(const before of positionStartMap){
+      const after=now.find(p=>p.uuid===before.uuid);
+      if(after&&(Math.abs(after.x-before.x)>1e-5||Math.abs(after.y-before.y)>1e-5||Math.abs(after.z-before.z)>1e-5))return true;
+    }
+    // Also recognise objects created after the baseline, including a newly selected cube.
+    const initialIds=new Set(positionStartMap.map(p=>p.uuid));
+    for(const after of now){
+      if(!initialIds.has(after.uuid)){
+        const selectedNow=window.__silmoTutorialPositionSnapshot?.();
+        if(selectedNow?.uuid===after.uuid)return true;
+      }
+    }
+    // If the app's list snapshot is unavailable, fall back to the selected-object snapshot.
+    const selectedNow=window.__silmoTutorialPositionSnapshot?.();
+    if(selectedNow&&positionStart){
+      try{
+        const before=JSON.parse(positionStart);
+        if(before.uuid===selectedNow.uuid && (Math.abs(selectedNow.x-before.x)>1e-5||Math.abs(selectedNow.y-before.y)>1e-5||Math.abs(selectedNow.z-before.z)>1e-5))return true;
+      }catch(_){}
+    }
+    return false;
   }
   function sizeSnapshot(){return fieldSnapshot('sizeFields');}
   function bedSnapshot(){return ($('bedWidth')?.value||'')+'x'+($('bedDepth')?.value||'');}
@@ -1741,6 +1958,7 @@ input:focus{outline:1px solid var(--cyan)}
   function render(){clearHighlight();const step=steps[index];selectTutorialTab(step.tab);$('tutorialStepLabel').textContent='TUTORIAL · SCHRITT '+(index+1)+' VON '+steps.length;$('tutorialTitle').textContent=step.title;$('tutorialText').textContent=step.text;$('tutorialProgress span').style.width=((index+1)/steps.length*100)+'%';$('tutorialBack').disabled=index===0;$('tutorialNext').textContent=index===steps.length-1?'Fertig':'Prüfen';$('tutorialNext').disabled=false;
     if(step.target){highlight=$(step.target);if(highlight){highlight.classList.add('tutorial-highlight');highlight.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});}}
     step.initialise();
+    updateTutorialDebug();
   }
   function open(){index=0;shade.hidden=false;card.hidden=false;render();}
   function close(){clearHighlight();shade.hidden=true;card.hidden=true;}
@@ -1748,12 +1966,81 @@ input:focus{outline:1px solid var(--cyan)}
   $('tutorialBack').addEventListener('click',()=>{if(index>0){index--;render();}});
   $('tutorialNext').addEventListener('click',()=>{const step=steps[index];if(!step.check()){feedback('Noch nicht bestanden. Führe die Aufgabe aus; danach prüft SILMO erneut.',false);return;}if(index<steps.length-1){index++;render();}else close();});
   $('addCube').addEventListener('click',()=>{if(index===0&&objectCount()>tutorialStartCount)feedback('Erfolgskontrolle bestanden: Ein neues Objekt ist in der Objektliste vorhanden.',true);});
-  function verifyPositionStep(){if(index===1&&hasSelectedObjectMoved()){positionChanged=true;feedback('Erfolgskontrolle erkannt: Die Objektposition hat sich geändert.',true);}}
-  document.addEventListener('input',e=>{verifyPositionStep();if(index===2&&e.target.closest('#sizeFields')&&sizeSnapshot()!==sizeStart)sizeChanged=true;});
-  document.addEventListener('change',e=>{verifyPositionStep();if(index===2&&e.target.closest('#sizeFields')&&sizeSnapshot()!==sizeStart)sizeChanged=true;});
-  // Dragging the 3D gizmo does not emit input/change events, so detect actual coordinates while moving.
-  document.addEventListener('pointerup',verifyPositionStep,true);
-  document.addEventListener('keyup',verifyPositionStep,true);
+  function completePositionStep(){
+    if(index!==1||card.hidden||positionChanged)return;
+    positionChanged=true;
+    feedback('Erfolg erkannt: Eine Objektposition hat sich geändert. Nächster Schritt …',true);
+    if(!positionAdvanceQueued){
+      positionAdvanceQueued=true;
+      setTimeout(()=>{
+        if(index===1&&!card.hidden&&positionChanged){index=2;render();}
+        else if(index===1&&!card.hidden){positionAdvanceQueued=false;}
+      },450);
+    }
+  }
+  function verifyPositionStep(){
+    // Selbstheilung: Falls Schritt 2 aktiv ist, aber aus irgendeinem Grund kein
+    // Ausgangswert gesetzt wurde, erfasse ihn jetzt einmalig. Danach wird jede
+    // weitere echte Positionsänderung normal erkannt.
+    if(index===1&&!card.hidden&&!Array.isArray(positionStartMap)){
+      try{
+        ensureTutorialObjectSelected();
+        positionStart=positionSnapshot();
+        positionStartMap=allPositionSnapshot();
+        diagnosticLastError='Hinweis: fehlende Startposition während Schritt 2 automatisch neu erfasst';
+        updateTutorialDebug();
+      }catch(error){
+        diagnosticLastError='Startposition konnte nicht erfasst werden: '+String(error);
+      }
+    }
+    if(index===1&&!card.hidden&&!positionChanged&&hasSelectedObjectMoved()) completePositionStep();
+  }
+  const schedulePositionVerification = () => {
+    // The app updates the selected mesh in its own input/change handler.
+    // Run after that handler, not during the capture phase before the coordinates change.
+    queueMicrotask(() => {
+      try { verifyPositionStep(); } catch (error) { console.error('SILMO tutorial position check:', error); }
+    });
+    requestAnimationFrame(() => {
+      try { verifyPositionStep(); } catch (error) { console.error('SILMO tutorial position check:', error); }
+    });
+  };
+  document.addEventListener('input',e=>{
+    schedulePositionVerification();
+    if(index===2&&e.target.closest('#sizeFields')&&sizeSnapshot()!==sizeStart)sizeChanged=true;
+  });
+  document.addEventListener('change',e=>{
+    schedulePositionVerification();
+    if(index===2&&e.target.closest('#sizeFields')&&sizeSnapshot()!==sizeStart)sizeChanged=true;
+  });
+  // Poll the actual Three.js coordinates while step 2 is active. This also catches gizmo drags,
+  // pointer events captured by the renderer, and position changes without DOM input events.
+  function monitorTutorialPosition(){
+    // A transient exception must never permanently stop the tutorial's movement monitor.
+    try { verifyPositionStep(); updateTutorialDebug(); }
+    catch (error) { diagnosticLastError=String(error); console.error('SILMO tutorial position monitor:', error); updateTutorialDebug(); }
+    finally { requestAnimationFrame(monitorTutorialPosition); }
+  }
+  requestAnimationFrame(monitorTutorialPosition);
+  document.addEventListener('pointerup',schedulePositionVerification,true);
+  document.addEventListener('keyup',schedulePositionVerification,true);
+  window.addEventListener('silmo-position-changed',event=>{
+    diagnosticEventCount++;
+    try { const p=event.detail; diagnosticLastEvent=p&&typeof p.uuid==='string'?`${p.uuid.slice(0,8)} x=${p.x} y=${p.y} z=${p.z}`:'Signal ohne gültige Koordinaten'; } catch(e) { diagnosticLastEvent='Signal konnte nicht gelesen werden'; }
+    // The 3D movement tools report the coordinates after applying the move. Compare
+    // this event payload with the tutorial's baseline immediately, then keep polling
+    // as a fallback in case a browser drops or delays a frame.
+    try {
+      const p=event.detail;
+      if(index===1&&!card.hidden&&!positionChanged&&p&&typeof p.uuid==='string'&&[p.x,p.y,p.z].every(Number.isFinite)){
+        const before=Array.isArray(positionStartMap)?positionStartMap.find(item=>item.uuid===p.uuid):null;
+        if(before&&(Math.abs(p.x-before.x)>1e-5||Math.abs(p.y-before.y)>1e-5||Math.abs(p.z-before.z)>1e-5)) completePositionStep();
+        else verifyPositionStep();
+      }
+    } catch(error) { diagnosticLastError=String(error); console.error('SILMO tutorial position event:',error); }
+    updateTutorialDebug();
+    schedulePositionVerification();
+  });
   $('applyBedSize').addEventListener('click',()=>{if(index===3&&bedSnapshot()!==bedStart&&($('status')?.textContent||'').includes('Druckbett eingestellt')){bedApplied=true;feedback('Erfolgskontrolle bestanden: SILMO hat die neue Druckbettgrösse übernommen.',true);}});
   $('exportModel').addEventListener('click',()=>{if(index===4){setTimeout(()=>{const t=$('status')?.textContent||'';if(t.toLowerCase().includes('exportiert')){exportSucceeded=true;feedback('Erfolgskontrolle bestanden: SILMO meldet einen erfolgreichen STL-Export.',true);}else feedback('Der Export ist noch nicht als erfolgreich bestätigt. Prüfe die Statusmeldung.',false);},250);}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!card.hidden)close();});
