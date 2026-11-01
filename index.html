@@ -1578,7 +1578,7 @@ input:focus{outline:1px solid var(--cyan)}
         axisDragStart.copy(getSelectionCenter(dragTargets));
         objectDragStart.copy(axisDragStart);
         const direction = activeAxis === 'x' ? new THREE.Vector3(1,0,0) : activeAxis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
-        axisStartParameter = closestAxisParameter(raycaster.ray, selected.position, direction);
+        axisStartParameter = closestAxisParameter(raycaster.ray, axisDragStart, direction);
         canvas.style.cursor = 'grabbing';
       } else if (hits.length) {
         const hitObject = hits[0].object;
