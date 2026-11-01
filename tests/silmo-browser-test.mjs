@@ -18,25 +18,25 @@ try {
   const canvasSize = await page.locator('#viewport canvas').evaluate(canvas => ({ width: canvas.width, height: canvas.height }));
   assert.ok(canvasSize.width > 0 && canvasSize.height > 0, '3D canvas hat keine gültige Grösse');
 
-  // Zwei unterschiedliche Objekte erstellen.
+  // Die App kann bereits ein Startobjekt enthalten. Nur die beiden neu erstellten prüfen.
+  const initialCount = await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click();
   await page.locator('#addSphere').click();
-  assert.equal(await page.locator('#objects .object-row').count(), 2, 'Objekte wurden nicht erstellt');
+  assert.equal(await page.locator('#objects .object-row').count(), initialCount + 2, 'Neue Objekte wurden nicht korrekt erstellt');
 
-  // Ein Objekt versetzen, damit die Ausrichtung tatsächlich etwas verändern muss.
+  // Das zuletzt erstellte Objekt versetzen, damit Ausrichten messbar etwas verändert.
   await page.locator('[data-tab="edit"]').click();
   const xField = page.locator('#positionFields input').first();
   await xField.fill('2');
   await xField.press('Enter');
   await page.waitForTimeout(150);
-  await page.locator('[data-tab="edit"]').click();
   await page.locator('#multiSelectToggle').click();
   await page.locator('[data-tab="create"]').click();
 
-  // Das erste Objekt zusätzlich zur bereits ausgewählten Kugel auswählen.
-  await page.locator('#objects .object-select').first().click();
+  // Das neu erstellte Würfel-Objekt zusätzlich zur Kugel auswählen.
+  await page.locator('#objects .object-select').nth(initialCount).click();
   const selectedCount = await page.locator('#objects .object-select[aria-pressed="true"]').count();
-  assert.equal(selectedCount, 2, 'Mehrfachauswahl markiert nicht beide Objekte');
+  assert.equal(selectedCount, 2, 'Mehrfachauswahl markiert nicht beide neuen Objekte');
 
   // Ausrichten: Beide Objektmittelpunkte müssen danach auf X übereinstimmen.
   const beforeAlign = await page.evaluate(() => window.__silmoTutorialAllPositions());
@@ -47,7 +47,8 @@ try {
   const alignStatus = await page.locator('#status').innerText();
   assert.match(alignStatus, /2 Objekte auf Achse X mittig ausgerichtet|bereits so ausgerichtet/, 'Ausrichten meldet keinen Erfolg');
   const afterAlign = await page.evaluate(() => window.__silmoTutorialAllPositions());
-  assert.ok(Math.abs(afterAlign[0].x - afterAlign[1].x) < 1e-6, 'Objekte wurden nicht mittig auf X ausgerichtet');
+  const alignedNewObjects = afterAlign.slice(-2);
+  assert.ok(Math.abs(alignedNewObjects[0].x - alignedNewObjects[1].x) < 1e-6, 'Die beiden neu erstellten Objekte wurden nicht mittig auf X ausgerichtet');
 
   // Gruppieren muss beide Objekte als Gruppe markieren.
   await page.locator('#createObjectGroup').click();
