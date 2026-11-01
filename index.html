@@ -354,7 +354,7 @@ input:focus{outline:1px solid var(--cyan)}
   const mirrorHeading=document.createElement('h2'); mirrorHeading.textContent='Spiegeln'; paneMap.edit.left.appendChild(mirrorHeading);
   const mirrorHelp=document.createElement('p'); mirrorHelp.className='note'; mirrorHelp.textContent='Spiegelt die Form. Bei mehreren Objekten wird die ganze Auswahl an ihrer gemeinsamen Mitte gespiegelt.'; paneMap.edit.left.appendChild(mirrorHelp);
   const mirrorButtons=document.createElement('div'); mirrorButtons.className='tool-grid';
-  [['x','↔ X'],['y','↕ Y'],['z','⇅ Z']].forEach(([axis,label])=>{const b=document.createElement('button');b.type='button';b.id='mirror'+axis.toUpperCase();b.textContent=label;b.title='Auswahl an der '+axis.toUpperCase()+'-Achse spiegeln';b.addEventListener('click',()=>mirrorSelectedObjects(axis));mirrorButtons.appendChild(b);});
+  [['x','↔ X'],['y','↕ Y'],['z','⇅ Z']].forEach(([axis,label])=>{const b=document.createElement('button');b.type='button';b.id='mirror'+axis.toUpperCase();b.textContent=label;b.title='Auswahl an der '+axis.toUpperCase()+'-Achse spiegeln';mirrorButtons.appendChild(b);});
   paneMap.edit.left.appendChild(mirrorButtons);
   const moveStepWrap=document.createElement('div'); moveStepWrap.className='field';
   const moveStepLabel=document.createElement('label'); moveStepLabel.htmlFor='moveStepMM'; moveStepLabel.textContent='Pfeiltasten-Schritt (mm)';
@@ -1252,6 +1252,8 @@ input:focus{outline:1px solid var(--cyan)}
   $('alignSelected').addEventListener('click', alignSelectedObjects);
   $('createObjectGroup').addEventListener('click', createObjectGroup);
   $('ungroupObjects').addEventListener('click', ungroupSelectedObjects);
+  // Spiegel-Handler innerhalb derselben App-Scope wie mirrorSelectedObjects binden.
+  ['X','Y','Z'].forEach(axis => $('mirror'+axis).addEventListener('click', () => mirrorSelectedObjects(axis.toLowerCase())));
 
   function makeInput(parent, labelText, value, step, onChange, options = {}) {
     const wrap = document.createElement('div');
@@ -2170,7 +2172,7 @@ input:focus{outline:1px solid var(--cyan)}
   function feedback(text,success=false){const f=$('tutorialFeedback');f.textContent=text;f.classList.toggle('success',success);}
   function clearHighlight(){if(highlight)highlight.classList.remove('tutorial-highlight');highlight=null;}
   function selectTutorialTab(tab){const b=document.querySelector('[data-tab="'+tab+'"]');if(b&&!b.hidden)b.click();}
-  function render(){clearHighlight();const step=steps[index];selectTutorialTab(step.tab);$('tutorialStepLabel').textContent='TUTORIAL · SCHRITT '+(index+1)+' VON '+steps.length;$('tutorialTitle').textContent=step.title;$('tutorialText').textContent=step.text;$('tutorialProgress span').style.width=((index+1)/steps.length*100)+'%';$('tutorialBack').disabled=index===0;$('tutorialNext').textContent=index===steps.length-1?'Fertig':'Prüfen';$('tutorialNext').disabled=false;
+  function render(){clearHighlight();const step=steps[index];selectTutorialTab(step.tab);$('tutorialStepLabel').textContent='TUTORIAL · SCHRITT '+(index+1)+' VON '+steps.length;$('tutorialTitle').textContent=step.title;$('tutorialText').textContent=step.text;$('tutorialProgress').querySelector('span').style.width=((index+1)/steps.length*100)+'%';$('tutorialBack').disabled=index===0;$('tutorialNext').textContent=index===steps.length-1?'Fertig':'Prüfen';$('tutorialNext').disabled=false;
     if(step.target){highlight=$(step.target);if(highlight){highlight.classList.add('tutorial-highlight');highlight.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});}}
     step.initialise();
     updateTutorialDebug();
