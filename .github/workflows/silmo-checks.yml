@@ -7,6 +7,7 @@ on:
       - development/v29-ipad
       - development/v31-multi-object-move
       - development/v32-object-lock
+      - development/v33-object-groups-mirror
   pull_request:
     branches:
       - main
@@ -117,5 +118,21 @@ jobs:
           missing = [item for item in required_lock_features if item not in html]
           if missing:
               raise SystemExit("Objektsperre unvollständig: " + ", ".join(missing))
-          print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung und Objektsperre sind statisch geprüft.")
+
+          required_group_mirror = [
+              "function createObjectGroup()",
+              "function ungroupSelectedObjects()",
+              "function mirrorSelectedObjects(axis)",
+              "groupId: typeof obj.userData.groupId === 'string'",
+              "groupId: typeof item.groupId === 'string'",
+              "id='createObjectGroup'",
+              "id='ungroupObjects'",
+              "id='mirrorX'",
+              "id='mirrorY'",
+              "id='mirrorZ'",
+          ]
+          missing = [item for item in required_group_mirror if item not in html]
+          if missing:
+              raise SystemExit("Gruppen/Spiegel-Funktionen unvollständig: " + ", ".join(missing))
+          print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung, Objektsperre, Gruppen und Spiegeln sind statisch geprüft.")
           PY
