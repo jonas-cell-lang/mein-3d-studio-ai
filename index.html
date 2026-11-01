@@ -1204,7 +1204,7 @@ input:focus{outline:1px solid var(--cyan)}
   }
 
   function ungroupSelectedObjects() {
-    const requested = selectedObjects.length ? selectedObjects.filter(obj => objects.includes(obj)) : (selected ? [selected] : []);
+    const requested = [...new Set([...(Array.isArray(selectedObjects) ? selectedObjects : []), ...(selected ? [selected] : [])])].filter(obj => objects.includes(obj));
     const groupIds = new Set(requested.map(obj => obj.userData.groupId).filter(Boolean));
     if (!groupIds.size) { status.textContent = 'Die Auswahl enthält keine Gruppe.'; return; }
     const members = objects.filter(obj => groupIds.has(obj.userData.groupId));
