@@ -1136,7 +1136,8 @@ input:focus{outline:1px solid var(--cyan)}
         updateMoveGizmo();
         status.textContent = obj.userData.locked ? 'Objekt gesperrt: ' + (obj.userData.label || 'Objekt') : 'Objekt entsperrt: ' + (obj.userData.label || 'Objekt');
       };
-      row.append(btn, lockButton);
+      row.insertBefore(btn, row.firstChild);
+      row.appendChild(lockButton);
       list.appendChild(row);
     });
   }
