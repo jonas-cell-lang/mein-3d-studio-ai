@@ -553,6 +553,8 @@ input:focus{outline:1px solid var(--cyan)}
   window.__silmoTutorialPositionSnapshot = () => selected ? { uuid: selected.uuid, x: selected.position.x, y: selected.position.y, z: selected.position.z } : null;
   // Tutorial-safe snapshot of every model object; selection changes do not hide real movement.
   window.__silmoTutorialAllPositions = () => objects.map(obj => ({ uuid: obj.uuid, x: obj.position.x, y: obj.position.y, z: obj.position.z }));
+  // Test snapshot includes scale signs so mirror operations can be verified, not just their status text.
+  window.__silmoTutorialAllTransforms = () => objects.map(obj => ({ uuid: obj.uuid, x: obj.position.x, y: obj.position.y, z: obj.position.z, sx: obj.scale.x, sy: obj.scale.y, sz: obj.scale.z }));
   let uniform = true;
   const MM_PER_UNIT = 10;
   let moveGizmo = null;
