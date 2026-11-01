@@ -706,6 +706,10 @@ input:focus{outline:1px solid var(--cyan)}
   }
   function runBooleanOperation(operation) {
     const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    if (targets.some(obj => obj.userData.locked === true)) {
+      status.textContent = 'Gesperrte Objekte können nicht mit Booleschen Werkzeugen verändert werden. Bitte zuerst entsperren.';
+      return;
+    }
     if (targets.length < 2) {
       status.textContent = 'Bitte mindestens zwei Objekte auswählen (Strg-Klick in der Objektliste).';
       return;
@@ -926,6 +930,7 @@ input:focus{outline:1px solid var(--cyan)}
           color: '#' + obj.material.color.getHexString(),
           baseDimensions: obj.userData.baseDimensions || { x: 1, y: 1, z: 1 },
           percent: obj.userData.percent || { x: 100, y: 100, z: 100 },
+          locked: obj.userData.locked === true,
           geometry: serializeGeometry(obj.geometry)
         }))
       };
@@ -985,7 +990,8 @@ input:focus{outline:1px solid var(--cyan)}
               : { x: measured.x, y: measured.y, z: measured.z },
             percent: item.percent && ['x','y','z'].every(a => Number.isFinite(item.percent[a]))
               ? { x: item.percent.x, y: item.percent.y, z: item.percent.z }
-              : { x: scale[0] * 100, y: scale[1] * 100, z: scale[2] * 100 }
+              : { x: scale[0] * 100, y: scale[1] * 100, z: scale[2] * 100 },
+            locked: item.locked === true
           };
           return mesh;
         });
@@ -1096,9 +1102,10 @@ input:focus{outline:1px solid var(--cyan)}
 
   // SILMO v28: Weltachsen-Ausrichtung mehrerer ausgewählter Meshes.
   function alignSelectedObjects() {
-    const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    const requested = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    const targets = requested.filter(obj => obj.userData.locked !== true);
     if (targets.length < 2) {
-      status.textContent = 'Bitte mindestens zwei Objekte auswählen.';
+      status.textContent = 'Bitte mindestens zwei entsperrte Objekte auswählen.';
       return;
     }
     const axis = $('alignAxis').value;
@@ -1176,7 +1183,7 @@ input:focus{outline:1px solid var(--cyan)}
   }
 
   function applySizeAxis(axis, newMM) {
-    if (!selected) return;
+    if (!selected || selected.userData.locked === true) return;
     if (!Number.isFinite(newMM) || newMM < 0.1 || newMM > 2000) {
       status.textContent = 'Masse müssen zwischen 0,1 und 2000 mm liegen.';
       showProperties();
@@ -1218,7 +1225,7 @@ input:focus{outline:1px solid var(--cyan)}
   }
 
   function applyPercentAxis(axis, percent) {
-    if (!selected) return;
+    if (!selected || selected.userData.locked === true) return;
     if (!Number.isFinite(percent) || percent < 1 || percent > 2000) {
       status.textContent = 'Skalierung muss zwischen 1 % und 2000 % liegen.';
       showProperties();
@@ -1389,7 +1396,7 @@ input:focus{outline:1px solid var(--cyan)}
 
   $('color').addEventListener('focus', () => recordHistory());
   $('color').addEventListener('input', () => {
-    if (selected) selected.material.color.set($('color').value);
+    if (selected && selected.userData.locked !== true) selected.material.color.set($('color').value);
   });
 
   $('addCube').onclick = () => createObject('Würfel');
@@ -1526,9 +1533,10 @@ input:focus{outline:1px solid var(--cyan)}
   };
 
   $('dropToBed').onclick = () => {
-    const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    const requested = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    const targets = requested.filter(obj => obj.userData.locked !== true);
     if (!targets.length) {
-      status.textContent = 'Bitte zuerst mindestens ein Objekt auswählen';
+      status.textContent = requested.length ? 'Alle ausgewählten Objekte sind gesperrt.' : 'Bitte zuerst mindestens ein Objekt auswählen';
       return;
     }
     // Einen gemeinsamen Undo-Schritt für alle ausgewählten Objekte anlegen.
@@ -1542,9 +1550,9 @@ input:focus{outline:1px solid var(--cyan)}
     });
     showProperties();
     updateMoveGizmo();
-    status.textContent = targets.length === 1
+    status.textContent = (targets.length === 1
       ? 'Objekt auf die Arbeitsplatte gestellt'
-      : targets.length + ' Objekte auf die Arbeitsplatte gestellt';
+      : targets.length + ' Objekte auf die Arbeitsplatte gestellt') + (requested.length > targets.length ? '; gesperrte Objekte unverändert' : '');
   };
 
   $('booleanUnion').addEventListener('click', () => runBooleanOperation('union'));
