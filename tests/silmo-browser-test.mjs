@@ -56,10 +56,15 @@ try {
   await page.locator('[data-tab="create"]').click();
   assert.equal(await page.locator('#objects .object-edit').count(), 2, 'Gruppenmitglieder werden nicht als Gruppe angezeigt');
 
-  // Spiegeln der gesamten Auswahl muss den Status aktualisieren.
+  // Spiegeln muss sowohl den Status als auch das tatsächliche Skalierungsvorzeichen ändern.
+  const beforeMirror = await page.evaluate(() => window.__silmoTutorialAllTransforms());
   await page.locator('[data-tab="edit"]').click();
   await page.locator('#mirrorX').click();
   assert.match(await page.locator('#status').innerText(), /2 Objekt\(e\) an der X-Achse gespiegelt/, 'Spiegeln hat nicht funktioniert');
+  const afterMirror = await page.evaluate(() => window.__silmoTutorialAllTransforms());
+  const beforeNew = beforeMirror.slice(-2);
+  const afterNew = afterMirror.slice(-2);
+  assert.ok(beforeNew.every((obj, i) => Math.sign(obj.sx) !== Math.sign(afterNew[i].sx)), 'Spiegeln hat das tatsächliche X-Skalierungsvorzeichen nicht geändert');
 
   // Gruppierung wieder aufheben.
   await page.locator('#ungroupObjects').click();
