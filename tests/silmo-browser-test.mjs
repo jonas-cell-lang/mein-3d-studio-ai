@@ -95,7 +95,7 @@ try {
   await page.locator('#alignMode').selectOption('center');
   await page.locator('#alignSelected').click();
   const alignStatus = await page.locator('#status').innerText();
-  assert.match(alignStatus, /2 Objekte auf Achse X mittig ausgerichtet|bereits so ausgerichtet/, 'Ausrichten meldet keinen Erfolg');
+  assert.match(alignStatus, /2 Objekte auf Achse X ausgerichtet|bereits so ausgerichtet/, 'Ausrichten meldet keinen Erfolg');
   const afterAlign = await page.evaluate(() => window.__silmoTutorialAllPositions());
   const alignedNewObjects = afterAlign.slice(-2);
   assert.ok(Math.abs(alignedNewObjects[0].x - alignedNewObjects[1].x) < 1e-6, 'Die beiden neu erstellten Objekte wurden nicht mittig auf X ausgerichtet');
