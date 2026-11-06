@@ -1266,12 +1266,11 @@ input:focus{outline:1px solid var(--cyan)}
       status.textContent = 'Bitte eine gültige Achse und Aktion auswählen.';
       return;
     }
-    const boundsFor = obj => {
+    const bounds = targets.map(obj => {
       obj.updateMatrixWorld(true);
       return new THREE.Box3().setFromObject(obj);
-    };
-    const bounds = targets.map(boundsFor);
-    let changed = false;
+    });
+    const deltas = new Map();
     if (operation === 'align') {
       const mode = $('alignMode').value;
       const reference = $('alignReference').value;
@@ -1292,8 +1291,7 @@ input:focus{outline:1px solid var(--cyan)}
         if (reference === 'first' && index === 0) return;
         const box = bounds[index];
         const ownValue = mode === 'min' ? box.min[axis] : mode === 'max' ? box.max[axis] : (box.min[axis] + box.max[axis]) / 2;
-        const delta = targetValue - ownValue;
-        if (Math.abs(delta) > 1e-8) { obj.position[axis] += delta; changed = true; }
+        deltas.set(obj,targetValue-ownValue);
       });
     } else {
       const ordered = targets.map((obj,index)=>({obj,index,box:bounds[index],center:(bounds[index].min[axis]+bounds[index].max[axis])/2}))
@@ -1310,7 +1308,7 @@ input:focus{outline:1px solid var(--cyan)}
         let cursor = first.box.max[axis];
         ordered.slice(1,-1).forEach(item=>{
           const delta = cursor + gap - item.box.min[axis];
-          if (Math.abs(delta)>1e-8) { item.obj.position[axis]+=delta; changed=true; }
+          deltas.set(item.obj,delta);
           cursor = item.box.max[axis]+delta;
         });
       } else {
@@ -1323,23 +1321,28 @@ input:focus{outline:1px solid var(--cyan)}
         let cursor = ordered[0].box.max[axis];
         ordered.slice(1).forEach(item=>{
           const delta = cursor + gapUnits - item.box.min[axis];
-          if (Math.abs(delta)>1e-8) { item.obj.position[axis]+=delta; changed=true; }
+          deltas.set(item.obj,delta);
           cursor = item.box.max[axis]+delta;
         });
       }
     }
+    const changed = [...deltas.values()].some(delta => Math.abs(delta) > 1e-8);
     if (!changed) {
       status.textContent = operation === 'align' ? 'Die Objekte sind bereits so ausgerichtet.' : 'Die Abstände sind bereits passend.';
       return;
     }
+    // Erst den alten Zustand sichern, dann die berechneten Änderungen anwenden.
     recordHistory();
-    // Die Änderungen werden erst nach dem History-Eintrag angewendet, damit Undo
-    // den Zustand vor der Aktion wiederherstellen kann.
-    // (Die Zielpositionen wurden oben berechnet; hier werden sie erneut angewendet.)
-    const axisName = axis.toUpperCase();
+    deltas.forEach((delta,obj) => {
+      if (Math.abs(delta) <= 1e-8) return;
+      obj.position[axis] += delta;
+      obj.updateMatrixWorld(true);
+      notifyPositionChanged(obj);
+    });
     updateObjects();
     showProperties();
     updateMoveGizmo();
+    const axisName = axis.toUpperCase();
     const operationName = operation === 'align' ? 'ausgerichtet' : operation === 'distribute' ? 'gleichmässig verteilt' : 'mit festem Abstand angeordnet';
     status.textContent = targets.length + ' Objekte auf Achse ' + axisName + ' ' + operationName + '.';
   }
