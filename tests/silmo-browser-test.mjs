@@ -15,6 +15,17 @@ try {
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
   await page.waitForTimeout(1500);
 
+  // Prüftool: Strg+Leertaste öffnet es und startet automatisch die vollständige Codeprüfung.
+  await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', {
+    key: ' ', code: 'Space', ctrlKey: true, bubbles: true, cancelable: true
+  })));
+  assert.equal(await page.locator('#silmoDiagPanel').isVisible(), true, 'Strg+Leertaste öffnet das Prüftool nicht');
+  await page.waitForFunction(() => /Bestanden:|Fehler gefunden/.test(document.querySelector('#silmoDiagSummary')?.innerText || ''), null, { timeout: 15000 });
+  const auditLog = await page.locator('#silmoDiagLog').innerText();
+  assert.match(auditLog, /CODEPRÜFUNG|ERGEBNIS/, 'Vollständige Codeprüfung wurde nicht ausgeführt');
+  assert.match(auditLog, /Bestanden:/, 'Codeprüfung meldet unerwartete Fehler');
+  await page.evaluate(() => window.SILMO_DIAG.close());
+
   const canvasSize = await page.locator('#viewport canvas').evaluate(canvas => ({ width: canvas.width, height: canvas.height }));
   // Tutorial-Prüfung: Buildkennung und tatsächliche Objektanzahl kontrollieren.
   await page.locator('#tutorialLaunch').click();
@@ -82,6 +93,25 @@ try {
   assert.match(await page.locator('#status').innerText(), /Gruppierung von 2 Objekten aufgehoben/, 'Gruppierung aufheben hat nicht funktioniert');
   await page.locator('[data-tab="create"]').click();
   assert.equal(await page.locator('#objects .object-edit').count(), 0, 'Gruppenkennzeichnung ist nach dem Aufheben noch vorhanden');
+  assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 1, 'Nach dem Aufheben darf nur ein Objekt ausgewählt bleiben');
+  assert.equal(await page.locator('#multiSelectToggle').getAttribute('aria-pressed'), 'false', 'Mehrfachauswahl muss nach dem Aufheben ausgeschaltet sein');
+
+  // Ein einzelnes Gruppenmitglied muss danach unabhängig bewegbar sein.
+  await page.locator('#objects .object-select').nth(initialCount).click();
+  assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 1, 'Einzelobjekt lässt sich nach dem Aufheben nicht allein auswählen');
+  const beforeUngroupMove = await page.evaluate(() => window.__silmoTutorialAllPositions());
+  await page.locator('[data-tab="edit"]').click();
+  const singleX = page.locator('#positionFields input').first();
+  const nextX = String(Number(await singleX.inputValue()) + 1);
+  await singleX.fill(nextX);
+  await singleX.press('Enter');
+  await page.waitForTimeout(150);
+  const afterUngroupMove = await page.evaluate(() => window.__silmoTutorialAllPositions());
+  const changedAfterUngroup = beforeUngroupMove.filter(before => {
+    const after = afterUngroupMove.find(item => item.uuid === before.uuid);
+    return after && Math.abs(after.x - before.x) > 1e-6;
+  });
+  assert.equal(changedAfterUngroup.length, 1, 'Nach dem Aufheben muss genau ein Objekt unabhängig bewegt werden können');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
   console.log('BESTANDEN: 3D-Start, Objekterstellung, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln und Gruppierung aufheben.');
