@@ -41,6 +41,7 @@ try {
   // Ausrichten: Beide Objektmittelpunkte müssen danach auf X übereinstimmen.
   const beforeAlign = await page.evaluate(() => window.__silmoTutorialAllPositions());
   await page.locator('[data-tab="edit"]').click();
+  assert.equal(await page.locator('#status').isVisible(), true, 'Statusmeldung muss auch im Bearbeiten-Reiter sichtbar sein');
   await page.locator('#alignAxis').selectOption('x');
   await page.locator('#alignMode').selectOption('center');
   await page.locator('#alignSelected').click();
