@@ -20,7 +20,7 @@ try {
     key: ' ', code: 'Space', ctrlKey: true, bubbles: true, cancelable: true
   })));
   assert.equal(await page.locator('#silmoDiagPanel').isVisible(), true, 'Strg+Leertaste öffnet das Prüftool nicht');
-  await page.waitForFunction(() => /Bestanden:|Fehler gefunden/.test(document.querySelector('#silmoDiagSummary')?.innerText || ''), null, { timeout: 15000 });
+  await page.waitForFunction(() => /ERGEBNIS/.test(document.querySelector('#silmoDiagLog')?.innerText || ''), null, { timeout: 15000 });
   const auditLog = await page.locator('#silmoDiagLog').innerText();
   assert.match(auditLog, /CODEPRÜFUNG|ERGEBNIS/, 'Vollständige Codeprüfung wurde nicht ausgeführt');
   assert.match(auditLog, /Bestanden:/, 'Codeprüfung meldet unerwartete Fehler');
