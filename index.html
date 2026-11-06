@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v36 Statusanzeige in allen Werkzeugreitern</title>
+<title>SILMO 3D Studio AI – v37 Diagnoseprüfung repariert</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
+<meta name="silmo-build" content="v37 – Diagnoseprüfung repariert">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -109,7 +110,7 @@ input:focus{outline:1px solid var(--cyan)}
 @media(max-width:680px){#tutorialCard{left:12px;right:12px;width:auto}.header-actions button{min-height:36px}.tutorial-highlight{outline-width:3px;outline-offset:2px}}
 
 
-/* SILMO v28: Ausrichtungswerkzeuge + Entwickler-Diagnose – per F9 oder Cmd/Strg+Umschalt+D ein-/ausblenden */
+/* SILMO Entwickler-Diagnose – per F9 oder Cmd/Strg+Umschalt+D ein-/ausblenden */
 #silmoDiagToggle{border:1px solid #d6a64a!important;background:#3b2d14!important;color:#ffe3a0!important}
 #silmoDiagPanel{position:fixed;z-index:20000;inset:7vh 4vw auto auto;width:min(680px,92vw);max-height:86vh;display:flex;flex-direction:column;background:#091321;border:1px solid #d6a64a;border-radius:14px;box-shadow:0 20px 70px #000c;color:#edf4ff;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}
 #silmoDiagPanel[hidden]{display:none!important}
@@ -125,7 +126,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v36 – Statusanzeige in allen Werkzeugreitern; Auswahlwerkzeuge -->
+<!-- SILMO BUILD: v37 – Diagnoseprüfung repariert; Statusanzeige in allen Werkzeugreitern -->
 <script id="silmoDeveloperDiagnostics">
 /* Entwicklermodus: unabhängige Fehlererfassung, standardmäßig eingeklappt. Entfernen: diesen Scriptblock und den CSS-Block #silmoDiagToggle/#silmoDiagPanel löschen. */
 (function(){
@@ -2115,7 +2116,7 @@ input:focus{outline:1px solid var(--cyan)}
   const shade = document.createElement('div'); shade.id='tutorialShade'; shade.hidden=true;
   const card = document.createElement('section'); card.id='tutorialCard'; card.hidden=true;
   card.setAttribute('role','dialog'); card.setAttribute('aria-modal','false'); card.setAttribute('aria-label','SILMO Tutorial');
-  card.innerHTML = '<button id="tutorialClose" type="button" aria-label="Tutorial schliessen">✕</button><div style="font-size:10px;color:#ffcf70;margin-bottom:6px">DIAGNOSEBUILD v26 · BASELINE-FIX</div><div id="tutorialStepLabel" style="color:#80c7ff;font-size:11px;font-weight:700;letter-spacing:.08em"></div><h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div><div id="tutorialFeedback" aria-live="polite"></div><pre id="tutorialDebug" aria-live="polite">Diagnose wird gestartet …</pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialNext" type="button" class="primary">Prüfen</button><button id="tutorialSkip" type="button">Beenden</button></div>';
+  card.innerHTML = '<button id="tutorialClose" type="button" aria-label="Tutorial schliessen">✕</button><div style="font-size:10px;color:#ffcf70;margin-bottom:6px">DIAGNOSE · v37</div><div id="tutorialStepLabel" style="color:#80c7ff;font-size:11px;font-weight:700;letter-spacing:.08em"></div><h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div><div id="tutorialFeedback" aria-live="polite"></div><pre id="tutorialDebug" aria-live="polite">Diagnose wird gestartet …</pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialNext" type="button" class="primary">Prüfen</button><button id="tutorialSkip" type="button">Beenden</button></div>';
   document.body.append(shade,card);
   const steps = [
     {title:'Würfel erstellen',text:'Klicke auf „＋ Würfel“. Die Aufgabe ist bestanden, wenn tatsächlich ein weiteres Objekt in der Objektliste erscheint.',target:'addCube',tab:'create',check:()=>objectCount()>tutorialStartCount,initialise:()=>{tutorialStartCount=objectCount();feedback('Klicke auf die markierte Schaltfläche.');}},
@@ -2133,9 +2134,10 @@ input:focus{outline:1px solid var(--cyan)}
     try { const p=window.__silmoTutorialPositionSnapshot?.(); if(p) selectedText=`${p.uuid.slice(0,8)} x=${p.x.toFixed(4)} y=${p.y.toFixed(4)} z=${p.z.toFixed(4)}`; } catch(e){diagnosticLastError='Snapshot: '+String(e);}
     try { const now=allPositionSnapshot(); currentList=String(now.length)+' Objekt(e)'; moved=Array.isArray(positionStartMap)?String(hasSelectedObjectMoved()):'keine Startwerte'; } catch(e){diagnosticLastError='Positionsvergleich: '+String(e);}
     const base=Array.isArray(positionStartMap)?positionStartMap.map(p=>`${p.uuid.slice(0,8)}(${p.x.toFixed(3)},${p.y.toFixed(3)},${p.z.toFixed(3)})`).join(' | ')||'leer':'nicht gesetzt';
-    el.textContent=`Build: v28 Ausrichten\nTutorial-Schritt intern: ${index+1} (Objekt bewegen = 2)\nKarte sichtbar: ${!card.hidden} | Position geändert: ${positionChanged} | Wechsel vorgemerkt: ${positionAdvanceQueued}\nObjekte aktuell: ${currentList} | Vergleich erkennt Bewegung: ${moved}\nAusgewählt: ${selectedText}\nStartpositionen: ${base}\nPositionssignale: ${diagnosticEventCount} | letztes Signal: ${diagnosticLastEvent}\nLetzter Diagnosefehler: ${diagnosticLastError}`;
+    const buildInfo=document.querySelector('meta[name="silmo-build"]')?.content||'Build unbekannt';
+     el.textContent=`Build: ${buildInfo}\nTutorial-Schritt intern: ${index+1} (Objekt bewegen = 2)\nKarte sichtbar: ${!card.hidden} | Position geändert: ${positionChanged} | Wechsel vorgemerkt: ${positionAdvanceQueued}\nObjekte aktuell: ${currentList} | Vergleich erkennt Bewegung: ${moved}\nAusgewählt: ${selectedText}\nStartpositionen: ${base}\nPositionssignale: ${diagnosticEventCount} | letztes Signal: ${diagnosticLastEvent}\nLetzter Diagnosefehler: ${diagnosticLastError}`;
   }
-  function objectCount(){const el=$('objects');return el?el.querySelectorAll('button').length:0;}
+  function objectCount(){const el=$('objects');return el?el.querySelectorAll('.object-row').length:0;}
   function fieldSnapshot(id){const el=$(id);return el?[...el.querySelectorAll('input,select')].map(n=>n.value).join('|'):'';}
   function positionSnapshot(){const p=window.__silmoTutorialPositionSnapshot?.();return p&&typeof p.uuid==='string'&&[p.x,p.y,p.z].every(Number.isFinite)?JSON.stringify({uuid:p.uuid,x:p.x,y:p.y,z:p.z}):'';}
   function allPositionSnapshot(){const list=window.__silmoTutorialAllPositions?.();return Array.isArray(list)?list.filter(p=>p&&typeof p.uuid==='string'&&[p.x,p.y,p.z].every(Number.isFinite)):[];}
