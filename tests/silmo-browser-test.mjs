@@ -26,11 +26,36 @@ try {
   assert.match(auditLog, /Bestanden:/, 'Codeprüfung meldet unerwartete Fehler');
   await page.evaluate(() => window.SILMO_DIAG.close());
 
+  // Mac: Cmd+Leertaste.
+  const macPage = await browser.newPage();
+  await macPage.addInitScript(() => Object.defineProperty(navigator, 'platform', { configurable: true, get: () => 'MacIntel' }));
+  await macPage.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
+  await macPage.waitForSelector('#silmoDiagToggle', { timeout: 20000 });
+  await macPage.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', {
+    key: ' ', code: 'Space', metaKey: true, bubbles: true, cancelable: true
+  })));
+  assert.equal(await macPage.locator('#silmoDiagPanel').isVisible(), true, 'Cmd+Leertaste öffnet das Prüftool auf dem Mac nicht');
+  await macPage.close();
+
+  // iPad mit externer Tastatur: Option+Leertaste.
+  const ipadPage = await browser.newPage();
+  await ipadPage.addInitScript(() => {
+    Object.defineProperty(navigator, 'platform', { configurable: true, get: () => 'MacIntel' });
+    Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, get: () => 5 });
+  });
+  await ipadPage.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
+  await ipadPage.waitForSelector('#silmoDiagToggle', { timeout: 20000 });
+  await ipadPage.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', {
+    key: ' ', code: 'Space', altKey: true, bubbles: true, cancelable: true
+  })));
+  assert.equal(await ipadPage.locator('#silmoDiagPanel').isVisible(), true, 'Option+Leertaste öffnet das Prüftool auf dem iPad nicht');
+  await ipadPage.close();
+
   const canvasSize = await page.locator('#viewport canvas').evaluate(canvas => ({ width: canvas.width, height: canvas.height }));
   // Tutorial-Prüfung: Buildkennung und tatsächliche Objektanzahl kontrollieren.
   await page.locator('#tutorialLaunch').click();
   const tutorialDebug = await page.locator('#tutorialDebug').innerText();
-  assert.match(tutorialDebug, /Build: v37 – Diagnoseprüfung repariert/, 'Tutorial-Diagnose zeigt nicht den aktuellen Build');
+  assert.match(tutorialDebug, /Build: v38 – Prüftool und Gruppierung verbessert/, 'Tutorial-Diagnose zeigt nicht den aktuellen Build');
   const tutorialStartRows = await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click();
   assert.equal(await page.locator('#objects .object-row').count(), tutorialStartRows + 1, 'Tutorial-Testobjekt wurde nicht erstellt');
