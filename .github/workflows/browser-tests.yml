@@ -1,6 +1,9 @@
 name: SILMO browser interaction tests
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - fix/v35-selection-tools
