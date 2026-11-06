@@ -138,6 +138,15 @@ input:focus{outline:1px solid var(--cyan)}
   const errors=[];
   let panel,logEl,summaryEl,openButton,banner,auditRunning=false;
   const maxEntries=500;
+  const recentInteractions=[];
+  function interactionContext(){return recentInteractions.length?recentInteractions.slice(-8).map((item,i)=>(i+1)+'. '+item).join('\n'):'Keine Bedienaktion aufgezeichnet.';}
+  document.addEventListener('click',event=>{
+    const target=event.target&&event.target.closest?event.target.closest('button,[role="button"],input,select'):null;
+    if(!target)return;
+    const description=(target.tagName||'Element')+(target.id?'#'+target.id:'')+(target.textContent?' · '+target.textContent.trim().replace(/\s+/g,' ').slice(0,90):'');
+    recentInteractions.push(new Date().toLocaleTimeString('de-CH',{hour12:false})+' '+description);
+    if(recentInteractions.length>20)recentInteractions.shift();
+  },true);
   const isIPad=/iPad/i.test(navigator.platform)||(/MacIntel/i.test(navigator.platform)&&navigator.maxTouchPoints>1);
   const isMac=/Mac|iPhone|iPad/i.test(navigator.platform)&&!isIPad;
   const shortcutLabel=isIPad?'⌥ + Leertaste':(isMac?'⌘ + Leertaste':'Strg + Leertaste');
@@ -148,7 +157,8 @@ input:focus{outline:1px solid var(--cyan)}
   window.addEventListener('error',event=>{
     const target=event.target;
     if(target&&target!==window){add('RESSOURCE FEHLER',(target.tagName||'Element')+' '+(target.src||target.href||'unbekannte Ressource'),true);return;}
-    add('JAVASCRIPT FEHLER',(event.message||'Unbekannter Fehler')+' | Datei: '+(event.filename||'?')+' | Zeile: '+(event.lineno||'?')+':'+(event.colno||'?')+(event.error?'\n'+safeString(event.error):''),true);
+    const scriptList=[...document.scripts].filter(script=>script.src).map(script=>script.src+' [crossorigin='+((script.crossOrigin||'nicht gesetzt'))+']').join('\n');
+    add('JAVASCRIPT FEHLER',(event.message||'Unbekannter Fehler')+' | Datei: '+(event.filename||'?')+' | Zeile: '+(event.lineno||'?')+':'+(event.colno||'?')+(event.error?'\n'+safeString(event.error):'')+'\nLetzte Bedienaktionen:\n'+interactionContext()+'\nGeladene externe Skripte:\n'+(scriptList||'Keine'),true);
   },true);
   window.addEventListener('unhandledrejection',event=>add('PROMISE FEHLER',safeString(event.reason),true));
   const originalConsoleError=console.error.bind(console);
@@ -196,6 +206,9 @@ input:focus{outline:1px solid var(--cyan)}
       'Tutorial-Diagnose: '+(tut?tut.textContent.trim():'nicht eingeblendet / nicht vorhanden'),
       'Gruppierungsstatus: '+groupState,
       'Fokuselement: '+(active?(active.tagName+'#'+(active.id||'')):'keines'),
+      'Gerät: '+(isIPad?'iPad':(isMac?'Apple-Gerät':'Computer / anderes Gerät'))+' · Plattform: '+navigator.platform+' · Touchpunkte: '+navigator.maxTouchPoints,
+      'Letzte Bedienaktionen:\n'+interactionContext(),
+      'Geladene externe Skripte:\n'+([...document.scripts].filter(script=>script.src).map(script=>script.src+' [crossorigin='+(script.crossOrigin||'nicht gesetzt')+']').join('\n')||'Keine'),
       'Objektlisteinträge: '+document.querySelectorAll('#objects .object-row').length,
       'Ausgewählte Objektzeilen: '+document.querySelectorAll('#objects .object-select[aria-pressed="true"]').length,
       'Fehler-/Ereignisprotokoll:',
@@ -262,6 +275,13 @@ input:focus{outline:1px solid var(--cyan)}
     catch(error){add('DIAGNOSE','Kopieren nicht möglich: '+error.message);}
     ta.remove();
   }
+  async function shareReport(){
+    const report=snapshot();
+    if(typeof navigator.share==='function'){
+      try{await navigator.share({title:'SILMO – Fehlerbericht',text:report});add('DIAGNOSE','Bericht wurde über das Teilen-Menü übergeben.');}
+      catch(error){if(error&&error.name==='AbortError')return;add('DIAGNOSE','Teilen nicht möglich: '+safeString(error));copyReport();}
+    }else copyReport();
+  }
   function downloadReport(){
     const blob=new Blob([snapshot()],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='SILMO_Prueftool_'+new Date().toISOString().replace(/[:.]/g,'-')+'.txt';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);add('DIAGNOSE','Berichtdownload gestartet.');
   }
@@ -281,13 +301,14 @@ input:focus{outline:1px solid var(--cyan)}
     if(actions)actions.insertBefore(openButton,actions.firstChild);
     else{openButton.style.position='fixed';openButton.style.right='10px';openButton.style.top='10px';openButton.style.zIndex='19999';document.body.appendChild(openButton);}
     panel=document.createElement('section');panel.id='silmoDiagPanel';panel.hidden=true;panel.setAttribute('aria-label','SILMO vollständiges Prüftool');
-    panel.innerHTML='<div class="sd-head"><span>🛠 SILMO – vollständiges Prüftool</span><button type="button" data-sd="close">Schliessen ✕</button></div><div class="sd-summary" id="silmoDiagSummary"></div><div class="sd-actions"><button type="button" data-sd="audit">Gesamten Code prüfen</button><button type="button" data-sd="snapshot">Status erfassen</button><button type="button" data-sd="copy">Bericht kopieren</button><button type="button" data-sd="download">Bericht herunterladen</button><button type="button" data-sd="clear">Protokoll leeren</button></div><pre id="silmoDiagLog" aria-live="polite"></pre><div class="sd-foot">Computer: '+shortcutLabel+' · iPad mit Tastatur: ⌥ + Leertaste · Zusätzlich über den Button in der Werkzeugleiste. Die Prüfung kontrolliert den geladenen Quelltext und wichtige Laufzeitbestandteile.</div>';
+    panel.innerHTML='<div class="sd-head"><span>🛠 SILMO – vollständiges Prüftool</span><button type="button" data-sd="close">Schliessen ✕</button></div><div class="sd-summary" id="silmoDiagSummary"></div><div class="sd-actions"><button type="button" data-sd="audit">Gesamten Code prüfen</button><button type="button" data-sd="snapshot">Status erfassen</button><button type="button" data-sd="copy">Bericht kopieren</button><button type="button" data-sd="share">Bericht teilen</button><button type="button" data-sd="download">Bericht herunterladen</button><button type="button" data-sd="clear">Protokoll leeren</button></div><pre id="silmoDiagLog" aria-live="polite"></pre><div class="sd-foot">iPad: Oben auf „Prüftool“ tippen. Danach den Fehler erneut auslösen und „Bericht teilen“ wählen (z. B. in ChatGPT). Alternativ „Bericht kopieren“. '+shortcutLabel+' öffnet das Prüftool mit Tastatur.</div>';
     document.body.appendChild(panel);logEl=panel.querySelector('#silmoDiagLog');summaryEl=panel.querySelector('#silmoDiagSummary');
     panel.addEventListener('click',event=>{const button=event.target.closest('button[data-sd]');if(!button)return;switch(button.dataset.sd){
       case'close':toggle(false);break;
       case'audit':runFullAudit();break;
       case'snapshot':add('STATUS-SNAPSHOT',snapshot().split('Fehler-/Ereignisprotokoll:')[0]);break;
       case'copy':copyReport();break;
+      case'share':shareReport();break;
       case'download':downloadReport();break;
       case'clear':entries.length=0;errors.length=0;renderLog();updateBanner();add('DIAGNOSE','Protokoll wurde manuell geleert.');break;
     }});
@@ -304,7 +325,7 @@ input:focus{outline:1px solid var(--cyan)}
     if(shortcutMatches(event)||legacy){event.preventDefault();event.stopPropagation();if(event.stopImmediatePropagation)event.stopImmediatePropagation();toggle();}
   },true);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',createUI,{once:true});else createUI();
-  window.SILMO_DIAG={report:snapshot,log:(label,value)=>add(String(label||'MANUELL'),safeString(value)),open:()=>toggle(true),close:()=>toggle(false),clear:()=>{entries.length=0;errors.length=0;renderLog();updateBanner();},audit:runFullAudit,version:'v38'};
+  window.SILMO_DIAG={report:snapshot,log:(label,value)=>add(String(label||'MANUELL'),safeString(value)),open:()=>toggle(true),close:()=>toggle(false),clear:()=>{entries.length=0;errors.length=0;renderLog();updateBanner();},audit:runFullAudit,version:'v39'};
 })();
 </script>
 <header>
@@ -563,9 +584,9 @@ input:focus{outline:1px solid var(--cyan)}
   selectTab('create');
 })();
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
+<script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
