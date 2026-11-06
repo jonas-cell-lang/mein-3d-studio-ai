@@ -139,6 +139,23 @@ input:focus{outline:1px solid var(--cyan)}
   let panel,logEl,summaryEl,openButton,banner,auditRunning=false;
   const maxEntries=500;
   const recentInteractions=[];
+  const externalScriptStates=new Map();
+  function scriptDiagnostics(){
+    const scripts=[...document.scripts].filter(script=>script.src).map(script=>{
+      const state=externalScriptStates.get(script.src);
+      return script.src+' | Status: '+(state?state.status:'kein Ladeereignis erfasst')+' | crossorigin: '+(script.crossOrigin||'nicht gesetzt')+(state?' | Zeit: '+state.time:'');
+    });
+    let resources=[];
+    try{resources=performance.getEntriesByType('resource').filter(item=>item.initiatorType==='script').slice(-8).map(item=>item.name+' | Dauer: '+Math.round(item.duration)+' ms | Ende: '+Math.round(item.responseEnd)+' ms');}catch(_){}
+    return 'Skript-Ladestatus:\\n'+(scripts.join('\\n')||'Keine externen Skripte')+'\\nLetzte Script-Ressourcen (Performance API):\\n'+(resources.join('\\n')||'Keine Ressourcendaten verfügbar');
+  }
+  document.addEventListener('load',event=>{
+    const target=event.target;
+    if(!target||target.tagName!=='SCRIPT'||!target.src)return;
+    const time=new Date().toLocaleTimeString('de-CH',{hour12:false});
+    externalScriptStates.set(target.src,{status:'geladen',time});
+    add('EXTERNES SKRIPT GELADEN',target.src+' | crossorigin: '+(target.crossOrigin||'nicht gesetzt'),false);
+  },true);
   function interactionContext(){return recentInteractions.length?recentInteractions.slice(-8).map((item,i)=>(i+1)+'. '+item).join('\n'):'Keine Bedienaktion aufgezeichnet.';}
   document.addEventListener('click',event=>{
     const target=event.target&&event.target.closest?event.target.closest('button,[role="button"],input,select'):null;
@@ -156,9 +173,14 @@ input:focus{outline:1px solid var(--cyan)}
   }
   window.addEventListener('error',event=>{
     const target=event.target;
-    if(target&&target!==window){add('RESSOURCE FEHLER',(target.tagName||'Element')+' '+(target.src||target.href||'unbekannte Ressource'),true);return;}
-    const scriptList=[...document.scripts].filter(script=>script.src).map(script=>script.src+' [crossorigin='+((script.crossOrigin||'nicht gesetzt'))+']').join('\n');
-    add('JAVASCRIPT FEHLER',(event.message||'Unbekannter Fehler')+' | Datei: '+(event.filename||'?')+' | Zeile: '+(event.lineno||'?')+':'+(event.colno||'?')+(event.error?'\n'+safeString(event.error):'')+'\nLetzte Bedienaktionen:\n'+interactionContext()+'\nGeladene externe Skripte:\n'+(scriptList||'Keine'),true);
+    if(target&&target!==window){
+      const source=target.src||target.href||'unbekannte Ressource';
+      if(target.tagName==='SCRIPT'&&target.src)externalScriptStates.set(target.src,{status:'Ladefehler',time:new Date().toLocaleTimeString('de-CH',{hour12:false})});
+      add('RESSOURCE FEHLER',(target.tagName||'Element')+' '+source+'\\nHTML-Element: '+(target.outerHTML||'nicht verfügbar')+'\\n'+scriptDiagnostics(),true);
+      return;
+    }
+    const generic=!event.filename&&!event.lineno&&!event.colno&&(!event.message||event.message==='Script error.');
+    add('JAVASCRIPT FEHLER',(event.message||'Unbekannter Fehler')+' | Datei: '+(event.filename||'?')+' | Zeile: '+(event.lineno||'?')+':'+(event.colno||'?')+(event.error?'\\n'+safeString(event.error):'')+'\\nDokumentstatus: '+document.readyState+' | Zeit seit Navigation: '+Math.round(performance.now())+' ms\\nLetzte Bedienaktionen:\\n'+interactionContext()+'\\n'+scriptDiagnostics()+(generic?'\\nHINWEIS: Safari hat die Fehlerquelle nicht offengelegt (generischer Script error). Die gelisteten Skript-Ladezeiten helfen bei der Eingrenzung, beweisen aber allein keine Ursache.':''),true);
   },true);
   window.addEventListener('unhandledrejection',event=>add('PROMISE FEHLER',safeString(event.reason),true));
   const originalConsoleError=console.error.bind(console);
@@ -208,7 +230,7 @@ input:focus{outline:1px solid var(--cyan)}
       'Fokuselement: '+(active?(active.tagName+'#'+(active.id||'')):'keines'),
       'Gerät: '+(isIPad?'iPad':(isMac?'Apple-Gerät':'Computer / anderes Gerät'))+' · Plattform: '+navigator.platform+' · Touchpunkte: '+navigator.maxTouchPoints,
       'Letzte Bedienaktionen:\n'+interactionContext(),
-      'Geladene externe Skripte:\n'+([...document.scripts].filter(script=>script.src).map(script=>script.src+' [crossorigin='+(script.crossOrigin||'nicht gesetzt')+']').join('\n')||'Keine'),
+      scriptDiagnostics(),
       'Objektlisteinträge: '+document.querySelectorAll('#objects .object-row').length,
       'Ausgewählte Objektzeilen: '+document.querySelectorAll('#objects .object-select[aria-pressed="true"]').length,
       'Fehler-/Ereignisprotokoll:',
@@ -325,7 +347,7 @@ input:focus{outline:1px solid var(--cyan)}
     if(shortcutMatches(event)||legacy){event.preventDefault();event.stopPropagation();if(event.stopImmediatePropagation)event.stopImmediatePropagation();toggle();}
   },true);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',createUI,{once:true});else createUI();
-  window.SILMO_DIAG={report:snapshot,log:(label,value)=>add(String(label||'MANUELL'),safeString(value)),open:()=>toggle(true),close:()=>toggle(false),clear:()=>{entries.length=0;errors.length=0;renderLog();updateBanner();},audit:runFullAudit,version:'v39'};
+  window.SILMO_DIAG={report:snapshot,log:(label,value)=>add(String(label||'MANUELL'),safeString(value)),open:()=>toggle(true),close:()=>toggle(false),clear:()=>{entries.length=0;errors.length=0;renderLog();updateBanner();},audit:runFullAudit,version:'diagnostics-v40'};
 })();
 </script>
 <header>
