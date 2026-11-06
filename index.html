@@ -110,9 +110,9 @@ input:focus{outline:1px solid var(--cyan)}
 @media(max-width:680px){#tutorialCard{left:12px;right:12px;width:auto}.header-actions button{min-height:36px}.tutorial-highlight{outline-width:3px;outline-offset:2px}}
 
 
-/* SILMO Entwickler-Diagnose – per F9 oder Cmd/Strg+Umschalt+D ein-/ausblenden */
+/* SILMO Prüftool – Fehlerbanner und Tastenkürzel */
 #silmoDiagToggle{border:1px solid #d6a64a!important;background:#3b2d14!important;color:#ffe3a0!important}
-#silmoDiagPanel{position:fixed;z-index:20000;inset:7vh 4vw auto auto;width:min(680px,92vw);max-height:86vh;display:flex;flex-direction:column;background:#091321;border:1px solid #d6a64a;border-radius:14px;box-shadow:0 20px 70px #000c;color:#edf4ff;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}
+#silmoDiagPanel{position:fixed;z-index:20000;inset:7vh 4vw auto auto;width:min(720px,92vw);max-height:86vh;display:flex;flex-direction:column;background:#091321;border:1px solid #d6a64a;border-radius:14px;box-shadow:0 20px 70px #000c;color:#edf4ff;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}
 #silmoDiagPanel[hidden]{display:none!important}
 #silmoDiagPanel .sd-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid #4b3d24;font:600 14px/1.4 Inter,Segoe UI,Arial,sans-serif}
 #silmoDiagPanel .sd-actions{display:flex;flex-wrap:wrap;gap:7px;padding:10px 12px;border-bottom:1px solid #25354a}
@@ -121,48 +121,48 @@ input:focus{outline:1px solid var(--cyan)}
 #silmoDiagPanel .sd-summary{padding:9px 12px;color:#bcd5f2;background:#101f32;font:12px Inter,Segoe UI,Arial,sans-serif}
 #silmoDiagLog{overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;padding:12px;min-height:140px;max-height:45vh;color:#d9e8f9}
 #silmoDiagPanel .sd-foot{padding:8px 12px;border-top:1px solid #25354a;color:#9db0ca;font:11px Inter,Segoe UI,Arial,sans-serif}
-@media(max-width:680px){#silmoDiagPanel{inset:8px;width:calc(100vw - 16px);max-height:calc(100vh - 16px)}#silmoDiagLog{max-height:48vh}}
+#silmoDiagBanner{position:absolute;z-index:8;top:48px;left:14px;right:14px;width:calc(100% - 28px);text-align:left;border:1px solid #ff6975;background:#8f1725;color:#fff;padding:11px 14px;border-radius:10px;font-weight:700;box-shadow:0 5px 24px #0008}
+#silmoDiagBanner[hidden]{display:none!important}
+#silmoDiagBanner:hover{background:#a91e2e;border-color:#ff9aa2}
+@media(max-width:680px){#silmoDiagPanel{inset:8px;width:calc(100vw - 16px);max-height:calc(100vh - 16px)}#silmoDiagLog{max-height:48vh}#silmoDiagBanner{top:44px;left:8px;right:8px;width:calc(100% - 16px);padding:9px 10px;font-size:11px}}
 
 </style>
 </head>
 <body>
 <!-- SILMO BUILD: v37 – Diagnoseprüfung repariert; Statusanzeige in allen Werkzeugreitern -->
 <script id="silmoDeveloperDiagnostics">
-/* Entwicklermodus: unabhängige Fehlererfassung, standardmäßig eingeklappt. Entfernen: diesen Scriptblock und den CSS-Block #silmoDiagToggle/#silmoDiagPanel löschen. */
 (function(){
   'use strict';
-  const startedAt = new Date();
-  const entries = [];
-  let panel, logEl, summaryEl, openButton;
-  const maxEntries = 300;
+  const startedAt=new Date();
+  const entries=[];
+  const errors=[];
+  let panel,logEl,summaryEl,openButton,banner,auditRunning=false;
+  const maxEntries=500;
+  const isIPad=/iPad/i.test(navigator.platform)||(/MacIntel/i.test(navigator.platform)&&navigator.maxTouchPoints>1);
+  const isMac=/Mac|iPhone|iPad/i.test(navigator.platform)&&!isIPad;
+  const shortcutLabel=isIPad?'⌥ + Leertaste':(isMac?'⌘ + Leertaste':'Strg + Leertaste');
   function safeString(value){
-    try { if(value instanceof Error) return value.stack || (value.name+': '+value.message); if(typeof value==='string') return value; return JSON.stringify(value); }
-    catch(_){ return String(value); }
+    try{if(value instanceof Error)return value.stack||(value.name+': '+value.message);if(typeof value==='string')return value;const result=JSON.stringify(value);return result===undefined?String(value):result;}
+    catch(_){return String(value);}
   }
-  function add(type, message){
-    const time = new Date().toLocaleTimeString('de-CH',{hour12:false});
-    entries.push({time,type,message:String(message)});
-    if(entries.length>maxEntries) entries.splice(0,entries.length-maxEntries);
-    renderLog();
+  function updateBanner(){
+    if(!banner){const viewport=document.querySelector('#viewport');if(!viewport)return;banner=document.createElement('button');banner.id='silmoDiagBanner';banner.type='button';banner.hidden=true;banner.setAttribute('role','alert');banner.addEventListener('click',()=>toggle(true));viewport.appendChild(banner);}
+    if(errors.length){banner.textContent='⚠ SILMO hat '+errors.length+' Fehler gefunden – hier tippen, um Details zu öffnen';banner.hidden=false;}
+    else banner.hidden=true;
+  }
+  function add(type,message,isError){
+    const time=new Date().toLocaleTimeString('de-CH',{hour12:false});
+    const entry={time,type,message:String(message)};
+    entries.push(entry);
+    if(isError)errors.push(entry);
+    if(entries.length>maxEntries)entries.splice(0,entries.length-maxEntries);
+    if(errors.length>maxEntries)errors.splice(0,errors.length-maxEntries);
+    renderLog();updateBanner();
   }
   function renderLog(){
-    if(!logEl) return;
-    logEl.textContent = entries.length ? entries.map((e,i)=>String(i+1).padStart(3,'0')+' ['+e.time+'] '+e.type+'\n'+e.message).join('\n\n') : 'Noch keine Fehler oder Ereignisse erfasst. Öffne die Diagnose und reproduziere den Fehler.';
-    if(summaryEl) summaryEl.textContent='Einträge: '+entries.length+' · Seit: '+startedAt.toLocaleTimeString('de-CH',{hour12:false})+' · Taste F9 oder Cmd/Strg+Umschalt+D';
+    if(logEl)logEl.textContent=entries.length?entries.map((e,i)=>String(i+1).padStart(3,'0')+' ['+e.time+'] '+e.type+'\n'+e.message).join('\n\n'):'Noch keine Fehler oder Ereignisse erfasst.';
+    if(summaryEl)summaryEl.textContent='Fehler: '+errors.length+' · Einträge: '+entries.length+' · Seit: '+startedAt.toLocaleTimeString('de-CH',{hour12:false});
   }
-  // Capture uncaught JS errors immediately, before the main app scripts execute.
-  window.addEventListener('error',function(e){
-    const target=e.target;
-    if(target && target!==window){add('RESSOURCE FEHLER',(target.tagName||'Element')+' '+(target.src||target.href||'unbekannte Ressource'));return;}
-    add('JAVASCRIPT FEHLER',(e.message||'Unbekannter Fehler')+'\nDatei: '+(e.filename||'?')+'\nZeile: '+(e.lineno||'?')+':'+(e.colno||'?')+(e.error?'\n'+safeString(e.error):''));
-  },true);
-  window.addEventListener('unhandledrejection',function(e){add('PROMISE FEHLER',safeString(e.reason));});
-  const originalConsoleError=console.error.bind(console);
-  console.error=function(){
-    try { add('console.error',Array.from(arguments).map(safeString).join(' ')); } catch(_){}
-    originalConsoleError.apply(console,arguments);
-  };
-  window.addEventListener('securitypolicyviolation',e=>add('SICHERHEITSRICHTLINIE',e.violatedDirective+' · '+e.blockedURI));
   function snapshot(){
     const canvas=document.querySelector('canvas');
     let webgl='Canvas nicht gefunden';
@@ -170,53 +170,129 @@ input:focus{outline:1px solid var(--cyan)}
     const status=document.querySelector('#status');
     const tut=document.querySelector('#tutorialDebug');
     const active=document.activeElement;
+    let groupState='nicht verfügbar';
+    try{if(typeof window.__silmoGroupSnapshot==='function')groupState=JSON.stringify(window.__silmoGroupSnapshot());}catch(e){groupState='Fehler: '+safeString(e);}
     return [
-      'SILMO 3D STUDIO AI – DIAGNOSEBERICHT',
+      'SILMO 3D STUDIO AI – PRÜFTOOLBERICHT',
       'Zeit: '+new Date().toISOString(),
       'URL: '+location.href,
       'Browser: '+navigator.userAgent,
       'Online: '+navigator.onLine,
       'Dokumentstatus: '+document.readyState,
       'WebGL: '+webgl,
-      'Canvas: '+(canvas?canvas.outerHTML.slice(0,500):'nicht gefunden'),
       'Statusmeldung: '+(status?status.textContent.trim():'nicht gefunden'),
       'Tutorial-Diagnose: '+(tut?tut.textContent.trim():'nicht eingeblendet / nicht vorhanden'),
-      'Fokuselement: '+(active?(active.tagName+'#'+(active.id||'')+'.'+(typeof active.className==='string'?active.className:'')):'keines'),
-      'Objektlisteinträge: '+document.querySelectorAll('#objects button, #objects [data-object-id]').length,
+      'Gruppierungsstatus: '+groupState,
+      'Fokuselement: '+(active?(active.tagName+'#'+(active.id||'')):'keines'),
+      'Objektlisteinträge: '+document.querySelectorAll('#objects .object-row').length,
+      'Ausgewählte Objektzeilen: '+document.querySelectorAll('#objects .object-select[aria-pressed="true"]').length,
       'Fehler-/Ereignisprotokoll:',
       entries.length?entries.map((e,i)=>String(i+1).padStart(3,'0')+' ['+e.time+'] '+e.type+'\n'+e.message).join('\n\n'):'Keine Einträge erfasst.'
     ].join('\n');
   }
+  async function runFullAudit(){
+    if(auditRunning)return;
+    auditRunning=true;
+    if(summaryEl)summaryEl.textContent='Vollständige Codeprüfung läuft …';
+    add('CODEPRÜFUNG','Prüfe die vollständige HTML-Datei, alle eingebetteten JavaScript-Blöcke, CSS-Regeln und die wichtigen App-Bestandteile.');
+    const issues=[];
+    let scriptCount=0,cssRuleCount=0,duplicateCount=0;
+    try{
+      const response=await fetch(location.href,{cache:'no-store'});
+      if(!response.ok)throw new Error('Quelldatei konnte nicht geladen werden (HTTP '+response.status+').');
+      const source=await response.text();
+      if(!/^\s*<!doctype html/i.test(source))issues.push('HTML: HTML5-Doctype fehlt.');
+      const doc=new DOMParser().parseFromString(source,'text/html');
+      const idCounts=new Map();
+      doc.querySelectorAll('[id]').forEach(el=>idCounts.set(el.id,(idCounts.get(el.id)||0)+1));
+      for(const [id,count] of idCounts){if(count>1){duplicateCount++;issues.push('HTML: ID "'+id+'" kommt '+count+'-mal vor.');}}
+      ['viewport','status','objects','tutorialLaunch','addCube'].forEach(id=>{if(!doc.getElementById(id))issues.push('HTML: Wichtiges Element #'+id+' fehlt.');});
+      const scripts=[...doc.querySelectorAll('script:not([src])')];
+      scriptCount=scripts.length;
+      scripts.forEach((script,index)=>{
+        const type=(script.getAttribute('type')||'').toLowerCase();
+        if(type&&type!=='text/javascript'&&type!=='application/javascript'&&type!=='module')return;
+        try{new Function(script.textContent||'');}
+        catch(error){issues.push('JavaScript-Block '+(index+1)+': '+(error.message||String(error)));}
+      });
+      const styles=[...doc.querySelectorAll('style')].map(style=>style.textContent||'').join('\n');
+      if(typeof CSSStyleSheet==='function'&&CSSStyleSheet.prototype&&typeof CSSStyleSheet.prototype.replaceSync==='function'){
+        try{const sheet=new CSSStyleSheet();sheet.replaceSync(styles);cssRuleCount=sheet.cssRules.length;}
+        catch(error){issues.push('CSS: '+(error.message||String(error)));}
+      }else{
+        cssRuleCount=styles?styles.split('{').length-1:0;
+        add('HINWEIS','Dieser Browser bietet keinen vollständigen CSS-Parser für die Zusatzprüfung; CSS-Regeln wurden gezählt.');
+      }
+      ['#createObjectGroup','#ungroupObjects','#alignSelected'].forEach(selector=>{if(!document.querySelector(selector))issues.push('App: Werkzeug '+selector+' wurde nicht initialisiert.');});
+      if(!window.THREE)issues.push('3D: Three.js ist nicht geladen.');
+      else{
+        if(!window.THREE.STLLoader)issues.push('3D: STLLoader ist nicht geladen.');
+        if(!window.THREE.STLExporter)issues.push('3D: STLExporter ist nicht geladen.');
+      }
+      if(!document.querySelector('#viewport canvas'))issues.push('3D: Die Arbeitsfläche besitzt kein Canvas.');
+      if(issues.length){
+        issues.forEach(issue=>add('CODEPRÜFUNG – FEHLER',issue,true));
+        add('ERGEBNIS','Prüfung beendet: '+issues.length+' Fehler gefunden. Siehe rotes Banner auf der 3D-Arbeitsfläche.');
+      }else{
+        add('ERGEBNIS','Bestanden: HTML-Struktur, '+scriptCount+' JavaScript-Blöcke, '+cssRuleCount+' CSS-Regeln, keine doppelten IDs, wichtige Werkzeuge und 3D-Abhängigkeiten geprüft.');
+      }
+    }catch(error){add('CODEPRÜFUNG – FEHLER',safeString(error),true);}
+    finally{auditRunning=false;renderLog();updateBanner();}
+  }
   function copyReport(){
     const report=snapshot();
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(report).then(()=>add('DIAGNOSE','Bericht in Zwischenablage kopiert.')).catch(()=>fallbackCopy(report));}
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(report).then(()=>add('DIAGNOSE','Bericht in Zwischenablage kopiert.')).catch(()=>fallbackCopy(report));
     else fallbackCopy(report);
   }
-  function fallbackCopy(text){
-    const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
-    try{const ok=document.execCommand('copy');add('DIAGNOSE',ok?'Bericht in Zwischenablage kopiert.':'Kopieren blockiert – bitte Bericht herunterladen.');}catch(e){add('DIAGNOSE','Kopieren nicht möglich: '+e.message);}ta.remove();
+  function fallbackCopy(value){
+    const ta=document.createElement('textarea');ta.value=value;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+    try{add('DIAGNOSE',document.execCommand('copy')?'Bericht in Zwischenablage kopiert.':'Kopieren blockiert – bitte Bericht herunterladen.');}
+    catch(error){add('DIAGNOSE','Kopieren nicht möglich: '+error.message);}
+    ta.remove();
   }
   function downloadReport(){
-    const blob=new Blob([snapshot()],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='SILMO_Diagnose_'+new Date().toISOString().replace(/[:.]/g,'-')+'.txt';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);add('DIAGNOSE','Berichtdownload gestartet.');
+    const blob=new Blob([snapshot()],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='SILMO_Prueftool_'+new Date().toISOString().replace(/[:.]/g,'-')+'.txt';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);add('DIAGNOSE','Berichtdownload gestartet.');
+  }
+  function isTypingTarget(target){return !!(target&&target.closest&&target.closest('input,textarea,select,[contenteditable="true"]'));}
+  function shortcutMatches(event){
+    if(event.code!=='Space'&&event.key!==' ')return false;
+    if(isTypingTarget(event.target))return false;
+    if(isIPad)return event.altKey&&!event.ctrlKey&&!event.metaKey;
+    if(isMac)return event.metaKey&&!event.ctrlKey;
+    return event.ctrlKey&&!event.metaKey;
   }
   function createUI(){
     if(document.getElementById('silmoDiagPanel'))return;
     const actions=document.querySelector('.header-actions');
-    openButton=document.createElement('button');openButton.id='silmoDiagToggle';openButton.type='button';openButton.textContent='🛠 Diagnose (F9)';openButton.title='Fehlerdiagnose öffnen (F9 oder Cmd/Strg+Umschalt+D)';
-    openButton.addEventListener('click',toggle);
-    if(actions) actions.insertBefore(openButton,actions.firstChild); else {openButton.style.position='fixed';openButton.style.right='10px';openButton.style.top='10px';openButton.style.zIndex='19999';document.body.appendChild(openButton);}
-    panel=document.createElement('section');panel.id='silmoDiagPanel';panel.hidden=true;panel.setAttribute('aria-label','SILMO Fehlerdiagnose');
-    panel.innerHTML='<div class="sd-head"><span>🛠 SILMO – Entwicklerdiagnose</span><button type="button" data-sd="close" aria-label="Diagnose schliessen">Schliessen ✕</button></div><div class="sd-summary" id="silmoDiagSummary"></div><div class="sd-actions"><button type="button" data-sd="snapshot">Status erfassen</button><button type="button" data-sd="copy">Bericht kopieren</button><button type="button" data-sd="download">Bericht herunterladen</button><button type="button" data-sd="clear">Protokoll leeren</button></div><pre id="silmoDiagLog" aria-live="polite"></pre><div class="sd-foot">Öffnen/Schliessen: F9 oder Cmd/Strg+Umschalt+D. Fehler werden lokal im aktuellen Browserfenster protokolliert.</div>';
+    openButton=document.createElement('button');openButton.id='silmoDiagToggle';openButton.type='button';openButton.textContent='🛠 Prüftool';openButton.title='Prüftool öffnen: '+shortcutLabel;
+    openButton.addEventListener('click',()=>toggle());
+    if(actions)actions.insertBefore(openButton,actions.firstChild);
+    else{openButton.style.position='fixed';openButton.style.right='10px';openButton.style.top='10px';openButton.style.zIndex='19999';document.body.appendChild(openButton);}
+    panel=document.createElement('section');panel.id='silmoDiagPanel';panel.hidden=true;panel.setAttribute('aria-label','SILMO vollständiges Prüftool');
+    panel.innerHTML='<div class="sd-head"><span>🛠 SILMO – vollständiges Prüftool</span><button type="button" data-sd="close">Schliessen ✕</button></div><div class="sd-summary" id="silmoDiagSummary"></div><div class="sd-actions"><button type="button" data-sd="audit">Gesamten Code prüfen</button><button type="button" data-sd="snapshot">Status erfassen</button><button type="button" data-sd="copy">Bericht kopieren</button><button type="button" data-sd="download">Bericht herunterladen</button><button type="button" data-sd="clear">Protokoll leeren</button></div><pre id="silmoDiagLog" aria-live="polite"></pre><div class="sd-foot">Computer: '+shortcutLabel+' · iPad mit Tastatur: ⌥ + Leertaste · Zusätzlich über den Button in der Werkzeugleiste. Die Prüfung kontrolliert den geladenen Quelltext und wichtige Laufzeitbestandteile.</div>';
     document.body.appendChild(panel);logEl=panel.querySelector('#silmoDiagLog');summaryEl=panel.querySelector('#silmoDiagSummary');
-    panel.addEventListener('click',function(e){const b=e.target.closest('button[data-sd]');if(!b)return;switch(b.dataset.sd){case'close':toggle(false);break;case'snapshot':add('STATUS-SNAPSHOT',snapshot().split('Fehler-/Ereignisprotokoll:')[0]);break;case'copy':copyReport();break;case'download':downloadReport();break;case'clear':entries.length=0;renderLog();add('DIAGNOSE','Protokoll wurde manuell geleert.');break;}});
-    renderLog();add('START','Diagnose aktiv. Öffne sie mit F9 oder Cmd/Strg+Umschalt+D.');
-    setTimeout(()=>{const missing=['#viewport','#status','#objects','#tutorialLaunch'].filter(sel=>!document.querySelector(sel));if(missing.length)add('APP-STRUKTUR','Nicht gefundene Elemente: '+missing.join(', '));},1500);
+    panel.addEventListener('click',event=>{const button=event.target.closest('button[data-sd]');if(!button)return;switch(button.dataset.sd){
+      case'close':toggle(false);break;
+      case'audit':runFullAudit();break;
+      case'snapshot':add('STATUS-SNAPSHOT',snapshot().split('Fehler-/Ereignisprotokoll:')[0]);break;
+      case'copy':copyReport();break;
+      case'download':downloadReport();break;
+      case'clear':entries.length=0;errors.length=0;renderLog();updateBanner();add('DIAGNOSE','Protokoll wurde manuell geleert.');break;
+    }});
+    updateBanner();renderLog();add('START','Prüftool bereit. Tastenkürzel: '+shortcutLabel+'.');
   }
-  function toggle(force){if(!panel)return;const show=typeof force==='boolean'?force:panel.hidden;panel.hidden=!show;if(show){add('STATUS-SNAPSHOT',snapshot().split('Fehler-/Ereignisprotokoll:')[0]);}}
-  document.addEventListener('keydown',function(e){if(e.key==='F9'||((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key.toLowerCase()==='d')){e.preventDefault();toggle();}});
+  function toggle(force){
+    if(!panel)return;
+    const show=typeof force==='boolean'?force:panel.hidden;
+    panel.hidden=!show;
+    if(show){add('STATUS-SNAPSHOT',snapshot().split('Fehler-/Ereignisprotokoll:')[0]);runFullAudit();}
+  }
+  document.addEventListener('keydown',event=>{
+    const legacy=event.key==='F9'||((event.ctrlKey||event.metaKey)&&event.shiftKey&&String(event.key||'').toLowerCase()==='d');
+    if(shortcutMatches(event)||legacy){event.preventDefault();event.stopPropagation();if(event.stopImmediatePropagation)event.stopImmediatePropagation();toggle();}
+  },true);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',createUI,{once:true});else createUI();
-  // Public helper for a developer console: window.SILMO_DIAG.report()
-  window.SILMO_DIAG={report:snapshot,log:(label,value)=>add(String(label||'MANUELL'),safeString(value)),open:()=>toggle(true),close:()=>toggle(false),clear:()=>{entries.length=0;renderLog();},version:'v29'};
+  window.SILMO_DIAG={report:snapshot,log:(label,value)=>add(String(label||'MANUELL'),safeString(value)),open:()=>toggle(true),close:()=>toggle(false),clear:()=>{entries.length=0;errors.length=0;renderLog();updateBanner();},audit:runFullAudit,version:'v38'};
 })();
 </script>
 <header>
@@ -1090,6 +1166,8 @@ input:focus{outline:1px solid var(--cyan)}
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'wide object-select' + (selectedObjects.includes(obj) || obj === selected ? ' active' : '');
+      btn.dataset.objectId = obj.uuid;
+      btn.setAttribute('data-group-id', obj.userData.groupId || '');
       btn.textContent = obj.userData.label || 'Objekt';
       btn.setAttribute('aria-pressed', String(selectedObjects.includes(obj) || obj === selected));
       btn.onclick = event => {
@@ -1194,30 +1272,64 @@ input:focus{outline:1px solid var(--cyan)}
 
   // SILMO v33: Gruppierung bleibt als Metadatum an den Meshes erhalten.
   // Dadurch bleiben bestehende Auswahl-, Export- und Transformationspfade intakt.
+  function selectedObjectsForGrouping() {
+    const fromState = [...(Array.isArray(selectedObjects) ? selectedObjects : []), ...(selected ? [selected] : [])];
+    const fromUI = [...document.querySelectorAll('#objects .object-select[aria-pressed="true"]')]
+      .map(button => objects.find(obj => obj.uuid === button.dataset.objectId))
+      .filter(Boolean);
+    return [...new Set([...fromState, ...fromUI])].filter(obj => objects.includes(obj));
+  }
+
   function createObjectGroup() {
-    const targets = selectedObjects.length ? selectedObjects.filter(obj => objects.includes(obj)) : (selected ? [selected] : []);
-    if (targets.length < 2) { status.textContent = 'Bitte mindestens zwei Objekte auswählen, um eine Gruppe zu erstellen.'; return; }
-    if (targets.some(obj => obj.userData.locked === true)) { status.textContent = 'Gesperrte Objekte können nicht gruppiert werden. Bitte zuerst entsperren.'; return; }
+    const targets = selectedObjectsForGrouping();
+    if (targets.length < 2) {
+      status.textContent = 'Gruppieren nicht möglich: ' + targets.length + ' Objekt(e) ausgewählt. Bitte mindestens zwei auswählen.';
+      window.SILMO_DIAG?.log('GRUPPIEREN ABGEBROCHEN', { selectedCount: targets.length, visibleSelection: document.querySelectorAll('#objects .object-select[aria-pressed="true"]').length });
+      return;
+    }
+    if (targets.some(obj => obj.userData.locked === true)) {
+      status.textContent = 'Gesperrte Objekte können nicht gruppiert werden. Bitte zuerst entsperren.';
+      return;
+    }
     recordHistory();
     const groupId = 'grp-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
     targets.forEach(obj => { obj.userData.groupId = groupId; });
     selectedObjects = targets.slice();
     selected = targets[targets.length - 1];
+    individualGroupEdit = false;
     updateObjects(); showProperties(); updateMoveGizmo();
     status.textContent = targets.length + ' Objekte zu einer Gruppe zusammengefasst.';
+    window.SILMO_DIAG?.log('GRUPPIEREN ERFOLGREICH', { count: targets.length, groupId, objectIds: targets.map(obj => obj.uuid) });
   }
 
   function ungroupSelectedObjects() {
-    const requested = [...new Set([...(Array.isArray(selectedObjects) ? selectedObjects : []), ...(selected ? [selected] : [])])].filter(obj => objects.includes(obj));
+    const requested = selectedObjectsForGrouping();
     const groupIds = new Set(requested.map(obj => obj.userData.groupId).filter(Boolean));
-    if (!groupIds.size) { status.textContent = 'Die Auswahl enthält keine Gruppe.'; return; }
+    if (!groupIds.size) {
+      status.textContent = 'Keine Gruppe ausgewählt. Wähle zuerst ein Gruppenobjekt aus.';
+      window.SILMO_DIAG?.log('GRUPPIERUNG AUFHEBEN ABGEBROCHEN', { selectedCount: requested.length, selectedGroupIds: requested.map(obj => obj.userData.groupId || null) });
+      return;
+    }
     const members = objects.filter(obj => groupIds.has(obj.userData.groupId));
     recordHistory();
     members.forEach(obj => { delete obj.userData.groupId; });
-    selectedObjects = members;
+    // Nach dem Aufheben nur ein Objekt ausgewählt lassen. Sonst bleiben alle
+    // früheren Gruppenmitglieder gemeinsam markiert und bewegen sich weiterhin zusammen.
     selected = members[members.length - 1] || null;
+    selectedObjects = selected ? [selected] : [];
+    individualGroupEdit = false;
+    if (multiSelectMode) {
+      multiSelectMode = false;
+      const toggle = $('multiSelectToggle');
+      if (toggle) {
+        toggle.textContent = '☷ Mehrfachauswahl: AUS';
+        toggle.setAttribute('aria-pressed', 'false');
+        toggle.classList.remove('active');
+      }
+    }
     updateObjects(); showProperties(); updateMoveGizmo();
-    status.textContent = 'Gruppierung von ' + members.length + ' Objekten aufgehoben.';
+    status.textContent = 'Gruppierung von ' + members.length + ' Objekten aufgehoben. Jetzt ist ein Objekt einzeln ausgewählt.';
+    window.SILMO_DIAG?.log('GRUPPIERUNG AUFGEHOBEN', { count: members.length, remainingSelection: selected ? [selected.uuid] : [], multiSelectMode });
   }
 
   function mirrorSelectedObjects(axis) {
@@ -1254,6 +1366,14 @@ input:focus{outline:1px solid var(--cyan)}
     status.textContent = multiSelectMode
       ? 'Mehrfachauswahl aktiv: Objekte in der Liste antippen, um sie hinzuzufügen oder abzuwählen.'
       : 'Mehrfachauswahl ausgeschaltet.';
+  });
+  window.__silmoGroupSnapshot = () => ({
+    objectCount: objects.length,
+    selectedCount: selectedObjects.length,
+    selectedIds: selectedObjects.map(obj => obj.uuid),
+    selectedGroupIds: [...new Set(selectedObjects.map(obj => obj.userData.groupId).filter(Boolean))],
+    groupCount: new Set(objects.map(obj => obj.userData.groupId).filter(Boolean)).size,
+    multiSelectMode
   });
   $('alignSelected').addEventListener('click', alignSelectedObjects);
   $('createObjectGroup').addEventListener('click', createObjectGroup);
