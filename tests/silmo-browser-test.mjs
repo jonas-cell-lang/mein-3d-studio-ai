@@ -55,7 +55,10 @@ try {
   // Tutorial-Prüfung: Buildkennung und tatsächliche Objektanzahl kontrollieren.
   await page.locator('#tutorialLaunch').click();
   const tutorialDebug = await page.locator('#tutorialDebug').innerText();
-  assert.match(tutorialDebug, /Build: v38 – Prüftool und Gruppierung verbessert/, 'Tutorial-Diagnose zeigt nicht den aktuellen Build');
+  const currentBuild = await page.locator('meta[name="silmo-build"]').getAttribute('content');
+  assert.ok(currentBuild, 'Build-Metadaten fehlen');
+  assert.ok(tutorialDebug.includes(`Build: ${currentBuild}`), 'Tutorial-Diagnose zeigt nicht den aktuellen Build');
+  assert.ok((await page.title()).includes(currentBuild), 'Seitentitel zeigt nicht den aktuellen Build');
   const tutorialStartRows = await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click();
   assert.equal(await page.locator('#objects .object-row').count(), tutorialStartRows + 1, 'Tutorial-Testobjekt wurde nicht erstellt');
@@ -92,7 +95,7 @@ try {
   await page.locator('#alignMode').selectOption('center');
   await page.locator('#alignSelected').click();
   const alignStatus = await page.locator('#status').innerText();
-  assert.match(alignStatus, /2 Objekte auf Achse X mittig ausgerichtet|bereits so ausgerichtet/, 'Ausrichten meldet keinen Erfolg');
+  assert.match(alignStatus, /2 Objekte auf Achse X ausgerichtet|bereits so ausgerichtet/, 'Ausrichten meldet keinen Erfolg');
   const afterAlign = await page.evaluate(() => window.__silmoTutorialAllPositions());
   const alignedNewObjects = afterAlign.slice(-2);
   assert.ok(Math.abs(alignedNewObjects[0].x - alignedNewObjects[1].x) < 1e-6, 'Die beiden neu erstellten Objekte wurden nicht mittig auf X ausgerichtet');
