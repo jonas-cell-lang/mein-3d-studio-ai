@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v37 Diagnoseprüfung repariert</title>
+<title>SILMO 3D Studio AI – v38 Prüftool und Gruppierung verbessert</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v37 – Diagnoseprüfung repariert">
+<meta name="silmo-build" content="v38 – Prüftool und Gruppierung verbessert">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -129,7 +129,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v37 – Diagnoseprüfung repariert; Statusanzeige in allen Werkzeugreitern -->
+<!-- SILMO BUILD: v38 – Prüftool und Gruppierung verbessert; Statusanzeige in allen Werkzeugreitern -->
 <script id="silmoDeveloperDiagnostics">
 (function(){
   'use strict';
@@ -145,6 +145,18 @@ input:focus{outline:1px solid var(--cyan)}
     try{if(value instanceof Error)return value.stack||(value.name+': '+value.message);if(typeof value==='string')return value;const result=JSON.stringify(value);return result===undefined?String(value):result;}
     catch(_){return String(value);}
   }
+  window.addEventListener('error',event=>{
+    const target=event.target;
+    if(target&&target!==window){add('RESSOURCE FEHLER',(target.tagName||'Element')+' '+(target.src||target.href||'unbekannte Ressource'),true);return;}
+    add('JAVASCRIPT FEHLER',(event.message||'Unbekannter Fehler')+' | Datei: '+(event.filename||'?')+' | Zeile: '+(event.lineno||'?')+':'+(event.colno||'?')+(event.error?'\n'+safeString(event.error):''),true);
+  },true);
+  window.addEventListener('unhandledrejection',event=>add('PROMISE FEHLER',safeString(event.reason),true));
+  const originalConsoleError=console.error.bind(console);
+  console.error=function(){
+    try{add('console.error',Array.from(arguments).map(safeString).join(' '),true);}catch(_){}
+    originalConsoleError.apply(console,arguments);
+  };
+  window.addEventListener('securitypolicyviolation',event=>add('SICHERHEITSRICHTLINIE',event.violatedDirective+' · '+event.blockedURI,true));
   function updateBanner(){
     if(!banner){const viewport=document.querySelector('#viewport');if(!viewport)return;banner=document.createElement('button');banner.id='silmoDiagBanner';banner.type='button';banner.hidden=true;banner.setAttribute('role','alert');banner.addEventListener('click',()=>toggle(true));viewport.appendChild(banner);}
     if(errors.length){banner.textContent='⚠ SILMO hat '+errors.length+' Fehler gefunden – hier tippen, um Details zu öffnen';banner.hidden=false;}
