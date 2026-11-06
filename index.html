@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v38 – Prüftool und Gruppierung verbessert">
+<meta name="silmo-build" content="v39 – Ausrichten und Verteilen erweitert">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -129,7 +129,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v38 – Prüftool und Gruppierung verbessert; Statusanzeige in allen Werkzeugreitern -->
+<!-- SILMO BUILD: v39 – Ausrichten und Verteilen erweitert; Statusanzeige in allen Werkzeugreitern -->
 <script id="silmoDeveloperDiagnostics">
 (function(){
   'use strict';
@@ -424,17 +424,31 @@ input:focus{outline:1px solid var(--cyan)}
   heading(paneMap.edit.left,'Bearbeiten');
   ['delete','fitView'].forEach(id=>put(paneMap.edit.left,id));
   const multiSelectButton=document.createElement('button'); multiSelectButton.type='button'; multiSelectButton.id='multiSelectToggle'; multiSelectButton.className='wide'; multiSelectButton.textContent='☷ Mehrfachauswahl: AUS'; multiSelectButton.setAttribute('aria-pressed','false'); paneMap.edit.left.appendChild(multiSelectButton);
-  const alignHeading=document.createElement('h2'); alignHeading.textContent='Objekte ausrichten'; paneMap.edit.left.appendChild(alignHeading);
-  const alignHelp=document.createElement('p'); alignHelp.className='note'; alignHelp.textContent='Wähle mindestens zwei Objekte. Auf dem iPad zuerst Mehrfachauswahl einschalten und dann die Objekte antippen.'; paneMap.edit.left.appendChild(alignHelp);
+  const alignHeading=document.createElement('h2'); alignHeading.textContent='Ausrichten & Verteilen'; paneMap.edit.left.appendChild(alignHeading);
+  const alignHelp=document.createElement('p'); alignHelp.className='note'; alignHelp.textContent='Wähle mindestens zwei Objekte. Mehrfachauswahl einschalten und die Objekte in der Liste antippen. Das zuerst ausgewählte Objekt bleibt bei „Am ersten Objekt“ an seiner Position.'; paneMap.edit.left.appendChild(alignHelp);
   const alignAxisWrap=document.createElement('div'); alignAxisWrap.className='field';
   const alignAxisLabel=document.createElement('label'); alignAxisLabel.htmlFor='alignAxis'; alignAxisLabel.textContent='Achse';
   const alignAxis=document.createElement('select'); alignAxis.id='alignAxis'; alignAxis.innerHTML='<option value="x">X – links / rechts</option><option value="y">Y – vorne / hinten</option><option value="z">Z – unten / oben</option>';
   alignAxisWrap.append(alignAxisLabel,alignAxis); paneMap.edit.left.appendChild(alignAxisWrap);
-  const alignModeWrap=document.createElement('div'); alignModeWrap.className='field';
+  const alignOperationWrap=document.createElement('div'); alignOperationWrap.className='field';
+  const alignOperationLabel=document.createElement('label'); alignOperationLabel.htmlFor='alignOperation'; alignOperationLabel.textContent='Aktion';
+  const alignOperation=document.createElement('select'); alignOperation.id='alignOperation'; alignOperation.innerHTML='<option value="align">Ausrichten</option><option value="distribute">Gleichmässig verteilen</option><option value="gap">Exakten Abstand einstellen</option>';
+  alignOperationWrap.append(alignOperationLabel,alignOperation); paneMap.edit.left.appendChild(alignOperationWrap);
+  const alignModeWrap=document.createElement('div'); alignModeWrap.className='field'; alignModeWrap.id='alignModeWrap';
   const alignModeLabel=document.createElement('label'); alignModeLabel.htmlFor='alignMode'; alignModeLabel.textContent='Ausrichtung';
-  const alignMode=document.createElement('select'); alignMode.id='alignMode'; alignMode.innerHTML='<option value="min">An einer Seite ausrichten</option><option value="center">Mittig ausrichten</option><option value="max">An der anderen Seite ausrichten</option>';
+  const alignMode=document.createElement('select'); alignMode.id='alignMode'; alignMode.innerHTML='<option value="min">Linke / vordere / untere Kante</option><option value="center">Mitte</option><option value="max">Rechte / hintere / obere Kante</option>';
   alignModeWrap.append(alignModeLabel,alignMode); paneMap.edit.left.appendChild(alignModeWrap);
-  const alignButton=document.createElement('button'); alignButton.type='button'; alignButton.id='alignSelected'; alignButton.className='wide primary'; alignButton.textContent='⇔ Ausgewählte Objekte ausrichten'; paneMap.edit.left.appendChild(alignButton);
+  const alignReferenceWrap=document.createElement('div'); alignReferenceWrap.className='field'; alignReferenceWrap.id='alignReferenceWrap';
+  const alignReferenceLabel=document.createElement('label'); alignReferenceLabel.htmlFor='alignReference'; alignReferenceLabel.textContent='Bezugspunkt';
+  const alignReference=document.createElement('select'); alignReference.id='alignReference'; alignReference.innerHTML='<option value="first">Am ersten ausgewählten Objekt</option><option value="common">An gemeinsamer Mitte / Kante</option>';
+  alignReferenceWrap.append(alignReferenceLabel,alignReference); paneMap.edit.left.appendChild(alignReferenceWrap);
+  const alignGapWrap=document.createElement('div'); alignGapWrap.className='field'; alignGapWrap.id='alignGapWrap';
+  const alignGapLabel=document.createElement('label'); alignGapLabel.htmlFor='alignGapMM'; alignGapLabel.textContent='Abstand zwischen Objekten (mm)';
+  const alignGap=document.createElement('input'); alignGap.id='alignGapMM'; alignGap.type='number'; alignGap.min='0'; alignGap.step='0.1'; alignGap.value='2';
+  alignGapWrap.append(alignGapLabel,alignGap); paneMap.edit.left.appendChild(alignGapWrap);
+  const alignButton=document.createElement('button'); alignButton.type='button'; alignButton.id='alignSelected'; alignButton.className='wide primary'; alignButton.textContent='⇔ Aktion ausführen'; paneMap.edit.left.appendChild(alignButton);
+  const updateAlignControls=()=>{const op=alignOperation.value;alignModeWrap.hidden=op!=='align';alignReferenceWrap.hidden=op!=='align';alignGapWrap.hidden=op!=='gap';alignButton.textContent=op==='align'?'⇔ Ausgewählte Objekte ausrichten':op==='distribute'?'↔ Gleichmässig verteilen':'↔ Abstand einstellen';};
+  alignOperation.addEventListener('change',updateAlignControls); updateAlignControls();
 
   const groupHeading=document.createElement('h2'); groupHeading.textContent='Objektgruppen'; paneMap.edit.left.appendChild(groupHeading);
   const groupHelp=document.createElement('p'); groupHelp.className='note'; groupHelp.textContent='Wähle mindestens zwei Objekte aus. Gruppen lassen sich gemeinsam bewegen und bleiben beim Speichern erhalten.'; paneMap.edit.left.appendChild(groupHelp);
@@ -1238,38 +1252,90 @@ input:focus{outline:1px solid var(--cyan)}
     });
   }
 
-  // SILMO v28: Weltachsen-Ausrichtung mehrerer ausgewählter Meshes.
+  // SILMO v39: Ausrichten, gleichmässig verteilen und exakte Abstände.
   function alignSelectedObjects() {
-    const requested = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    const requested = selectedObjectsForGrouping().filter(obj => objects.includes(obj));
     const targets = requested.filter(obj => obj.userData.locked !== true);
     if (targets.length < 2) {
-      status.textContent = 'Bitte mindestens zwei entsperrte Objekte auswählen.';
+      status.textContent = 'Bitte mindestens zwei entsperrte Objekte auswählen. Aktuell: ' + targets.length + '.';
       return;
     }
     const axis = $('alignAxis').value;
-    const mode = $('alignMode').value;
-    if (!['x','y','z'].includes(axis) || !['min','center','max'].includes(mode)) {
-      status.textContent = 'Bitte eine gültige Ausrichtung auswählen.';
+    const operation = $('alignOperation').value;
+    if (!['x','y','z'].includes(axis) || !['align','distribute','gap'].includes(operation)) {
+      status.textContent = 'Bitte eine gültige Achse und Aktion auswählen.';
       return;
     }
     const bounds = targets.map(obj => {
       obj.updateMatrixWorld(true);
       return new THREE.Box3().setFromObject(obj);
     });
-    const allMin = Math.min(...bounds.map(box => box.min[axis]));
-    const allMax = Math.max(...bounds.map(box => box.max[axis]));
-    const targetValue = mode === 'min' ? allMin : mode === 'max' ? allMax : (allMin + allMax) / 2;
-    const deltas = bounds.map(box => {
-      const ownValue = mode === 'min' ? box.min[axis] : mode === 'max' ? box.max[axis] : (box.min[axis] + box.max[axis]) / 2;
-      return targetValue - ownValue;
-    });
-    if (deltas.every(delta => Math.abs(delta) < 1e-8)) {
-      status.textContent = 'Die ausgewählten Objekte sind bereits so ausgerichtet.';
+    const deltas = new Map();
+    if (operation === 'align') {
+      const mode = $('alignMode').value;
+      const reference = $('alignReference').value;
+      if (!['min','center','max'].includes(mode) || !['first','common'].includes(reference)) {
+        status.textContent = 'Bitte eine gültige Ausrichtung und einen Bezugspunkt auswählen.';
+        return;
+      }
+      let targetValue;
+      if (reference === 'first') {
+        const anchor = bounds[0];
+        targetValue = mode === 'min' ? anchor.min[axis] : mode === 'max' ? anchor.max[axis] : (anchor.min[axis] + anchor.max[axis]) / 2;
+      } else {
+        const allMin = Math.min(...bounds.map(box => box.min[axis]));
+        const allMax = Math.max(...bounds.map(box => box.max[axis]));
+        targetValue = mode === 'min' ? allMin : mode === 'max' ? allMax : (allMin + allMax) / 2;
+      }
+      targets.forEach((obj,index) => {
+        if (reference === 'first' && index === 0) return;
+        const box = bounds[index];
+        const ownValue = mode === 'min' ? box.min[axis] : mode === 'max' ? box.max[axis] : (box.min[axis] + box.max[axis]) / 2;
+        deltas.set(obj,targetValue-ownValue);
+      });
+    } else {
+      const ordered = targets.map((obj,index)=>({obj,index,box:bounds[index],center:(bounds[index].min[axis]+bounds[index].max[axis])/2}))
+        .sort((a,b)=>a.center-b.center || a.index-b.index);
+      if (operation === 'distribute') {
+        const first = ordered[0], last = ordered[ordered.length-1];
+        const totalWidth = ordered.reduce((sum,item)=>sum+(item.box.max[axis]-item.box.min[axis]),0);
+        const outerSpan = last.box.max[axis]-first.box.min[axis];
+        const gap = (outerSpan-totalWidth)/(ordered.length-1);
+        if (gap < -1e-7) {
+          status.textContent = 'Verteilen nicht möglich: Die äusseren Objekte lassen nicht genug Platz für gleiche Abstände.';
+          return;
+        }
+        let cursor = first.box.max[axis];
+        ordered.slice(1,-1).forEach(item=>{
+          const delta = cursor + gap - item.box.min[axis];
+          deltas.set(item.obj,delta);
+          cursor = item.box.max[axis]+delta;
+        });
+      } else {
+        const gapMM = Number($('alignGapMM').value);
+        if (!Number.isFinite(gapMM) || gapMM < 0 || gapMM > 100000) {
+          status.textContent = 'Bitte einen gültigen Abstand von 0 bis 100000 mm eingeben.';
+          return;
+        }
+        const gapUnits = gapMM / MM_PER_UNIT;
+        let cursor = ordered[0].box.max[axis];
+        ordered.slice(1).forEach(item=>{
+          const delta = cursor + gapUnits - item.box.min[axis];
+          deltas.set(item.obj,delta);
+          cursor = item.box.max[axis]+delta;
+        });
+      }
+    }
+    const changed = [...deltas.values()].some(delta => Math.abs(delta) > 1e-8);
+    if (!changed) {
+      status.textContent = operation === 'align' ? 'Die Objekte sind bereits so ausgerichtet.' : 'Die Abstände sind bereits passend.';
       return;
     }
+    // Erst den alten Zustand sichern, dann die berechneten Änderungen anwenden.
     recordHistory();
-    targets.forEach((obj, index) => {
-      obj.position[axis] += deltas[index];
+    deltas.forEach((delta,obj) => {
+      if (Math.abs(delta) <= 1e-8) return;
+      obj.position[axis] += delta;
       obj.updateMatrixWorld(true);
       notifyPositionChanged(obj);
     });
@@ -1277,10 +1343,9 @@ input:focus{outline:1px solid var(--cyan)}
     showProperties();
     updateMoveGizmo();
     const axisName = axis.toUpperCase();
-    const modeName = mode === 'min' ? 'an einer Seite' : mode === 'max' ? 'an der anderen Seite' : 'mittig';
-    status.textContent = targets.length + ' Objekte auf Achse ' + axisName + ' ' + modeName + ' ausgerichtet.';
+    const operationName = operation === 'align' ? 'ausgerichtet' : operation === 'distribute' ? 'gleichmässig verteilt' : 'mit festem Abstand angeordnet';
+    status.textContent = targets.length + ' Objekte auf Achse ' + axisName + ' ' + operationName + '.';
   }
-
 
   // SILMO v33: Gruppierung bleibt als Metadatum an den Meshes erhalten.
   // Dadurch bleiben bestehende Auswahl-, Export- und Transformationspfade intakt.
