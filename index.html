@@ -147,7 +147,7 @@ input:focus{outline:1px solid var(--cyan)}
     });
     let resources=[];
     try{resources=performance.getEntriesByType('resource').filter(item=>item.initiatorType==='script').slice(-8).map(item=>item.name+' | Dauer: '+Math.round(item.duration)+' ms | Ende: '+Math.round(item.responseEnd)+' ms');}catch(_){}
-    return 'Skript-Ladestatus:\\n'+(scripts.join('\\n')||'Keine externen Skripte')+'\\nLetzte Script-Ressourcen (Performance API):\\n'+(resources.join('\\n')||'Keine Ressourcendaten verfügbar');
+    return 'Skript-Ladestatus:\n'+(scripts.join('\n')||'Keine externen Skripte')+'\nLetzte Script-Ressourcen (Performance API):\n'+(resources.join('\n')||'Keine Ressourcendaten verfügbar');
   }
   document.addEventListener('load',event=>{
     const target=event.target;
@@ -176,11 +176,11 @@ input:focus{outline:1px solid var(--cyan)}
     if(target&&target!==window){
       const source=target.src||target.href||'unbekannte Ressource';
       if(target.tagName==='SCRIPT'&&target.src)externalScriptStates.set(target.src,{status:'Ladefehler',time:new Date().toLocaleTimeString('de-CH',{hour12:false})});
-      add('RESSOURCE FEHLER',(target.tagName||'Element')+' '+source+'\\nHTML-Element: '+(target.outerHTML||'nicht verfügbar')+'\\n'+scriptDiagnostics(),true);
+      add('RESSOURCE FEHLER',(target.tagName||'Element')+' '+source+'\nHTML-Element: '+(target.outerHTML||'nicht verfügbar')+'\n'+scriptDiagnostics(),true);
       return;
     }
     const generic=!event.filename&&!event.lineno&&!event.colno&&(!event.message||event.message==='Script error.');
-    add('JAVASCRIPT FEHLER',(event.message||'Unbekannter Fehler')+' | Datei: '+(event.filename||'?')+' | Zeile: '+(event.lineno||'?')+':'+(event.colno||'?')+(event.error?'\\n'+safeString(event.error):'')+'\\nDokumentstatus: '+document.readyState+' | Zeit seit Navigation: '+Math.round(performance.now())+' ms\\nLetzte Bedienaktionen:\\n'+interactionContext()+'\\n'+scriptDiagnostics()+(generic?'\\nHINWEIS: Safari hat die Fehlerquelle nicht offengelegt (generischer Script error). Die gelisteten Skript-Ladezeiten helfen bei der Eingrenzung, beweisen aber allein keine Ursache.':''),true);
+    add('JAVASCRIPT FEHLER',(event.message||'Unbekannter Fehler')+' | Datei: '+(event.filename||'?')+' | Zeile: '+(event.lineno||'?')+':'+(event.colno||'?')+(event.error?'\n'+safeString(event.error):'')+'\nDokumentstatus: '+document.readyState+' | Zeit seit Navigation: '+Math.round(performance.now())+' ms\nLetzte Bedienaktionen:\n'+interactionContext()+'\n'+scriptDiagnostics()+(generic?'\nHINWEIS: Safari hat die Fehlerquelle nicht offengelegt (generischer Script error). Die gelisteten Skript-Ladezeiten helfen bei der Eingrenzung, beweisen aber allein keine Ursache.':''),true);
   },true);
   window.addEventListener('unhandledrejection',event=>add('PROMISE FEHLER',safeString(event.reason),true));
   const originalConsoleError=console.error.bind(console);
