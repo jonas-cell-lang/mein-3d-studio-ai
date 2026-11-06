@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v35 Reparatur Auswahlwerkzeuge</title>
+<title>SILMO 3D Studio AI – v36 Statusanzeige in allen Werkzeugreitern</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
@@ -125,7 +125,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v35 – Reparatur Auswahlwerkzeuge: Ausrichten, Gruppieren, Spiegeln -->
+<!-- SILMO BUILD: v36 – Statusanzeige in allen Werkzeugreitern; Auswahlwerkzeuge -->
 <script id="silmoDeveloperDiagnostics">
 /* Entwicklermodus: unabhängige Fehlererfassung, standardmäßig eingeklappt. Entfernen: diesen Scriptblock und den CSS-Block #silmoDiagToggle/#silmoDiagPanel löschen. */
 (function(){
@@ -330,7 +330,7 @@ input:focus{outline:1px solid var(--cyan)}
   const booleanHelp=document.createElement('p'); booleanHelp.className='note'; booleanHelp.textContent='Wähle mindestens zwei Objekte in der Objektliste. Mit Strg-Klick kannst du mehrere auswählen. Das erste ausgewählte Objekt ist die Grundform.'; paneMap.create.left.appendChild(booleanHelp);
   ['booleanUnion','booleanSubtract'].forEach(id=>put(paneMap.create.left,id));
   const booleanNote=document.createElement('p'); booleanNote.className='note'; booleanNote.textContent='Beim Abziehen bleibt die erste Form erhalten; alle weiteren ausgewählten Formen schneiden sie aus.'; paneMap.create.left.appendChild(booleanNote);
-  heading(paneMap.create.left,'Objektliste'); put(paneMap.create.left,'objects'); put(paneMap.create.left,'status');
+  heading(paneMap.create.left,'Objektliste'); put(paneMap.create.left,'objects');
 
   heading(paneMap.edit.left,'Bearbeiten');
   ['delete','fitView'].forEach(id=>put(paneMap.edit.left,id));
@@ -401,6 +401,9 @@ input:focus{outline:1px solid var(--cyan)}
   const expertToggle = nodes.get('expertCenterToggle');
   left.replaceChildren(leftContainer);
   right.replaceChildren(rightContainer);
+  // Statusmeldungen müssen auch in den Reitern Bearbeiten/Messen/Druck sichtbar bleiben.
+  // Deshalb liegt das gemeinsame Statusfeld ausserhalb der umschaltbaren Tab-Panes.
+  if (nodes.get('status')) left.appendChild(nodes.get('status'));
   // Das ursprüngliche Aktions-Element bleibt im DOM, damit der bestehende Handler
   // über getElementById('dropToBed') erreichbar bleibt. Sichtbare Kopien in den
   // Reitern lösen dieses Element per click() aus.
