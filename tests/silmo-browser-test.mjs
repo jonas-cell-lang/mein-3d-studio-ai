@@ -16,6 +16,16 @@ try {
   await page.waitForTimeout(1500);
 
   const canvasSize = await page.locator('#viewport canvas').evaluate(canvas => ({ width: canvas.width, height: canvas.height }));
+  // Tutorial-Prüfung: Buildkennung und tatsächliche Objektanzahl kontrollieren.
+  await page.locator('#tutorialLaunch').click();
+  const tutorialDebug = await page.locator('#tutorialDebug').innerText();
+  assert.match(tutorialDebug, /Build: v37 – Diagnoseprüfung repariert/, 'Tutorial-Diagnose zeigt nicht den aktuellen Build');
+  const tutorialStartRows = await page.locator('#objects .object-row').count();
+  await page.locator('#addCube').click();
+  assert.equal(await page.locator('#objects .object-row').count(), tutorialStartRows + 1, 'Tutorial-Testobjekt wurde nicht erstellt');
+  assert.match(await page.locator('#tutorialFeedback').innerText(), /Erfolgskontrolle bestanden/, 'Tutorial erkennt das neu erstellte Objekt nicht');
+  await page.locator('#tutorialClose').click();
+
   assert.ok(canvasSize.width > 0 && canvasSize.height > 0, '3D canvas hat keine gültige Grösse');
 
   // Die App kann bereits ein Startobjekt enthalten. Nur die beiden neu erstellten prüfen.
