@@ -95,6 +95,7 @@ try {
   assert.equal(await page.locator('#createSketchSolid').isDisabled(), true, 'Erstellte Skizze bleibt fälschlich zur erneuten Extrusion bereit');
   await page.locator('#sketchTool').selectOption('circle');
   assert.equal(await page.locator('#sketchDepthMM').isVisible(), false, 'Kreis zeigt ein unnötiges separates Tiefenfeld');
+  await page.locator('[data-tab="create"]').click();
 
   // Die App kann bereits ein Startobjekt enthalten. Nur die beiden neu erstellten prüfen.
   const initialCount = await page.locator('#objects .object-row').count();
