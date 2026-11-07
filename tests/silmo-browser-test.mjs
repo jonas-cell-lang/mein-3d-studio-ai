@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v47/, 'Build-Metadaten zeigen nicht v47');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v48/, 'Build-Metadaten zeigen nicht v47');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -285,6 +285,35 @@ try {
   assert.equal(await page.locator('#gizmoModeToggle').isDisabled(), false, 'Drehfunktion wurde nach dem Beenden nicht freigegeben');
   await page.locator('[data-tab="create"]').click();
 
+  // Boolesche Verbindung muss sich wieder in die ursprünglichen Formen zerlegen lassen.
+  const unionStartCount=await page.locator('#objects .object-row').count();
+  await page.locator('#addCube').click(); await page.locator('#addSphere').click();
+  await page.locator('[data-tab="edit"]').click();
+  await page.locator('#multiSelectToggle').click();
+  await page.locator('[data-tab="create"]').click();
+  await page.locator('#objects .object-select').nth(unionStartCount).click();
+  assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(),2,'Union-Test konnte nicht beide Formen auswählen');
+  await page.locator('#booleanUnion').click();
+  assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+1,'Verbinden erzeugt nicht genau ein Ergebnisobjekt');
+  assert.equal((await page.evaluate(()=>window.__silmoUnionSnapshot())).partCount,2,'Verbundene Form speichert die ursprünglichen Einzelteile nicht');
+  await page.locator('[data-tab="print"]').click();
+  const unionDownloadPromise=page.waitForEvent('download');
+  await page.locator('#saveProjectButton').click();
+  const unionDownload=await unionDownloadPromise;
+  await page.locator('#projectFileInput').setInputFiles(await unionDownload.path());
+  await page.waitForFunction(()=>window.__silmoUnionSnapshot().partCount===2,null,{timeout:10000});
+  assert.equal((await page.evaluate(()=>window.__silmoUnionSnapshot())).partCount,2,'Projektimport verliert die gespeicherten Einzelteile');
+  await page.locator('[data-tab="create"]').click();
+  await page.locator('#booleanSeparate').click();
+  assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+2,'Verbindung lösen stellt die ursprünglichen Objekte nicht wieder her');
+  assert.match(await page.locator('#status').innerText(),/Verbindung gelöst: 2 ursprüngliche Einzelobjekte/,'Trennen meldet keinen Erfolg');
+  await page.locator('#viewport canvas').focus();
+  await page.keyboard.press('Control+z');
+  assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+1,'Rückgängig stellt die verbundene Form nicht wieder her');
+  assert.equal((await page.evaluate(()=>window.__silmoUnionSnapshot())).partCount,2,'Rückgängig verliert die gespeicherten Einzelteile');
+  await page.locator('#booleanSeparate').click();
+  assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+2,'Verbindung kann nach Rückgängig nicht erneut gelöst werden');
+
   // Die App kann bereits ein Startobjekt enthalten. Nur die beiden neu erstellten prüfen.
   const initialCount = await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click();
@@ -435,7 +464,7 @@ try {
   assert.equal(await page.evaluate(() => window.__silmoTutorialRotationRingPoint('z', 0.45)), null, 'Drehringe bleiben nach dem Zurückschalten aktiv');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
-  console.log('BESTANDEN: 3D-Start, Objekterstellung, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
+  console.log('BESTANDEN: 3D-Start, Zeichnen, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
   console.log(JSON.stringify({ canvasSize, beforeAlign, afterAlign, selectedCount, alignStatus }));
 } catch (error) {
   console.error('BROWSERTEST FEHLGESCHLAGEN:', error);
