@@ -96,6 +96,32 @@ try {
   await page.locator('#sketchTool').selectOption('circle');
   assert.equal(await page.locator('#sketchDepthMM').isVisible(), false, 'Kreis zeigt ein unnötiges separates Tiefenfeld');
 
+  // 2D-Freiform: eine geschlossene Kontur mit mehreren Punkten zeichnen und extrudieren.
+  await page.locator('#sketchTool').selectOption('freeform2d');
+  assert.equal(await page.locator('#sketchWidthMM').isVisible(), false, 'Freiform zeigt unnötige Breitenfelder');
+  await page.locator('#sketchHeightMM').fill('7');
+  await page.locator('#startSketch').click();
+  const freeformPoints = [
+    await page.evaluate(() => window.__silmoSketchPointForTest(-0.75, -0.55)),
+    await page.evaluate(() => window.__silmoSketchPointForTest(0.65, -0.55)),
+    await page.evaluate(() => window.__silmoSketchPointForTest(0.85, 0.05)),
+    await page.evaluate(() => window.__silmoSketchPointForTest(0.1, 0.75)),
+    await page.evaluate(() => window.__silmoSketchPointForTest(-0.7, 0.35))
+  ];
+  await page.mouse.move(freeformPoints[0].x, freeformPoints[0].y);
+  await page.mouse.down();
+  for (const point of freeformPoints.slice(1)) await page.mouse.move(point.x, point.y, { steps: 4 });
+  await page.mouse.up();
+  assert.equal(await page.locator('#createSketchSolid').isEnabled(), true, 'Freiform wurde nicht als geschlossene Skizze vorbereitet');
+  await page.locator('#createSketchSolid').click();
+  const freeformSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
+  assert.equal(freeformSnapshot.type, 'freeform2d', 'Freiform wurde nicht als Freiformkörper gespeichert');
+  assert.ok(freeformSnapshot.points >= 3, 'Freiform enthält zu wenige Konturpunkte');
+  assert.ok(freeformSnapshot.areaMM2 > 0, 'Freiform hat keine gültige Fläche');
+  assert.ok(freeformSnapshot.perimeterMM > 0, 'Freiform hat keinen Umfang');
+  assert.ok(Math.abs(freeformSnapshot.extrusionMM - 7) < 0.01, 'Freiform-Extrusionshöhe wurde nicht übernommen');
+  assert.ok(freeformSnapshot.actualHeightMM > 0, 'Freiform wurde nicht zu einem 3D-Körper extrudiert');
+
   // 3D-Linie: eine räumliche Freihandlinie auf der XZ-Ebene zeichnen und als Körper erzeugen.
   await page.locator('#sketchTool').selectOption('line3d');
   await page.locator('#sketchPlaneSelect').selectOption('xz');

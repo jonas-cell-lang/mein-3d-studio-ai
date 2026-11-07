@@ -482,10 +482,10 @@ input:focus{outline:1px solid var(--cyan)}
   heading(paneMap.create.left,'Objektliste'); put(paneMap.create.left,'objects');
 
   heading(paneMap.draw.left,'2D-Skizze');
-  const sketchIntro=document.createElement('p'); sketchIntro.className='note'; sketchIntro.textContent='Zeichne Rechtecke und Kreise auf XY oder räumliche Linien auf XY, XZ oder YZ – mit Maus, Touch oder Apple Pencil. Passe die Masse exakt an und erstelle daraus echte 3D-Körper.'; paneMap.draw.left.appendChild(sketchIntro);
+  const sketchIntro=document.createElement('p'); sketchIntro.className='note'; sketchIntro.textContent='Zeichne Rechtecke, Kreise und freie geschlossene Konturen auf XY oder räumliche Linien auf XY, XZ oder YZ – mit Maus, Touch oder Apple Pencil. Extrudiere deine 2D-Skizze zu einem echten 3D-Körper.'; paneMap.draw.left.appendChild(sketchIntro);
   const sketchToolWrap=document.createElement('div'); sketchToolWrap.className='field';
   const sketchToolLabel=document.createElement('label'); sketchToolLabel.htmlFor='sketchTool'; sketchToolLabel.textContent='Zeichenwerkzeug';
-  const sketchTool=document.createElement('select'); sketchTool.id='sketchTool'; sketchTool.innerHTML='<option value="rectangle">2D-Rechteck</option><option value="circle">2D-Kreis</option><option value="line3d">3D-Linie</option>';
+  const sketchTool=document.createElement('select'); sketchTool.id='sketchTool'; sketchTool.innerHTML='<option value="rectangle">2D-Rechteck</option><option value="circle">2D-Kreis</option><option value="freeform2d">2D-Freiform</option><option value="line3d">3D-Linie</option>';
   sketchToolWrap.append(sketchToolLabel,sketchTool); paneMap.draw.left.appendChild(sketchToolWrap);
   const sketchPlaneWrap=document.createElement('div'); sketchPlaneWrap.className='field'; sketchPlaneWrap.id='sketchPlaneWrap';
   const sketchPlaneLabel=document.createElement('label'); sketchPlaneLabel.htmlFor='sketchPlaneSelect'; sketchPlaneLabel.textContent='Zeichenebene für 3D-Linie';
@@ -2265,6 +2265,11 @@ input:focus{outline:1px solid var(--cyan)}
       if (!Array.isArray(sketchDraft.points) || sketchDraft.points.length < 2) return;
       const geometry = new THREE.BufferGeometry().setFromPoints(sketchDraft.points);
       sketchPreview = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0xffd166, depthTest: false }));
+    } else if (sketchDraft.type === 'freeform2d') {
+      if (!Array.isArray(sketchDraft.points) || sketchDraft.points.length < 3) return;
+      const points = sketchDraft.points.map(point => new THREE.Vector3(point.x, point.y, 0.025));
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      sketchPreview = new THREE.LineLoop(geometry, new THREE.LineBasicMaterial({ color: 0x53d8e8, depthTest: false }));
     } else {
       let points = [];
       if (document.getElementById('sketchTool')?.value === 'circle') {
@@ -2294,6 +2299,12 @@ input:focus{outline:1px solid var(--cyan)}
   }
   function updateSketchInputsFromDraft() {
     if (!sketchDraft) return;
+    if (sketchDraft.type === 'freeform2d') {
+      document.getElementById('createSketchSolid').disabled = sketchDraft.points.length < 3;
+      document.getElementById('cancelSketch').disabled = false;
+      document.getElementById('sketchStatus').textContent = 'Freiform bereit: ' + sketchDraft.points.length + ' Konturpunkte. Extrusionshöhe festlegen und Körper erstellen.';
+      return;
+    }
     if (sketchDraft.type === 'line3d') {
       document.getElementById('createSketchSolid').disabled = sketchDraft.points.length < 2;
       document.getElementById('cancelSketch').disabled = false;
@@ -2330,7 +2341,8 @@ input:focus{outline:1px solid var(--cyan)}
   function finishSketchPointer(e) {
     if (!sketchDrawing || (e && e.pointerId !== sketchPointerId)) return false;
     if (e) setPointerRay(e);
-    if (document.getElementById('sketchTool').value === 'line3d') {
+    const activeTool = document.getElementById('sketchTool').value;
+    if (activeTool === 'line3d') {
       if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
         const points = sketchDraft?.type === 'line3d' ? sketchDraft.points : [sketchStart.clone()];
         if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > 0.015) points.push(sketchPoint.clone());
@@ -2342,6 +2354,27 @@ input:focus{outline:1px solid var(--cyan)}
       } else {
         sketchDraft = null;
         document.getElementById('sketchStatus').textContent = 'Die Linie ist zu kurz. Ziehe eine längere räumliche Linie.';
+      }
+    } else if (activeTool === 'freeform2d') {
+      if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
+        const points = sketchDraft?.type === 'freeform2d' ? sketchDraft.points : [sketchStart.clone()];
+        if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > 0.015) points.push(sketchPoint.clone());
+        if (points.length > 500) points.splice(1, points.length - 500);
+        sketchDraft = { type: 'freeform2d', points };
+      }
+      const points = sketchDraft?.type === 'freeform2d' ? sketchDraft.points : [];
+      if (points.length >= 3) {
+        const distinct = points.filter((point, index) => index === 0 || point.distanceTo(points[index - 1]) > 0.005);
+        if (distinct.length >= 3) {
+          sketchDraft = { type: 'freeform2d', points: distinct };
+          updateSketchPreview();
+          document.getElementById('createSketchSolid').disabled = false;
+          document.getElementById('cancelSketch').disabled = false;
+          document.getElementById('sketchStatus').textContent = 'Freiform bereit: ' + distinct.length + ' Konturpunkte. Die Kontur wird beim Extrudieren geschlossen.';
+        } else sketchDraft = null;
+      } else {
+        sketchDraft = null;
+        document.getElementById('sketchStatus').textContent = 'Eine Freiform braucht mindestens drei unterschiedliche Punkte.';
       }
     } else if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
       const dx = sketchPoint.x - sketchStart.x, dy = sketchPoint.y - sketchStart.y;
@@ -2403,6 +2436,39 @@ input:focus{outline:1px solid var(--cyan)}
           lengthMM: curve.getLength() * MM_PER_UNIT
         };
         label = '3D-Linie';
+      } else if (tool === 'freeform2d') {
+        const points = sketchDraft.points.map(point => point.clone());
+        if (points.length < 3) throw new Error('Eine Freiform braucht mindestens drei Konturpunkte.');
+        const minX = Math.min(...points.map(point => point.x)), maxX = Math.max(...points.map(point => point.x));
+        const minY = Math.min(...points.map(point => point.y)), maxY = Math.max(...points.map(point => point.y));
+        const centerX = (minX + maxX) / 2, centerY = (minY + maxY) / 2;
+        const localPoints = points.map(point => new THREE.Vector2(point.x - centerX, point.y - centerY));
+        let twiceArea = 0, perimeter = 0;
+        localPoints.forEach((point, index) => {
+          const next = localPoints[(index + 1) % localPoints.length];
+          twiceArea += point.x * next.y - next.x * point.y;
+          perimeter += point.distanceTo(next);
+        });
+        const area = Math.abs(twiceArea) / 2;
+        if (area < 0.0001) throw new Error('Die Freiform ist zu klein oder bildet keine geschlossene Fläche.');
+        const heightMM = Number(document.getElementById('sketchHeightMM').value);
+        if (!Number.isFinite(heightMM) || heightMM < 0.1 || heightMM > 2000) throw new Error('Die Extrusionshöhe muss zwischen 0,1 und 2000 mm liegen.');
+        const shape = new THREE.Shape();
+        shape.moveTo(localPoints[0].x, localPoints[0].y);
+        localPoints.slice(1).forEach(point => shape.lineTo(point.x, point.y));
+        shape.closePath();
+        geometry = new THREE.ExtrudeGeometry(shape, { depth: heightMM / MM_PER_UNIT, bevelEnabled: false });
+        geometry.computeVertexNormals();
+        meshPosition.set(centerX, centerY, 0);
+        sketchMetadata = {
+          type: 'freeform2d', points: localPoints.length,
+          widthMM: (maxX - minX) * MM_PER_UNIT,
+          depthMM: (maxY - minY) * MM_PER_UNIT,
+          areaMM2: area * MM_PER_UNIT * MM_PER_UNIT,
+          perimeterMM: perimeter * MM_PER_UNIT,
+          extrusionMM: heightMM
+        };
+        label = 'Freiform-Skizze';
       } else {
         const dims = sketchDimensionsFromInputs();
         const shape = new THREE.Shape();
@@ -2446,7 +2512,7 @@ input:focus{outline:1px solid var(--cyan)}
       document.getElementById('createSketchSolid').disabled = true;
       document.getElementById('cancelSketch').disabled = true;
       document.getElementById('sketchStatus').textContent = '3D-Körper erstellt. Du kannst ihn jetzt wie jedes andere Objekt bearbeiten.';
-      status.textContent = tool === 'line3d' ? '3D-Linie erfolgreich in einen räumlichen Körper umgewandelt.' : '2D-Skizze erfolgreich zu einem 3D-Körper extrudiert.';
+      status.textContent = tool === 'line3d' ? '3D-Linie erfolgreich in einen räumlichen Körper umgewandelt.' : tool === 'freeform2d' ? 'Freiform erfolgreich zu einem 3D-Körper extrudiert.' : '2D-Skizze erfolgreich zu einem 3D-Körper extrudiert.';
     } catch (error) {
       status.textContent = 'Skizze konnte nicht erstellt werden: ' + (error.message || 'Eingaben prüfen.');
     }
@@ -2460,8 +2526,8 @@ input:focus{outline:1px solid var(--cyan)}
     document.getElementById('createSketchSolid').disabled = true;
     document.getElementById('cancelSketch').disabled = true;
     document.getElementById('startSketch').textContent = 'Zeichenmodus aktiv';
-    document.getElementById('sketchStatus').textContent = 'Ziehe jetzt auf der XY-Zeichenebene, um ein Rechteck oder einen Kreis aufzuspannen.';
-    status.textContent = '2D-Zeichenmodus aktiv: auf der Zeichenfläche ziehen.';
+    document.getElementById('sketchStatus').textContent = document.getElementById('sketchTool').value === 'freeform2d' ? 'Zeichne eine geschlossene Freiform mit mindestens drei Punkten. Beim Loslassen wird die Kontur automatisch geschlossen.' : 'Ziehe jetzt auf der XY-Zeichenebene, um deine Skizze zu zeichnen.';
+    status.textContent = 'Zeichenmodus aktiv: auf der Zeichenfläche ziehen.';
   });
   document.getElementById('createSketchSolid').addEventListener('click', createSketchSolid);
   document.getElementById('cancelSketch').addEventListener('click', () => {
@@ -2478,10 +2544,11 @@ input:focus{outline:1px solid var(--cyan)}
   function updateSketchToolFields() {
     const tool = document.getElementById('sketchTool').value;
     const isLine = tool === 'line3d';
+    const isFreeform = tool === 'freeform2d';
     document.getElementById('sketchPlaneWrap').hidden = !isLine;
     document.getElementById('sketchDiameterWrap').hidden = !isLine;
-    document.getElementById('sketchWidthMM').closest('.field').hidden = isLine;
-    document.getElementById('sketchDepthMM').closest('.field').hidden = isLine || tool === 'circle';
+    document.getElementById('sketchWidthMM').closest('.field').hidden = isLine || isFreeform;
+    document.getElementById('sketchDepthMM').closest('.field').hidden = isLine || isFreeform || tool === 'circle';
     document.getElementById('sketchHeightMM').closest('.field').hidden = isLine;
   }
   document.getElementById('sketchTool').addEventListener('change', () => {
@@ -2538,6 +2605,7 @@ input:focus{outline:1px solid var(--cyan)}
       setPointerRay(e);
       if (!raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) return;
       sketchStart.copy(sketchPoint);
+      if (document.getElementById('sketchTool').value === 'freeform2d') sketchDraft = { type: 'freeform2d', points: [sketchStart.clone()] };
       sketchDrawing = true;
       sketchPointerId = e.pointerId;
       try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
@@ -2653,6 +2721,14 @@ input:focus{outline:1px solid var(--cyan)}
           if (points[points.length - 1].distanceTo(sketchPoint) > 0.02) {
             points.push(sketchPoint.clone());
             sketchDraft = { type: 'line3d', points };
+            updateSketchPreview();
+          }
+        } else if (tool === 'freeform2d') {
+          const points = sketchDraft?.type === 'freeform2d' ? sketchDraft.points : [sketchStart.clone()];
+          if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > 0.02) {
+            points.push(sketchPoint.clone());
+            if (points.length > 500) points.splice(1, points.length - 500);
+            sketchDraft = { type: 'freeform2d', points };
             updateSketchPreview();
           }
         } else {
