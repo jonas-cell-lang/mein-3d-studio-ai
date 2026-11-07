@@ -61,8 +61,9 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-acti
 #gizmoModeToggle{position:absolute;right:58px;top:12px;min-height:38px;padding:7px 11px;background:#142c46;border-color:#4d83b9;font-size:12px;font-weight:650}
 #gizmoModeToggle[aria-pressed="true"]{background:#17434a;border-color:#53d8e8;color:#a8f4ff}
 @media(max-width:680px){#gizmoModeToggle{right:54px;top:8px;min-height:38px;padding:6px 9px;font-size:11px}}
-#rotationAngleLabel{position:absolute;z-index:8;min-width:48px;padding:6px 9px;border:1px solid #f4d35e;border-radius:8px;background:#17243a;color:#ffe58a;font-size:14px;font-weight:800;text-align:center;box-shadow:0 3px 14px #0008;pointer-events:none;transform:translateY(-50%)}
+#rotationAngleLabel{position:absolute;z-index:8;width:92px;padding:7px 8px;border:2px solid #f4d35e;border-radius:8px;background:#17243a;color:#ffe58a;font-size:16px;font-weight:800;text-align:center;box-shadow:0 3px 14px #0008;transform:translateY(-50%);pointer-events:auto;touch-action:manipulation;-webkit-user-select:text;user-select:text}
 #rotationAngleLabel[hidden]{display:none!important}
+#rotationAngleLabel:focus{outline:2px solid #ffe58a;outline-offset:2px}
 #viewport{isolation:isolate}
 canvas:focus-visible{outline:2px solid var(--cyan);outline-offset:-3px}
 .left-panel,.right-panel{min-width:0}
@@ -406,12 +407,12 @@ input:focus{outline:1px solid var(--cyan)}
   <section id="viewport">
     <button id="gizmoModeToggle" type="button" aria-pressed="false" title="Zwischen Verschieben mit Pfeilen und Drehen mit Ringen wechseln">⟳ Drehen</button>
     <button id="expandViewport" type="button" aria-label="3D-Ansicht maximieren">⛶</button>
-    <div id="rotationAngleLabel" aria-live="off" hidden>0°</div>
+    <input id="rotationAngleLabel" type="number" inputmode="decimal" step="1" min="-36000" max="36000" value="0" aria-label="Drehwinkel in Grad" title="Gradzahl direkt eingeben und mit Enter bestätigen" hidden>
     <div class="viewport-label">3D-Ansicht <span style="color:#6ee7f9">●</span> · Kamera frei</div><div id="hint"><strong>Bedienung</strong><br>Pfeile am Objekt ziehen: X / Y / Z verschieben<br>Objektkörper ziehen: in X/Y verschieben<br>Freie Fläche ziehen: Ansicht drehen<br>Maus rechts ziehen oder Shift + Ziehen: Kamera drehen<br>Touch: freie Fläche ziehen, auf Modell ziehen zum Verschieben<br>Scrollrad: zoomen<br>Strg/Cmd+S: Projekt speichern · Strg/Cmd+O: Projekt öffnen</div>
   </section>
   <aside class="right-panel" aria-label="Eigenschaften des ausgewählten Modells">
     <h2>Position</h2><div id="positionFields"></div>
-    <h2>Drehung (Grad)</h2><div id="rotationFields"></div>
+     
     <h2>Exakte Masse (mm)</h2>
     <button id="scaleLock" class="active" aria-pressed="true" title="Einheitliche Skalierung ein- oder ausschalten">🔒 Einheitlich: EIN</button>
     <p class="note">Breite, Tiefe und Höhe in Millimetern eingeben. Mit Enter oder beim Verlassen des Feldes übernehmen. Bei „Einheitlich: EIN“ bleiben die Proportionen erhalten.</p>
@@ -431,7 +432,7 @@ input:focus{outline:1px solid var(--cyan)}
     'addCube','addSphere','addCylinder','duplicate','booleanUnion','booleanSubtract','importModel','exportModel',
     'saveProjectButton','openProjectButton','fileInput','projectFileInput','delete',
     'dropToBed','checkBed','fitView','bedWidth','bedDepth','applyBedSize','objects',
-    'status','positionFields','rotationFields','scaleLock','sizeFields','percentFields','color','expertCenterToggle'
+    'status','positionFields','scaleLock','sizeFields','percentFields','color','expertCenterToggle'
   ];
   const nodes = new Map();
   for (const id of ids) {
@@ -522,7 +523,6 @@ input:focus{outline:1px solid var(--cyan)}
   heading(paneMap.measure.left,'Messen & Prüfen'); put(paneMap.measure.left,'checkBed');
   function addBedButton(pane,key){ const b=document.createElement('button'); b.type='button'; b.className='wide'; b.textContent='⬇ Auf Arbeitsplatte stellen'; b.dataset.bedAction=key; b.addEventListener('click',()=>document.getElementById('dropToBed').click()); pane.appendChild(b); }
   ['create','edit','measure','print','expert'].forEach(key=>addBedButton(paneMap[key].left,key));
-  heading(paneMap.measure.right,'Drehung (Grad)'); put(paneMap.measure.right,'rotationFields');
   heading(paneMap.measure.right,'Skalierung (%)'); put(paneMap.measure.right,'percentFields');
   heading(paneMap.measure.right,'Exakte Masse (mm)'); put(paneMap.measure.right,'sizeFields');
   heading(paneMap.measure.right,'Farbe'); put(paneMap.measure.right,'color');
@@ -1725,19 +1725,46 @@ input:focus{outline:1px solid var(--cyan)}
 
   function updateRotationAngleLabel() {
     if (!rotationAngleLabel) return;
-    if (!dragging || !activeRotationAxis) {
+    const targets = getSelectedTargets();
+    if (gizmoMode !== 'rotate' || !targets.length) {
       rotationAngleLabel.hidden = true;
       return;
     }
+    const axis = activeRotationAxis || rotationAngleLabel.dataset.axis || 'z';
+    rotationAngleLabel.dataset.axis = axis;
     rotationAngleLabel.hidden = false;
-    rotationAngleLabel.textContent = Math.round(rotationAccumulatedAngle * 180 / Math.PI) + '°';
-    const projected = rotationCenter.clone().project(camera);
+    if (dragging && activeRotationAxis) {
+      rotationAngleLabel.value = String(Math.round(rotationAccumulatedAngle * 180 / Math.PI));
+    } else if (document.activeElement !== rotationAngleLabel) {
+      rotationAngleLabel.value = String(Math.round(THREE.MathUtils.radToDeg(selected.rotation[axis])));
+    }
+    const center = activeRotationAxis ? rotationCenter : getSelectionCenter(targets);
+    const projected = center.clone().project(camera);
     const rect = canvas.getBoundingClientRect();
     const x = (projected.x + 1) * rect.width / 2 + 18;
     const y = (1 - projected.y) * rect.height / 2;
-    rotationAngleLabel.style.left = Math.max(8, Math.min(viewport.clientWidth - 62, x)) + 'px';
-    rotationAngleLabel.style.top = Math.max(22, Math.min(viewport.clientHeight - 22, y)) + 'px';
+    rotationAngleLabel.style.left = Math.max(8, Math.min(viewport.clientWidth - 104, x)) + 'px';
+    rotationAngleLabel.style.top = Math.max(28, Math.min(viewport.clientHeight - 28, y)) + 'px';
   }
+
+  rotationAngleLabel.addEventListener('change', () => {
+    const value = Number(rotationAngleLabel.value);
+    const axis = rotationAngleLabel.dataset.axis || 'z';
+    if (!Number.isFinite(value) || value < -36000 || value > 36000 || !selected || selected.userData.locked === true) {
+      updateRotationAngleLabel();
+      return;
+    }
+    const currentDegrees = THREE.MathUtils.radToDeg(selected.rotation[axis]);
+    const targets = getSelectedTargets();
+    if (!targets.includes(selected)) targets.push(selected);
+    applyGroupRotation(axis, THREE.MathUtils.degToRad(value - currentDegrees), targets);
+    status.textContent = 'Drehung um ' + axis.toUpperCase() + ' auf ' + value + '° gesetzt.';
+    updateRotationAngleLabel();
+  });
+  rotationAngleLabel.addEventListener('keydown', event => {
+    if (event.key === 'Enter') { rotationAngleLabel.blur(); }
+    if (event.key === 'Escape') { updateRotationAngleLabel(); rotationAngleLabel.blur(); }
+  });
 
   // Prüfschnittstelle für Browser-Tests: Gradzahl und aktive Achsenlinie.
   window.__silmoRotationGuideSnapshot = () => {
@@ -1815,7 +1842,6 @@ input:focus{outline:1px solid var(--cyan)}
 
   function showProperties() {
     $('positionFields').replaceChildren();
-    $('rotationFields').replaceChildren();
     $('sizeFields').replaceChildren();
     $('percentFields').replaceChildren();
     const color = $('color');
@@ -1851,18 +1877,6 @@ input:focus{outline:1px solid var(--cyan)}
           showProperties();
           notifyPositionChanged(obj);
         });
-    });
-
-    const rotationLabels = { x: 'Drehung X (°)', y: 'Drehung Y (°)', z: 'Drehung Z (°)' };
-    ['x', 'y', 'z'].forEach(axis => {
-      const currentDegrees = THREE.MathUtils.radToDeg(obj.rotation[axis]);
-      makeInput($('rotationFields'), rotationLabels[axis], currentDegrees, 1, value => {
-        if (obj.userData.locked === true || !Number.isFinite(value)) return;
-        const targets = getSelectedTargets();
-        if (!targets.includes(obj)) targets.push(obj);
-        applyGroupRotation(axis, THREE.MathUtils.degToRad(value - currentDegrees), targets);
-        status.textContent = 'Drehung um ' + axis.toUpperCase() + ' auf ' + value + '° gesetzt.';
-      }, { min: -36000, max: 36000, title: 'Drehwinkel in Grad. Erlaubt sind −36000° bis +36000°.' });
     });
 
     const dimensionLabels = { x: 'Breite X (mm)', y: 'Tiefe Y (mm)', z: 'Höhe Z (mm)' };
@@ -2147,6 +2161,9 @@ input:focus{outline:1px solid var(--cyan)}
         const center = getSelectionCenter();
         rotationDragPlane.setFromNormalAndCoplanarPoint(direction, center);
         activeRotationAxis = axis;
+        rotationAngleLabel.dataset.axis = axis;
+        rotationAngleLabel.value = '0';
+        rotationAccumulatedAngle = 0;
         rotationCenter.copy(center);
         setRotationGuideAxis(axis);
         // Die Ray-Ebene kann bei fast kantenparalleler Ansicht knapp verfehlt
