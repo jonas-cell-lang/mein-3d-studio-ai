@@ -529,17 +529,18 @@ input:focus{outline:1px solid var(--cyan)}
   const sketchHeightLabel=document.createElement('label'); sketchHeightLabel.htmlFor='sketchHeightMM'; sketchHeightLabel.textContent='Extrusionshöhe Z (mm)';
   const sketchHeight=document.createElement('input'); sketchHeight.id='sketchHeightMM'; sketchHeight.type='number'; sketchHeight.min='0.1'; sketchHeight.max='2000'; sketchHeight.step='0.1'; sketchHeight.value='10';
   sketchHeightWrap.append(sketchHeightLabel,sketchHeight); paneMap.draw.left.appendChild(sketchHeightWrap);
-  const caseWallHeading=document.createElement('h2');caseWallHeading.textContent='Kontur- und Wandwerkzeuge';paneMap.draw.left.appendChild(caseWallHeading);
-  const caseWallThicknessWrap=document.createElement('div');caseWallThicknessWrap.className='field';
-  const caseWallThicknessLabel=document.createElement('label');caseWallThicknessLabel.htmlFor='wallThicknessMM';caseWallThicknessLabel.textContent='Wandstärke (mm)';
-  const caseWallThickness=document.createElement('input');caseWallThickness.id='wallThicknessMM';caseWallThickness.type='number';caseWallThickness.min='0.6';caseWallThickness.max='5';caseWallThickness.step='0.1';caseWallThickness.value='1.4';
-  caseWallThicknessWrap.append(caseWallThicknessLabel,caseWallThickness);paneMap.draw.left.appendChild(caseWallThicknessWrap);
-  const caseWallHeightWrap=document.createElement('div');caseWallHeightWrap.className='field';
-  const caseWallHeightLabel=document.createElement('label');caseWallHeightLabel.htmlFor='frameHeightMM';caseWallHeightLabel.textContent='Rahmenhöhe (mm)';
-  const caseWallHeight=document.createElement('input');caseWallHeight.id='frameHeightMM';caseWallHeight.type='number';caseWallHeight.min='2';caseWallHeight.max='40';caseWallHeight.step='0.1';caseWallHeight.value='12';
-  caseWallHeightWrap.append(caseWallHeightLabel,caseWallHeight);paneMap.draw.left.appendChild(caseWallHeightWrap);
-  const caseWallButton=document.createElement('button');caseWallButton.type='button';caseWallButton.id='createContourFrame';caseWallButton.className='wide';caseWallButton.textContent='▱ Hohlrahmen aus Kontur erzeugen';paneMap.draw.left.appendChild(caseWallButton);
-  const caseCutButton=document.createElement('button');caseCutButton.type='button';caseCutButton.id='subtractSelected';caseCutButton.className='wide';caseCutButton.textContent='− Ausgewählte Körper voneinander abziehen';paneMap.draw.left.appendChild(caseCutButton);
+  const contourToolsHeading=document.createElement('h2');contourToolsHeading.textContent='Kontur- und Wandwerkzeuge';paneMap.draw.left.appendChild(contourToolsHeading);
+  const contourHelp=document.createElement('p');contourHelp.className='note';contourHelp.textContent='Erzeuge aus einer selbst gezeichneten geschlossenen Kontur einen hohlen Rahmen oder Wandkörper. Für Bohrungen und Ausschnitte wählst du den Grundkörper zuerst und den Schneidkörper danach.';paneMap.draw.left.appendChild(contourHelp);
+  const wallThicknessWrap=document.createElement('div');wallThicknessWrap.className='field';
+  const wallThicknessLabel=document.createElement('label');wallThicknessLabel.htmlFor='wallThicknessMM';wallThicknessLabel.textContent='Wandstärke (mm)';
+  const wallThickness=document.createElement('input');wallThickness.id='wallThicknessMM';wallThickness.type='number';wallThickness.min='0.2';wallThickness.max='100';wallThickness.step='0.1';wallThickness.value='1.4';
+  wallThicknessWrap.append(wallThicknessLabel,wallThickness);paneMap.draw.left.appendChild(wallThicknessWrap);
+  const frameHeightWrap=document.createElement('div');frameHeightWrap.className='field';
+  const frameHeightLabel=document.createElement('label');frameHeightLabel.htmlFor='frameHeightMM';frameHeightLabel.textContent='Rahmenhöhe (mm)';
+  const frameHeight=document.createElement('input');frameHeight.id='frameHeightMM';frameHeight.type='number';frameHeight.min='0.2';frameHeight.max='2000';frameHeight.step='0.1';frameHeight.value='12';
+  frameHeightWrap.append(frameHeightLabel,frameHeight);paneMap.draw.left.appendChild(frameHeightWrap);
+  const contourFrameButton=document.createElement('button');contourFrameButton.type='button';contourFrameButton.id='createContourFrame';contourFrameButton.className='wide';contourFrameButton.textContent='▱ Hohlrahmen aus Kontur erzeugen';paneMap.draw.left.appendChild(contourFrameButton);
+  const subtractSelectedButton=document.createElement('button');subtractSelectedButton.type='button';subtractSelectedButton.id='subtractSelected';subtractSelectedButton.className='wide';subtractSelectedButton.textContent='− Auswahl voneinander abziehen';paneMap.draw.left.appendChild(subtractSelectedButton);
   const sketchLockNote=document.createElement('p'); sketchLockNote.id='sketchViewLockNote'; sketchLockNote.className='note'; sketchLockNote.textContent='Während des Zeichnens ist die Kameradrehung gesperrt. Zoomen bleibt möglich.'; paneMap.draw.left.appendChild(sketchLockNote);
   const startSketchButton=document.createElement('button'); startSketchButton.type='button'; startSketchButton.id='startSketch'; startSketchButton.className='wide primary'; startSketchButton.textContent='✎ Zeichnen starten'; paneMap.draw.left.appendChild(startSketchButton);
   const createSketchButton=document.createElement('button'); createSketchButton.type='button'; createSketchButton.id='createSketchSolid'; createSketchButton.className='wide'; createSketchButton.textContent='▰ Als 3D-Körper erstellen'; createSketchButton.disabled=true; paneMap.draw.left.appendChild(createSketchButton);
@@ -1347,8 +1348,8 @@ input:focus{outline:1px solid var(--cyan)}
             locked: item.locked === true,
             groupId: typeof item.groupId === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(item.groupId) ? item.groupId : null,
              unionParts: Array.isArray(item.unionParts) && item.unionParts.length >= 2 && item.unionParts.length <= 100 ? item.unionParts.map(part => JSON.parse(JSON.stringify(part))) : null,
-             sketchOutline: Array.isArray(item.sketchOutline) && item.sketchOutline.length >= 3 && item.sketchOutline.length <= 240 && item.sketchOutline.every(point => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite)) ? item.sketchOutline.map(point => [point[0],point[1]]) : null,
-             contourFrame: item.contourFrame && Number.isFinite(item.contourFrame.wallThicknessMM) && Number.isFinite(item.contourFrame.wallHeightMM) ? {wallThicknessMM:item.contourFrame.wallThicknessMM,wallHeightMM:item.contourFrame.wallHeightMM} : null
+             sketchOutline: (Array.isArray(item.sketchOutline) ? item.sketchOutline : item.caseOutline) && (Array.isArray(item.sketchOutline) ? item.sketchOutline : item.caseOutline).length >= 3 && (Array.isArray(item.sketchOutline) ? item.sketchOutline : item.caseOutline).length <= 240 && (Array.isArray(item.sketchOutline) ? item.sketchOutline : item.caseOutline).every(point => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite)) ? (Array.isArray(item.sketchOutline) ? item.sketchOutline : item.caseOutline).map(point => [point[0],point[1]]) : null,
+             contourFrame: (item.contourFrame || item.caseWallFrame) && Number.isFinite((item.contourFrame || item.caseWallFrame).wallThicknessMM) && Number.isFinite((item.contourFrame || item.caseWallFrame).wallHeightMM) ? {wallThicknessMM:(item.contourFrame || item.caseWallFrame).wallThicknessMM,wallHeightMM:(item.contourFrame || item.caseWallFrame).wallHeightMM} : null
            };
            if (Array.isArray(item.unionParts)) {
              if (item.unionParts.length < 2 || item.unionParts.length > 100) { geometry.dispose(); material.dispose(); throw new Error('Ungültige Anzahl ursprünglicher Formteile.'); }
@@ -2597,16 +2598,17 @@ input:focus{outline:1px solid var(--cyan)}
   }
   function createContourFrame() {
     const base=selectedObjects.length===1?selectedObjects[0]:selected;
-    if(!base||!objects.includes(base)||!Array.isArray(base.userData.sketchOutline)||base.userData.sketchOutline.length<3){
-      status.textContent='Wähle zuerst eine selbst gezeichnete 2D-Freiform als Rückwand-Kontur aus.';return;
+    if(!base||!objects.includes(base)||!Array.isArray(base.userData.sketchOutline||base.userData.caseOutline)||(base.userData.sketchOutline||base.userData.caseOutline).length<3){
+      status.textContent='Wähle zuerst einen aus einer geschlossenen Freiform erzeugten 3D-Körper aus.';return;
     }
     if(base.userData.locked===true){status.textContent='Die ausgewählte Rückwand ist gesperrt. Entsperre sie zuerst.';return;}
     const thicknessMM=Number(document.getElementById('wallThicknessMM').value);
     const heightMM=Number(document.getElementById('frameHeightMM').value);
-    if(!Number.isFinite(thicknessMM)||thicknessMM<0.6||thicknessMM>5||!Number.isFinite(heightMM)||heightMM<2||heightMM>40){
-      status.textContent='Wandstärke muss 0,6–5 mm und Wandhöhe 2–40 mm betragen.';return;
+    if(!Number.isFinite(thicknessMM)||thicknessMM<0.2||thicknessMM>100||!Number.isFinite(heightMM)||heightMM<0.2||heightMM>2000){
+      status.textContent='Wandstärke muss 0,2–100 mm und Rahmenhöhe 0,2–2000 mm betragen.';return;
     }
-    const outer=base.userData.sketchOutline.map(point=>new THREE.Vector2(point[0],point[1]));
+    const outline=base.userData.sketchOutline||base.userData.caseOutline;
+    const outer=outline.map(point=>new THREE.Vector2(point[0],point[1]));
     if(outer.length>240){status.textContent='Die Kontur hat zu viele Punkte. Zeichne sie etwas einfacher neu.';return;}
     const signedArea=points=>points.reduce((sum,p,i)=>{const n=points[(i+1)%points.length];return sum+p.x*n.y-n.x*p.y;},0)/2;
     const area=signedArea(outer);
