@@ -98,6 +98,24 @@ try {
   await page.locator('#sketchTool').selectOption('circle');
   assert.equal(await page.locator('#sketchDepthMM').isVisible(), false, 'Kreis zeigt ein unnötiges separates Tiefenfeld');
 
+  // Rasterfang: gezeichnete Rechteckkanten werden auf das gewählte 5-mm-Raster gesetzt.
+  await page.locator('#sketchTool').selectOption('rectangle');
+  await page.locator('#sketchSnapEnabled').check();
+  await page.locator('#sketchGridMM').fill('5');
+  await page.locator('#startSketch').click();
+  const snapStart = await page.evaluate(() => window.__silmoSketchPointForTest(-0.73, -0.62));
+  const snapEnd = await page.evaluate(() => window.__silmoSketchPointForTest(0.68, 0.57));
+  await page.mouse.move(snapStart.x, snapStart.y);
+  await page.mouse.down();
+  await page.mouse.move(snapEnd.x, snapEnd.y, { steps: 10 });
+  await page.mouse.up();
+  await page.locator('#createSketchSolid').click();
+  const snappedSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
+  assert.equal(snappedSnapshot.type, 'rectangle', 'Rasterfang-Test hat kein Rechteck erstellt');
+  assert.ok(Math.abs(snappedSnapshot.widthMM / 5 - Math.round(snappedSnapshot.widthMM / 5)) < 0.001, 'Rechteckbreite liegt nicht auf dem 5-mm-Raster');
+  assert.ok(Math.abs(snappedSnapshot.depthMM / 5 - Math.round(snappedSnapshot.depthMM / 5)) < 0.001, 'Rechtecktiefe liegt nicht auf dem 5-mm-Raster');
+  await page.locator('#sketchSnapEnabled').uncheck();
+
   // 2D-Freiform: eine geschlossene Kontur mit mehreren Punkten zeichnen und extrudieren.
   await page.locator('#sketchTool').selectOption('freeform2d');
   assert.equal(await page.locator('#sketchWidthMM').isVisible(), false, 'Freiform zeigt unnötige Breitenfelder');
