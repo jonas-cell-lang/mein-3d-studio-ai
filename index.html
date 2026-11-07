@@ -2624,7 +2624,8 @@ input:focus{outline:1px solid var(--cyan)}
     sketchDraft = null;
     clearSketchPreview();
     document.getElementById('createSketchSolid').disabled = true;
-    document.getElementById('cancelSketch').disabled = true;
+    document.getElementById('cancelSketch').disabled = !sketchMode;
+    document.getElementById('cancelSketch').textContent = sketchMode ? 'Zeichenmodus beenden' : 'Skizze abbrechen';
     updateSketchToolFields();
     document.getElementById('sketchStatus').textContent = 'Werkzeug gewechselt. Starte eine neue Skizze.';
   });
@@ -2633,7 +2634,8 @@ input:focus{outline:1px solid var(--cyan)}
     sketchDraft = null;
     clearSketchPreview();
     document.getElementById('createSketchSolid').disabled = true;
-    document.getElementById('cancelSketch').disabled = true;
+    document.getElementById('cancelSketch').disabled = !sketchMode;
+    document.getElementById('cancelSketch').textContent = sketchMode ? 'Zeichenmodus beenden' : 'Skizze abbrechen';
     document.getElementById('sketchStatus').textContent = 'Zeichenebene geändert. Starte eine neue 3D-Linie auf dieser Ebene.';
   });
   document.getElementById('sketchDepthMM').closest('.field').hidden = false;
