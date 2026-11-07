@@ -1235,6 +1235,8 @@ input:focus{outline:1px solid var(--cyan)}
 
   function selectObject(obj) {
     individualGroupEdit = false;
+    activeRotationAxis = null;
+    setRotationGuideAxis(null);
     selected = obj;
     selectedObjects = obj ? (obj.userData.groupId ? objects.filter(item => item.userData.groupId === obj.userData.groupId) : [obj]) : [];
     updateObjects();
@@ -1791,6 +1793,9 @@ input:focus{outline:1px solid var(--cyan)}
     const targets = getSelectedTargets();
     if (!targets.includes(selected)) targets.push(selected);
     applyGroupRotation(axis, THREE.MathUtils.degToRad(value - currentDegrees), targets);
+    // Die Eingabe darf die zuletzt gewählte Achse nicht entmarkieren.
+    activeRotationAxis = axis;
+    setRotationGuideAxis(axis);
     status.textContent = 'Drehung um ' + axis.toUpperCase() + ' auf ' + value + '° gesetzt.';
     updateRotationAngleLabel();
   });
@@ -1851,6 +1856,10 @@ input:focus{outline:1px solid var(--cyan)}
   }
   $('gizmoModeToggle').addEventListener('click', () => {
     gizmoMode = gizmoMode === 'move' ? 'rotate' : 'move';
+    if (gizmoMode !== 'rotate') {
+      activeRotationAxis = null;
+      setRotationGuideAxis(null);
+    }
     updateGizmoModeButton();
     updateMoveGizmo();
     status.textContent = gizmoMode === 'rotate'
@@ -2328,8 +2337,9 @@ input:focus{outline:1px solid var(--cyan)}
     rotatingView = false;
     draggingObject = false;
     activeAxis = null;
-    activeRotationAxis = null;
-    setRotationGuideAxis(null);
+    // Die zuletzt gewählte Drehachse bleibt nach dem Loslassen aktiv markiert,
+    // damit sie auch bei der direkten Gradzahl-Eingabe sichtbar bleibt.
+    setRotationGuideAxis(activeRotationAxis);
     rotationStartQuaternions = [];
     updateRotationAngleLabel();
     rotationAccumulatedAngle = 0;
