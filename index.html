@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v56 – Parametrisches CAD und Formoperationen</title>
+<title>SILMO 3D Studio AI – v57 – Skizzenbedingungen und Bemaßung</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v56 – Parametrisches CAD und Formoperationen">
+<meta name="silmo-build" content="v57 – Skizzenbedingungen und Bemaßung">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -207,7 +207,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v56 – Parametrisches CAD und Formoperationen -->
+<!-- SILMO BUILD: v57 – Skizzenbedingungen und Bemaßung -->
 <script id="silmoDeveloperDiagnostics">
 (function(){
   'use strict';
@@ -662,6 +662,24 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   const constraintWrap=document.createElement('div');constraintWrap.className='field';constraintWrap.append(constraintLabel,sketchConstraint);proGroup.appendChild(constraintWrap);
   const constraintNote=document.createElement('p');constraintNote.className='cad-pro-note';constraintNote.textContent='Rechteckige Profile besitzen bereits parallele und rechtwinklige Kanten. Diese Bedingungen richten Linien aus, gleichen Masse an oder zentrieren Profile.';
   proGroup.appendChild(constraintNote);
+  const relationLabel=document.createElement('label');relationLabel.htmlFor='cadRelationSelect';relationLabel.textContent='Beziehung zwischen zwei Skizzen';
+  const relationSelect=document.createElement('select');relationSelect.id='cadRelationSelect';relationSelect.innerHTML='<option value="parallel">Parallel</option><option value="perpendicular">Senkrecht</option><option value="concentric">Konzentrisch</option><option value="tangent">Tangential verbinden</option>';
+  const relationWrap=document.createElement('div');relationWrap.className='field';relationWrap.append(relationLabel,relationSelect);proGroup.appendChild(relationWrap);
+  const applyRelationButton=document.createElement('button');applyRelationButton.type='button';applyRelationButton.id='applySketchRelation';applyRelationButton.className='wide';applyRelationButton.textContent='↔ Bedingung auf zwei Auswahlen anwenden';proGroup.appendChild(applyRelationButton);
+  const relationNote=document.createElement('p');relationNote.className='cad-pro-note';relationNote.textContent='Wähle zwei Linien/Kurven für Parallel, Senkrecht oder Tangential. Für Konzentrisch wähle zwei geschlossene Profile.';proGroup.appendChild(relationNote);
+  const proDividerRelation=document.createElement('div');proDividerRelation.className='cad-pro-divider';proGroup.appendChild(proDividerRelation);
+  const pathHeading=document.createElement('h3');pathHeading.textContent='Linienlänge exakt bemaßen';proGroup.appendChild(pathHeading);
+  const pathLengthWrap=document.createElement('div');pathLengthWrap.className='field';const pathLengthLabel=document.createElement('label');pathLengthLabel.htmlFor='editPathLengthMM';pathLengthLabel.textContent='Pfadlänge (mm)';const pathLengthInput=document.createElement('input');pathLengthInput.id='editPathLengthMM';pathLengthInput.type='number';pathLengthInput.min='0.1';pathLengthInput.max='20000';pathLengthInput.step='0.1';pathLengthInput.value='20';pathLengthWrap.append(pathLengthLabel,pathLengthInput);proGroup.appendChild(pathLengthWrap);
+  const pathLengthActions=document.createElement('div');pathLengthActions.className='cad-pro-actions';
+  const loadPathLength=document.createElement('button');loadPathLength.type='button';loadPathLength.id='loadPathLength';loadPathLength.textContent='Länge laden';
+  const applyPathLength=document.createElement('button');applyPathLength.type='button';applyPathLength.id='applyPathLength';applyPathLength.textContent='Länge übernehmen';
+  pathLengthActions.append(loadPathLength,applyPathLength);proGroup.appendChild(pathLengthActions);
+  const distanceHeading=document.createElement('h3');distanceHeading.textContent='Abstand zwischen zwei Objekten';proGroup.appendChild(distanceHeading);
+  const distanceGrid=document.createElement('div');distanceGrid.className='cad-pro-grid';
+  const distanceAxisWrap=document.createElement('div');distanceAxisWrap.className='field';const distanceAxisLabel=document.createElement('label');distanceAxisLabel.htmlFor='objectDistanceAxis';distanceAxisLabel.textContent='Achse';const distanceAxis=document.createElement('select');distanceAxis.id='objectDistanceAxis';distanceAxis.innerHTML='<option value="x">X</option><option value="y">Y</option><option value="z">Z</option>';distanceAxisWrap.append(distanceAxisLabel,distanceAxis);
+  const distanceValueWrap=document.createElement('div');distanceValueWrap.className='field';const distanceValueLabel=document.createElement('label');distanceValueLabel.htmlFor='objectDistanceMM';distanceValueLabel.textContent='Mittelpunktabstand (mm)';const distanceValue=document.createElement('input');distanceValue.id='objectDistanceMM';distanceValue.type='number';distanceValue.min='0';distanceValue.max='20000';distanceValue.step='0.1';distanceValue.value='20';distanceValueWrap.append(distanceValueLabel,distanceValue);
+  distanceGrid.append(distanceAxisWrap,distanceValueWrap);proGroup.appendChild(distanceGrid);
+  const applyDistance=document.createElement('button');applyDistance.type='button';applyDistance.id='applyObjectDistance';applyDistance.className='wide';applyDistance.textContent='↔ Abstand festlegen';proGroup.appendChild(applyDistance);
   const proDivider1=document.createElement('div');proDivider1.className='cad-pro-divider';proGroup.appendChild(proDivider1);
   const editHeading=document.createElement('h3');editHeading.textContent='Ausgewählte Skizze nachträglich bemaßen';proGroup.appendChild(editHeading);
   const editGrid=document.createElement('div');editGrid.className='cad-pro-grid';
@@ -2844,6 +2862,29 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     const frame=objects.find(obj=>obj.userData.contourFrame);
     return {baseFound:true,frameFound:!!frame,baseWidthMM:base.userData.sketch?.widthMM,baseDepthMM:base.userData.sketch?.depthMM,baseThicknessMM:base.userData.sketch?.extrusionMM,outlinePoints:base.userData.sketchOutline.length,wallThicknessMM:frame?.userData.contourFrame?.wallThicknessMM,wallHeightMM:frame?.userData.contourFrame?.wallHeightMM,frameVertices:frame?.geometry?.attributes?.position?.count||0};
   };
+  window.__silmoTestRunSketchRelations=()=>{
+    const makePath=(name,points)=>{const vec=points.map(p=>new THREE.Vector3(...p));const curve=new THREE.CatmullRomCurve3(vec);const geometry=new THREE.TubeGeometry(curve,24,0.04,8,false);geometry.computeBoundingBox();const center=geometry.boundingBox.getCenter(new THREE.Vector3());geometry.translate(-center.x,-center.y,-center.z);
+      const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:'#4b91ed'}));mesh.position.copy(center);mesh.userData={label:name,baseDimensions:{x:0.2,y:0.2,z:0.2},percent:{x:100,y:100,z:100},sketch:{type:'curve2d',diameterMM:0.8,pathPoints:points.map(p=>[p[0]-center.x,p[1]-center.y,p[2]-center.z])}};scene.add(mesh);objects.push(mesh);return mesh;};
+    const a=makePath('Pfad A',[[0,0,0],[1,0,0]]),b=makePath('Pfad B',[[0,1,0],[0,2,0]]);
+    selectedObjects=[a,b];selected=b;document.getElementById('cadRelationSelect').value='parallel';applySketchRelation();
+    const dirA=cadPathWorldPoints(a).at(-1).sub(cadPathWorldPoints(a)[0]).normalize(),dirB=cadPathWorldPoints(b).at(-1).sub(cadPathWorldPoints(b)[0]).normalize();
+    const parallelOK=Math.abs(dirA.dot(dirB))>0.99;
+    document.getElementById('cadRelationSelect').value='perpendicular';applySketchRelation();
+    const dirB2=cadPathWorldPoints(b).at(-1).sub(cadPathWorldPoints(b)[0]).normalize();
+    const perpendicularOK=Math.abs(dirA.dot(dirB2))<0.02;
+    const c=makePath('Tangente A',[[0,0,0],[1,0,0]]),d=makePath('Tangente B',[[0,0,0],[0,1,0]]);
+    selectedObjects=[c,d];selected=d;document.getElementById('cadRelationSelect').value='tangent';applySketchRelation();
+    const tangentPointsA=cadPathWorldPoints(c),tangentPointsB=cadPathWorldPoints(d);
+    const tangentOK=tangentPointsA.at(-1).distanceTo(tangentPointsB[0])<0.02;
+    const profile1=objects.find(o=>String(o.userData.label||'').startsWith('Testprofil A')),profile2=objects.find(o=>String(o.userData.label||'').startsWith('Testprofil B'));
+    selectedObjects=[profile1,profile2];selected=profile2;document.getElementById('cadRelationSelect').value='concentric';applySketchRelation();
+    const concentricOK=Math.abs(profile1.position.x-profile2.position.x)<1e-6&&Math.abs(profile1.position.y-profile2.position.y)<1e-6;
+    selectedObjects=[a];selected=a;loadSelectedPathLength();document.getElementById('editPathLengthMM').value='30';applySelectedPathLength();
+    const lengthOK=Math.abs(a.userData.sketch.lengthMM-30)<0.01;
+    selectedObjects=[profile1,profile2];selected=profile2;document.getElementById('objectDistanceAxis').value='z';document.getElementById('objectDistanceMM').value='15';applyObjectDistance();
+    const distanceOK=Math.abs((profile2.position.z-profile1.position.z)*MM_PER_UNIT-15)<0.01;
+    return {parallelOK,perpendicularOK,tangentOK,concentricOK,lengthOK,distanceOK};
+  };
   window.__silmoTestRunProCad=()=>{
     const makeProfile=(name,x,y,z,w,d,h)=>{
       const shape=new THREE.Shape();shape.moveTo(-w/2,-d/2);shape.lineTo(w/2,-d/2);shape.lineTo(w/2,d/2);shape.lineTo(-w/2,d/2);shape.closePath();
@@ -2884,7 +2925,81 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     return {objectCount:objects.length,frameFound:!!frame,label:frame?.userData.label,wallThicknessMM:frame?.userData.contourFrame?.wallThicknessMM,wallHeightMM:frame?.userData.contourFrame?.wallHeightMM,dimensions:frame?.userData.baseDimensions,geometryVertices:frame?.geometry?.attributes?.position?.count||0};
   };
 
-  function selectedCadObject(){
+
+  function cadPathCurve(obj){
+    const data=obj?.userData?.sketch;
+    if(!data||!Array.isArray(data.pathPoints)||data.pathPoints.length<2)throw new Error('Auswahl braucht eine gespeicherte Linien- oder Kurvenbahn.');
+    const points=data.pathPoints.map(p=>new THREE.Vector3(p[0],p[1],p[2]));
+    return data.type==='line2d'?new THREE.LineCurve3(points[0],points[points.length-1]):new THREE.CatmullRomCurve3(points);
+  }
+  function cadPathWorldPoints(obj){
+    const data=obj?.userData?.sketch;
+    if(!data||!Array.isArray(data.pathPoints)||data.pathPoints.length<2)throw new Error('Beide Auswahlen müssen Linien oder Kurven sein.');
+    obj.updateMatrixWorld(true);
+    return data.pathPoints.map(p=>obj.localToWorld(new THREE.Vector3(p[0],p[1],p[2])));
+  }
+  function applySketchRelation(){
+    if(selectedObjects.length!==2)throw new Error('Bitte genau zwei Objekte in der Objektliste auswählen.');
+    const [a,b]=selectedObjects,relation=document.getElementById('cadRelationSelect').value;
+    recordHistory();
+    if(relation==='concentric'){
+      if(!Array.isArray(a.userData.sketchOutline)||!Array.isArray(b.userData.sketchOutline))throw new Error('Konzentrisch benötigt zwei geschlossene Skizzenprofile.');
+      b.position.x=a.position.x;b.position.y=a.position.y;
+    }else{
+      const pa=cadPathWorldPoints(a),pb=cadPathWorldPoints(b);
+      let from,to;
+      if(relation==='tangent'){
+        from=pb[1].clone().sub(pb[0]).normalize();
+        to=pa[pa.length-1].clone().sub(pa[Math.max(0,pa.length-2)]).normalize();
+      }else{
+        from=pb[pb.length-1].clone().sub(pb[0]).normalize();
+        to=pa[pa.length-1].clone().sub(pa[0]).normalize();
+        if(relation==='perpendicular'){
+          const axis=Math.abs(to.z)<0.9?new THREE.Vector3(0,0,1):new THREE.Vector3(0,1,0);
+          to.cross(axis).normalize();
+        }
+      }
+      if(from.length()<1e-6||to.length()<1e-6)throw new Error('Linienrichtung ist zu kurz für diese Bedingung.');
+      const rotation=new THREE.Quaternion().setFromUnitVectors(from,to);
+      b.quaternion.premultiply(rotation);b.updateMatrixWorld(true);
+      if(relation==='tangent'){
+        const endA=pa[pa.length-1],startB=cadPathWorldPoints(b)[0];
+        b.position.add(endA.sub(startB));b.updateMatrixWorld(true);
+      }
+    }
+    notifyPositionChanged(b);updateObjects();showProperties();updateMoveGizmo();
+    status.textContent=relation==='concentric'?'Profile konzentrisch ausgerichtet.':relation==='parallel'?'Linien parallel ausgerichtet.':relation==='perpendicular'?'Linien senkrecht ausgerichtet.':'Kurven tangential verbunden.';
+  }
+  function loadSelectedPathLength(){
+    const obj=selectedCadObject(),curve=cadPathCurve(obj),length=curve.getLength()*MM_PER_UNIT;
+    document.getElementById('editPathLengthMM').value=length.toFixed(1);
+    status.textContent='Pfadlänge geladen: '+length.toFixed(1)+' mm.';
+  }
+  function applySelectedPathLength(){
+    const obj=selectedCadObject(),data=obj.userData.sketch;
+    const target=Number(document.getElementById('editPathLengthMM').value);
+    if(!Number.isFinite(target)||target<0.1||target>20000)throw new Error('Pfadlänge muss zwischen 0,1 und 20000 mm liegen.');
+    const curve=cadPathCurve(obj),current=curve.getLength()*MM_PER_UNIT;
+    if(current<0.001)throw new Error('Pfad ist zu kurz.');
+    const factor=target/current,scaled=data.pathPoints.map(p=>p.map(v=>v*factor));
+    const points=scaled.map(p=>new THREE.Vector3(p[0],p[1],p[2]));
+    const nextCurve=data.type==='line2d'?new THREE.LineCurve3(points[0],points[points.length-1]):new THREE.CatmullRomCurve3(points);
+    const diameter=Number(data.diameterMM||1.2);
+    const geometry=new THREE.TubeGeometry(nextCurve,data.type==='line2d'?24:Math.max(24,Math.min(300,points.length*12)),diameter/MM_PER_UNIT/2,8,false);
+    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    recordHistory();obj.geometry.dispose();obj.geometry=geometry;data.pathPoints=scaled;data.lengthMM=target;
+    const size=new THREE.Vector3();geometry.boundingBox.getSize(size);obj.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
+    updateObjects();showProperties();updateMoveGizmo();status.textContent='Pfadlänge exakt auf '+target.toFixed(1)+' mm gesetzt.';
+  }
+  function applyObjectDistance(){
+    if(selectedObjects.length!==2)throw new Error('Bitte genau zwei Objekte auswählen.');
+    const axis=document.getElementById('objectDistanceAxis').value,value=Number(document.getElementById('objectDistanceMM').value);
+    if(!Number.isFinite(value)||value<0||value>20000)throw new Error('Abstand muss zwischen 0 und 20000 mm liegen.');
+    const [a,b]=selectedObjects;recordHistory();b.position[axis]=a.position[axis]+value/MM_PER_UNIT;
+    notifyPositionChanged(b);updateObjects();showProperties();updateMoveGizmo();
+    status.textContent='Mittelpunktabstand auf '+value.toFixed(1)+' mm entlang '+axis.toUpperCase()+' gesetzt.';
+  }
+    function selectedCadObject(){
     const target=selectedObjects.length===1?selectedObjects[0]:selected;
     if(!target||!objects.includes(target))throw new Error('Bitte zuerst genau ein passendes Objekt auswählen.');
     return target;
@@ -3152,6 +3267,10 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   document.getElementById('applyEdgeChamfer').addEventListener('click',()=>{try{createEdgeTreatment('chamfer');}catch(e){status.textContent='Fase nicht möglich: '+e.message;}});
   document.getElementById('createLoft').addEventListener('click',()=>{try{createLoftFromSelection();}catch(e){status.textContent='Loft nicht möglich: '+e.message;}});
   document.getElementById('createSweep').addEventListener('click',()=>{try{createSweepFromSelection();}catch(e){status.textContent='Sweep nicht möglich: '+e.message;}});
+  document.getElementById('applySketchRelation').addEventListener('click',()=>{try{applySketchRelation();}catch(e){status.textContent='Bedingung nicht möglich: '+e.message;}});
+  document.getElementById('loadPathLength').addEventListener('click',()=>{try{loadSelectedPathLength();}catch(e){status.textContent=e.message;}});
+  document.getElementById('applyPathLength').addEventListener('click',()=>{try{applySelectedPathLength();}catch(e){status.textContent='Pfadlänge konnte nicht übernommen werden: '+e.message;}});
+  document.getElementById('applyObjectDistance').addEventListener('click',()=>{try{applyObjectDistance();}catch(e){status.textContent='Abstand konnte nicht gesetzt werden: '+e.message;}});
 
   document.getElementById('createContourFrame').addEventListener('click',()=>{try{createContourFrame();}catch(error){status.textContent='Hohlrahmen konnte nicht erstellt werden: '+(error.message||'Kontur prüfen.');}});
   document.getElementById('subtractSelected').addEventListener('click',()=>runBooleanOperation('subtract'));
