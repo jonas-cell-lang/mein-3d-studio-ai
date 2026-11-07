@@ -2381,6 +2381,7 @@ input:focus{outline:1px solid var(--cyan)}
       }
     } else if (activeTool === 'freeform2d') {
       if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
+        snapSketchPoint(sketchPoint);
         const points = sketchDraft?.type === 'freeform2d' ? sketchDraft.points : [sketchStart.clone()];
         if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > 0.015) points.push(sketchPoint.clone());
         if (points.length > 500) points.splice(1, points.length - 500);
