@@ -129,9 +129,6 @@ jobs:
               "id='createObjectGroup'",
               "id='ungroupObjects'",
               "id='booleanSeparate'",
-              "id='createPhoneCase'",
-              "function createPhoneCase(spec)",
-              "phoneCaseComponent:component",
               "function splitBooleanUnion()",
               "unionParts: Array.isArray(obj.userData.unionParts) ? obj.userData.unionParts : null",
               "b.id='mirror'+axis.toUpperCase()",
@@ -149,5 +146,9 @@ jobs:
           missing = [item for item in required_individual_group_edit if item not in html]
           if missing:
               raise SystemExit("Einzelbearbeitung in Gruppen unvollständig: " + ", ".join(missing))
-          print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung, Objektsperre, Gruppen, Spiegeln, Verbindung lösen, Handyhüllen-Rohling und Einzelbearbeitung in Gruppen sind statisch geprüft.")
+          if "id='createPhoneCase'" in html or "function createPhoneCase(spec)" in html:
+              raise SystemExit("Automatischer Handyhüllen-Generator ist noch vorhanden.")
+          if "id='manualPhoneCaseGuide'" not in html or "Handyhülle selbst konstruieren" not in html:
+              raise SystemExit("Anleitung zum freien Handyhüllen-Zeichnen fehlt.")
+          print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung, Objektsperre, Gruppen, Spiegeln, Verbindung lösen, freies Handyhüllen-Zeichnen und Einzelbearbeitung in Gruppen sind statisch geprüft.")
           PY
