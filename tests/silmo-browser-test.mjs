@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v50/, 'Build-Metadaten zeigen nicht v50');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v51/, 'Build-Metadaten zeigen nicht v51');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -463,31 +463,17 @@ try {
   assert.equal(await gizmoModeToggle.getAttribute('aria-pressed'), 'false', 'Zurückschalten auf Verschieben funktioniert nicht');
   assert.equal(await page.evaluate(() => window.__silmoTutorialRotationRingPoint('z', 0.45)), null, 'Drehringe bleiben nach dem Zurückschalten aktiv');
 
-  // Parametrischer Handyhüllen-Rohling: gültige Maße, zwei zusammengehörige Teile und Fehlerbehandlung.
-  await page.locator('[data-tab="create"]').click();
-  const caseStartCount=await page.locator('#objects .object-row').count();
-  await page.locator('#casePhoneWidth').fill('74');
-  await page.locator('#casePhoneLength').fill('154');
-  await page.locator('#createPhoneCase').click();
-  const caseSnapshot=await page.evaluate(()=>window.__silmoPhoneCaseSnapshot());
-  assert.equal(caseSnapshot.objectCount,caseStartCount+2,'Handyhülle erzeugt nicht Rückwand und Seitenwände');
-  assert.equal(caseSnapshot.selectedCount,2,'Handyhüllen-Teile sind nicht als Gruppe ausgewählt');
-  assert.equal(caseSnapshot.groupIds.length,1,'Handyhüllen-Teile besitzen keine gemeinsame Gruppe');
-  assert.deepEqual(caseSnapshot.components.map(x=>x.component).sort(),['back','walls'],'Handyhüllen-Bauteile fehlen');
-  assert.ok(caseSnapshot.components.every(x=>x.dimensions.x>0&&x.dimensions.y>0&&x.dimensions.z>0),'Handyhüllen-Geometrie hat ungültige Maße');
-  assert.equal(caseSnapshot.components[0].spec.phoneWidth,74,'Benutzerdefinierte Handybreite wird nicht übernommen');
-  await page.locator('#casePhoneWidth').fill('999');
-  await page.locator('#createPhoneCase').click();
-  assert.equal((await page.locator('#objects .object-row').count()),caseStartCount+2,'Ungültige Maße dürfen keine Geometrie erzeugen');
-  assert.match(await page.locator('#status').innerText(),/Ungültiger Wert/,'Ungültige Handymaße werden nicht erklärt');
-  await page.locator('#casePhoneWidth').fill('74');
-  await page.locator('#casePhoneThickness').fill('20');
-  await page.locator('#createPhoneCase').click();
-  assert.equal((await page.locator('#objects .object-row').count()),caseStartCount+2,'Zu niedrige Seitenwände dürfen keine Hülle erzeugen');
-  assert.match(await page.locator('#status').innerText(),/Seitenwand ist zu niedrig/,'Handydicke wird nicht gegen die Innenhöhe geprüft');
+  // Handyhüllen sollen frei gezeichnet werden: kein automatischer Generator oder fertiges Modell.
+  await page.locator('[data-tab="draw"]').click();
+  assert.equal(await page.locator('#createPhoneCase').count(),0,'Automatischer Handyhüllen-Generator ist noch vorhanden');
+  assert.equal(await page.locator('#casePhoneWidth').count(),0,'Vorgegebene Handy-Masse sind noch vorhanden');
+  assert.equal(await page.locator('#manualPhoneCaseGuide').count(),1,'Anleitung zum freien Handyhüllen-Zeichnen fehlt');
+  assert.match(await page.locator('#manualPhoneCaseGuide').innerText(),/kein Handy und keine Hülle automatisch erstellt/i,'Hinweis auf selbstständiges Zeichnen fehlt');
+  assert.equal(await page.locator('#sketchTool').isVisible(),true,'Freie Zeichenwerkzeuge sind nicht erreichbar');
+  assert.ok((await page.locator('#sketchTool option').allTextContents()).some(x=>/Freiform/.test(x)),'Freiform-Zeichenwerkzeug fehlt');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
-  console.log('BESTANDEN: 3D-Start, Zeichnen, Handyhüllen-Rohling, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
+  console.log('BESTANDEN: 3D-Start, Zeichnen, freies Handyhüllen-Zeichnen, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
   console.log(JSON.stringify({ canvasSize, beforeAlign, afterAlign, selectedCount, alignStatus }));
 } catch (error) {
   console.error('BROWSERTEST FEHLGESCHLAGEN:', error);
