@@ -292,7 +292,7 @@ input:focus{outline:1px solid var(--cyan)}
         cssRuleCount=styles?styles.split('{').length-1:0;
         add('HINWEIS','Dieser Browser bietet keinen vollständigen CSS-Parser für die Zusatzprüfung; CSS-Regeln wurden gezählt.');
       }
-      ['#createObjectGroup','#ungroupObjects','#alignSelected','#booleanSeparate','#sketchTool','#startSketch','#createSketchSolid'].forEach(selector=>{if(!document.querySelector(selector))issues.push('App: Werkzeug '+selector+' wurde nicht initialisiert.');});
+      ['#createObjectGroup','#ungroupObjects','#alignSelected','#booleanSeparate','#sketchTool','#startSketch','#createSketchSolid','#createCaseWallFrame','#caseWallThicknessMM','#caseWallHeightMM'].forEach(selector=>{if(!document.querySelector(selector))issues.push('App: Werkzeug '+selector+' wurde nicht initialisiert.');});
       if(!window.THREE)issues.push('3D: Three.js ist nicht geladen.');
       else{
         if(!window.THREE.STLLoader)issues.push('3D: STLLoader ist nicht geladen.');
@@ -2580,6 +2580,66 @@ input:focus{outline:1px solid var(--cyan)}
     }
     return true;
   }
+  function createCaseWallFrame() {
+    const base=selectedObjects.length===1?selectedObjects[0]:selected;
+    if(!base||!objects.includes(base)||!Array.isArray(base.userData.caseOutline)||base.userData.caseOutline.length<3){
+      status.textContent='Wähle zuerst eine selbst gezeichnete 2D-Freiform als Rückwand-Kontur aus.';return;
+    }
+    if(base.userData.locked===true){status.textContent='Die ausgewählte Rückwand ist gesperrt. Entsperre sie zuerst.';return;}
+    const thicknessMM=Number(document.getElementById('caseWallThicknessMM').value);
+    const heightMM=Number(document.getElementById('caseWallHeightMM').value);
+    if(!Number.isFinite(thicknessMM)||thicknessMM<0.6||thicknessMM>5||!Number.isFinite(heightMM)||heightMM<2||heightMM>40){
+      status.textContent='Wandstärke muss 0,6–5 mm und Wandhöhe 2–40 mm betragen.';return;
+    }
+    const outer=base.userData.caseOutline.map(point=>new THREE.Vector2(point[0],point[1]));
+    if(outer.length>240){status.textContent='Die Kontur hat zu viele Punkte. Zeichne sie etwas einfacher neu.';return;}
+    const signedArea=points=>points.reduce((sum,p,i)=>{const n=points[(i+1)%points.length];return sum+p.x*n.y-n.x*p.y;},0)/2;
+    const area=signedArea(outer);
+    if(!Number.isFinite(area)||Math.abs(area)<0.0001){status.textContent='Die Rückwand-Kontur ist zu klein oder ungültig.';return;}
+    const ccw=area>0,offset=thicknessMM/MM_PER_UNIT,inner=[];
+    const cross=(a,b)=>a.x*b.y-a.y*b.x;
+    for(let i=0;i<outer.length;i++){
+      const prev=outer[(i+outer.length-1)%outer.length],p=outer[i],next=outer[(i+1)%outer.length];
+      const e1=new THREE.Vector2(p.x-prev.x,p.y-prev.y),e2=new THREE.Vector2(next.x-p.x,next.y-p.y);
+      if(e1.length()<1e-5||e2.length()<1e-5)continue;
+      e1.normalize();e2.normalize();
+      const n1=ccw?new THREE.Vector2(-e1.y,e1.x):new THREE.Vector2(e1.y,-e1.x);
+      const n2=ccw?new THREE.Vector2(-e2.y,e2.x):new THREE.Vector2(e2.y,-e2.x);
+      const q1=p.clone().addScaledVector(n1,offset),q2=p.clone().addScaledVector(n2,offset),den=cross(e1,e2);
+      let hit;
+      if(Math.abs(den)<1e-5){
+        const normal=n1.clone().add(n2);
+        if(normal.length()<1e-5)throw new Error('Kontur enthält einen ungültigen Knick.');
+        hit=p.clone().addScaledVector(normal.normalize(),offset);
+      }else{
+        const u=cross(new THREE.Vector2(q2.x-q1.x,q2.y-q1.y),e2)/den;
+        hit=q1.clone().addScaledVector(e1,u);
+      }
+      if(hit.distanceTo(p)>offset*8+0.02)throw new Error('Die Kontur ist für diese Wandstärke zu eng. Verringere die Wandstärke.');
+      inner.push(hit);
+    }
+    const innerArea=signedArea(inner);
+    if(inner.length<3||Math.abs(innerArea)<0.0001||Math.sign(innerArea)!==Math.sign(area))
+      throw new Error('Innenkontur ist zu eng oder überschneidet sich. Verringere die Wandstärke oder glätte die gezeichnete Kontur.');
+    const shape=new THREE.Shape();
+    shape.moveTo(outer[0].x,outer[0].y);outer.slice(1).forEach(p=>shape.lineTo(p.x,p.y));shape.closePath();
+    const hole=new THREE.Path(),reversed=inner.slice().reverse();
+    hole.moveTo(reversed[0].x,reversed[0].y);reversed.slice(1).forEach(p=>hole.lineTo(p.x,p.y));hole.closePath();shape.holes.push(hole);
+    const geometry=new THREE.ExtrudeGeometry(shape,{depth:heightMM/MM_PER_UNIT,bevelEnabled:false,curveSegments:16});
+    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
+    if(![size.x,size.y,size.z].every(v=>Number.isFinite(v)&&v>CSG_EPSILON)){geometry.dispose();throw new Error('Seitenwand-Rahmen hat ungültige Abmessungen.');}
+    recordHistory();
+    const mesh=new THREE.Mesh(geometry,base.material.clone());
+    mesh.position.set(base.position.x,base.position.y,base.position.z+(base.userData.baseDimensions?.z||size.z)-0.02/MM_PER_UNIT);
+    mesh.userData.baseDimensions={x:size.x,y:size.y,z:size.z};mesh.userData.percent={x:100,y:100,z:100};
+    mesh.userData.label='Selbst gezeichneter Seitenwand-Rahmen';
+    mesh.userData.caseWallFrame={source:base.uuid,wallThicknessMM:thicknessMM,wallHeightMM:heightMM};
+    scene.add(mesh);objects.push(mesh);selectObject(mesh);
+    status.textContent='Seitenwand-Rahmen aus deiner eigenen Kontur erstellt. Rückwand und Rahmen sind getrennte, bearbeitbare Teile.';
+    updateObjects();showProperties();updateMoveGizmo();
+  }
+
   function createSketchSolid() {
     if (!sketchDraft) { status.textContent = 'Bitte zuerst eine Skizze zeichnen.'; return; }
     try {
@@ -2637,7 +2697,8 @@ input:focus{outline:1px solid var(--cyan)}
           depthMM: (maxY - minY) * MM_PER_UNIT,
           areaMM2: area * MM_PER_UNIT * MM_PER_UNIT,
           perimeterMM: perimeter * MM_PER_UNIT,
-          extrusionMM: heightMM
+          extrusionMM: heightMM,
+          outlinePoints: localPoints.map(point=>[point.x,point.y])
         };
         label = 'Freiform-Skizze';
       } else {
@@ -2690,6 +2751,7 @@ input:focus{outline:1px solid var(--cyan)}
       mesh.userData.percent = { x: 100, y: 100, z: 100 };
       mesh.userData.label = label;
       mesh.userData.sketch = sketchMetadata;
+      if(tool==='freeform2d')mesh.userData.caseOutline=sketchMetadata.outlinePoints;
       scene.add(mesh);
       objects.push(mesh);
       selectObject(mesh);
@@ -2723,6 +2785,7 @@ input:focus{outline:1px solid var(--cyan)}
     status.textContent = 'Zeichenmodus aktiv: auf der Zeichenfläche ziehen.';
   });
   document.getElementById('createSketchSolid').addEventListener('click', createSketchSolid);
+  document.getElementById('createCaseWallFrame').addEventListener('click',createCaseWallFrame);
   document.getElementById('cancelSketch').addEventListener('click', () => {
     sketchMode = false; sketchDrawing = false; sketchPointerId = null; sketchDraft = null;
     updateGizmoModeButton();
