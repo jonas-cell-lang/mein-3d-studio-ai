@@ -2958,7 +2958,8 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     cap(ra,true);cap(rb,false);
     const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     if(!geometry.boundingBox||geometry.boundingBox.isEmpty()){geometry.dispose();throw new Error('Loft konnte keine gültige Geometrie erzeugen.');}
-    recordHistory();const mesh=new THREE.Mesh(geometry,a.material.clone());mesh.userData={label:'Loft-Körper',percent:{x:100,y:100,z:100},loft:{sourceA:a.uuid,sourceB:b.uuid,sections:2}};
+    const loftSize=new THREE.Vector3();geometry.boundingBox.getSize(loftSize);
+    recordHistory();const mesh=new THREE.Mesh(geometry,a.material.clone());mesh.userData={label:'Loft-Körper',baseDimensions:{x:loftSize.x,y:loftSize.y,z:loftSize.z},percent:{x:100,y:100,z:100},loft:{sourceA:a.uuid,sourceB:b.uuid,sections:2}};
     scene.add(mesh);objects.push(mesh);selectObject(mesh);updateObjects();showProperties();updateMoveGizmo();
     status.textContent='Loft erstellt: zwei Skizzenprofile wurden zu einem Körper verbunden.';
   }
@@ -2974,7 +2975,8 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     const geometry=new THREE.ExtrudeGeometry(shape,{steps:Math.max(48,points.length*16),bevelEnabled:false,extrudePath:curve,curveSegments:24});
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     if(!geometry.boundingBox||geometry.boundingBox.isEmpty()){geometry.dispose();throw new Error('Sweep konnte keine gültige Geometrie erzeugen.');}
-    recordHistory();const mesh=new THREE.Mesh(geometry,profile.material.clone());mesh.userData={label:'Sweep-Körper',percent:{x:100,y:100,z:100},sweep:{profile:profile.uuid,path:pathObject.uuid}};
+    const sweepSize=new THREE.Vector3();geometry.boundingBox.getSize(sweepSize);
+    recordHistory();const mesh=new THREE.Mesh(geometry,profile.material.clone());mesh.userData={label:'Sweep-Körper',baseDimensions:{x:sweepSize.x,y:sweepSize.y,z:sweepSize.z},percent:{x:100,y:100,z:100},sweep:{profile:profile.uuid,path:pathObject.uuid}};
     scene.add(mesh);objects.push(mesh);selectObject(mesh);updateObjects();showProperties();updateMoveGizmo();
     status.textContent='Sweep erstellt: Profil entlang der gewählten Kurve geführt.';
   }
