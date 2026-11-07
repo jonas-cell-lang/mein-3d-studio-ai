@@ -464,6 +464,7 @@ try {
   assert.equal(await page.evaluate(() => window.__silmoTutorialRotationRingPoint('z', 0.45)), null, 'Drehringe bleiben nach dem Zurückschalten aktiv');
 
   // Parametrischer Handyhüllen-Rohling: gültige Maße, zwei zusammengehörige Teile und Fehlerbehandlung.
+  await page.locator('[data-tab="create"]').click();
   const caseStartCount=await page.locator('#objects .object-row').count();
   await page.locator('#casePhoneWidth').fill('74');
   await page.locator('#casePhoneLength').fill('154');
