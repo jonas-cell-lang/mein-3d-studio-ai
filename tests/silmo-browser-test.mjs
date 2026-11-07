@@ -169,7 +169,16 @@ try {
   assert.equal(rotationGuide.activeAxis, 'z', 'Aktive Drehachse wird nicht erkannt');
   assert.ok(rotationGuide.activeLineOpacity > 0.8, 'Drehachse durch den Würfel wird nicht hervorgehoben');
   await page.mouse.up();
-  assert.equal((await page.evaluate(() => window.__silmoRotationGuideSnapshot())).labelVisible, false, 'Gradzahl bleibt nach dem Drehen eingeblendet');
+  assert.equal((await page.evaluate(() => window.__silmoRotationGuideSnapshot())).labelVisible, true, 'Gradzahl-Eingabe verschwindet nach dem Ziehen');
+  const angleInput = page.locator('#rotationAngleLabel');
+  assert.equal(await angleInput.getAttribute('type'), 'number', 'Gradzahl neben dem Würfel ist kein Zahlenfeld');
+  await angleInput.fill('45');
+  await angleInput.press('Enter');
+  await page.waitForTimeout(200);
+  assert.match(await page.locator('#status').innerText(), /Drehung um Z auf 45° gesetzt/, 'Direkte Gradzahl-Eingabe wurde nicht übernommen');
+  const afterTypedAngle = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
+  assert.ok(Math.abs(afterTypedAngle.qz) > 0.05 || Math.abs(afterTypedAngle.qw) < 0.99, 'Eingetippte Gradzahl verändert das Modell nicht');
+  await angleInput.blur();
   await page.waitForTimeout(200);
   const afterRingRotation = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
   const selectedAfterRing = await page.locator('#objects .object-select[aria-pressed="true"]').evaluate(el => el.dataset.objectId);
