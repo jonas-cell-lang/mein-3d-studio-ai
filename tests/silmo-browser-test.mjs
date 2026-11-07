@@ -13,9 +13,10 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v44/, 'Build-Metadaten zeigen nicht v43');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v45/, 'Build-Metadaten zeigen nicht v43');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freie 2D-Skizze/, 'Schnellhilfe erklärt die neue Freiform nicht');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Präzise zeichnen/, 'Schnellhilfe erklärt den Rasterfang nicht');
+  assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Neue 2D-Formen/, 'Schnellhilfe erklärt Ellipse und Dreieck nicht');
   await page.waitForTimeout(1500);
 
   // Prüftool: Strg+Leertaste öffnet es und startet automatisch die vollständige Codeprüfung.
@@ -75,6 +76,25 @@ try {
 
   assert.ok(canvasSize.width > 0 && canvasSize.height > 0, '3D canvas hat keine gültige Grösse');
 
+  // Zeichenmodus: Rechtsklick-Ziehen darf die Kamera nicht drehen.
+  await page.locator('[data-tab="draw"]').click();
+  await page.locator('#sketchTool').selectOption('rectangle');
+  await page.locator('#startSketch').click();
+  assert.equal((await page.evaluate(() => window.__silmoSketchCameraLockSnapshot())).active, true, 'Zeichenmodus aktiviert die Kamerasperre nicht');
+  const cameraBeforeSketch = await page.evaluate(() => window.__silmoSketchCameraLockSnapshot());
+  const lockStart = await page.evaluate(() => window.__silmoSketchPointForTest(-0.7, -0.65));
+  const lockEnd = await page.evaluate(() => window.__silmoSketchPointForTest(0.7, 0.65));
+  await page.mouse.move(lockStart.x, lockStart.y);
+  await page.mouse.down({ button: 'right' });
+  await page.mouse.move(lockEnd.x, lockEnd.y, { steps: 8 });
+  await page.mouse.up({ button: 'right' });
+  const cameraAfterSketch = await page.evaluate(() => window.__silmoSketchCameraLockSnapshot());
+  assert.ok(Math.abs(cameraAfterSketch.targetRX - cameraBeforeSketch.targetRX) < 1e-10, 'Kamera wurde im Zeichenmodus vertikal gedreht');
+  assert.ok(Math.abs(cameraAfterSketch.targetRY - cameraBeforeSketch.targetRY) < 1e-10, 'Kamera wurde im Zeichenmodus horizontal gedreht');
+  assert.equal(cameraAfterSketch.rotatingView, false, 'Kameradrehung blieb nach Zeichnen aktiv');
+  assert.equal(await page.locator('#createSketchSolid').isEnabled(), true, 'Rechtsklick-Zeichnung wurde nicht als Skizze vorbereitet');
+  await page.locator('#createSketchSolid').click();
+
   // 2D-Skizze: Rechteck auf der XY-Ebene zeichnen und mit exakten Massen extrudieren.
   await page.locator('[data-tab="draw"]').click();
   await page.locator('#sketchTool').selectOption('rectangle');
@@ -98,6 +118,37 @@ try {
   assert.equal(await page.locator('#createSketchSolid').isDisabled(), true, 'Erstellte Skizze bleibt fälschlich zur erneuten Extrusion bereit');
   await page.locator('#sketchTool').selectOption('circle');
   assert.equal(await page.locator('#sketchDepthMM').isVisible(), false, 'Kreis zeigt ein unnötiges separates Tiefenfeld');
+
+  // Ellipse: unabhängige Breite und Tiefe sowie Extrusion prüfen.
+  await page.locator('#sketchTool').selectOption('ellipse');
+  assert.equal(await page.locator('#sketchDepthMM').isVisible(), true, 'Ellipse zeigt kein separates Tiefenfeld');
+  await page.locator('#startSketch').click();
+  const ellipseStart = await page.evaluate(() => window.__silmoSketchPointForTest(-0.72, -0.48));
+  const ellipseEnd = await page.evaluate(() => window.__silmoSketchPointForTest(0.72, 0.48));
+  await page.mouse.move(ellipseStart.x, ellipseStart.y); await page.mouse.down();
+  await page.mouse.move(ellipseEnd.x, ellipseEnd.y, { steps: 8 }); await page.mouse.up();
+  await page.locator('#sketchWidthMM').fill('30'); await page.locator('#sketchDepthMM').fill('12'); await page.locator('#sketchHeightMM').fill('4');
+  await page.locator('#createSketchSolid').click();
+  const ellipseSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
+  assert.equal(ellipseSnapshot.type, 'ellipse', 'Ellipse wurde nicht als Ellipse gespeichert');
+  assert.ok(Math.abs(ellipseSnapshot.actualWidthMM - 30) < 0.01, 'Ellipsenbreite stimmt nicht');
+  assert.ok(Math.abs(ellipseSnapshot.actualDepthMM - 12) < 0.01, 'Ellipsentiefe stimmt nicht');
+  assert.ok(Math.abs(ellipseSnapshot.actualHeightMM - 4) < 0.01, 'Ellipsenhöhe stimmt nicht');
+
+  // Dreieck: echte dreieckige Extrusionsgeometrie mit eigenen Massen.
+  await page.locator('#sketchTool').selectOption('triangle');
+  await page.locator('#startSketch').click();
+  const triangleStart = await page.evaluate(() => window.__silmoSketchPointForTest(-0.65, -0.6));
+  const triangleEnd = await page.evaluate(() => window.__silmoSketchPointForTest(0.65, 0.6));
+  await page.mouse.move(triangleStart.x, triangleStart.y); await page.mouse.down();
+  await page.mouse.move(triangleEnd.x, triangleEnd.y, { steps: 8 }); await page.mouse.up();
+  await page.locator('#sketchWidthMM').fill('24'); await page.locator('#sketchDepthMM').fill('18'); await page.locator('#sketchHeightMM').fill('6');
+  await page.locator('#createSketchSolid').click();
+  const triangleSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
+  assert.equal(triangleSnapshot.type, 'triangle', 'Dreieck wurde nicht als Dreieck gespeichert');
+  assert.ok(Math.abs(triangleSnapshot.actualWidthMM - 24) < 0.01, 'Dreiecksbreite stimmt nicht');
+  assert.ok(Math.abs(triangleSnapshot.actualDepthMM - 18) < 0.01, 'Dreieckstiefe stimmt nicht');
+  assert.ok(Math.abs(triangleSnapshot.actualHeightMM - 6) < 0.01, 'Dreieckshöhe stimmt nicht');
 
   // Rasterfang: gezeichnete Rechteckkanten werden auf das gewählte 5-mm-Raster gesetzt.
   await page.locator('#sketchTool').selectOption('rectangle');
