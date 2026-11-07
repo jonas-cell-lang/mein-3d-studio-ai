@@ -1856,6 +1856,8 @@ input:focus{outline:1px solid var(--cyan)}
     const objectLocked = obj.userData.locked === true;
     color.disabled = objectLocked;
     $('scaleLock').disabled = objectLocked;
+    rotationAngleLabel.disabled = objectLocked;
+    rotationAngleLabel.title = objectLocked ? 'Objekt ist gesperrt. Zum Bearbeiten zuerst entsperren.' : 'Gradzahl direkt eingeben und mit Enter bestätigen.';
     if (objectLocked) color.title = 'Objekt ist gesperrt. Zum Bearbeiten zuerst entsperren.';
     else color.removeAttribute('title');
     color.value = '#' + obj.material.color.getHexString();
@@ -1897,7 +1899,7 @@ input:focus{outline:1px solid var(--cyan)}
     $('scaleLock').classList.toggle('active', uniform);
     $('scaleLock').textContent = uniform ? '🔒 Einheitlich: EIN' : '🔓 Einheitlich: AUS';
     $('scaleLock').setAttribute('aria-pressed', String(uniform));
-    ['positionFields','rotationFields','sizeFields','percentFields'].forEach(id => {
+    ['positionFields','sizeFields','percentFields'].forEach(id => {
       $(id).querySelectorAll('input').forEach(input => {
         input.disabled = objectLocked;
         if (objectLocked) input.title = 'Objekt ist gesperrt. Zum Bearbeiten zuerst entsperren.';
