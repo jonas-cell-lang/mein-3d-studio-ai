@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v52/, 'Build-Metadaten zeigen nicht v52');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v53/, 'Build-Metadaten zeigen nicht v52');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -463,24 +463,28 @@ try {
   assert.equal(await gizmoModeToggle.getAttribute('aria-pressed'), 'false', 'Zurückschalten auf Verschieben funktioniert nicht');
   assert.equal(await page.evaluate(() => window.__silmoTutorialRotationRingPoint('z', 0.45)), null, 'Drehringe bleiben nach dem Zurückschalten aktiv');
 
-  // Eigene Handyhüllen-Konstruktion: keine Anleitungskarte und kein Fertigmodell, sondern Konturzeichnung plus Rahmenwerkzeug.
+  // Allgemeine CAD-Werkzeuge: keine produktgebundene Sonderfunktion, sondern wiederverwendbare Konstruktion.
+  await page.locator('[data-tab="create"]').click();
+  for (const id of ['addCone','addHexPrism','addTorus']) assert.equal(await page.locator('#'+id).count(),1,`Allgemeines CAD-Grundwerkzeug ${id} fehlt`);
+  const primitiveStart = await page.locator('#objects .object-row').count();
+  await page.locator('#addCone').click(); await page.locator('#addHexPrism').click(); await page.locator('#addTorus').click();
+  assert.equal(await page.locator('#objects .object-row').count(),primitiveStart+3,'Zusätzliche CAD-Grundkörper werden nicht erstellt');
   await page.locator('[data-tab="draw"]').click();
-  assert.equal(await page.locator('#createPhoneCase').count(),0,'Automatischer Handyhüllen-Generator ist noch vorhanden');
-  assert.equal(await page.locator('#manualPhoneCaseGuide').count(),0,'Die entfernte Anleitung wird weiterhin angezeigt');
   assert.equal(await page.locator('#sketchTool').isVisible(),true,'Freie Zeichenwerkzeuge sind nicht erreichbar');
   assert.ok((await page.locator('#sketchTool option').allTextContents()).some(x=>/Freiform/.test(x)),'Freiform-Zeichenwerkzeug fehlt');
-  assert.equal(await page.locator('#createCaseWallFrame').isVisible(),true,'Werkzeug für den Seitenwand-Rahmen fehlt');
-  assert.equal(await page.locator('#caseWallThicknessMM').inputValue(),'1.4','Standard-Wandstärke fehlt');
-  assert.equal(await page.locator('#caseWallHeightMM').inputValue(),'12','Standard-Wandhöhe fehlt');
-  assert.equal(await page.locator('#cutCaseOpening').isVisible(),true,'Werkzeug zum Ausschneiden eigener Öffnungen fehlt');
-  const caseFrameTest = await page.evaluate(() => window.__silmoTestCreateCaseWallFrame());
-  assert.equal(caseFrameTest.frameFound,true,'Aus eigener Rückwand-Kontur wurde kein Seitenwand-Rahmen erzeugt');
-  assert.equal(caseFrameTest.wallThicknessMM,1.4,'Seitenwand-Rahmen übernimmt die Wandstärke nicht');
-  assert.equal(caseFrameTest.wallHeightMM,12,'Seitenwand-Rahmen übernimmt die Wandhöhe nicht');
-  assert.ok(caseFrameTest.geometryVertices>0,'Seitenwand-Rahmen enthält keine Geometrie');
+  assert.equal(await page.locator('#createContourFrame').isVisible(),true,'Allgemeines Kontur-Rahmenwerkzeug fehlt');
+  assert.equal(await page.locator('#wallThicknessMM').inputValue(),'1.4','Standard-Wandstärke fehlt');
+  assert.equal(await page.locator('#frameHeightMM').inputValue(),'12','Standard-Rahmenhöhe fehlt');
+  assert.equal(await page.locator('#subtractSelected').isVisible(),true,'Allgemeines Abziehwerkzeug fehlt');
+  assert.doesNotMatch(await page.locator('body').innerText(),/Handyhüllen-Konstruktion|Seitenwand-Rahmen/,'Die Oberfläche enthält noch produktgebundene Sonderfunktionen');
+  const contourFrameTest = await page.evaluate(() => window.__silmoTestCreateContourFrame());
+  assert.equal(contourFrameTest.frameFound,true,'Aus eigener Kontur wurde kein Hohlrahmen erzeugt');
+  assert.equal(contourFrameTest.wallThicknessMM,1.4,'Hohlrahmen übernimmt die Wandstärke nicht');
+  assert.equal(contourFrameTest.wallHeightMM,12,'Hohlrahmen übernimmt die Höhe nicht');
+  assert.ok(contourFrameTest.geometryVertices>0,'Hohlrahmen enthält keine Geometrie');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
-  console.log('BESTANDEN: 3D-Start, Zeichnen, freies Handyhüllen-Zeichnen, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
+  console.log('BESTANDEN: 3D-Start, Zeichnen, allgemeine CAD-Konstruktion, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
   console.log(JSON.stringify({ canvasSize, beforeAlign, afterAlign, selectedCount, alignStatus }));
 } catch (error) {
   console.error('BROWSERTEST FEHLGESCHLAGEN:', error);
