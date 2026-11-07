@@ -2002,6 +2002,18 @@ input:focus{outline:1px solid var(--cyan)}
   const canvas = renderer.domElement;
   canvas.style.touchAction = 'none';
   canvas.tabIndex = 0;
+  // Nur für automatisierte Browserprüfungen: liefert einen Punkt auf dem sichtbaren Ring.
+  window.__silmoTutorialRotationRingPoint = (axis, angle) => {
+    if (!rotationGizmo) return null;
+    rotationGizmo.updateMatrixWorld(true);
+    const ring = rotationGizmo.children.find(part => part.userData.rotationAxis === axis && part.material && part.material.opacity > 0);
+    if (!ring) return null;
+    const radius = ring.geometry.parameters.radius;
+    const point = new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0)
+      .applyMatrix4(ring.matrixWorld).project(camera);
+    const rect = canvas.getBoundingClientRect();
+    return { x: rect.left + (point.x + 1) * rect.width / 2, y: rect.top + (1 - point.y) * rect.height / 2 };
+  };
   canvas.setAttribute("aria-label", "Interaktive 3D-Ansicht. Freie Fläche ziehen, um die Kamera zu drehen. Die farbigen Ringe drehen das ausgewählte Modell um X, Y oder Z. Mit rechter Maustaste oder Shift plus Ziehen auch über Modellen drehen.");
   canvas.addEventListener("contextmenu", e => e.preventDefault());
   const raycaster = new THREE.Raycaster();
