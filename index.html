@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v51 – Freies Handyhüllen-Zeichnen</title>
+<title>SILMO 3D Studio AI – v52 – Eigene Handyhüllen-Konstruktion</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v51 – Freies Handyhüllen-Zeichnen">
+<meta name="silmo-build" content="v52 – Eigene Handyhüllen-Konstruktion">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -151,7 +151,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v51 – Freies Handyhüllen-Zeichnen -->
+<!-- SILMO BUILD: v52 – Eigene Handyhüllen-Konstruktion -->
 <script id="silmoDeveloperDiagnostics">
 (function(){
   'use strict';
@@ -494,7 +494,6 @@ input:focus{outline:1px solid var(--cyan)}
 
   heading(paneMap.draw.left,'2D-Skizze');
   const sketchIntro=document.createElement('p'); sketchIntro.className='note'; sketchIntro.textContent='Zeichne Rechtecke, Kreise und freie geschlossene Konturen auf XY oder räumliche Linien auf XY, XZ oder YZ – mit Maus, Touch oder Apple Pencil. Extrudiere deine 2D-Skizze zu einem echten 3D-Körper.'; paneMap.draw.left.appendChild(sketchIntro);
-  const caseGuide=document.createElement('div');caseGuide.id='manualPhoneCaseGuide';caseGuide.className='note';caseGuide.style.cssText='padding:10px;border:1px solid #3c6387;border-radius:9px;background:#10243a;color:#d9ebff';caseGuide.innerHTML='<strong style="color:#8cddff">Handyhülle selbst konstruieren</strong><br>Es wird kein Handy und keine Hülle automatisch erstellt. Zeichne deine eigene Form Schritt für Schritt:<br>1. Wähle <strong>2D-Freiform</strong> und zeichne die Rückwand-Kontur von oben.<br>2. Stelle die Rückwanddicke bei <strong>Extrusionshöhe Z</strong> ein und erstelle den Körper.<br>3. Zeichne die Seitenwände selbst als schmale Rechtecke oder Freiformen, extrudiere sie und verschiebe sie an die richtige Stelle.<br>4. Erstelle Kamera- und Anschlussöffnungen als eigene Körper und nutze <strong>Formen kombinieren → Abziehen</strong>.<br>Du bestimmst alle Formen und Masse selbst.';paneMap.draw.left.appendChild(caseGuide);
   const sketchToolWrap=document.createElement('div'); sketchToolWrap.className='field';
   const sketchToolLabel=document.createElement('label'); sketchToolLabel.htmlFor='sketchTool'; sketchToolLabel.textContent='Zeichenwerkzeug';
   const sketchTool=document.createElement('select'); sketchTool.id='sketchTool'; sketchTool.innerHTML='<option value="rectangle">2D-Rechteck</option><option value="circle">2D-Kreis</option><option value="ellipse">2D-Ellipse</option><option value="triangle">2D-Dreieck</option><option value="line2d">2D-Linie</option><option value="curve2d">2D-Kurve</option><option value="freeform2d">2D-Freiform</option><option value="line3d">3D-Linie</option>';
@@ -527,6 +526,16 @@ input:focus{outline:1px solid var(--cyan)}
   const sketchHeightLabel=document.createElement('label'); sketchHeightLabel.htmlFor='sketchHeightMM'; sketchHeightLabel.textContent='Extrusionshöhe Z (mm)';
   const sketchHeight=document.createElement('input'); sketchHeight.id='sketchHeightMM'; sketchHeight.type='number'; sketchHeight.min='0.1'; sketchHeight.max='2000'; sketchHeight.step='0.1'; sketchHeight.value='10';
   sketchHeightWrap.append(sketchHeightLabel,sketchHeight); paneMap.draw.left.appendChild(sketchHeightWrap);
+  const caseWallHeading=document.createElement('h2');caseWallHeading.textContent='Eigene Hüllen-Konstruktion';paneMap.draw.left.appendChild(caseWallHeading);
+  const caseWallThicknessWrap=document.createElement('div');caseWallThicknessWrap.className='field';
+  const caseWallThicknessLabel=document.createElement('label');caseWallThicknessLabel.htmlFor='caseWallThicknessMM';caseWallThicknessLabel.textContent='Seitenwand-Stärke (mm)';
+  const caseWallThickness=document.createElement('input');caseWallThickness.id='caseWallThicknessMM';caseWallThickness.type='number';caseWallThickness.min='0.6';caseWallThickness.max='5';caseWallThickness.step='0.1';caseWallThickness.value='1.4';
+  caseWallThicknessWrap.append(caseWallThicknessLabel,caseWallThickness);paneMap.draw.left.appendChild(caseWallThicknessWrap);
+  const caseWallHeightWrap=document.createElement('div');caseWallHeightWrap.className='field';
+  const caseWallHeightLabel=document.createElement('label');caseWallHeightLabel.htmlFor='caseWallHeightMM';caseWallHeightLabel.textContent='Seitenwand-Höhe (mm)';
+  const caseWallHeight=document.createElement('input');caseWallHeight.id='caseWallHeightMM';caseWallHeight.type='number';caseWallHeight.min='2';caseWallHeight.max='40';caseWallHeight.step='0.1';caseWallHeight.value='12';
+  caseWallHeightWrap.append(caseWallHeightLabel,caseWallHeight);paneMap.draw.left.appendChild(caseWallHeightWrap);
+  const caseWallButton=document.createElement('button');caseWallButton.type='button';caseWallButton.id='createCaseWallFrame';caseWallButton.className='wide';caseWallButton.textContent='▱ Seitenwand-Rahmen aus Kontur erzeugen';paneMap.draw.left.appendChild(caseWallButton);
   const sketchLockNote=document.createElement('p'); sketchLockNote.id='sketchViewLockNote'; sketchLockNote.className='note'; sketchLockNote.textContent='Während des Zeichnens ist die Kameradrehung gesperrt. Zoomen bleibt möglich.'; paneMap.draw.left.appendChild(sketchLockNote);
   const startSketchButton=document.createElement('button'); startSketchButton.type='button'; startSketchButton.id='startSketch'; startSketchButton.className='wide primary'; startSketchButton.textContent='✎ Zeichnen starten'; paneMap.draw.left.appendChild(startSketchButton);
   const createSketchButton=document.createElement('button'); createSketchButton.type='button'; createSketchButton.id='createSketchSolid'; createSketchButton.className='wide'; createSketchButton.textContent='▰ Als 3D-Körper erstellen'; createSketchButton.disabled=true; paneMap.draw.left.appendChild(createSketchButton);
