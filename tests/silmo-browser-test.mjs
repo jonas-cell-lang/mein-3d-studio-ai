@@ -141,20 +141,8 @@ try {
   });
   assert.equal(changedAfterUngroup.length, 1, 'Nach dem Aufheben muss genau ein Objekt unabhängig bewegt werden können');
 
-  // Zahlenfelder müssen den tatsächlichen Drehwinkel des ausgewählten Objekts setzen.
-  await page.locator('[data-tab="measure"]').click();
-  const beforeNumericRotation = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
-  const rotationX = page.locator('#rotationFields input').nth(0);
-  await rotationX.fill('45');
-  await rotationX.press('Enter');
-  await page.waitForTimeout(200);
-  const afterNumericRotation = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
-  assert.ok(Math.abs(afterNumericRotation.qx - beforeNumericRotation.qx) > 0.05 ||
-            Math.abs(afterNumericRotation.qy - beforeNumericRotation.qy) > 0.05 ||
-            Math.abs(afterNumericRotation.qz - beforeNumericRotation.qz) > 0.05 ||
-            Math.abs(afterNumericRotation.qw - beforeNumericRotation.qw) > 0.05,
-            'Drehung über das Zahlenfeld verändert die Objektrotation nicht');
-  assert.match(await page.locator('#status').innerText(), /Drehung um X auf 45° gesetzt/, 'Zahlenfeld meldet die gesetzte Drehung nicht');
+  // Die Gradzahl soll direkt neben dem Würfel editierbar sein, nicht mehr in der Seitenleiste.
+  assert.equal(await page.locator('#rotationFields').count(), 0, 'Alte Drehfelder in der Seitenleiste wurden nicht entfernt');
 
   // Verschieben und Drehen müssen getrennte Modi sein: standardmässig
   // erscheinen die Pfeile, erst nach dem Umschalten die Drehringe.
@@ -196,7 +184,7 @@ try {
   assert.equal(await page.evaluate(() => window.__silmoTutorialRotationRingPoint('z', 0.45)), null, 'Drehringe bleiben nach dem Zurückschalten aktiv');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
-  console.log('BESTANDEN: 3D-Start, Objekterstellung, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, numerische Drehung, Moduswechsel und Drehring.');
+  console.log('BESTANDEN: 3D-Start, Objekterstellung, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
   console.log(JSON.stringify({ canvasSize, beforeAlign, afterAlign, selectedCount, alignStatus }));
 } catch (error) {
   console.error('BROWSERTEST FEHLGESCHLAGEN:', error);
