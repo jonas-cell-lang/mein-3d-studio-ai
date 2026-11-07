@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v45 – Zeichenmodus und Formen</title>
+<title>SILMO 3D Studio AI – v46 – Zeichenwerkzeuge und Lernführung</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v45 – Zeichenmodus und Formen">
+<meta name="silmo-build" content="v46 – Zeichenwerkzeuge und Lernführung">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -103,10 +103,19 @@ input:focus{outline:1px solid var(--cyan)}
 .tutorial-highlight{position:relative!important;z-index:10020!important;outline:3px solid #ffd54a!important;outline-offset:3px!important;box-shadow:0 0 0 7px #ffd54a38,0 0 22px #ffd54a!important;animation:tutorialPulse 1.5s ease-in-out infinite}
 @keyframes tutorialPulse{50%{box-shadow:0 0 0 10px #ffd54a20,0 0 28px #ffd54a}}
 #tutorialShade{position:fixed;inset:0;z-index:10000;background:#02081766;pointer-events:none}
-#tutorialCard{position:fixed;z-index:10030;right:22px;top:86px;width:min(360px,calc(100vw - 24px));padding:18px;border:1px solid #3986f6;border-radius:15px;background:linear-gradient(145deg,#122742,#081525);box-shadow:0 18px 60px #0009;color:#edf4ff}
+#tutorialCard{position:fixed;z-index:10030;left:50%;right:auto;top:86px;transform:translateX(-50%);width:min(330px,calc(100vw - 32px));max-height:calc(100dvh - 110px);overflow:auto;padding:16px;border:1px solid #3986f6;border-radius:15px;background:linear-gradient(145deg,#122742,#081525);box-shadow:0 18px 60px #0009;color:#edf4ff}
 #tutorialCard[hidden],#tutorialShade[hidden]{display:none}
 #tutorialCard h2{margin:0 0 8px;color:#80c7ff;font-size:17px;letter-spacing:0;text-transform:none}
-#tutorialCard p{margin:8px 0;color:#d5e4f8;font-size:13px}
+#tutorialCard p{margin:6px 0;color:#d5e4f8;font-size:12px}
+#tutorialVisual{display:flex;align-items:center;justify-content:center;gap:14px;min-height:86px;margin:8px 0 10px;border:1px solid #345778;border-radius:12px;background:radial-gradient(circle at 50% 40%,#244d70,#0a1a2c 72%);overflow:hidden}
+#tutorialVisualGlyph{font-size:54px;line-height:1;color:#7edcff;text-shadow:0 0 20px #42b9ff80}
+#tutorialVisualCaption{font-size:12px;font-weight:750;color:#e8f5ff;max-width:110px}
+#tutorialToolGallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
+.tutorial-tool-card{display:flex;min-width:0;min-height:66px;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 3px;border:1px solid #2d4967;border-radius:9px;background:#10243a;color:#eaf5ff;font-size:10px;line-height:1.15;touch-action:manipulation}
+.tutorial-tool-card:active,.tutorial-tool-card:focus-visible{border-color:#64d8ff;background:#17405d;outline:2px solid #64d8ff}
+.tutorial-tool-icon{font-size:25px;line-height:1.05;color:#8cddff}
+#tutorialQuickGuide{max-height:230px;overflow:auto}
+#tutorialDebug{position:absolute!important;width:1px;height:1px;max-height:1px;padding:0;margin:0;border:0;overflow:hidden;clip-path:inset(50%);opacity:0;pointer-events:none}
 #tutorialQuickGuide{margin:10px 0;padding:9px 10px;border:1px solid #324d6b;border-radius:9px;background:#0b192a;color:#d5e4f8;font-size:12px}
 #tutorialQuickGuide summary{cursor:pointer;color:#9edcff;font-weight:700}
 #tutorialQuickGuide ul{margin:9px 0 2px;padding-left:18px}
@@ -119,8 +128,8 @@ input:focus{outline:1px solid var(--cyan)}
 #tutorialDebug{margin:8px 0 0;padding:8px;border:1px dashed #6583a7;border-radius:8px;background:#07111f;color:#c5d8ee;font:10px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:125px;overflow:auto}
 .tutorial-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.tutorial-actions button{flex:1}
 #tutorialClose{float:right;padding:4px 8px}
-@media(max-width:820px){#tutorialCard{top:auto;bottom:max(12px,env(safe-area-inset-bottom));right:12px;width:min(390px,calc(100vw - 24px));max-height:72dvh;overflow:auto;padding:15px}.tutorial-actions button{min-height:42px;touch-action:manipulation}}
-@media(max-width:680px){#tutorialCard{left:12px;right:12px;width:auto}.header-actions button{min-height:36px}.tutorial-highlight{outline-width:3px;outline-offset:2px}}
+@media(max-width:820px){#tutorialCard{left:50%;right:auto;top:auto;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(300px,calc(100vw - 32px));max-height:52dvh;overflow:auto;padding:13px}.tutorial-actions button{min-height:42px;touch-action:manipulation}}
+@media(max-width:680px){#tutorialCard{left:50%;right:auto;width:min(300px,calc(100vw - 24px));max-height:42dvh;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%)}.header-actions button{min-height:36px}.tutorial-highlight{outline-width:3px;outline-offset:2px}}
 
 
 /* SILMO Prüftool – Fehlerbanner und Tastenkürzel */
@@ -485,7 +494,7 @@ input:focus{outline:1px solid var(--cyan)}
   const sketchIntro=document.createElement('p'); sketchIntro.className='note'; sketchIntro.textContent='Zeichne Rechtecke, Kreise und freie geschlossene Konturen auf XY oder räumliche Linien auf XY, XZ oder YZ – mit Maus, Touch oder Apple Pencil. Extrudiere deine 2D-Skizze zu einem echten 3D-Körper.'; paneMap.draw.left.appendChild(sketchIntro);
   const sketchToolWrap=document.createElement('div'); sketchToolWrap.className='field';
   const sketchToolLabel=document.createElement('label'); sketchToolLabel.htmlFor='sketchTool'; sketchToolLabel.textContent='Zeichenwerkzeug';
-  const sketchTool=document.createElement('select'); sketchTool.id='sketchTool'; sketchTool.innerHTML='<option value="rectangle">2D-Rechteck</option><option value="circle">2D-Kreis</option><option value="ellipse">2D-Ellipse</option><option value="triangle">2D-Dreieck</option><option value="freeform2d">2D-Freiform</option><option value="line3d">3D-Linie</option>';
+  const sketchTool=document.createElement('select'); sketchTool.id='sketchTool'; sketchTool.innerHTML='<option value="rectangle">2D-Rechteck</option><option value="circle">2D-Kreis</option><option value="ellipse">2D-Ellipse</option><option value="triangle">2D-Dreieck</option><option value="line2d">2D-Linie</option><option value="curve2d">2D-Kurve</option><option value="freeform2d">2D-Freiform</option><option value="line3d">3D-Linie</option>';
   sketchToolWrap.append(sketchToolLabel,sketchTool); paneMap.draw.left.appendChild(sketchToolWrap);
   const sketchSnapWrap=document.createElement('div'); sketchSnapWrap.className='field';
   const sketchSnapLabel=document.createElement('label'); sketchSnapLabel.htmlFor='sketchSnapEnabled'; sketchSnapLabel.textContent='Rasterfang aktivieren';
@@ -766,6 +775,7 @@ input:focus{outline:1px solid var(--cyan)}
   let moveGizmo = null;
   let rotationGizmo = null;
   let gizmoMode = 'move';
+  let sketchMode = false;
   const gizmoParts = [];
   let activeAxis = null;
   let activeRotationAxis = null;
@@ -1840,7 +1850,7 @@ input:focus{outline:1px solid var(--cyan)}
     }
     const value = Number(rotationAngleLabel.value);
     const axis = rotationAngleLabel.dataset.axis || 'z';
-    if (!Number.isFinite(value) || value < -36000 || value > 36000 || !selected || selected.userData.locked === true) {
+    if (sketchMode || !Number.isFinite(value) || value < -36000 || value > 36000 || !selected || selected.userData.locked === true) {
       updateRotationAngleLabel();
       return;
     }
@@ -1912,14 +1922,14 @@ input:focus{outline:1px solid var(--cyan)}
 
   function updateGizmoModeButton() {
     const button = $('gizmoModeToggle');
-    const rotating = gizmoMode === 'rotate';
-    button.textContent = rotating ? '↔ Verschieben' : '⟳ Drehen';
+    const rotating = gizmoMode === 'rotate' && !sketchMode;
+    button.disabled = sketchMode;
+    button.textContent = sketchMode ? '🔒 Drehen gesperrt' : (rotating ? '↔ Verschieben' : '⟳ Drehen');
     button.setAttribute('aria-pressed', String(rotating));
-    button.title = rotating
-      ? 'Zu den Verschiebepfeilen wechseln'
-      : 'Zu den Drehringen wechseln';
+    button.title = sketchMode ? 'Drehen ist im Zeichenmodus gesperrt. Beende ihn mit „Skizze abbrechen“.' : (rotating ? 'Zu den Verschiebepfeilen wechseln' : 'Zu den Drehringen wechseln');
   }
   $('gizmoModeToggle').addEventListener('click', () => {
+    if (sketchMode) return;
     gizmoMode = gizmoMode === 'move' ? 'rotate' : 'move';
     if (gizmoMode !== 'rotate') {
       activeRotationAxis = null;
@@ -2243,7 +2253,7 @@ input:focus{outline:1px solid var(--cyan)}
   }
   const sketchPoint = new THREE.Vector3();
   const sketchStart = new THREE.Vector3();
-  let sketchMode = false, sketchDrawing = false, sketchPointerId = null;
+  let sketchDrawing = false, sketchPointerId = null;
   let sketchDraft = null, sketchPreview = null;
 
   function clearSketchPreview() {
@@ -2285,10 +2295,11 @@ input:focus{outline:1px solid var(--cyan)}
   function updateSketchPreview() {
     if (!sketchDraft) return;
     clearSketchPreview();
-    if (sketchDraft.type === 'line3d') {
+    if (['line3d','line2d','curve2d'].includes(sketchDraft.type)) {
       if (!Array.isArray(sketchDraft.points) || sketchDraft.points.length < 2) return;
-      const geometry = new THREE.BufferGeometry().setFromPoints(sketchDraft.points);
-      sketchPreview = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0xffd166, depthTest: false }));
+      const points = sketchDraft.points.map(point => new THREE.Vector3(point.x, point.y, point.z + (sketchDraft.type === 'line3d' ? 0 : 0.025)));
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      sketchPreview = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: sketchDraft.type === 'line3d' ? 0xffd166 : 0x53d8e8, depthTest: false }));
     } else if (sketchDraft.type === 'freeform2d') {
       if (!Array.isArray(sketchDraft.points) || sketchDraft.points.length < 3) return;
       const points = sketchDraft.points.map(point => new THREE.Vector3(point.x, point.y, 0.025));
@@ -2335,12 +2346,12 @@ input:focus{outline:1px solid var(--cyan)}
       document.getElementById('sketchStatus').textContent = 'Freiform bereit: ' + sketchDraft.points.length + ' Konturpunkte. Extrusionshöhe festlegen und Körper erstellen.';
       return;
     }
-    if (sketchDraft.type === 'line3d') {
+    if (['line3d','line2d','curve2d'].includes(sketchDraft.type)) {
       document.getElementById('createSketchSolid').disabled = sketchDraft.points.length < 2;
       document.getElementById('cancelSketch').disabled = false;
-      document.getElementById('sketchStatus').textContent =
-        '3D-Linie bereit: ' + sketchDraft.points.length + ' räumliche Punkte auf ' +
-        document.getElementById('sketchPlaneSelect').selectedOptions[0].textContent + '. Du kannst jetzt die Linienstärke festlegen.';
+      const label = sketchDraft.type === 'line3d' ? '3D-Linie' : sketchDraft.type === 'line2d' ? '2D-Linie' : '2D-Kurve';
+      const plane = sketchDraft.type === 'line3d' ? document.getElementById('sketchPlaneSelect').selectedOptions[0].textContent : 'XY';
+      document.getElementById('sketchStatus').textContent = label + ' bereit: ' + sketchDraft.points.length + ' Punkt(e) auf ' + plane + '. Linienstärke festlegen.';
       return;
     }
     const width = sketchDraft.width * MM_PER_UNIT;
@@ -2355,7 +2366,7 @@ input:focus{outline:1px solid var(--cyan)}
       'Skizze bereit: ' + width.toFixed(1) + ' × ' + depth.toFixed(1) + ' mm. Du kannst die Masse links exakt anpassen.';
   }
   function refreshSketchDraftFromInputs() {
-    if (!sketchDraft || sketchDraft.type === 'line3d') return;
+    if (!sketchDraft || ['line3d','line2d','curve2d'].includes(sketchDraft.type)) return;
     try {
       const dims = sketchDimensionsFromInputs();
       sketchDraft.width = dims.width;
@@ -2372,19 +2383,20 @@ input:focus{outline:1px solid var(--cyan)}
     if (!sketchDrawing || (e && e.pointerId !== sketchPointerId)) return false;
     if (e) setPointerRay(e);
     const activeTool = document.getElementById('sketchTool').value;
-    if (activeTool === 'line3d') {
+    if (['line3d','line2d','curve2d'].includes(activeTool)) {
       if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
         snapSketchPoint(sketchPoint);
-        const points = sketchDraft?.type === 'line3d' ? sketchDraft.points : [sketchStart.clone()];
-        if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > 0.015) points.push(sketchPoint.clone());
-        sketchDraft = { type: 'line3d', points };
+        let points = sketchDraft?.type === activeTool ? sketchDraft.points : [sketchStart.clone()];
+        if (activeTool === 'line2d') points = [sketchStart.clone(), sketchPoint.clone()];
+        else if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > 0.015) points.push(sketchPoint.clone());
+        sketchDraft = { type: activeTool, points };
       }
-      if (sketchDraft?.type === 'line3d' && sketchDraft.points.length >= 2) {
+      if (sketchDraft?.type === activeTool && sketchDraft.points.length >= 2 && sketchDraft.points[0].distanceTo(sketchDraft.points[sketchDraft.points.length - 1]) > 0.02) {
         updateSketchInputsFromDraft();
         updateSketchPreview();
       } else {
         sketchDraft = null;
-        document.getElementById('sketchStatus').textContent = 'Die Linie ist zu kurz. Ziehe eine längere räumliche Linie.';
+        document.getElementById('sketchStatus').textContent = 'Die Linie ist zu kurz. Ziehe eine längere Linie oder Kurve.';
       }
     } else if (activeTool === 'freeform2d') {
       if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
@@ -2431,16 +2443,20 @@ input:focus{outline:1px solid var(--cyan)}
     }
     sketchDrawing = false;
     sketchPointerId = null;
-    sketchMode = false;
-    document.getElementById('sketchViewLockNote').textContent = 'Während des Zeichnens ist die Kameradrehung gesperrt. Zoomen bleibt möglich.';
-    canvas.style.cursor = 'grab';
-    document.getElementById('startSketch').textContent = '✎ Zeichnen starten';
+    // Der Zeichenmodus bleibt aktiv, bis er ausdrücklich beendet wird.
+    sketchMode = true;
+    document.getElementById('sketchViewLockNote').textContent = '🔒 ZEICHENMODUS AKTIV: Kamera- und Objektdrehung gesperrt. Zoomen bleibt möglich. Für eine weitere Kontur erneut ziehen.';
+    updateGizmoModeButton();
+    canvas.style.cursor = 'crosshair';
+    document.getElementById('startSketch').textContent = '✎ Weiter zeichnen';
+    document.getElementById('cancelSketch').disabled = false;
+    document.getElementById('cancelSketch').textContent = sketchDraft ? 'Skizze verwerfen' : 'Zeichenmodus beenden';
     if (sketchDraft) {
       document.getElementById('createSketchSolid').disabled = false;
-      status.textContent = sketchDraft.type === 'line3d' ? '3D-Linie vorbereitet. Linienstärke prüfen und Körper erstellen.' : '2D-Skizze vorbereitet. Masse prüfen und als 3D-Körper erstellen.';
+      status.textContent = ['line3d','line2d','curve2d'].includes(sketchDraft.type) ? 'Linie/Kurve vorbereitet. Linienstärke prüfen und Körper erstellen.' : '2D-Skizze vorbereitet. Masse prüfen und als 3D-Körper erstellen.';
     } else {
-      document.getElementById('startSketch').textContent = '✎ Erneut zeichnen';
-      status.textContent = 'Keine gültige Skizze erstellt.';
+      document.getElementById('startSketch').textContent = '✎ Weiter zeichnen';
+      status.textContent = 'Keine gültige Skizze. Der Zeichenmodus bleibt gesperrt; zeichne erneut oder beende ihn.';
     }
     return true;
   }
@@ -2449,28 +2465,28 @@ input:focus{outline:1px solid var(--cyan)}
     try {
       const tool = document.getElementById('sketchTool').value;
       let geometry, meshPosition = new THREE.Vector3(), sketchMetadata, label;
-      if (tool === 'line3d') {
+      if (['line3d','line2d','curve2d'].includes(tool)) {
         const diameterMM = Number(document.getElementById('sketchDiameterMM').value);
         if (!Number.isFinite(diameterMM) || diameterMM < 0.2 || diameterMM > 50) {
           throw new Error('Der Liniendurchmesser muss zwischen 0,2 und 50 mm liegen.');
         }
         const points = sketchDraft.points.map(point => point.clone());
-        if (points.length < 2) throw new Error('Eine 3D-Linie braucht mindestens zwei Punkte.');
-        const curve = new THREE.CatmullRomCurve3(points);
+        if (points.length < 2) throw new Error('Eine Linie oder Kurve braucht mindestens zwei Punkte.');
+        const curve = tool === 'line2d' ? new THREE.LineCurve3(points[0], points[points.length - 1]) : new THREE.CatmullRomCurve3(points);
         const radius = diameterMM / MM_PER_UNIT / 2;
-        geometry = new THREE.TubeGeometry(curve, Math.max(24, Math.min(300, points.length * 4)), radius, 8, false);
+        geometry = new THREE.TubeGeometry(curve, tool === 'line2d' ? 24 : Math.max(24, Math.min(300, points.length * 4)), radius, 8, false);
         geometry.computeBoundingBox();
         const center = geometry.boundingBox.getCenter(new THREE.Vector3());
         geometry.translate(-center.x, -center.y, -center.z);
         meshPosition.copy(center);
         sketchMetadata = {
-          type: 'line3d',
-          plane: document.getElementById('sketchPlaneSelect').value,
+          type: tool,
+          plane: tool === 'line3d' ? document.getElementById('sketchPlaneSelect').value : 'xy',
           diameterMM,
           pointCount: points.length,
           lengthMM: curve.getLength() * MM_PER_UNIT
         };
-        label = '3D-Linie';
+        label = tool === 'line3d' ? '3D-Linie' : tool === 'line2d' ? '2D-Linie' : '2D-Kurve';
       } else if (tool === 'freeform2d') {
         const points = sketchDraft.points.map(point => point.clone());
         if (points.length < 3) throw new Error('Eine Freiform braucht mindestens drei Konturpunkte.');
@@ -2550,9 +2566,10 @@ input:focus{outline:1px solid var(--cyan)}
       clearSketchPreview();
       sketchDraft = null;
       document.getElementById('createSketchSolid').disabled = true;
-      document.getElementById('cancelSketch').disabled = true;
-      document.getElementById('sketchStatus').textContent = '3D-Körper erstellt. Du kannst ihn jetzt wie jedes andere Objekt bearbeiten.';
-      status.textContent = tool === 'line3d' ? '3D-Linie erfolgreich in einen räumlichen Körper umgewandelt.' : tool === 'freeform2d' ? 'Freiform erfolgreich zu einem 3D-Körper extrudiert.' : '2D-Skizze erfolgreich zu einem 3D-Körper extrudiert.';
+      document.getElementById('cancelSketch').disabled = false;
+      document.getElementById('cancelSketch').textContent = 'Zeichenmodus beenden';
+      document.getElementById('sketchStatus').textContent = '3D-Körper erstellt. Du kannst weiterzeichnen oder den Zeichenmodus beenden.';
+      status.textContent = tool === 'line3d' ? '3D-Linie erfolgreich in einen räumlichen Körper umgewandelt.' : tool === 'line2d' ? '2D-Linie erfolgreich in einen Körper umgewandelt.' : tool === 'curve2d' ? '2D-Kurve erfolgreich in einen Körper umgewandelt.' : tool === 'freeform2d' ? 'Freiform erfolgreich zu einem 3D-Körper extrudiert.' : '2D-Skizze erfolgreich zu einem 3D-Körper extrudiert.';
     } catch (error) {
       status.textContent = 'Skizze konnte nicht erstellt werden: ' + (error.message || 'Eingaben prüfen.');
     }
@@ -2561,12 +2578,16 @@ input:focus{outline:1px solid var(--cyan)}
     clearSketchPreview();
     sketchDraft = null;
     sketchDrawing = false;
+    if (gizmoMode === 'rotate') { gizmoMode = 'move'; activeRotationAxis = null; setRotationGuideAxis(null); updateMoveGizmo(); }
     sketchMode = true;
+    updateGizmoModeButton();
+    rotationAngleLabel.hidden = true;
     updateSketchPlaneFromUI();
     canvas.style.cursor = 'crosshair';
-    document.getElementById('sketchViewLockNote').textContent = 'ZEICHENMODUS AKTIV: Kameradrehung gesperrt. Zoomen bleibt möglich.';
+    document.getElementById('sketchViewLockNote').textContent = '🔒 ZEICHENMODUS AKTIV: Kamera- und Objektdrehung gesperrt. Zoomen bleibt möglich.';
     document.getElementById('createSketchSolid').disabled = true;
-    document.getElementById('cancelSketch').disabled = true;
+    document.getElementById('cancelSketch').disabled = false;
+    document.getElementById('cancelSketch').textContent = 'Zeichenmodus beenden';
     document.getElementById('startSketch').textContent = 'Zeichenmodus aktiv';
     document.getElementById('sketchStatus').textContent = document.getElementById('sketchTool').value === 'freeform2d' ? 'Zeichne eine geschlossene Freiform mit mindestens drei Punkten. Beim Loslassen wird die Kontur automatisch geschlossen.' : 'Ziehe jetzt auf der XY-Zeichenebene, um deine Skizze zu zeichnen.';
     status.textContent = 'Zeichenmodus aktiv: auf der Zeichenfläche ziehen.';
@@ -2574,11 +2595,14 @@ input:focus{outline:1px solid var(--cyan)}
   document.getElementById('createSketchSolid').addEventListener('click', createSketchSolid);
   document.getElementById('cancelSketch').addEventListener('click', () => {
     sketchMode = false; sketchDrawing = false; sketchPointerId = null; sketchDraft = null;
-    document.getElementById('sketchViewLockNote').textContent = 'Während des Zeichnens ist die Kameradrehung gesperrt. Zoomen bleibt möglich.';
+    updateGizmoModeButton();
+    rotationAngleLabel.hidden = false;
+    document.getElementById('sketchViewLockNote').textContent = 'Zeichenmodus beendet. Kamera- und Objektdrehung sind wieder verfügbar.';
     canvas.style.cursor = 'grab';
     clearSketchPreview();
     document.getElementById('createSketchSolid').disabled = true;
     document.getElementById('cancelSketch').disabled = true;
+    document.getElementById('cancelSketch').textContent = 'Zeichenmodus beenden';
     document.getElementById('startSketch').textContent = '✎ Zeichnen starten';
     document.getElementById('sketchStatus').textContent = 'Skizze abgebrochen. Du kannst neu zeichnen.';
     status.textContent = 'Skizze abgebrochen.';
@@ -2587,19 +2611,21 @@ input:focus{outline:1px solid var(--cyan)}
     document.getElementById(id).addEventListener('input', refreshSketchDraftFromInputs));
   function updateSketchToolFields() {
     const tool = document.getElementById('sketchTool').value;
-    const isLine = tool === 'line3d';
+    const is3DLine = tool === 'line3d';
+    const isPath = ['line3d','line2d','curve2d'].includes(tool);
     const isFreeform = tool === 'freeform2d';
-    document.getElementById('sketchPlaneWrap').hidden = !isLine;
-    document.getElementById('sketchDiameterWrap').hidden = !isLine;
-    document.getElementById('sketchWidthMM').closest('.field').hidden = isLine || isFreeform;
-    document.getElementById('sketchDepthMM').closest('.field').hidden = isLine || isFreeform || tool === 'circle';
-    document.getElementById('sketchHeightMM').closest('.field').hidden = isLine;
+    document.getElementById('sketchPlaneWrap').hidden = !is3DLine;
+    document.getElementById('sketchDiameterWrap').hidden = !isPath;
+    document.getElementById('sketchWidthMM').closest('.field').hidden = isPath || isFreeform;
+    document.getElementById('sketchDepthMM').closest('.field').hidden = isPath || isFreeform || tool === 'circle';
+    document.getElementById('sketchHeightMM').closest('.field').hidden = isPath;
   }
   document.getElementById('sketchTool').addEventListener('change', () => {
     sketchDraft = null;
     clearSketchPreview();
     document.getElementById('createSketchSolid').disabled = true;
-    document.getElementById('cancelSketch').disabled = true;
+    document.getElementById('cancelSketch').disabled = !sketchMode;
+    document.getElementById('cancelSketch').textContent = sketchMode ? 'Zeichenmodus beenden' : 'Skizze abbrechen';
     updateSketchToolFields();
     document.getElementById('sketchStatus').textContent = 'Werkzeug gewechselt. Starte eine neue Skizze.';
   });
@@ -2608,7 +2634,8 @@ input:focus{outline:1px solid var(--cyan)}
     sketchDraft = null;
     clearSketchPreview();
     document.getElementById('createSketchSolid').disabled = true;
-    document.getElementById('cancelSketch').disabled = true;
+    document.getElementById('cancelSketch').disabled = !sketchMode;
+    document.getElementById('cancelSketch').textContent = sketchMode ? 'Zeichenmodus beenden' : 'Skizze abbrechen';
     document.getElementById('sketchStatus').textContent = 'Zeichenebene geändert. Starte eine neue 3D-Linie auf dieser Ebene.';
   });
   document.getElementById('sketchDepthMM').closest('.field').hidden = false;
@@ -2619,7 +2646,8 @@ input:focus{outline:1px solid var(--cyan)}
     const rect = canvas.getBoundingClientRect();
     return { x: rect.left + (point.x + 1) * rect.width / 2, y: rect.top + (1 - point.y) * rect.height / 2 };
   };
-  window.__silmoSketchCameraLockSnapshot = () => ({ active: sketchMode, targetRX, targetRY, rotatingView });
+  window.__silmoSketchCameraLockSnapshot = () => ({ active: sketchMode, targetRX, targetRY, rotatingView, gizmoMode, rotateButtonDisabled: $('gizmoModeToggle').disabled, rotationInputHidden: rotationAngleLabel.hidden });
+  window.__silmoSketchDraftSnapshot = () => sketchDraft ? ({ type: sketchDraft.type, pointCount: sketchDraft.points?.length || 0 }) : null;
   window.__silmoSketchSnapshot = () => {
     const obj = selected;
     if (!obj || !obj.userData.sketch) return null;
@@ -2652,7 +2680,8 @@ input:focus{outline:1px solid var(--cyan)}
       if (!raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) return;
       snapSketchPoint(sketchPoint);
       sketchStart.copy(sketchPoint);
-      if (document.getElementById('sketchTool').value === 'freeform2d') sketchDraft = { type: 'freeform2d', points: [sketchStart.clone()] };
+      const startTool = document.getElementById('sketchTool').value;
+      if (['freeform2d','curve2d','line2d'].includes(startTool)) sketchDraft = { type: startTool, points: [sketchStart.clone()] };
       sketchDrawing = true;
       sketchPointerId = e.pointerId;
       try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
@@ -2764,13 +2793,16 @@ input:focus{outline:1px solid var(--cyan)}
       if (raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
         snapSketchPoint(sketchPoint);
         const tool = document.getElementById('sketchTool').value;
-        if (tool === 'line3d') {
-          const points = sketchDraft?.type === 'line3d' ? sketchDraft.points : [sketchStart.clone()];
+        if (tool === 'line3d' || tool === 'curve2d') {
+          const points = sketchDraft?.type === tool ? sketchDraft.points : [sketchStart.clone()];
           if (points[points.length - 1].distanceTo(sketchPoint) > 0.02) {
             points.push(sketchPoint.clone());
-            sketchDraft = { type: 'line3d', points };
+            sketchDraft = { type: tool, points };
             updateSketchPreview();
           }
+        } else if (tool === 'line2d') {
+          sketchDraft = { type: 'line2d', points: [sketchStart.clone(), sketchPoint.clone()] };
+          updateSketchPreview();
         } else if (tool === 'freeform2d') {
           const points = sketchDraft?.type === 'freeform2d' ? sketchDraft.points : [sketchStart.clone()];
           if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > 0.02) {
@@ -3175,9 +3207,24 @@ input:focus{outline:1px solid var(--cyan)}
   const shade = document.createElement('div'); shade.id='tutorialShade'; shade.hidden=true;
   const card = document.createElement('section'); card.id='tutorialCard'; card.hidden=true;
   card.setAttribute('role','dialog'); card.setAttribute('aria-modal','false'); card.setAttribute('aria-label','SILMO Tutorial');
-  card.innerHTML = '<button id="tutorialClose" type="button" aria-label="Tutorial schliessen">✕</button><div style="font-size:10px;color:#ffcf70;margin-bottom:6px">LERNMODUS · <span id="tutorialBuild"></span></div><div id="tutorialStepLabel" style="color:#80c7ff;font-size:11px;font-weight:700;letter-spacing:.08em"></div><h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div><details id="tutorialQuickGuide"><summary>Schnellhilfe: weitere Werkzeuge</summary><ul><li><strong>Drehen:</strong> Oben rechts auf „Drehen“ wechseln, einen farbigen Ring ziehen oder den angezeigten Winkel als Gradzahl eingeben. Enter bestätigt, Escape bricht eine nicht bestätigte Eingabe ab.</li><li><strong>Duplizieren:</strong> Objekt auswählen und im Reiter „Erstellen“ auf „Duplizieren“ tippen.</li><li><strong>Mehrere Objekte:</strong> Im Reiter „Bearbeiten“ die Mehrfachauswahl einschalten und weitere Objekte in der Objektliste auswählen.</li><li><strong>Ausrichten und Verteilen:</strong> Im Reiter „Bearbeiten“ Achse und gewünschte Aktion wählen. Für Gruppieren zuerst mindestens zwei Objekte auswählen.</li><li><strong>Spiegeln:</strong> Im Reiter „Bearbeiten“ X, Y oder Z wählen. Gruppierungen lassen sich dort auch wieder aufheben.</li><li><strong>Exakte Masse:</strong> Im Reiter „Messen &amp; Prüfen“ Breite, Tiefe und Höhe in Millimetern bearbeiten.</li><li><strong>Freie 2D-Skizze:</strong> Im Reiter „Zeichnen“ „2D-Freiform“ wählen, eine geschlossene Kontur mit mindestens drei Punkten zeichnen und die Extrusionshöhe einstellen.</li><li><strong>Präzise zeichnen:</strong> Im Reiter „Zeichnen“ den Rasterfang einschalten und den Rasterabstand in Millimetern festlegen. Die Zeichenpunkte werden auf das Raster gesetzt.</li><li><strong>Neue 2D-Formen:</strong> Ellipse und Dreieck lassen sich zeichnen, exakt vermassen und extrudieren. Während des Zeichnens ist die Kameradrehung gesperrt.</li><li><strong>Formen verbinden oder abziehen:</strong> Mindestens zwei Objekte auswählen und die passende Funktion im Reiter „Erstellen“ verwenden.</li><li><strong>Projekt sichern:</strong> Im Reiter „3D-Druck“ „Projekt speichern“ oder „Projekt öffnen“ verwenden. STL exportiert das Modell für den Druck-Workflow.</li></ul></details><div id="tutorialFeedback" aria-live="polite"></div><pre id="tutorialDebug" aria-live="polite">Diagnose wird gestartet …</pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialNext" type="button" class="primary">Prüfen</button><button id="tutorialSkip" type="button">Beenden</button></div>';
+  card.innerHTML = '<button id="tutorialClose" type="button" aria-label="Tutorial schliessen">✕</button><div style="font-size:10px;color:#ffcf70;margin-bottom:6px">LERNMODUS · <span id="tutorialBuild"></span></div><div id="tutorialStepLabel" style="color:#80c7ff;font-size:11px;font-weight:700;letter-spacing:.08em"></div><div id="tutorialVisual" aria-label="Bildliche Darstellung des aktuellen Lernschritts"><span id="tutorialVisualGlyph" aria-hidden="true">◧</span><span id="tutorialVisualCaption">Werkzeug</span></div><h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div><details id="tutorialQuickGuide" open><summary>Alle Werkzeuge – visuelle Übersicht</summary><div id="tutorialToolGallery" aria-label="Alle SILMO-Werkzeuge"></div></details><div id="tutorialFeedback" aria-live="polite"></div><pre id="tutorialDebug" aria-live="polite">Diagnose wird gestartet …</pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialNext" type="button" class="primary">Prüfen</button><button id="tutorialSkip" type="button">Beenden</button></div>';
   document.body.append(shade,card);
   $('tutorialBuild').textContent = document.querySelector('meta[name="silmo-build"]')?.content || 'Build unbekannt';
+  const toolCards = [
+    ['◧','Würfel','create','addCube'],['●','Kugel','create','addSphere'],['⬭','Zylinder','create','addCylinder'],
+    ['▢','Duplizieren','create','duplicate'],['⊕','Verbinden','create','booleanUnion'],['⊖','Abziehen','create','booleanSubtract'],
+    ['↔','Verschieben','edit','gizmoModeToggle'],['⟳','Drehen','edit','gizmoModeToggle'],['⇥','Ausrichten','edit','alignSelected'],
+    ['▤','Verteilen','edit','alignSelected'],['▧','Gruppieren','edit','createObjectGroup'],['◐','Spiegeln','edit','mirror'],
+    ['↔','Masse in mm','measure','sizeFields'],['％','Skalierung','measure','percentFields'],['◉','Farbe','measure','color'],
+    ['▭','Rechteck','draw','sketchTool'],['◯','Kreis / Ellipse','draw','sketchTool'],['△','Dreieck','draw','sketchTool'],
+    ['／','2D-Linie','draw','sketchTool'],['〰','2D-Kurve','draw','sketchTool'],['✎','Freiform','draw','sketchTool'],
+    ['⌁','3D-Linie','draw','sketchTool'],['▦','Rasterfang','draw','sketchSnapEnabled'],
+    ['⬇','STL exportieren','print','exportModel'],['▣','Druckbett','print','dropToBed'],['✓','Druckprüfung','expert','checkBed'],
+    ['💾','Projekt sichern','print','saveProjectButton'],['📂','Projekt öffnen','print','openProjectButton']
+  ];
+  $('tutorialToolGallery').innerHTML = toolCards.map(([icon,label,tab,target]) =>
+    '<button type="button" class="tutorial-tool-card" data-tool-tab="'+tab+'" data-target="'+target+'"><span class="tutorial-tool-icon" aria-hidden="true">'+icon+'</span><span>'+label+'</span></button>'
+  ).join('');
   const steps = [
     {title:'Würfel erstellen',text:'Erstelle mit „＋ Würfel“ ein zusätzliches Objekt. Die Aufgabe ist bestanden, wenn tatsächlich ein weiteres Objekt in der Objektliste erscheint.',target:'addCube',tab:'create',check:()=>objectCount()>tutorialStartCount,initialise:()=>{tutorialStartCount=objectCount();feedback('Klicke auf die markierte Schaltfläche.');}},
     {title:'Objekt bewegen',text:'Wähle ein Objekt aus und verschiebe es mit den Pfeilen am Modell oder ändere X, Y oder Z in den Positionsfeldern. Die Position muss sich wirklich ändern.',target:'positionFields',tab:'edit',check:()=>{positionChanged=hasSelectedObjectMoved();return positionChanged;},initialise:()=>{positionChanged=false;positionAdvanceQueued=false;ensureTutorialObjectSelected();positionStart=positionSnapshot();positionStartMap=allPositionSnapshot();if(positionStartMap.length){feedback('Bewege ein Objekt mit den 3D-Pfeilen oder ändere X, Y oder Z. Der Schritt wechselt nach erkannter Bewegung automatisch weiter.');}else{feedback('Es ist noch kein 3D-Objekt vorhanden. Gehe zurück und erstelle zuerst einen Würfel.');}}},
@@ -3239,13 +3286,20 @@ input:focus{outline:1px solid var(--cyan)}
   function feedback(text,success=false){const f=$('tutorialFeedback');f.textContent=text;f.classList.toggle('success',success);}
   function clearHighlight(){if(highlight)highlight.classList.remove('tutorial-highlight');highlight=null;}
   function selectTutorialTab(tab){const b=document.querySelector('[data-tab="'+tab+'"]');if(b&&!b.hidden)b.click();}
-  function render(){clearHighlight();const step=steps[index];selectTutorialTab(step.tab);$('tutorialStepLabel').textContent='TUTORIAL · SCHRITT '+(index+1)+' VON '+steps.length;$('tutorialTitle').textContent=step.title;$('tutorialText').textContent=step.text;$('tutorialProgress').querySelector('span').style.width=((index+1)/steps.length*100)+'%';$('tutorialBack').disabled=index===0;$('tutorialNext').textContent=index===steps.length-1?'Fertig':'Prüfen';$('tutorialNext').disabled=false;
+  function render(){clearHighlight();const step=steps[index];selectTutorialTab(step.tab);$('tutorialStepLabel').textContent='TUTORIAL · SCHRITT '+(index+1)+' VON '+steps.length;$('tutorialVisualGlyph').textContent=['◧','↗','↔','▦','⬇','✓'][index]||'◧';$('tutorialVisualCaption').textContent=step.title;$('tutorialTitle').textContent=step.title;$('tutorialText').textContent=step.text;$('tutorialProgress').querySelector('span').style.width=((index+1)/steps.length*100)+'%';$('tutorialBack').disabled=index===0;$('tutorialNext').textContent=index===steps.length-1?'Fertig':'Prüfen';$('tutorialNext').disabled=false;
     if(step.target){highlight=$(step.target);if(highlight){highlight.classList.add('tutorial-highlight');highlight.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});}}
     step.initialise();
     updateTutorialDebug();
   }
   function open(){index=0;shade.hidden=false;card.hidden=false;render();}
   function close(){clearHighlight();shade.hidden=true;card.hidden=true;}
+  $('tutorialToolGallery').addEventListener('click',event=>{
+    const tool=event.target.closest('.tutorial-tool-card');if(!tool)return;
+    selectTutorialTab(tool.dataset.toolTab);clearHighlight();
+    const target=tool.dataset.target&&$(tool.dataset.target);
+    if(target){highlight=target;highlight.classList.add('tutorial-highlight');target.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});}
+    feedback('Werkzeug geöffnet: '+tool.textContent.trim()+'. Die gelbe Markierung zeigt dir den Ort.');
+  });
   launch.addEventListener('click',open);$('tutorialClose').addEventListener('click',close);$('tutorialSkip').addEventListener('click',close);
   $('tutorialBack').addEventListener('click',()=>{if(index>0){index--;render();}});
   $('tutorialNext').addEventListener('click',()=>{const step=steps[index];if(!step.check()){feedback('Noch nicht bestanden. Führe die Aufgabe aus; danach prüft SILMO erneut.',false);return;}if(index<steps.length-1){index++;render();}else close();});
