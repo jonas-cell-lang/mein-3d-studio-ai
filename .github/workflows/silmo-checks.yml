@@ -129,6 +129,9 @@ jobs:
               "id='createObjectGroup'",
               "id='ungroupObjects'",
               "id='booleanSeparate'",
+              "id='createPhoneCase'",
+              "function createPhoneCase(spec)",
+              "phoneCaseComponent:component",
               "function splitBooleanUnion()",
               "unionParts: Array.isArray(obj.userData.unionParts) ? obj.userData.unionParts : null",
               "b.id='mirror'+axis.toUpperCase()",
@@ -146,5 +149,5 @@ jobs:
           missing = [item for item in required_individual_group_edit if item not in html]
           if missing:
               raise SystemExit("Einzelbearbeitung in Gruppen unvollständig: " + ", ".join(missing))
-          print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung, Objektsperre, Gruppen, Spiegeln, Verbindung lösen und Einzelbearbeitung in Gruppen sind statisch geprüft.")
+          print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung, Objektsperre, Gruppen, Spiegeln, Verbindung lösen, Handyhüllen-Rohling und Einzelbearbeitung in Gruppen sind statisch geprüft.")
           PY
