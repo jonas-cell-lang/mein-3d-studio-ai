@@ -463,14 +463,15 @@ try {
   assert.equal(await gizmoModeToggle.getAttribute('aria-pressed'), 'false', 'Zurückschalten auf Verschieben funktioniert nicht');
   assert.equal(await page.evaluate(() => window.__silmoTutorialRotationRingPoint('z', 0.45)), null, 'Drehringe bleiben nach dem Zurückschalten aktiv');
 
-  // Handyhüllen sollen frei gezeichnet werden: kein automatischer Generator oder fertiges Modell.
+  // Eigene Handyhüllen-Konstruktion: keine Anleitungskarte und kein Fertigmodell, sondern Konturzeichnung plus Rahmenwerkzeug.
   await page.locator('[data-tab="draw"]').click();
   assert.equal(await page.locator('#createPhoneCase').count(),0,'Automatischer Handyhüllen-Generator ist noch vorhanden');
-  assert.equal(await page.locator('#casePhoneWidth').count(),0,'Vorgegebene Handy-Masse sind noch vorhanden');
-  assert.equal(await page.locator('#manualPhoneCaseGuide').count(),1,'Anleitung zum freien Handyhüllen-Zeichnen fehlt');
-  assert.match(await page.locator('#manualPhoneCaseGuide').innerText(),/kein Handy und keine Hülle automatisch erstellt/i,'Hinweis auf selbstständiges Zeichnen fehlt');
+  assert.equal(await page.locator('#manualPhoneCaseGuide').count(),0,'Die entfernte Anleitung wird weiterhin angezeigt');
   assert.equal(await page.locator('#sketchTool').isVisible(),true,'Freie Zeichenwerkzeuge sind nicht erreichbar');
   assert.ok((await page.locator('#sketchTool option').allTextContents()).some(x=>/Freiform/.test(x)),'Freiform-Zeichenwerkzeug fehlt');
+  assert.equal(await page.locator('#createCaseWallFrame').isVisible(),true,'Werkzeug für den Seitenwand-Rahmen fehlt');
+  assert.equal(await page.locator('#caseWallThicknessMM').inputValue(),'1.4','Standard-Wandstärke fehlt');
+  assert.equal(await page.locator('#caseWallHeightMM').inputValue(),'12','Standard-Wandhöhe fehlt');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
   console.log('BESTANDEN: 3D-Start, Zeichnen, freies Handyhüllen-Zeichnen, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
