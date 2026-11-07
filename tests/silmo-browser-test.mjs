@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v49/, 'Build-Metadaten zeigen nicht v49');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v50/, 'Build-Metadaten zeigen nicht v50');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -480,6 +480,11 @@ try {
   await page.locator('#createPhoneCase').click();
   assert.equal((await page.locator('#objects .object-row').count()),caseStartCount+2,'Ungültige Maße dürfen keine Geometrie erzeugen');
   assert.match(await page.locator('#status').innerText(),/Ungültiger Wert/,'Ungültige Handymaße werden nicht erklärt');
+  await page.locator('#casePhoneWidth').fill('74');
+  await page.locator('#casePhoneThickness').fill('20');
+  await page.locator('#createPhoneCase').click();
+  assert.equal((await page.locator('#objects .object-row').count()),caseStartCount+2,'Zu niedrige Seitenwände dürfen keine Hülle erzeugen');
+  assert.match(await page.locator('#status').innerText(),/Seitenwand ist zu niedrig/,'Handydicke wird nicht gegen die Innenhöhe geprüft');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
   console.log('BESTANDEN: 3D-Start, Zeichnen, Handyhüllen-Rohling, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');

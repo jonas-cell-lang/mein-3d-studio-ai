@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v49 – Handyhüllen-Grundwerkzeug</title>
+<title>SILMO 3D Studio AI – v50 – Handyhüllen-Passformprüfung</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v49 – Handyhüllen-Grundwerkzeug">
+<meta name="silmo-build" content="v50 – Handyhüllen-Passformprüfung">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -151,7 +151,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v49 – Handyhüllen-Grundwerkzeug -->
+<!-- SILMO BUILD: v50 – Handyhüllen-Passformprüfung -->
 <script id="silmoDeveloperDiagnostics">
 (function(){
   'use strict';
@@ -1069,6 +1069,7 @@ input:focus{outline:1px solid var(--cyan)}
         status.textContent='Ungültiger Wert: Bitte '+key+' zwischen '+min+' und '+max+' mm eingeben.';return;
       }
     }
+    if(spec.wallHeight < spec.phoneThickness + 0.4){status.textContent='Die Seitenwand ist zu niedrig: Sie muss mindestens 0,4 mm höher als die Handydicke sein. Erhöhe die Seitenwandhöhe oder verringere die Handydicke.';return;}
     const innerW=spec.phoneWidth+2*spec.clearance,innerL=spec.phoneLength+2*spec.clearance;
     const outerW=innerW+2*spec.wallThickness,outerL=innerL+2*spec.wallThickness;
     if(spec.wallThickness*2>=Math.min(innerW,innerL)||spec.cameraWidth>outerW-12||spec.cameraHeight>outerL-12||
