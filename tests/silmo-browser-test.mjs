@@ -176,9 +176,15 @@ try {
   const angleInput = page.locator('#rotationAngleLabel');
   assert.equal(await angleInput.getAttribute('type'), 'number', 'Gradzahl neben dem Würfel ist kein Zahlenfeld');
   await angleInput.fill('45');
+  const whileTyping = await page.evaluate(() => window.__silmoRotationGuideSnapshot());
+  assert.equal(whileTyping.activeAxis, 'z', 'Ausgewählte Achse geht beim Eintippen verloren');
+  assert.equal(whileTyping.activeGlowVisible, true, 'Achsen-Leuchten verschwindet während der Gradzahl-Eingabe');
   await angleInput.press('Enter');
   await page.waitForTimeout(200);
   assert.match(await page.locator('#status').innerText(), /Drehung um Z auf 45° gesetzt/, 'Direkte Gradzahl-Eingabe wurde nicht übernommen');
+  const afterTyping = await page.evaluate(() => window.__silmoRotationGuideSnapshot());
+  assert.equal(afterTyping.activeAxis, 'z', 'Ausgewählte Achse bleibt nach der Gradzahl-Eingabe nicht aktiv');
+  assert.equal(afterTyping.activeGlowVisible, true, 'Achsen-Leuchten verschwindet nach der Gradzahl-Eingabe');
   const afterTypedAngle = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
   assert.ok(Math.abs(afterTypedAngle.qz) > 0.05 || Math.abs(afterTypedAngle.qw) < 0.99, 'Eingetippte Gradzahl verändert das Modell nicht');
   await angleInput.blur();
