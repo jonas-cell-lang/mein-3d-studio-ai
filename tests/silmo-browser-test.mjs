@@ -58,6 +58,11 @@ try {
   const currentBuild = await page.locator('meta[name="silmo-build"]').getAttribute('content');
   assert.ok(currentBuild, 'Build-Metadaten fehlen');
   assert.ok(tutorialDebug.includes(`Build: ${currentBuild}`), 'Tutorial-Diagnose zeigt nicht den aktuellen Build');
+  assert.equal(await page.locator('#tutorialBuild').innerText(), currentBuild, 'Tutorial-Kopfzeile zeigt nicht den aktuellen Build');
+  assert.equal(await page.locator('#tutorialQuickGuide').count(), 1, 'Schnellhilfe fehlt im Tutorial');
+  const quickGuide = await page.locator('#tutorialQuickGuide').textContent();
+  assert.match(quickGuide, /Escape bricht.*ab/, 'Schnellhilfe erklärt das Abbrechen einer Winkel-Eingabe nicht');
+  assert.match(quickGuide, /Projekt speichern/, 'Schnellhilfe erklärt das Sichern eines Projekts nicht');
   assert.ok((await page.title()).includes(currentBuild), 'Seitentitel zeigt nicht den aktuellen Build');
   const tutorialStartRows = await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click();
