@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v39 – Ausrichten und Verteilen erweitert</title>
+<title>SILMO 3D Studio AI – v40 – Drehwinkelanzeige</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v39 – Ausrichten und Verteilen erweitert">
+<meta name="silmo-build" content="v40 – Drehwinkelanzeige">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -61,6 +61,8 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-acti
 #gizmoModeToggle{position:absolute;right:58px;top:12px;min-height:38px;padding:7px 11px;background:#142c46;border-color:#4d83b9;font-size:12px;font-weight:650}
 #gizmoModeToggle[aria-pressed="true"]{background:#17434a;border-color:#53d8e8;color:#a8f4ff}
 @media(max-width:680px){#gizmoModeToggle{right:54px;top:8px;min-height:38px;padding:6px 9px;font-size:11px}}
+#rotationAngleLabel{position:absolute;z-index:8;min-width:48px;padding:6px 9px;border:1px solid #f4d35e;border-radius:8px;background:#17243a;color:#ffe58a;font-size:14px;font-weight:800;text-align:center;box-shadow:0 3px 14px #0008;pointer-events:none;transform:translateY(-50%)}
+#rotationAngleLabel[hidden]{display:none!important}
 #viewport{isolation:isolate}
 canvas:focus-visible{outline:2px solid var(--cyan);outline-offset:-3px}
 .left-panel,.right-panel{min-width:0}
@@ -404,6 +406,7 @@ input:focus{outline:1px solid var(--cyan)}
   <section id="viewport">
     <button id="gizmoModeToggle" type="button" aria-pressed="false" title="Zwischen Verschieben mit Pfeilen und Drehen mit Ringen wechseln">⟳ Drehen</button>
     <button id="expandViewport" type="button" aria-label="3D-Ansicht maximieren">⛶</button>
+    <div id="rotationAngleLabel" aria-live="off" hidden>0°</div>
     <div class="viewport-label">3D-Ansicht <span style="color:#6ee7f9">●</span> · Kamera frei</div><div id="hint"><strong>Bedienung</strong><br>Pfeile am Objekt ziehen: X / Y / Z verschieben<br>Objektkörper ziehen: in X/Y verschieben<br>Freie Fläche ziehen: Ansicht drehen<br>Maus rechts ziehen oder Shift + Ziehen: Kamera drehen<br>Touch: freie Fläche ziehen, auf Modell ziehen zum Verschieben<br>Scrollrad: zoomen<br>Strg/Cmd+S: Projekt speichern · Strg/Cmd+O: Projekt öffnen</div>
   </section>
   <aside class="right-panel" aria-label="Eigenschaften des ausgewählten Modells">
@@ -727,6 +730,7 @@ input:focus{outline:1px solid var(--cyan)}
   const rotationHitPoint = new THREE.Vector3();
   const rotationCurrentVector = new THREE.Vector3();
   let rotationAccumulatedAngle = 0;
+  const rotationAngleLabel = $('rotationAngleLabel');
   let axisDragStart = new THREE.Vector3();
   let objectDragStart = new THREE.Vector3();
   let axisStartParameter = 0;
@@ -1694,11 +1698,52 @@ input:focus{outline:1px solid var(--cyan)}
       hitTarget.userData.rotationAxis = def.axis;
       hitTarget.frustumCulled = false;
       rotationGizmo.add(hitTarget);
+      // Dünne Achsenlinie durch den Würfel: die gerade aktive Drehachse wird hervorgehoben.
+      const axisDirection = def.axis === 'x' ? new THREE.Vector3(1,0,0) : def.axis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
+      const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+        axisDirection.clone().multiplyScalar(-radius * 1.22),
+        axisDirection.clone().multiplyScalar(radius * 1.22)
+      ]);
+      const lineMaterial = new THREE.LineBasicMaterial({ color:def.color, transparent:true, opacity:activeRotationAxis === def.axis ? 0.98 : 0.28, depthTest:false, depthWrite:false });
+      const axisLine = new THREE.Line(lineGeometry, lineMaterial);
+      axisLine.userData.rotationGuideAxis = def.axis;
+      axisLine.renderOrder = 5;
+      rotationGizmo.add(axisLine);
     });
     rotationGizmo.position.copy(getSelectionCenter(targets));
     rotationGizmo.userData.isRotationGizmo = true;
     scene.add(rotationGizmo);
   }
+
+  function setRotationGuideAxis(axis) {
+    if (!rotationGizmo) return;
+    rotationGizmo.children.forEach(part => {
+      if (!part.userData.rotationGuideAxis || !part.material) return;
+      part.material.opacity = part.userData.rotationGuideAxis === axis ? 0.98 : 0.28;
+    });
+  }
+
+  function updateRotationAngleLabel() {
+    if (!rotationAngleLabel) return;
+    if (!dragging || !activeRotationAxis) {
+      rotationAngleLabel.hidden = true;
+      return;
+    }
+    rotationAngleLabel.hidden = false;
+    rotationAngleLabel.textContent = Math.round(rotationAccumulatedAngle * 180 / Math.PI) + '°';
+    const projected = rotationCenter.clone().project(camera);
+    const rect = canvas.getBoundingClientRect();
+    const x = (projected.x + 1) * rect.width / 2 + 18;
+    const y = (1 - projected.y) * rect.height / 2;
+    rotationAngleLabel.style.left = Math.max(8, Math.min(viewport.clientWidth - 62, x)) + 'px';
+    rotationAngleLabel.style.top = Math.max(22, Math.min(viewport.clientHeight - 22, y)) + 'px';
+  }
+
+  // Prüfschnittstelle für Browser-Tests: Gradzahl und aktive Achsenlinie.
+  window.__silmoRotationGuideSnapshot = () => {
+    const line = rotationGizmo?.children.find(part => part.userData.rotationGuideAxis === activeRotationAxis);
+    return { labelVisible: !!rotationAngleLabel && !rotationAngleLabel.hidden, label: rotationAngleLabel?.textContent || '', activeAxis: activeRotationAxis, activeLineOpacity: line?.material?.opacity ?? 0 };
+  };
 
   function updateMoveGizmo() {
     if (moveGizmo) {
@@ -2103,6 +2148,7 @@ input:focus{outline:1px solid var(--cyan)}
         rotationDragPlane.setFromNormalAndCoplanarPoint(direction, center);
         activeRotationAxis = axis;
         rotationCenter.copy(center);
+        setRotationGuideAxis(axis);
         // Die Ray-Ebene kann bei fast kantenparalleler Ansicht knapp verfehlt
         // werden. Der Ring-Treffer selbst liefert dann einen sicheren Startpunkt.
         if (!raycaster.ray.intersectPlane(rotationDragPlane, rotationHitPoint)) {
@@ -2120,6 +2166,7 @@ input:focus{outline:1px solid var(--cyan)}
         rotatingView = false;
         activeAxis = null;
         canvas.style.cursor = 'grabbing';
+        updateRotationAngleLabel();
         e.preventDefault();
       } else if (axisHit && selected && getSelectedTargets().length) {
         const hitObject = axisHit.object;
@@ -2187,6 +2234,7 @@ input:focus{outline:1px solid var(--cyan)}
         });
         showProperties();
         updateMoveGizmo();
+        updateRotationAngleLabel();
       }
     } else if (activeAxis && selected) {
       setPointerRay(e);
@@ -2226,7 +2274,9 @@ input:focus{outline:1px solid var(--cyan)}
     draggingObject = false;
     activeAxis = null;
     activeRotationAxis = null;
+    setRotationGuideAxis(null);
     rotationStartQuaternions = [];
+    updateRotationAngleLabel();
     rotationAccumulatedAngle = 0;
     pointerId = null;
     dragTargets = [];
@@ -2255,6 +2305,7 @@ input:focus{outline:1px solid var(--cyan)}
       focus.z + distance * Math.sin(rx)
     );
     camera.lookAt(focus);
+    updateRotationAngleLabel();
     if (moveGizmo && getSelectedTargets().length) moveGizmo.position.copy(getSelectionCenter());
     if (rotationGizmo && getSelectedTargets().length) rotationGizmo.position.copy(getSelectionCenter());
     try {
