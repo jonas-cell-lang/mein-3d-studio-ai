@@ -168,6 +168,9 @@ try {
   assert.match(rotationGuide.label, /^-?\d+°$/, 'Drehwinkel wird nicht als Gradzahl angezeigt');
   assert.equal(rotationGuide.activeAxis, 'z', 'Aktive Drehachse wird nicht erkannt');
   assert.ok(rotationGuide.activeLineOpacity > 0.8, 'Drehachse durch den Würfel wird nicht hervorgehoben');
+  assert.ok(rotationGuide.activeRingOpacity > 0.95, 'Aktiver Drehring wird nicht deutlich hervorgehoben');
+  assert.ok(rotationGuide.inactiveRingOpacity < 0.3, 'Nicht aktive Drehringe werden nicht ausreichend abgedunkelt');
+  assert.equal(rotationGuide.activeGlowVisible, true, 'Leuchthof der aktiven Drehachse fehlt');
   await page.mouse.up();
   assert.equal((await page.evaluate(() => window.__silmoRotationGuideSnapshot())).labelVisible, true, 'Gradzahl-Eingabe verschwindet nach dem Ziehen');
   const angleInput = page.locator('#rotationAngleLabel');

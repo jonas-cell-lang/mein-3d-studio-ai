@@ -1678,9 +1678,27 @@ input:focus{outline:1px solid var(--cyan)}
       if (def.rotateX) ring.rotation.x = def.rotateX;
       if (def.rotateY) ring.rotation.y = def.rotateY;
       ring.userData.rotationAxis = def.axis;
+      ring.userData.baseOpacity = 0.92;
       ring.renderOrder = 4;
       ring.frustumCulled = false;
       rotationGizmo.add(ring);
+
+      // Leuchthof für die aktive Drehachse: macht die Auswahl auch auf dem iPad
+      // und bei überlappenden Ringen sofort erkennbar.
+      const glowGeometry = new THREE.TorusGeometry(radius, Math.max(0.085, radius * 0.075), 8, 72);
+      const glowMaterial = new THREE.MeshBasicMaterial({
+        color:def.color, transparent:true, opacity:0.48,
+        blending:THREE.AdditiveBlending, depthTest:false, depthWrite:false,
+        side:THREE.DoubleSide, toneMapped:false
+      });
+      const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+      if (def.rotateX) glow.rotation.x = def.rotateX;
+      if (def.rotateY) glow.rotation.y = def.rotateY;
+      glow.userData.rotationGlowAxis = def.axis;
+      glow.visible = false;
+      glow.renderOrder = 3;
+      glow.frustumCulled = false;
+      rotationGizmo.add(glow);
 
       // Breite, unsichtbare Trefferfläche: auf Touchscreens lässt sich der Ring
       // dadurch ziehen, ohne versehentlich das Modell darunter auszuwählen.
@@ -1713,13 +1731,28 @@ input:focus{outline:1px solid var(--cyan)}
     rotationGizmo.position.copy(getSelectionCenter(targets));
     rotationGizmo.userData.isRotationGizmo = true;
     scene.add(rotationGizmo);
+    // updateRotationGizmo kann während des Ziehens neu aufbauen; die aktive
+    // Achse muss danach sofort wieder auf Ring, Leuchthof und Linie angewendet werden.
+    if (activeRotationAxis) setRotationGuideAxis(activeRotationAxis);
   }
 
   function setRotationGuideAxis(axis) {
     if (!rotationGizmo) return;
     rotationGizmo.children.forEach(part => {
-      if (!part.userData.rotationGuideAxis || !part.material) return;
-      part.material.opacity = part.userData.rotationGuideAxis === axis ? 0.98 : 0.28;
+      if (!part.material) return;
+      if (part.userData.rotationGuideAxis) {
+        part.material.opacity = part.userData.rotationGuideAxis === axis ? 1 : (axis ? 0.14 : 0.28);
+      }
+      if (part.userData.rotationAxis) {
+        const isActive = part.userData.rotationAxis === axis;
+        part.material.opacity = axis ? (isActive ? 1 : 0.24) : (part.userData.baseOpacity || 0.92);
+        part.scale.setScalar(isActive ? 1.07 : 1);
+      }
+      if (part.userData.rotationGlowAxis) {
+        const isActive = part.userData.rotationGlowAxis === axis;
+        part.visible = isActive;
+        part.material.opacity = isActive ? 0.48 : 0;
+      }
     });
   }
 
@@ -1769,7 +1802,10 @@ input:focus{outline:1px solid var(--cyan)}
   // Prüfschnittstelle für Browser-Tests: Gradzahl und aktive Achsenlinie.
   window.__silmoRotationGuideSnapshot = () => {
     const line = rotationGizmo?.children.find(part => part.userData.rotationGuideAxis === activeRotationAxis);
-    return { labelVisible: !!rotationAngleLabel && !rotationAngleLabel.hidden, label: rotationAngleLabel?.value ? rotationAngleLabel.value + '°' : '', inputType: rotationAngleLabel?.type || '', activeAxis: activeRotationAxis, activeLineOpacity: line?.material?.opacity ?? 0 };
+    const ring = rotationGizmo?.children.find(part => part.userData.rotationAxis === activeRotationAxis);
+    const inactiveRing = rotationGizmo?.children.find(part => part.userData.rotationAxis && part.userData.rotationAxis !== activeRotationAxis);
+    const glow = rotationGizmo?.children.find(part => part.userData.rotationGlowAxis === activeRotationAxis);
+    return { labelVisible: !!rotationAngleLabel && !rotationAngleLabel.hidden, label: rotationAngleLabel?.value ? rotationAngleLabel.value + '°' : '', inputType: rotationAngleLabel?.type || '', activeAxis: activeRotationAxis, activeLineOpacity: line?.material?.opacity ?? 0, activeRingOpacity: ring?.material?.opacity ?? 0, inactiveRingOpacity: inactiveRing?.material?.opacity ?? 0, activeGlowVisible: !!glow?.visible };
   };
 
   function updateMoveGizmo() {
