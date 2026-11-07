@@ -1769,7 +1769,7 @@ input:focus{outline:1px solid var(--cyan)}
   // Prüfschnittstelle für Browser-Tests: Gradzahl und aktive Achsenlinie.
   window.__silmoRotationGuideSnapshot = () => {
     const line = rotationGizmo?.children.find(part => part.userData.rotationGuideAxis === activeRotationAxis);
-    return { labelVisible: !!rotationAngleLabel && !rotationAngleLabel.hidden, label: rotationAngleLabel?.textContent || '', activeAxis: activeRotationAxis, activeLineOpacity: line?.material?.opacity ?? 0 };
+    return { labelVisible: !!rotationAngleLabel && !rotationAngleLabel.hidden, label: rotationAngleLabel?.value ? rotationAngleLabel.value + '°' : '', inputType: rotationAngleLabel?.type || '', activeAxis: activeRotationAxis, activeLineOpacity: line?.material?.opacity ?? 0 };
   };
 
   function updateMoveGizmo() {
