@@ -1698,7 +1698,6 @@ input:focus{outline:1px solid var(--cyan)}
       hitTarget.userData.rotationAxis = def.axis;
       hitTarget.frustumCulled = false;
       rotationGizmo.add(hitTarget);
-    });
       // Dünne Achsenlinie durch den Würfel: die gerade aktive Drehachse wird hervorgehoben.
       const axisDirection = def.axis === 'x' ? new THREE.Vector3(1,0,0) : def.axis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
       const lineGeometry = new THREE.BufferGeometry().setFromPoints([
