@@ -480,6 +480,11 @@ try {
   await page.locator('#createPhoneCase').click();
   assert.equal((await page.locator('#objects .object-row').count()),caseStartCount+2,'Ungültige Maße dürfen keine Geometrie erzeugen');
   assert.match(await page.locator('#status').innerText(),/Ungültiger Wert/,'Ungültige Handymaße werden nicht erklärt');
+  await page.locator('#casePhoneWidth').fill('74');
+  await page.locator('#casePhoneThickness').fill('20');
+  await page.locator('#createPhoneCase').click();
+  assert.equal((await page.locator('#objects .object-row').count()),caseStartCount+2,'Zu niedrige Seitenwände dürfen keine Hülle erzeugen');
+  assert.match(await page.locator('#status').innerText(),/Seitenwand ist zu niedrig/,'Handydicke wird nicht gegen die Innenhöhe geprüft');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
   console.log('BESTANDEN: 3D-Start, Zeichnen, Handyhüllen-Rohling, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
