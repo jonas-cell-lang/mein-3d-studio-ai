@@ -53,6 +53,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-o
 .primary:hover{background:linear-gradient(135deg,#347be9,#2d92dd)}
 .danger{color:#ffb6bd}
 .active{background:#234d78!important;border-color:#63a6ff!important;box-shadow:inset 0 0 0 1px #63a6ff22}
+#viewport,#viewport *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #viewport{position:relative;min-width:0;overflow:hidden;touch-action:none;background:radial-gradient(ellipse at 50% 42%,#182b43 0%,#0d1728 55%,#08111e 100%)}
 canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:grab;outline:none;z-index:0}
 #viewport .viewport-label,#viewport #hint,#viewport #expandViewport{z-index:5}
@@ -2045,6 +2046,8 @@ input:focus{outline:1px solid var(--cyan)}
   }
 
   canvas.addEventListener('pointerdown', e => {
+    // iPad-Safari darf eine Ringbewegung nicht als Textauswahl behandeln.
+    if (e.pointerType === 'touch') e.preventDefault();
     // Linke Taste: Gizmo/Objekt auswählen und ziehen. Rechte Taste oder Shift+Ziehen:
     // Kamera drehen, auch wenn der Zeiger über einem Modell liegt.
     if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 2) return;
