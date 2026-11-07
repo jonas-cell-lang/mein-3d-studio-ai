@@ -14,7 +14,7 @@ try {
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
   assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v43/, 'Build-Metadaten zeigen nicht v43');
-  assert.match(await page.locator('#tutorialQuickGuide').innerText(), /Freie 2D-Skizze/, 'Schnellhilfe erklärt die neue Freiform nicht');
+  assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freie 2D-Skizze/, 'Schnellhilfe erklärt die neue Freiform nicht');
   await page.waitForTimeout(1500);
 
   // Prüftool: Strg+Leertaste öffnet es und startet automatisch die vollständige Codeprüfung.
