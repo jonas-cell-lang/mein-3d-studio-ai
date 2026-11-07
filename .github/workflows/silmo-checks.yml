@@ -150,9 +150,22 @@ jobs:
               raise SystemExit("Automatischer Handyhüllen-Generator ist noch vorhanden.")
           if "id='manualPhoneCaseGuide'" in html:
               raise SystemExit("Die entfernte Handyhüllen-Anleitung ist noch vorhanden.")
-          required_case_drawing = ["function createCaseWallFrame()", "id='createCaseWallFrame'", "id='cutCaseOpening'", "id='caseWallThicknessMM'", "id='caseWallHeightMM'", "mesh.userData.caseOutline=sketchMetadata.outlinePoints", "window.__silmoTestCreateCaseWallFrame"]
-          missing = [item for item in required_case_drawing if item not in html]
+          required_general_cad = [
+              "function createContourFrame()",
+              "id='createContourFrame'",
+              "id='subtractSelected'",
+              "id='wallThicknessMM'",
+              "id='frameHeightMM'",
+              "mesh.userData.sketchOutline=sketchMetadata.outlinePoints",
+              "window.__silmoTestCreateContourFrame",
+              "new THREE.ConeGeometry",
+              "new THREE.TorusGeometry",
+              "new THREE.CylinderGeometry(0.85, 0.85, 1.5, 6)",
+          ]
+          missing = [item for item in required_general_cad if item not in html]
           if missing:
-              raise SystemExit("Werkzeuge zum selbstständigen Handyhüllen-Zeichnen unvollständig: " + ", ".join(missing))
-          print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung, Objektsperre, Gruppen, Spiegeln, Verbindung lösen, selbst gezeichnete Handyhüllen-Kontur, Seitenwand-Rahmen und Aussparungen sind statisch geprüft.")
+              raise SystemExit("Allgemeine CAD-Werkzeuge unvollständig: " + ", ".join(missing))
+          if "Eigene Hüllen-Konstruktion" in html or "createCaseWallFrame" in html:
+              raise SystemExit("Produktgebundene Sonderfunktionen sind noch vorhanden.")
+          print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung, Objektsperre, Gruppen, Spiegeln, Verbindung lösen und allgemeine CAD-Werkzeuge sind statisch geprüft.")
           PY
