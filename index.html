@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v52 – Eigene Handyhüllen-Konstruktion</title>
+<title>SILMO 3D Studio AI – v53 – Allgemeine CAD-Werkzeuge</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v52 – Eigene Handyhüllen-Konstruktion">
+<meta name="silmo-build" content="v53 – Allgemeine CAD-Werkzeuge">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -151,7 +151,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v52 – Eigene Handyhüllen-Konstruktion -->
+<!-- SILMO BUILD: v53 – Allgemeine CAD-Werkzeuge -->
 <script id="silmoDeveloperDiagnostics">
 (function(){
   'use strict';
@@ -292,7 +292,7 @@ input:focus{outline:1px solid var(--cyan)}
         cssRuleCount=styles?styles.split('{').length-1:0;
         add('HINWEIS','Dieser Browser bietet keinen vollständigen CSS-Parser für die Zusatzprüfung; CSS-Regeln wurden gezählt.');
       }
-      ['#createObjectGroup','#ungroupObjects','#alignSelected','#booleanSeparate','#sketchTool','#startSketch','#createSketchSolid','#createCaseWallFrame','#cutCaseOpening','#caseWallThicknessMM','#caseWallHeightMM'].forEach(selector=>{if(!document.querySelector(selector))issues.push('App: Werkzeug '+selector+' wurde nicht initialisiert.');});
+      ['#createObjectGroup','#ungroupObjects','#alignSelected','#booleanSeparate','#sketchTool','#startSketch','#createSketchSolid','#createContourFrame','#subtractSelected','#wallThicknessMM','#frameHeightMM'].forEach(selector=>{if(!document.querySelector(selector))issues.push('App: Werkzeug '+selector+' wurde nicht initialisiert.');});
       if(!window.THREE)issues.push('3D: Three.js ist nicht geladen.');
       else{
         if(!window.THREE.STLLoader)issues.push('3D: STLLoader ist nicht geladen.');
@@ -392,6 +392,9 @@ input:focus{outline:1px solid var(--cyan)}
     <button class="wide" id="addCube">＋ Würfel</button>
     <button class="wide" id="addSphere">＋ Kugel</button>
     <button class="wide" id="addCylinder">＋ Zylinder</button>
+     <button class="wide" id="addCone">＋ Kegel</button>
+     <button class="wide" id="addHexPrism">＋ Sechskant-Prisma</button>
+     <button class="wide" id="addTorus">＋ Ring / Torus</button>
     <button class="wide" id="duplicate">▣ Duplizieren</button>
     <div class="panel-rule"></div>
     <h2>Formen kombinieren</h2>
@@ -483,7 +486,7 @@ input:focus{outline:1px solid var(--cyan)}
   const put = (pane, id) => { const n=nodes.get(id); if(n) pane.appendChild(n); };
 
   heading(paneMap.create.left,'Objekte');
-  ['addCube','addSphere','addCylinder','duplicate'].forEach(id=>put(paneMap.create.left,id));
+  ['addCube','addSphere','addCylinder','addCone','addHexPrism','addTorus','duplicate'].forEach(id=>put(paneMap.create.left,id));
   heading(paneMap.create.left,'Formen kombinieren');
   const booleanHelp=document.createElement('p'); booleanHelp.className='note'; booleanHelp.textContent='Wähle mindestens zwei Objekte in der Objektliste. Mit Strg-Klick kannst du mehrere auswählen. Das erste ausgewählte Objekt ist die Grundform.'; paneMap.create.left.appendChild(booleanHelp);
   ['booleanUnion','booleanSubtract'].forEach(id=>put(paneMap.create.left,id));
@@ -528,15 +531,15 @@ input:focus{outline:1px solid var(--cyan)}
   sketchHeightWrap.append(sketchHeightLabel,sketchHeight); paneMap.draw.left.appendChild(sketchHeightWrap);
   const caseWallHeading=document.createElement('h2');caseWallHeading.textContent='Eigene Hüllen-Konstruktion';paneMap.draw.left.appendChild(caseWallHeading);
   const caseWallThicknessWrap=document.createElement('div');caseWallThicknessWrap.className='field';
-  const caseWallThicknessLabel=document.createElement('label');caseWallThicknessLabel.htmlFor='caseWallThicknessMM';caseWallThicknessLabel.textContent='Seitenwand-Stärke (mm)';
-  const caseWallThickness=document.createElement('input');caseWallThickness.id='caseWallThicknessMM';caseWallThickness.type='number';caseWallThickness.min='0.6';caseWallThickness.max='5';caseWallThickness.step='0.1';caseWallThickness.value='1.4';
+  const caseWallThicknessLabel=document.createElement('label');caseWallThicknessLabel.htmlFor='wallThicknessMM';caseWallThicknessLabel.textContent='Wandstärke (mm)';
+  const caseWallThickness=document.createElement('input');caseWallThickness.id='wallThicknessMM';caseWallThickness.type='number';caseWallThickness.min='0.6';caseWallThickness.max='5';caseWallThickness.step='0.1';caseWallThickness.value='1.4';
   caseWallThicknessWrap.append(caseWallThicknessLabel,caseWallThickness);paneMap.draw.left.appendChild(caseWallThicknessWrap);
   const caseWallHeightWrap=document.createElement('div');caseWallHeightWrap.className='field';
-  const caseWallHeightLabel=document.createElement('label');caseWallHeightLabel.htmlFor='caseWallHeightMM';caseWallHeightLabel.textContent='Seitenwand-Höhe (mm)';
-  const caseWallHeight=document.createElement('input');caseWallHeight.id='caseWallHeightMM';caseWallHeight.type='number';caseWallHeight.min='2';caseWallHeight.max='40';caseWallHeight.step='0.1';caseWallHeight.value='12';
+  const caseWallHeightLabel=document.createElement('label');caseWallHeightLabel.htmlFor='frameHeightMM';caseWallHeightLabel.textContent='Rahmenhöhe (mm)';
+  const caseWallHeight=document.createElement('input');caseWallHeight.id='frameHeightMM';caseWallHeight.type='number';caseWallHeight.min='2';caseWallHeight.max='40';caseWallHeight.step='0.1';caseWallHeight.value='12';
   caseWallHeightWrap.append(caseWallHeightLabel,caseWallHeight);paneMap.draw.left.appendChild(caseWallHeightWrap);
-  const caseWallButton=document.createElement('button');caseWallButton.type='button';caseWallButton.id='createCaseWallFrame';caseWallButton.className='wide';caseWallButton.textContent='▱ Seitenwand-Rahmen aus Kontur erzeugen';paneMap.draw.left.appendChild(caseWallButton);
-  const caseCutButton=document.createElement('button');caseCutButton.type='button';caseCutButton.id='cutCaseOpening';caseCutButton.className='wide';caseCutButton.textContent='− Ausgewählte Aussparung ausschneiden';paneMap.draw.left.appendChild(caseCutButton);
+  const caseWallButton=document.createElement('button');caseWallButton.type='button';caseWallButton.id='createContourFrame';caseWallButton.className='wide';caseWallButton.textContent='▱ Hohlrahmen aus Kontur erzeugen';paneMap.draw.left.appendChild(caseWallButton);
+  const caseCutButton=document.createElement('button');caseCutButton.type='button';caseCutButton.id='subtractSelected';caseCutButton.className='wide';caseCutButton.textContent='− Ausgewählte Aussparung ausschneiden';paneMap.draw.left.appendChild(caseCutButton);
   const sketchLockNote=document.createElement('p'); sketchLockNote.id='sketchViewLockNote'; sketchLockNote.className='note'; sketchLockNote.textContent='Während des Zeichnens ist die Kameradrehung gesperrt. Zoomen bleibt möglich.'; paneMap.draw.left.appendChild(sketchLockNote);
   const startSketchButton=document.createElement('button'); startSketchButton.type='button'; startSketchButton.id='startSketch'; startSketchButton.className='wide primary'; startSketchButton.textContent='✎ Zeichnen starten'; paneMap.draw.left.appendChild(startSketchButton);
   const createSketchButton=document.createElement('button'); createSketchButton.type='button'; createSketchButton.id='createSketchSolid'; createSketchButton.className='wide'; createSketchButton.textContent='▰ Als 3D-Körper erstellen'; createSketchButton.disabled=true; paneMap.draw.left.appendChild(createSketchButton);
@@ -1047,11 +1050,15 @@ input:focus{outline:1px solid var(--cyan)}
     let geometry;
     if (type === 'Würfel') geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
     else if (type === 'Kugel') geometry = new THREE.SphereGeometry(0.8, 32, 24);
-    else geometry = new THREE.CylinderGeometry(0.7, 0.7, 1.5, 32);
+    else if (type === 'Zylinder') geometry = new THREE.CylinderGeometry(0.7, 0.7, 1.5, 32);
+    else if (type === 'Kegel') geometry = new THREE.ConeGeometry(0.8, 1.5, 48);
+    else if (type === 'Sechskant-Prisma') geometry = new THREE.CylinderGeometry(0.85, 0.85, 1.5, 6);
+    else if (type === 'Ring / Torus') geometry = new THREE.TorusGeometry(0.65, 0.18, 16, 48);
+    else geometry = new THREE.BoxGeometry(1, 1, 1);
 
     // Three.js-Standardformen haben ihre Höhe entlang Y. Wir drehen sie,
     // damit die Höhe in dieser App entlang Z verläuft.
-    geometry.rotateX(Math.PI / 2);
+    if (type !== 'Ring / Torus') geometry.rotateX(Math.PI / 2);
     geometry.computeBoundingBox();
 
     const material = new THREE.MeshStandardMaterial({
@@ -1275,8 +1282,8 @@ input:focus{outline:1px solid var(--cyan)}
           locked: obj.userData.locked === true,
           groupId: typeof obj.userData.groupId === 'string' ? obj.userData.groupId : null,
           unionParts: Array.isArray(obj.userData.unionParts) ? obj.userData.unionParts : null,
-          caseOutline: Array.isArray(obj.userData.caseOutline) ? obj.userData.caseOutline : null,
-          caseWallFrame: obj.userData.caseWallFrame || null,
+          sketchOutline: Array.isArray(obj.userData.sketchOutline) ? obj.userData.sketchOutline : null,
+          contourFrame: obj.userData.contourFrame || null,
           geometry: serializeGeometry(obj.geometry)
         }))
       };
@@ -1340,8 +1347,8 @@ input:focus{outline:1px solid var(--cyan)}
             locked: item.locked === true,
             groupId: typeof item.groupId === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(item.groupId) ? item.groupId : null,
              unionParts: Array.isArray(item.unionParts) && item.unionParts.length >= 2 && item.unionParts.length <= 100 ? item.unionParts.map(part => JSON.parse(JSON.stringify(part))) : null,
-             caseOutline: Array.isArray(item.caseOutline) && item.caseOutline.length >= 3 && item.caseOutline.length <= 240 && item.caseOutline.every(point => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite)) ? item.caseOutline.map(point => [point[0],point[1]]) : null,
-             caseWallFrame: item.caseWallFrame && Number.isFinite(item.caseWallFrame.wallThicknessMM) && Number.isFinite(item.caseWallFrame.wallHeightMM) ? {wallThicknessMM:item.caseWallFrame.wallThicknessMM,wallHeightMM:item.caseWallFrame.wallHeightMM} : null
+             sketchOutline: Array.isArray(item.sketchOutline) && item.sketchOutline.length >= 3 && item.sketchOutline.length <= 240 && item.sketchOutline.every(point => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite)) ? item.sketchOutline.map(point => [point[0],point[1]]) : null,
+             contourFrame: item.contourFrame && Number.isFinite(item.contourFrame.wallThicknessMM) && Number.isFinite(item.contourFrame.wallHeightMM) ? {wallThicknessMM:item.contourFrame.wallThicknessMM,wallHeightMM:item.contourFrame.wallHeightMM} : null
            };
            if (Array.isArray(item.unionParts)) {
              if (item.unionParts.length < 2 || item.unionParts.length > 100) { geometry.dispose(); material.dispose(); throw new Error('Ungültige Anzahl ursprünglicher Formteile.'); }
@@ -2153,6 +2160,9 @@ input:focus{outline:1px solid var(--cyan)}
   $('addCube').onclick = () => createObject('Würfel');
   $('addSphere').onclick = () => createObject('Kugel');
   $('addCylinder').onclick = () => createObject('Zylinder');
+  $('addCone').onclick = () => createObject('Kegel');
+  $('addHexPrism').onclick = () => createObject('Sechskant-Prisma');
+  $('addTorus').onclick = () => createObject('Ring / Torus');
 
   $('duplicate').onclick = () => {
     if (!selected) {
@@ -2585,18 +2595,18 @@ input:focus{outline:1px solid var(--cyan)}
     }
     return true;
   }
-  function createCaseWallFrame() {
+  function createContourFrame() {
     const base=selectedObjects.length===1?selectedObjects[0]:selected;
-    if(!base||!objects.includes(base)||!Array.isArray(base.userData.caseOutline)||base.userData.caseOutline.length<3){
+    if(!base||!objects.includes(base)||!Array.isArray(base.userData.sketchOutline)||base.userData.sketchOutline.length<3){
       status.textContent='Wähle zuerst eine selbst gezeichnete 2D-Freiform als Rückwand-Kontur aus.';return;
     }
     if(base.userData.locked===true){status.textContent='Die ausgewählte Rückwand ist gesperrt. Entsperre sie zuerst.';return;}
-    const thicknessMM=Number(document.getElementById('caseWallThicknessMM').value);
-    const heightMM=Number(document.getElementById('caseWallHeightMM').value);
+    const thicknessMM=Number(document.getElementById('wallThicknessMM').value);
+    const heightMM=Number(document.getElementById('frameHeightMM').value);
     if(!Number.isFinite(thicknessMM)||thicknessMM<0.6||thicknessMM>5||!Number.isFinite(heightMM)||heightMM<2||heightMM>40){
       status.textContent='Wandstärke muss 0,6–5 mm und Wandhöhe 2–40 mm betragen.';return;
     }
-    const outer=base.userData.caseOutline.map(point=>new THREE.Vector2(point[0],point[1]));
+    const outer=base.userData.sketchOutline.map(point=>new THREE.Vector2(point[0],point[1]));
     if(outer.length>240){status.textContent='Die Kontur hat zu viele Punkte. Zeichne sie etwas einfacher neu.';return;}
     const signedArea=points=>points.reduce((sum,p,i)=>{const n=points[(i+1)%points.length];return sum+p.x*n.y-n.x*p.y;},0)/2;
     const area=signedArea(outer);
@@ -2633,29 +2643,29 @@ input:focus{outline:1px solid var(--cyan)}
     const geometry=new THREE.ExtrudeGeometry(shape,{depth:heightMM/MM_PER_UNIT,bevelEnabled:false,curveSegments:16});
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
-    if(![size.x,size.y,size.z].every(v=>Number.isFinite(v)&&v>CSG_EPSILON)){geometry.dispose();throw new Error('Seitenwand-Rahmen hat ungültige Abmessungen.');}
+    if(![size.x,size.y,size.z].every(v=>Number.isFinite(v)&&v>CSG_EPSILON)){geometry.dispose();throw new Error('Hohlrahmen hat ungültige Abmessungen.');}
     recordHistory();
     const mesh=new THREE.Mesh(geometry,base.material.clone());
     mesh.position.set(base.position.x,base.position.y,base.position.z+(base.userData.baseDimensions?.z||size.z)-0.02/MM_PER_UNIT);
     mesh.userData.baseDimensions={x:size.x,y:size.y,z:size.z};mesh.userData.percent={x:100,y:100,z:100};
-    mesh.userData.label='Selbst gezeichneter Seitenwand-Rahmen';
-    mesh.userData.caseWallFrame={source:base.uuid,wallThicknessMM:thicknessMM,wallHeightMM:heightMM};
+    mesh.userData.label='Selbst gezeichneter Hohlrahmen';
+    mesh.userData.contourFrame={source:base.uuid,wallThicknessMM:thicknessMM,wallHeightMM:heightMM};
     scene.add(mesh);objects.push(mesh);selectObject(mesh);
-    status.textContent='Seitenwand-Rahmen aus deiner eigenen Kontur erstellt. Rückwand und Rahmen sind getrennte, bearbeitbare Teile.';
+    status.textContent='Hohlrahmen aus deiner eigenen Kontur erstellt. Rückwand und Rahmen sind getrennte, bearbeitbare Teile.';
     updateObjects();showProperties();updateMoveGizmo();
   }
 
-  window.__silmoTestCreateCaseWallFrame=()=>{
+  window.__silmoTestCreateContourFrame=()=>{
     const points=[[-1,-1],[1,-1],[1,1],[-1,1]];
     const shape=new THREE.Shape();shape.moveTo(points[0][0],points[0][1]);points.slice(1).forEach(point=>shape.lineTo(point[0],point[1]));shape.closePath();
     const geometry=new THREE.ExtrudeGeometry(shape,{depth:0.15,bevelEnabled:false});
     const material=new THREE.MeshStandardMaterial({color:'#4b91ed'});
-    const base=new THREE.Mesh(geometry,material);base.userData={label:'Test-Rückwand',baseDimensions:{x:2,y:2,z:0.15},percent:{x:100,y:100,z:100},caseOutline:points};
+    const base=new THREE.Mesh(geometry,material);base.userData={label:'Test-Rückwand',baseDimensions:{x:2,y:2,z:0.15},percent:{x:100,y:100,z:100},sketchOutline:points};
     scene.add(base);objects.push(base);selectObject(base);
-    document.getElementById('caseWallThicknessMM').value='1.4';document.getElementById('caseWallHeightMM').value='12';
-    createCaseWallFrame();
-    const frame=objects.find(obj=>obj.userData.caseWallFrame);
-    return {objectCount:objects.length,frameFound:!!frame,label:frame?.userData.label,wallThicknessMM:frame?.userData.caseWallFrame?.wallThicknessMM,wallHeightMM:frame?.userData.caseWallFrame?.wallHeightMM,dimensions:frame?.userData.baseDimensions,geometryVertices:frame?.geometry?.attributes?.position?.count||0};
+    document.getElementById('wallThicknessMM').value='1.4';document.getElementById('frameHeightMM').value='12';
+    createContourFrame();
+    const frame=objects.find(obj=>obj.userData.contourFrame);
+    return {objectCount:objects.length,frameFound:!!frame,label:frame?.userData.label,wallThicknessMM:frame?.userData.contourFrame?.wallThicknessMM,wallHeightMM:frame?.userData.contourFrame?.wallHeightMM,dimensions:frame?.userData.baseDimensions,geometryVertices:frame?.geometry?.attributes?.position?.count||0};
   };
   function createSketchSolid() {
     if (!sketchDraft) { status.textContent = 'Bitte zuerst eine Skizze zeichnen.'; return; }
@@ -2769,7 +2779,7 @@ input:focus{outline:1px solid var(--cyan)}
       mesh.userData.percent = { x: 100, y: 100, z: 100 };
       mesh.userData.label = label;
       mesh.userData.sketch = sketchMetadata;
-      if(tool==='freeform2d')mesh.userData.caseOutline=sketchMetadata.outlinePoints;
+      if(tool==='freeform2d')mesh.userData.sketchOutline=sketchMetadata.outlinePoints;
       scene.add(mesh);
       objects.push(mesh);
       selectObject(mesh);
@@ -2803,8 +2813,8 @@ input:focus{outline:1px solid var(--cyan)}
     status.textContent = 'Zeichenmodus aktiv: auf der Zeichenfläche ziehen.';
   });
   document.getElementById('createSketchSolid').addEventListener('click', createSketchSolid);
-  document.getElementById('createCaseWallFrame').addEventListener('click',createCaseWallFrame);
-  document.getElementById('cutCaseOpening').addEventListener('click',()=>runBooleanOperation('subtract'));
+  document.getElementById('createContourFrame').addEventListener('click',createContourFrame);
+  document.getElementById('subtractSelected').addEventListener('click',()=>runBooleanOperation('subtract'));
   document.getElementById('cancelSketch').addEventListener('click', () => {
     sketchMode = false; sketchDrawing = false; sketchPointerId = null; sketchDraft = null;
     updateGizmoModeButton();
