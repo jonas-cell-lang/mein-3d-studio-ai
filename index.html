@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v47 – Präzises Zeichnen mit Raster und Druckplattenbegrenzung</title>
+<title>SILMO 3D Studio AI – v48 – Verbundene Formen wieder trennen</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v47 – Präzises Zeichnen mit Raster und Druckplattenbegrenzung">
+<meta name="silmo-build" content="v48 – Verbundene Formen wieder trennen">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -151,7 +151,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v47 – Präzises Zeichnen mit Raster und Druckplattenbegrenzung -->
+<!-- SILMO BUILD: v48 – Verbundene Formen wieder trennen -->
 <script id="silmoDeveloperDiagnostics">
 (function(){
   'use strict';
@@ -292,7 +292,8 @@ input:focus{outline:1px solid var(--cyan)}
         cssRuleCount=styles?styles.split('{').length-1:0;
         add('HINWEIS','Dieser Browser bietet keinen vollständigen CSS-Parser für die Zusatzprüfung; CSS-Regeln wurden gezählt.');
       }
-      ['#createObjectGroup','#ungroupObjects','#alignSelected'].forEach(selector=>{if(!document.querySelector(selector))issues.push('App: Werkzeug '+selector+' wurde nicht initialisiert.');});
+      ['#createObjectGroup','#ungroupObjects','#alignSelected','#booleanSeparate'].forEach(selector=>{if(!document.querySelector(selector))issues.push('App: Werkzeug '+selector+' wurde nicht initialisiert.');});
+      if(typeof splitBooleanUnion!=='function')issues.push('App: Verbindung lösen wurde nicht initialisiert.');
       if(!window.THREE)issues.push('3D: Three.js ist nicht geladen.');
       else{
         if(!window.THREE.STLLoader)issues.push('3D: STLLoader ist nicht geladen.');
@@ -487,7 +488,9 @@ input:focus{outline:1px solid var(--cyan)}
   heading(paneMap.create.left,'Formen kombinieren');
   const booleanHelp=document.createElement('p'); booleanHelp.className='note'; booleanHelp.textContent='Wähle mindestens zwei Objekte in der Objektliste. Mit Strg-Klick kannst du mehrere auswählen. Das erste ausgewählte Objekt ist die Grundform.'; paneMap.create.left.appendChild(booleanHelp);
   ['booleanUnion','booleanSubtract'].forEach(id=>put(paneMap.create.left,id));
-  const booleanNote=document.createElement('p'); booleanNote.className='note'; booleanNote.textContent='Beim Abziehen bleibt die erste Form erhalten; alle weiteren ausgewählten Formen schneiden sie aus.'; paneMap.create.left.appendChild(booleanNote);
+  const booleanNote=document.createElement('p'); booleanNote.className='note'; booleanNote.textContent='Beim Abziehen bleibt die erste Form erhalten; alle weiteren ausgewählten Formen schneiden sie aus. Verbundene Formen kannst du später wieder trennen.'; paneMap.create.left.appendChild(booleanNote);
+  const booleanSeparateButton=document.createElement('button'); booleanSeparateButton.type='button'; booleanSeparateButton.id='booleanSeparate'; booleanSeparateButton.className='wide'; booleanSeparateButton.textContent='↗ Verbindung lösen'; paneMap.create.left.appendChild(booleanSeparateButton);
+  const booleanSeparateNote=document.createElement('p'); booleanSeparateNote.className='note'; booleanSeparateNote.textContent='Stellt die ursprünglichen Einzelobjekte einer verbundenen Form wieder her – auch nach dem Speichern und Öffnen.'; paneMap.create.left.appendChild(booleanSeparateNote);
   heading(paneMap.create.left,'Objektliste'); put(paneMap.create.left,'objects');
 
   heading(paneMap.draw.left,'2D-Skizze');
@@ -977,6 +980,8 @@ input:focus{outline:1px solid var(--cyan)}
     try {
       // Alle Geometrieoperationen erst vollständig berechnen, bevor die Szene verändert wird.
       let base = targets[0];
+      const unionParts = operation === 'union' ? targets.flatMap(obj => Array.isArray(obj.userData.unionParts) ? obj.userData.unionParts.map(part => JSON.parse(JSON.stringify(part))) : [serializeObjectForUnion(obj)]) : null;
+      if (unionParts && (unionParts.length < 2 || unionParts.length > 100)) throw new Error('Zu viele ursprüngliche Formteile für eine trennbare Verbindung.');
       let resultGeometry = base.geometry.clone();
       const tempBase = new THREE.Mesh(resultGeometry, base.material);
       tempBase.position.copy(base.position); tempBase.rotation.copy(base.rotation); tempBase.scale.copy(base.scale);
@@ -999,6 +1004,7 @@ input:focus{outline:1px solid var(--cyan)}
       mesh.userData.baseDimensions = {x:size.x,y:size.y,z:size.z};
       mesh.userData.percent = {x:100,y:100,z:100};
       mesh.userData.label = operation === 'union' ? 'Verbundene Form' : 'Ausgeschnittene Form';
+      if (unionParts) mesh.userData.unionParts = unionParts;
       scene.add(mesh); objects.push(mesh); selected = mesh; selectedObjects = [mesh];
       // Alte Geometrien/Materialien erst nach erfolgreichem Einsetzen freigeben.
       removed.forEach(obj => { obj.geometry.dispose(); if (Array.isArray(obj.material)) obj.material.forEach(m=>m.dispose()); else obj.material.dispose(); });
@@ -1176,6 +1182,54 @@ input:focus{outline:1px solid var(--cyan)}
     return geometry;
   }
 
+  function serializeObjectForUnion(obj) {
+    return {
+      label: obj.userData.label || 'Objekt', position: obj.position.toArray(), rotation: obj.rotation.toArray(), scale: obj.scale.toArray(),
+      color: '#' + obj.material.color.getHexString(),
+      baseDimensions: obj.userData.baseDimensions || {x:1,y:1,z:1},
+      percent: obj.userData.percent || {x:100,y:100,z:100},
+      locked: obj.userData.locked === true,
+      groupId: typeof obj.userData.groupId === 'string' ? obj.userData.groupId : null,
+      geometry: serializeGeometry(obj.geometry),
+      unionParts: Array.isArray(obj.userData.unionParts) ? obj.userData.unionParts.map(part => JSON.parse(JSON.stringify(part))) : null
+    };
+  }
+  function restoreObjectForUnion(item) {
+    if (!item || !item.geometry) throw new Error('Ein ursprünglicher Formteil ist unvollständig.');
+    const geometry = restoreGeometry(item.geometry);
+    const material = new THREE.MeshStandardMaterial({color:/^#[0-9a-f]{6}$/i.test(item.color||'')?item.color:'#4b91ed',roughness:0.5,metalness:0.05});
+    const mesh = new THREE.Mesh(geometry,material);
+    const position=Array.isArray(item.position)?item.position:[0,0,0], rotation=Array.isArray(item.rotation)?item.rotation:[0,0,0], scale=Array.isArray(item.scale)?item.scale:[1,1,1];
+    if ([position,rotation,scale].some((values,i)=>!Array.isArray(values)||values.length<3||values.slice(0,3).some(v=>!Number.isFinite(v)||Math.abs(v)>(i===2?1000:10000)||(i===2&&v===0)))) {
+      geometry.dispose(); material.dispose(); throw new Error('Ein ursprünglicher Formteil enthält ungültige Positionsdaten.');
+    }
+    mesh.position.fromArray(position); mesh.rotation.fromArray(rotation); mesh.scale.fromArray(scale);
+    geometry.computeBoundingBox(); const measured=new THREE.Vector3(); geometry.boundingBox.getSize(measured);
+    mesh.userData={
+      label:typeof item.label==='string'&&item.label?item.label:'Objekt',
+      baseDimensions:item.baseDimensions&&['x','y','z'].every(a=>Number.isFinite(item.baseDimensions[a]))?{x:item.baseDimensions.x,y:item.baseDimensions.y,z:item.baseDimensions.z}:{x:measured.x,y:measured.y,z:measured.z},
+      percent:item.percent&&['x','y','z'].every(a=>Number.isFinite(item.percent[a]))?{x:item.percent.x,y:item.percent.y,z:item.percent.z}:{x:100,y:100,z:100},
+      locked:item.locked===true,
+      groupId:typeof item.groupId==='string'&&/^[a-zA-Z0-9_-]{1,80}$/.test(item.groupId)?item.groupId:null
+    };
+    return mesh;
+  }
+  function splitBooleanUnion() {
+    const target=selectedObjects.length===1?selectedObjects[0]:selected, parts=target?.userData?.unionParts;
+    if(!target||!objects.includes(target)||!Array.isArray(parts)||parts.length<2){status.textContent='Keine trennbare Verbindung ausgewählt. Wähle zuerst eine verbundene Form aus.';return;}
+    if(objects.length-1+parts.length>100){status.textContent='Die Verbindung kann nicht getrennt werden: Es wären mehr als 100 Objekte im Projekt.';return;}
+    let restored=[];
+    try{restored=parts.map(restoreObjectForUnion);}catch(error){restored.forEach(obj=>{obj.geometry.dispose();obj.material.dispose();});status.textContent='Verbindung konnte nicht gelöst werden: '+(error.message||'Formdaten ungültig.');return;}
+    recordHistory(); scene.remove(target); const index=objects.indexOf(target); if(index>=0)objects.splice(index,1);
+    restored.forEach((obj,offset)=>{scene.add(obj);objects.splice(index+offset,0,obj);});
+    target.geometry.dispose(); if(Array.isArray(target.material))target.material.forEach(m=>m.dispose());else target.material.dispose();
+    selected=restored[0]||null;selectedObjects=selected?[selected]:[];individualGroupEdit=false;multiSelectMode=false;
+    const toggle=$('multiSelectToggle');if(toggle){toggle.textContent='☷ Mehrfachauswahl: AUS';toggle.setAttribute('aria-pressed','false');toggle.classList.remove('active');}
+    updateObjects();showProperties();updateMoveGizmo();
+    status.textContent='Verbindung gelöst: '+restored.length+' ursprüngliche Einzelobjekte wiederhergestellt.';
+    window.SILMO_DIAG?.log('VERBINDUNG GELÖST',{count:restored.length,labels:restored.map(obj=>obj.userData.label)});
+  }
+
   function saveProject() {
     try {
       const project = {
@@ -1194,6 +1248,7 @@ input:focus{outline:1px solid var(--cyan)}
           percent: obj.userData.percent || { x: 100, y: 100, z: 100 },
           locked: obj.userData.locked === true,
           groupId: typeof obj.userData.groupId === 'string' ? obj.userData.groupId : null,
+          unionParts: Array.isArray(obj.userData.unionParts) ? obj.userData.unionParts : null,
           geometry: serializeGeometry(obj.geometry)
         }))
       };
@@ -1255,8 +1310,13 @@ input:focus{outline:1px solid var(--cyan)}
               ? { x: item.percent.x, y: item.percent.y, z: item.percent.z }
               : { x: scale[0] * 100, y: scale[1] * 100, z: scale[2] * 100 },
             locked: item.locked === true,
-            groupId: typeof item.groupId === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(item.groupId) ? item.groupId : null
-          };
+            groupId: typeof item.groupId === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(item.groupId) ? item.groupId : null,
+             unionParts: Array.isArray(item.unionParts) && item.unionParts.length >= 2 && item.unionParts.length <= 100 ? item.unionParts.map(part => JSON.parse(JSON.stringify(part))) : null
+           };
+           if (Array.isArray(item.unionParts)) {
+             if (item.unionParts.length < 2 || item.unionParts.length > 100) { geometry.dispose(); material.dispose(); throw new Error('Ungültige Anzahl ursprünglicher Formteile.'); }
+             item.unionParts.forEach(part => { const check = restoreObjectForUnion(part); check.geometry.dispose(); check.material.dispose(); });
+           }
           return mesh;
         });
 
@@ -1585,6 +1645,7 @@ input:focus{outline:1px solid var(--cyan)}
       ? 'Mehrfachauswahl aktiv: Objekte in der Liste antippen, um sie hinzuzufügen oder abzuwählen.'
       : 'Mehrfachauswahl ausgeschaltet.';
   });
+  window.__silmoUnionSnapshot = () => ({partCount:Array.isArray(selected?.userData?.unionParts)?selected.userData.unionParts.length:0,objectCount:objects.length});
   window.__silmoGroupSnapshot = () => ({
     objectCount: objects.length,
     selectedCount: selectedObjects.length,
@@ -2217,6 +2278,7 @@ input:focus{outline:1px solid var(--cyan)}
 
   $('booleanUnion').addEventListener('click', () => runBooleanOperation('union'));
   $('booleanSubtract').addEventListener('click', () => runBooleanOperation('subtract'));
+  $('booleanSeparate').addEventListener('click', splitBooleanUnion);
 
   $('delete').onclick = deleteSelectedObjects;
 
