@@ -504,7 +504,7 @@ input:focus{outline:1px solid var(--cyan)}
   addCaseField('caseCameraWidth','Kameraöffnung Breite (mm)',22,8,40,0.5);
   addCaseField('caseCameraHeight','Kameraöffnung Höhe (mm)',22,8,40,0.5);
   const caseCreateButton=document.createElement('button');caseCreateButton.type='button';caseCreateButton.id='createPhoneCase';caseCreateButton.className='wide';caseCreateButton.textContent='＋ Handyhülle-Rohling erstellen';paneMap.create.left.appendChild(caseCreateButton);
-  caseCreateButton.addEventListener('click',()=>createPhoneCase({
+  caseCreateButton.addEventListener('click',()=>window.__silmoCreatePhoneCase?.({
     phoneWidth:Number(caseFields.casePhoneWidth.value),phoneLength:Number(caseFields.casePhoneLength.value),phoneThickness:Number(caseFields.casePhoneThickness.value),
     wallHeight:Number(caseFields.caseWallHeight.value),wallThickness:Number(caseFields.caseWallThickness.value),clearance:Number(caseFields.caseClearance.value),
     cornerRadius:Number(caseFields.caseCornerRadius.value),backThickness:Number(caseFields.caseBackThickness.value),
@@ -1740,6 +1740,7 @@ input:focus{outline:1px solid var(--cyan)}
       ? 'Mehrfachauswahl aktiv: Objekte in der Liste antippen, um sie hinzuzufügen oder abzuwählen.'
       : 'Mehrfachauswahl ausgeschaltet.';
   });
+  window.__silmoCreatePhoneCase=createPhoneCase;
   window.__silmoPhoneCaseSnapshot=()=>({objectCount:objects.length,selectedCount:selectedObjects.length,groupIds:[...new Set(objects.filter(o=>o.userData.phoneCaseComponent).map(o=>o.userData.groupId))],components:objects.filter(o=>o.userData.phoneCaseComponent).map(o=>({component:o.userData.phoneCaseComponent,label:o.userData.label,dimensions:o.userData.baseDimensions,spec:o.userData.phoneCaseSpec}))});
   window.__silmoUnionSnapshot = () => ({partCount:Array.isArray(selected?.userData?.unionParts)?selected.userData.unionParts.length:0,objectCount:objects.length});
   window.__silmoGroupSnapshot = () => ({
