@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v48 – Verbundene Formen wieder trennen</title>
+<title>SILMO 3D Studio AI – v49 – Handyhüllen-Grundwerkzeug</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v48 – Verbundene Formen wieder trennen">
+<meta name="silmo-build" content="v49 – Handyhüllen-Grundwerkzeug">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -151,7 +151,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v48 – Verbundene Formen wieder trennen -->
+<!-- SILMO BUILD: v49 – Handyhüllen-Grundwerkzeug -->
 <script id="silmoDeveloperDiagnostics">
 (function(){
   'use strict';
@@ -292,7 +292,7 @@ input:focus{outline:1px solid var(--cyan)}
         cssRuleCount=styles?styles.split('{').length-1:0;
         add('HINWEIS','Dieser Browser bietet keinen vollständigen CSS-Parser für die Zusatzprüfung; CSS-Regeln wurden gezählt.');
       }
-      ['#createObjectGroup','#ungroupObjects','#alignSelected','#booleanSeparate'].forEach(selector=>{if(!document.querySelector(selector))issues.push('App: Werkzeug '+selector+' wurde nicht initialisiert.');});
+      ['#createObjectGroup','#ungroupObjects','#alignSelected','#booleanSeparate','#createPhoneCase','#casePhoneWidth','#casePhoneLength','#caseCameraWidth'].forEach(selector=>{if(!document.querySelector(selector))issues.push('App: Werkzeug '+selector+' wurde nicht initialisiert.');});
       if(!window.THREE)issues.push('3D: Three.js ist nicht geladen.');
       else{
         if(!window.THREE.STLLoader)issues.push('3D: STLLoader ist nicht geladen.');
@@ -484,6 +484,27 @@ input:focus{outline:1px solid var(--cyan)}
 
   heading(paneMap.create.left,'Objekte');
   ['addCube','addSphere','addCylinder','duplicate'].forEach(id=>put(paneMap.create.left,id));
+  heading(paneMap.create.left,'Parametrische Handyhülle');
+  const caseIntro=document.createElement('p');caseIntro.className='note';caseIntro.textContent='Erzeuge einen ersten, anpassbaren Hüllen-Rohling. Die Masse sind frei einstellbar; das genaue Handy-Modell, Tasten- und Ladeanschlüsse ergänzen wir später.';paneMap.create.left.appendChild(caseIntro);
+  const caseFields={};
+  const addCaseField=(id,label,value,min,max,step)=>{
+    const wrap=document.createElement('div');wrap.className='field';
+    const caption=document.createElement('label');caption.htmlFor=id;caption.textContent=label;
+    const input=document.createElement('input');input.id=id;input.type='number';input.min=String(min);input.max=String(max);input.step=String(step);input.value=String(value);input.inputMode='decimal';
+    wrap.append(caption,input);paneMap.create.left.appendChild(wrap);caseFields[id]=input;
+  };
+  addCaseField('casePhoneWidth','Handybreite (mm)',72,35,120,0.1);
+  addCaseField('casePhoneLength','Handylänge (mm)',150,70,250,0.1);
+  addCaseField('casePhoneThickness','Handydicke (mm)',8,4,25,0.1);
+  addCaseField('caseWallHeight','Höhe der Seitenwand (mm)',10,5,25,0.1);
+  addCaseField('caseWallThickness','Wandstärke (mm)',1.8,1,4,0.1);
+  addCaseField('caseClearance','Spiel für Passform (mm)',0.4,0.1,1.5,0.1);
+  addCaseField('caseCornerRadius','Eckenradius (mm)',8,2,20,0.5);
+  addCaseField('caseBackThickness','Rückwanddicke (mm)',1.4,0.8,3,0.1);
+  addCaseField('caseCameraWidth','Kameraöffnung Breite (mm)',22,8,40,0.5);
+  addCaseField('caseCameraHeight','Kameraöffnung Höhe (mm)',22,8,40,0.5);
+  const caseCreateButton=document.createElement('button');caseCreateButton.type='button';caseCreateButton.id='createPhoneCase';caseCreateButton.className='wide';caseCreateButton.textContent='＋ Handyhülle-Rohling erstellen';paneMap.create.left.appendChild(caseCreateButton);
+  const caseStatus=document.createElement('p');caseStatus.id='phoneCaseHelp';caseStatus.className='note';caseStatus.textContent='Erstellt Rückwand und Seitenwände als zusammengehörige, einzeln bearbeitbare Teile mit Kameraöffnung.';paneMap.create.left.appendChild(caseStatus);
   heading(paneMap.create.left,'Formen kombinieren');
   const booleanHelp=document.createElement('p'); booleanHelp.className='note'; booleanHelp.textContent='Wähle mindestens zwei Objekte in der Objektliste. Mit Strg-Klick kannst du mehrere auswählen. Das erste ausgewählte Objekt ist die Grundform.'; paneMap.create.left.appendChild(booleanHelp);
   ['booleanUnion','booleanSubtract'].forEach(id=>put(paneMap.create.left,id));
@@ -1012,6 +1033,81 @@ input:focus{outline:1px solid var(--cyan)}
     } catch (error) {
       console.error('CSG-Operation fehlgeschlagen:', error);
       status.textContent = 'Formen konnten nicht kombiniert werden: ' + (error.message || 'Geometrie prüfen.');
+    }
+  }
+
+  function addRoundedRectPath(path,width,height,radius,offsetX=0,offsetY=0,reverse=false){
+    const hw=width/2,hh=height/2,r=Math.min(Math.max(0.01,radius),hw,hh);
+    if(!reverse){
+      path.moveTo(offsetX-hw+r,offsetY-hh);path.lineTo(offsetX+hw-r,offsetY-hh);path.quadraticCurveTo(offsetX+hw,offsetY-hh,offsetX+hw,offsetY-hh+r);
+      path.lineTo(offsetX+hw,offsetY+hh-r);path.quadraticCurveTo(offsetX+hw,offsetY+hh,offsetX+hw-r,offsetY+hh);
+      path.lineTo(offsetX-hw+r,offsetY+hh);path.quadraticCurveTo(offsetX-hw,offsetY+hh,offsetX-hw,offsetY+hh-r);
+      path.lineTo(offsetX-hw,offsetY-hh+r);path.quadraticCurveTo(offsetX-hw,offsetY-hh,offsetX-hw+r,offsetY-hh);
+    }else{
+      path.moveTo(offsetX-hw+r,offsetY-hh);path.quadraticCurveTo(offsetX-hw,offsetY-hh,offsetX-hw,offsetY-hh+r);
+      path.lineTo(offsetX-hw,offsetY+hh-r);path.quadraticCurveTo(offsetX-hw,offsetY+hh,offsetX-hw+r,offsetY+hh);
+      path.lineTo(offsetX+hw-r,offsetY+hh);path.quadraticCurveTo(offsetX+hw,offsetY+hh,offsetX+hw,offsetY+hh-r);
+      path.lineTo(offsetX+hw,offsetY-hh+r);path.quadraticCurveTo(offsetX+hw,offsetY-hh,offsetX+hw-r,offsetY-hh);
+      path.lineTo(offsetX-hw+r,offsetY-hh);
+    }
+  }
+
+  function createPhoneCase(){
+    const read=(id)=>Number(caseFields[id]?.value);
+    const spec={
+      phoneWidth:read('casePhoneWidth'),phoneLength:read('casePhoneLength'),phoneThickness:read('casePhoneThickness'),
+      wallHeight:read('caseWallHeight'),wallThickness:read('caseWallThickness'),clearance:read('caseClearance'),
+      cornerRadius:read('caseCornerRadius'),backThickness:read('caseBackThickness'),
+      cameraWidth:read('caseCameraWidth'),cameraHeight:read('caseCameraHeight')
+    };
+    const limits={
+      phoneWidth:[35,120],phoneLength:[70,250],phoneThickness:[4,25],wallHeight:[5,25],
+      wallThickness:[1,4],clearance:[0.1,1.5],cornerRadius:[2,20],backThickness:[0.8,3],
+      cameraWidth:[8,40],cameraHeight:[8,40]
+    };
+    for(const [key,[min,max]] of Object.entries(limits)){
+      if(!Number.isFinite(spec[key])||spec[key]<min||spec[key]>max){
+        status.textContent='Ungültiger Wert: Bitte '+key+' zwischen '+min+' und '+max+' mm eingeben.';return;
+      }
+    }
+    const innerW=spec.phoneWidth+2*spec.clearance,innerL=spec.phoneLength+2*spec.clearance;
+    const outerW=innerW+2*spec.wallThickness,outerL=innerL+2*spec.wallThickness;
+    if(spec.wallThickness*2>=Math.min(innerW,innerL)||spec.cameraWidth>outerW-12||spec.cameraHeight>outerL-12||
+      spec.cornerRadius*2>=Math.min(outerW,outerL)){
+      status.textContent='Diese Kombination passt geometrisch nicht. Prüfe Wandstärke, Eckenradius und Kameraöffnung.';return;
+    }
+    const cameraX=-outerW/2+6+spec.cameraWidth/2;
+    const cameraY=outerL/2-6-spec.cameraHeight/2;
+    let backGeometry=null,wallGeometry=null,material=null;
+    try{
+      const backShape=new THREE.Shape();addRoundedRectPath(backShape,outerW,outerL,spec.cornerRadius);
+      const cameraHole=new THREE.Path();addRoundedRectPath(cameraHole,spec.cameraWidth,spec.cameraHeight,Math.min(2,spec.cameraWidth/4,spec.cameraHeight/4),cameraX,cameraY,true);
+      backShape.holes.push(cameraHole);
+      backGeometry=new THREE.ExtrudeGeometry(backShape,{depth:spec.backThickness,bevelEnabled:false,curveSegments:8});
+      const wallShape=new THREE.Shape();addRoundedRectPath(wallShape,outerW,outerL,spec.cornerRadius);
+      const cavity=new THREE.Path();addRoundedRectPath(cavity,innerW,innerL,Math.max(1,spec.cornerRadius-spec.wallThickness),0,0,true);
+      wallShape.holes.push(cavity);
+      wallGeometry=new THREE.ExtrudeGeometry(wallShape,{depth:spec.wallHeight,bevelEnabled:false,curveSegments:8});
+      backGeometry.computeVertexNormals();wallGeometry.computeVertexNormals();
+      material=new THREE.MeshStandardMaterial({color:0x4b91ed,roughness:0.58,metalness:0.02,side:THREE.DoubleSide});
+      const backMesh=new THREE.Mesh(backGeometry,material.clone());
+      const wallMesh=new THREE.Mesh(wallGeometry,material.clone());
+      wallMesh.position.z=spec.backThickness;
+      const groupId='case_'+Math.random().toString(36).slice(2,12);
+      const setData=(mesh,label,geometry,component)=>{
+        geometry.computeBoundingBox();const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
+        mesh.userData={label,baseDimensions:{x:size.x,y:size.y,z:size.z},percent:{x:100,y:100,z:100},groupId,phoneCaseComponent:component,phoneCaseSpec:{...spec}};
+      };
+      setData(backMesh,'Handyhülle – Rückwand',backGeometry,'back');
+      setData(wallMesh,'Handyhülle – Seitenwände',wallGeometry,'walls');
+      recordHistory();scene.add(backMesh);scene.add(wallMesh);objects.push(backMesh,wallMesh);
+      selectObject(wallMesh);
+      status.textContent='Handyhülle-Rohling erstellt: Rückwand und Seitenwände sind zusammen gruppiert. Prüfe vor dem Druck die Passform.';
+      window.SILMO_DIAG?.log('HANDYHÜLLE ERSTELLT',{...spec,outerWidth:outerW,outerLength:outerL});
+    }catch(error){
+      if(backGeometry)backGeometry.dispose();if(wallGeometry)wallGeometry.dispose();if(material)material.dispose();
+      console.error('Handyhülle konnte nicht erstellt werden:',error);
+      status.textContent='Handyhülle konnte nicht erstellt werden: '+(error.message||'Geometrie prüfen.');
     }
   }
 
@@ -1644,6 +1740,8 @@ input:focus{outline:1px solid var(--cyan)}
       ? 'Mehrfachauswahl aktiv: Objekte in der Liste antippen, um sie hinzuzufügen oder abzuwählen.'
       : 'Mehrfachauswahl ausgeschaltet.';
   });
+  window.__silmoPhoneCaseSnapshot=()=>({objectCount:objects.length,selectedCount:selectedObjects.length,groupIds:[...new Set(objects.filter(o=>o.userData.phoneCaseComponent).map(o=>o.userData.groupId))],components:objects.filter(o=>o.userData.phoneCaseComponent).map(o=>({component:o.userData.phoneCaseComponent,label:o.userData.label,dimensions:o.userData.baseDimensions,spec:o.userData.phoneCaseSpec}))});
+  $('createPhoneCase').addEventListener('click',createPhoneCase);
   window.__silmoUnionSnapshot = () => ({partCount:Array.isArray(selected?.userData?.unionParts)?selected.userData.unionParts.length:0,objectCount:objects.length});
   window.__silmoGroupSnapshot = () => ({
     objectCount: objects.length,
