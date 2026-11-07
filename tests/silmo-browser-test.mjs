@@ -288,7 +288,9 @@ try {
   // Boolesche Verbindung muss sich wieder in die ursprünglichen Formen zerlegen lassen.
   const unionStartCount=await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click(); await page.locator('#addSphere').click();
+  await page.locator('[data-tab="edit"]').click();
   await page.locator('#multiSelectToggle').click();
+  await page.locator('[data-tab="create"]').click();
   await page.locator('#objects .object-select').nth(unionStartCount).click();
   assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(),2,'Union-Test konnte nicht beide Formen auswählen');
   await page.locator('#booleanUnion').click();
