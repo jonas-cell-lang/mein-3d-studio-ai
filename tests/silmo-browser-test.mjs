@@ -156,6 +156,15 @@ try {
             'Drehung über das Zahlenfeld verändert die Objektrotation nicht');
   assert.match(await page.locator('#status').innerText(), /Drehung um X auf 45° gesetzt/, 'Zahlenfeld meldet die gesetzte Drehung nicht');
 
+  // Verschieben und Drehen müssen getrennte Modi sein: standardmässig
+  // erscheinen die Pfeile, erst nach dem Umschalten die Drehringe.
+  const gizmoModeToggle = page.locator('#gizmoModeToggle');
+  assert.equal(await gizmoModeToggle.getAttribute('aria-pressed'), 'false', 'Verschieben muss der Standardmodus sein');
+  assert.equal(await page.evaluate(() => window.__silmoTutorialRotationRingPoint('z', 0.45)), null, 'Drehringe dürfen im Verschieben-Modus nicht aktiv sein');
+  await gizmoModeToggle.click();
+  assert.equal(await gizmoModeToggle.getAttribute('aria-pressed'), 'true', 'Umschalten auf Drehen funktioniert nicht');
+  assert.ok(await page.evaluate(() => window.__silmoTutorialRotationRingPoint('z', 0.45)), 'Drehringe werden nach dem Umschalten nicht angezeigt');
+
   // Einen Ring wirklich mit der Maus ziehen. Das Modell darunter darf dabei
   // nicht neu ausgewählt werden und seine Rotation muss sich ändern.
   const selectedBeforeRing = await page.locator('#objects .object-select[aria-pressed="true"]').evaluate(el => el.dataset.objectId);
@@ -176,9 +185,12 @@ try {
             Math.abs(afterRingRotation.qz - beforeRingRotation.qz) > 0.01 ||
             Math.abs(afterRingRotation.qw - beforeRingRotation.qw) > 0.01,
             'Ziehen am Drehring verändert die Objektrotation nicht');
+  await gizmoModeToggle.click();
+  assert.equal(await gizmoModeToggle.getAttribute('aria-pressed'), 'false', 'Zurückschalten auf Verschieben funktioniert nicht');
+  assert.equal(await page.evaluate(() => window.__silmoTutorialRotationRingPoint('z', 0.45)), null, 'Drehringe bleiben nach dem Zurückschalten aktiv');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
-  console.log('BESTANDEN: 3D-Start, Objekterstellung, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, numerische Drehung und Drehring.');
+  console.log('BESTANDEN: 3D-Start, Objekterstellung, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, numerische Drehung, Moduswechsel und Drehring.');
   console.log(JSON.stringify({ canvasSize, beforeAlign, afterAlign, selectedCount, alignStatus }));
 } catch (error) {
   console.error('BROWSERTEST FEHLGESCHLAGEN:', error);
