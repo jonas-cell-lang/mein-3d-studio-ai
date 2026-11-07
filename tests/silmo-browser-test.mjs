@@ -14,9 +14,10 @@ try {
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
   assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v46/, 'Build-Metadaten zeigen nicht v46');
-  assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freie 2D-Skizze/, 'Schnellhilfe erklärt die neue Freiform nicht');
-  assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Präzise zeichnen/, 'Schnellhilfe erklärt den Rasterfang nicht');
-  assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Neue 2D-Formen/, 'Schnellhilfe erklärt Ellipse und Dreieck nicht');
+  assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
+  assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
+  assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
+  assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Rasterfang/, 'Visuelle Übersicht zeigt keinen Rasterfang');
   await page.waitForTimeout(1500);
 
   // Prüftool: Strg+Leertaste öffnet es und startet automatisch die vollständige Codeprüfung.
