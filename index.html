@@ -1731,6 +1731,9 @@ input:focus{outline:1px solid var(--cyan)}
     rotationGizmo.position.copy(getSelectionCenter(targets));
     rotationGizmo.userData.isRotationGizmo = true;
     scene.add(rotationGizmo);
+    // updateRotationGizmo kann während des Ziehens neu aufbauen; die aktive
+    // Achse muss danach sofort wieder auf Ring, Leuchthof und Linie angewendet werden.
+    if (activeRotationAxis) setRotationGuideAxis(activeRotationAxis);
   }
 
   function setRotationGuideAxis(axis) {
