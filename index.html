@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v46 – Zeichenwerkzeuge und Lernführung</title>
+<title>SILMO 3D Studio AI – v47 – Präzises Zeichnen mit Raster und Druckplattenbegrenzung</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v46 – Zeichenwerkzeuge und Lernführung">
+<meta name="silmo-build" content="v47 – Präzises Zeichnen mit Raster und Druckplattenbegrenzung">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -151,7 +151,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v39 – Ausrichten und Verteilen erweitert; Statusanzeige in allen Werkzeugreitern -->
+<!-- SILMO BUILD: v47 – Präzises Zeichnen mit Raster und Druckplattenbegrenzung -->
 <script id="silmoDeveloperDiagnostics">
 (function(){
   'use strict';
@@ -501,8 +501,8 @@ input:focus{outline:1px solid var(--cyan)}
   const sketchSnapEnabled=document.createElement('input'); sketchSnapEnabled.id='sketchSnapEnabled'; sketchSnapEnabled.type='checkbox'; sketchSnapEnabled.checked=false;
   sketchSnapWrap.append(sketchSnapLabel,sketchSnapEnabled); paneMap.draw.left.appendChild(sketchSnapWrap);
   const sketchGridWrap=document.createElement('div'); sketchGridWrap.className='field';
-  const sketchGridLabel=document.createElement('label'); sketchGridLabel.htmlFor='sketchGridMM'; sketchGridLabel.textContent='Rasterabstand (mm)';
-  const sketchGridMM=document.createElement('input'); sketchGridMM.id='sketchGridMM'; sketchGridMM.type='number'; sketchGridMM.min='0.1'; sketchGridMM.max='100'; sketchGridMM.step='0.1'; sketchGridMM.value='1';
+  const sketchGridLabel=document.createElement('label'); sketchGridLabel.htmlFor='sketchGridMM'; sketchGridLabel.textContent='Rasterweite (mm)';
+  const sketchGridMM=document.createElement('input'); sketchGridMM.id='sketchGridMM'; sketchGridMM.type='number'; sketchGridMM.min='0.1'; sketchGridMM.max='100'; sketchGridMM.step='0.1'; sketchGridMM.value='10';
   sketchGridWrap.append(sketchGridLabel,sketchGridMM); paneMap.draw.left.appendChild(sketchGridWrap);
   const sketchPlaneWrap=document.createElement('div'); sketchPlaneWrap.className='field'; sketchPlaneWrap.id='sketchPlaneWrap';
   const sketchPlaneLabel=document.createElement('label'); sketchPlaneLabel.htmlFor='sketchPlaneSelect'; sketchPlaneLabel.textContent='Zeichenebene für 3D-Linie';
@@ -739,14 +739,32 @@ input:focus{outline:1px solid var(--cyan)}
   let bedWidthMM = 200, bedDepthMM = 200;
   let grid = null, bedOutline = null;
   function rebuildBed() {
-    if (grid) { scene.remove(grid); grid.geometry.dispose(); grid.material.dispose(); }
+    if (grid) {
+      scene.remove(grid);
+      grid.traverse(child => { if (child.geometry) child.geometry.dispose(); if (child.material) (Array.isArray(child.material) ? child.material : [child.material]).forEach(material => material.dispose()); });
+    }
     if (bedOutline) { scene.remove(bedOutline); bedOutline.geometry.dispose(); bedOutline.material.dispose(); }
     const w = bedWidthMM / MM_PER_UNIT, d = bedDepthMM / MM_PER_UNIT;
-    const divisions = Math.max(2, Math.min(400, Math.round(Math.max(bedWidthMM, bedDepthMM) / 10)));
-    grid = new THREE.GridHelper(Math.max(w, d), divisions, 0x526987, 0x29364a);
-    grid.rotation.x = Math.PI / 2;
-    grid.scale.set(w / Math.max(w, d), 1, d / Math.max(w, d));
-    grid.position.set(0, 0, 0);
+    const requestedStepMM = Number(document.getElementById('sketchGridMM')?.value);
+    const spacingMM = Number.isFinite(requestedStepMM) && requestedStepMM >= 0.1 && requestedStepMM <= 100 ? requestedStepMM : 10;
+    const maxIntervals = 1200;
+    const stride = Math.max(1, Math.ceil(Math.max(bedWidthMM, bedDepthMM) / spacingMM / maxIntervals));
+    const visualStepMM = spacingMM * stride;
+    const step = visualStepMM / MM_PER_UNIT;
+    const vertices = [];
+    const halfW = w / 2, halfD = d / 2;
+    for (let x = -Math.floor(halfW / step) * step; x <= halfW + 1e-8; x += step) {
+      vertices.push(x, -halfD, 0.003, x, halfD, 0.003);
+    }
+    for (let y = -Math.floor(halfD / step) * step; y <= halfD + 1e-8; y += step) {
+      vertices.push(-halfW, y, 0.003, halfW, y, 0.003);
+    }
+    const gridGeometry = new THREE.BufferGeometry();
+    gridGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    grid = new THREE.LineSegments(gridGeometry, new THREE.LineBasicMaterial({ color: 0x526987, transparent: true, opacity: 0.72 }));
+    grid.userData.spacingMM = spacingMM;
+    grid.userData.visualSpacingMM = visualStepMM;
+    grid.userData.lineCount = vertices.length / 6;
     scene.add(grid);
     const pts = [new THREE.Vector3(-w/2,-d/2,0.005),new THREE.Vector3(w/2,-d/2,0.005),new THREE.Vector3(w/2,d/2,0.005),new THREE.Vector3(-w/2,d/2,0.005)];
     const geom = new THREE.BufferGeometry().setFromPoints(pts);
@@ -2264,20 +2282,35 @@ input:focus{outline:1px solid var(--cyan)}
       sketchPreview = null;
     }
   }
-  function snapSketchPoint(point) {
-    if (!document.getElementById('sketchSnapEnabled')?.checked) return point;
-    const stepMM = Number(document.getElementById('sketchGridMM')?.value);
-    if (!Number.isFinite(stepMM) || stepMM < 0.1 || stepMM > 100) {
-      document.getElementById('sketchStatus').textContent = 'Der Rasterabstand muss zwischen 0,1 und 100 mm liegen.';
-      return point;
-    }
-    const step = stepMM / MM_PER_UNIT;
-    point.set(
-      Math.round(point.x / step) * step,
-      Math.round(point.y / step) * step,
-      Math.round(point.z / step) * step
-    );
+  function clampSketchPoint(point, marginMM = 0) {
+    const margin = Math.max(0, Math.min(marginMM / MM_PER_UNIT, bedWidthMM / (2 * MM_PER_UNIT), bedDepthMM / (2 * MM_PER_UNIT)));
+    const halfW = bedWidthMM / (2 * MM_PER_UNIT);
+    const halfD = bedDepthMM / (2 * MM_PER_UNIT);
+    point.x = Math.max(-halfW + margin, Math.min(halfW - margin, point.x));
+    point.y = Math.max(-halfD + margin, Math.min(halfD - margin, point.y));
     return point;
+  }
+  function sketchDrawingMarginMM() {
+    const tool = document.getElementById('sketchTool')?.value;
+    return ['line3d','line2d','curve2d'].includes(tool)
+      ? Math.max(0, Number(document.getElementById('sketchDiameterMM')?.value || 0) / 2)
+      : 0;
+  }
+  function snapSketchPoint(point) {
+    if (document.getElementById('sketchSnapEnabled')?.checked) {
+      const stepMM = Number(document.getElementById('sketchGridMM')?.value);
+      if (!Number.isFinite(stepMM) || stepMM < 0.1 || stepMM > 100) {
+        document.getElementById('sketchStatus').textContent = 'Die Rasterweite muss zwischen 0,1 und 100 mm liegen.';
+        return clampSketchPoint(point, sketchDrawingMarginMM());
+      }
+      const step = stepMM / MM_PER_UNIT;
+      point.set(
+        Math.round(point.x / step) * step,
+        Math.round(point.y / step) * step,
+        Math.round(point.z / step) * step
+      );
+    }
+    return clampSketchPoint(point, sketchDrawingMarginMM());
   }
   function sketchDimensionsFromInputs() {
     const widthMM = Number(document.getElementById('sketchWidthMM')?.value);
@@ -2425,7 +2458,7 @@ input:focus{outline:1px solid var(--cyan)}
       const dx = sketchPoint.x - sketchStart.x, dy = sketchPoint.y - sketchStart.y;
       const width = Math.abs(dx), depth = Math.abs(dy);
       const tool = document.getElementById('sketchTool').value;
-      const size = tool === 'circle' ? Math.max(width, depth) : null;
+      const size = tool === 'circle' ? Math.min(width, depth) : null;
       const actualWidth = tool === 'circle' ? size : width;
       const actualDepth = tool === 'circle' ? size : depth;
       if (actualWidth >= 0.01 && actualDepth >= 0.01) {
@@ -2547,6 +2580,16 @@ input:focus{outline:1px solid var(--cyan)}
       }
       geometry.computeBoundingBox();
       geometry.computeBoundingSphere();
+      const worldSketchBounds = geometry.boundingBox.clone().translate(meshPosition);
+      const halfBedW = bedWidthMM / (2 * MM_PER_UNIT);
+      const halfBedD = bedDepthMM / (2 * MM_PER_UNIT);
+      const bedTolerance = 1e-5;
+      if (worldSketchBounds.min.x < -halfBedW - bedTolerance ||
+          worldSketchBounds.max.x > halfBedW + bedTolerance ||
+          worldSketchBounds.min.y < -halfBedD - bedTolerance ||
+          worldSketchBounds.max.y > halfBedD + bedTolerance) {
+        throw new Error('Die Skizze liegt ausserhalb der Druckplatte. Verkleinere sie oder zeichne näher zur Mitte.');
+      }
       const size = new THREE.Vector3();
       geometry.boundingBox.getSize(size);
       recordHistory();
@@ -2609,6 +2652,18 @@ input:focus{outline:1px solid var(--cyan)}
   });
   ['sketchWidthMM','sketchDepthMM','sketchHeightMM'].forEach(id =>
     document.getElementById(id).addEventListener('input', refreshSketchDraftFromInputs));
+  document.getElementById('sketchGridMM').addEventListener('input', () => {
+    const value = Number(document.getElementById('sketchGridMM').value);
+    if (Number.isFinite(value) && value >= 0.1 && value <= 100) {
+      rebuildBed();
+      document.getElementById('sketchStatus').textContent = 'Rasterweite auf ' + value.toFixed(value % 1 ? 1 : 0) + ' mm gesetzt.';
+    }
+  });
+  document.getElementById('sketchSnapEnabled').addEventListener('change', () => {
+    document.getElementById('sketchStatus').textContent = document.getElementById('sketchSnapEnabled').checked
+      ? 'Rasterfang aktiv: Zeichenpunkte rasten auf ' + Number(document.getElementById('sketchGridMM').value) + ' mm ein.'
+      : 'Rasterfang aus: Du kannst frei innerhalb der Druckplatte zeichnen.';
+  });
   function updateSketchToolFields() {
     const tool = document.getElementById('sketchTool').value;
     const is3DLine = tool === 'line3d';
@@ -2646,6 +2701,15 @@ input:focus{outline:1px solid var(--cyan)}
     const rect = canvas.getBoundingClientRect();
     return { x: rect.left + (point.x + 1) * rect.width / 2, y: rect.top + (1 - point.y) * rect.height / 2 };
   };
+  window.__silmoSketchClampPointForTest = (x, y, z=0) => {
+    const point = clampSketchPoint(new THREE.Vector3(x, y, z));
+    return { x: point.x, y: point.y, z: point.z };
+  };
+  window.__silmoSketchGridSnapshot = () => ({
+    spacingMM: grid?.userData?.spacingMM ?? null,
+    visualSpacingMM: grid?.userData?.visualSpacingMM ?? null,
+    lineCount: grid?.userData?.lineCount ?? 0
+  });
   window.__silmoSketchCameraLockSnapshot = () => ({ active: sketchMode, targetRX, targetRY, rotatingView, gizmoMode, rotateButtonDisabled: $('gizmoModeToggle').disabled, rotationInputHidden: rotationAngleLabel.hidden });
   window.__silmoSketchDraftSnapshot = () => sketchDraft ? ({ type: sketchDraft.type, pointCount: sketchDraft.points?.length || 0 }) : null;
   window.__silmoSketchSnapshot = () => {
@@ -2814,7 +2878,7 @@ input:focus{outline:1px solid var(--cyan)}
         } else {
           const dx = sketchPoint.x - sketchStart.x, dy = sketchPoint.y - sketchStart.y;
           const width = Math.abs(dx), depth = Math.abs(dy);
-          const diameter = Math.max(width, depth);
+          const diameter = Math.min(width, depth);
           sketchDraft = {
             centerX: (sketchStart.x + sketchPoint.x) / 2,
             centerY: (sketchStart.y + sketchPoint.y) / 2,

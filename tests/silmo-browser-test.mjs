@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v46/, 'Build-Metadaten zeigen nicht v46');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v47/, 'Build-Metadaten zeigen nicht v47');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -159,6 +159,21 @@ try {
   assert.ok(Math.abs(triangleSnapshot.actualWidthMM - 24) < 0.01, 'Dreiecksbreite stimmt nicht');
   assert.ok(Math.abs(triangleSnapshot.actualDepthMM - 18) < 0.01, 'Dreieckstiefe stimmt nicht');
   assert.ok(Math.abs(triangleSnapshot.actualHeightMM - 6) < 0.01, 'Dreieckshöhe stimmt nicht');
+
+  // Das sichtbare Druckplattenraster muss dieselbe einstellbare Weite verwenden.
+  await page.locator('#sketchGridMM').fill('2');
+  const gridAt2 = await page.evaluate(() => window.__silmoSketchGridSnapshot());
+  assert.equal(gridAt2.spacingMM, 2, 'Rasterweite 2 mm wird nicht übernommen');
+  assert.equal(gridAt2.visualSpacingMM, 2, 'Sichtbares Raster aktualisiert sich nicht auf 2 mm');
+  await page.locator('#sketchGridMM').fill('5');
+  const gridAt5 = await page.evaluate(() => window.__silmoSketchGridSnapshot());
+  assert.equal(gridAt5.spacingMM, 5, 'Rasterweite 5 mm wird nicht übernommen');
+  assert.equal(gridAt5.visualSpacingMM, 5, 'Sichtbares Raster aktualisiert sich nicht auf 5 mm');
+
+  // Zeichenpunkte werden an allen vier Seiten auf die tatsächliche Druckplatte begrenzt.
+  const boundedPoint = await page.evaluate(() => window.__silmoSketchClampPointForTest(25, -25, 0));
+  assert.ok(Math.abs(boundedPoint.x) <= 10.00001, 'Zeichenpunkt kann über die X-Grenze der 200-mm-Druckplatte hinaus');
+  assert.ok(Math.abs(boundedPoint.y) <= 10.00001, 'Zeichenpunkt kann über die Y-Grenze der 200-mm-Druckplatte hinaus');
 
   // Rasterfang: gezeichnete Rechteckkanten werden auf das gewählte 5-mm-Raster gesetzt.
   await page.locator('#sketchTool').selectOption('rectangle');
