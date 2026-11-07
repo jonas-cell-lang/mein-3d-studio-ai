@@ -507,7 +507,7 @@ input:focus{outline:1px solid var(--cyan)}
   const sketchHeightLabel=document.createElement('label'); sketchHeightLabel.htmlFor='sketchHeightMM'; sketchHeightLabel.textContent='Extrusionshöhe Z (mm)';
   const sketchHeight=document.createElement('input'); sketchHeight.id='sketchHeightMM'; sketchHeight.type='number'; sketchHeight.min='0.1'; sketchHeight.max='2000'; sketchHeight.step='0.1'; sketchHeight.value='10';
   sketchHeightWrap.append(sketchHeightLabel,sketchHeight); paneMap.draw.left.appendChild(sketchHeightWrap);
-  const startSketchButton=document.createElement('button'); startSketchButton.type='button'; startSketchButton.id='startSketch'; startSketchButton.className='wide primary'; startSketchButton.textContent='✎ 2D-Zeichnen starten'; paneMap.draw.left.appendChild(startSketchButton);
+  const startSketchButton=document.createElement('button'); startSketchButton.type='button'; startSketchButton.id='startSketch'; startSketchButton.className='wide primary'; startSketchButton.textContent='✎ Zeichnen starten'; paneMap.draw.left.appendChild(startSketchButton);
   const createSketchButton=document.createElement('button'); createSketchButton.type='button'; createSketchButton.id='createSketchSolid'; createSketchButton.className='wide'; createSketchButton.textContent='▰ Als 3D-Körper erstellen'; createSketchButton.disabled=true; paneMap.draw.left.appendChild(createSketchButton);
   const cancelSketchButton=document.createElement('button'); cancelSketchButton.type='button'; cancelSketchButton.id='cancelSketch'; cancelSketchButton.className='wide'; cancelSketchButton.textContent='Skizze abbrechen'; cancelSketchButton.disabled=true; paneMap.draw.left.appendChild(cancelSketchButton);
   const sketchStatus=document.createElement('p'); sketchStatus.id='sketchStatus'; sketchStatus.className='note'; sketchStatus.setAttribute('aria-live','polite'); sketchStatus.textContent='Noch keine Skizze. Wähle ein 2D-Werkzeug oder eine 3D-Linie und starte den Zeichenmodus.'; paneMap.draw.left.appendChild(sketchStatus);
@@ -2446,7 +2446,7 @@ input:focus{outline:1px solid var(--cyan)}
       document.getElementById('createSketchSolid').disabled = true;
       document.getElementById('cancelSketch').disabled = true;
       document.getElementById('sketchStatus').textContent = '3D-Körper erstellt. Du kannst ihn jetzt wie jedes andere Objekt bearbeiten.';
-      status.textContent = '2D-Skizze erfolgreich zu einem 3D-Körper extrudiert.';
+      status.textContent = tool === 'line3d' ? '3D-Linie erfolgreich in einen räumlichen Körper umgewandelt.' : '2D-Skizze erfolgreich zu einem 3D-Körper extrudiert.';
     } catch (error) {
       status.textContent = 'Skizze konnte nicht erstellt werden: ' + (error.message || 'Eingaben prüfen.');
     }
@@ -2494,7 +2494,11 @@ input:focus{outline:1px solid var(--cyan)}
   });
   document.getElementById('sketchPlaneSelect').addEventListener('change', () => {
     updateSketchPlaneFromUI();
-    document.getElementById('sketchStatus').textContent = 'Zeichenebene geändert. Die nächste 3D-Linie wird auf dieser Ebene gezeichnet.';
+    sketchDraft = null;
+    clearSketchPreview();
+    document.getElementById('createSketchSolid').disabled = true;
+    document.getElementById('cancelSketch').disabled = true;
+    document.getElementById('sketchStatus').textContent = 'Zeichenebene geändert. Starte eine neue 3D-Linie auf dieser Ebene.';
   });
   document.getElementById('sketchDepthMM').closest('.field').hidden = false;
   updateSketchToolFields();
