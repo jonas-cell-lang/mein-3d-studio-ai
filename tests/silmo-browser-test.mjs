@@ -13,8 +13,9 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v43/, 'Build-Metadaten zeigen nicht v43');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v44/, 'Build-Metadaten zeigen nicht v43');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freie 2D-Skizze/, 'Schnellhilfe erklärt die neue Freiform nicht');
+  assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Präzise zeichnen/, 'Schnellhilfe erklärt den Rasterfang nicht');
   await page.waitForTimeout(1500);
 
   // Prüftool: Strg+Leertaste öffnet es und startet automatisch die vollständige Codeprüfung.
