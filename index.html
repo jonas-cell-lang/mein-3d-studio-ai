@@ -103,7 +103,7 @@ input:focus{outline:1px solid var(--cyan)}
 .tutorial-highlight{position:relative!important;z-index:10020!important;outline:3px solid #ffd54a!important;outline-offset:3px!important;box-shadow:0 0 0 7px #ffd54a38,0 0 22px #ffd54a!important;animation:tutorialPulse 1.5s ease-in-out infinite}
 @keyframes tutorialPulse{50%{box-shadow:0 0 0 10px #ffd54a20,0 0 28px #ffd54a}}
 #tutorialShade{position:fixed;inset:0;z-index:10000;background:#02081766;pointer-events:none}
-#tutorialCard{position:fixed;z-index:10030;left:16px;right:auto;top:86px;width:min(330px,calc(100vw - 32px));max-height:calc(100dvh - 110px);overflow:auto;padding:16px;border:1px solid #3986f6;border-radius:15px;background:linear-gradient(145deg,#122742,#081525);box-shadow:0 18px 60px #0009;color:#edf4ff}
+#tutorialCard{position:fixed;z-index:10030;left:50%;right:auto;top:86px;transform:translateX(-50%);width:min(330px,calc(100vw - 32px));max-height:calc(100dvh - 110px);overflow:auto;padding:16px;border:1px solid #3986f6;border-radius:15px;background:linear-gradient(145deg,#122742,#081525);box-shadow:0 18px 60px #0009;color:#edf4ff}
 #tutorialCard[hidden],#tutorialShade[hidden]{display:none}
 #tutorialCard h2{margin:0 0 8px;color:#80c7ff;font-size:17px;letter-spacing:0;text-transform:none}
 #tutorialCard p{margin:6px 0;color:#d5e4f8;font-size:12px}
@@ -128,8 +128,8 @@ input:focus{outline:1px solid var(--cyan)}
 #tutorialDebug{margin:8px 0 0;padding:8px;border:1px dashed #6583a7;border-radius:8px;background:#07111f;color:#c5d8ee;font:10px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:125px;overflow:auto}
 .tutorial-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.tutorial-actions button{flex:1}
 #tutorialClose{float:right;padding:4px 8px}
-@media(max-width:820px){#tutorialCard{left:12px;right:auto;top:auto;bottom:max(12px,env(safe-area-inset-bottom));width:min(340px,calc(46vw - 18px));max-height:62dvh;overflow:auto;padding:13px}.tutorial-actions button{min-height:42px;touch-action:manipulation}}
-@media(max-width:680px){#tutorialCard{left:12px;right:auto;width:min(300px,calc(100vw - 24px));max-height:44dvh;bottom:max(12px,env(safe-area-inset-bottom))}.header-actions button{min-height:36px}.tutorial-highlight{outline-width:3px;outline-offset:2px}}
+@media(max-width:820px){#tutorialCard{left:50%;right:auto;top:auto;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(300px,calc(100vw - 32px));max-height:52dvh;overflow:auto;padding:13px}.tutorial-actions button{min-height:42px;touch-action:manipulation}}
+@media(max-width:680px){#tutorialCard{left:50%;right:auto;width:min(300px,calc(100vw - 24px));max-height:42dvh;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%)}.header-actions button{min-height:36px}.tutorial-highlight{outline-width:3px;outline-offset:2px}}
 
 
 /* SILMO Prüftool – Fehlerbanner und Tastenkürzel */
