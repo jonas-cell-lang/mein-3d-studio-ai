@@ -292,7 +292,7 @@ input:focus{outline:1px solid var(--cyan)}
         cssRuleCount=styles?styles.split('{').length-1:0;
         add('HINWEIS','Dieser Browser bietet keinen vollständigen CSS-Parser für die Zusatzprüfung; CSS-Regeln wurden gezählt.');
       }
-      ['#createObjectGroup','#ungroupObjects','#alignSelected','#booleanSeparate','#sketchTool','#startSketch','#createSketchSolid','#createCaseWallFrame','#caseWallThicknessMM','#caseWallHeightMM'].forEach(selector=>{if(!document.querySelector(selector))issues.push('App: Werkzeug '+selector+' wurde nicht initialisiert.');});
+      ['#createObjectGroup','#ungroupObjects','#alignSelected','#booleanSeparate','#sketchTool','#startSketch','#createSketchSolid','#createCaseWallFrame','#cutCaseOpening','#caseWallThicknessMM','#caseWallHeightMM'].forEach(selector=>{if(!document.querySelector(selector))issues.push('App: Werkzeug '+selector+' wurde nicht initialisiert.');});
       if(!window.THREE)issues.push('3D: Three.js ist nicht geladen.');
       else{
         if(!window.THREE.STLLoader)issues.push('3D: STLLoader ist nicht geladen.');
@@ -536,6 +536,7 @@ input:focus{outline:1px solid var(--cyan)}
   const caseWallHeight=document.createElement('input');caseWallHeight.id='caseWallHeightMM';caseWallHeight.type='number';caseWallHeight.min='2';caseWallHeight.max='40';caseWallHeight.step='0.1';caseWallHeight.value='12';
   caseWallHeightWrap.append(caseWallHeightLabel,caseWallHeight);paneMap.draw.left.appendChild(caseWallHeightWrap);
   const caseWallButton=document.createElement('button');caseWallButton.type='button';caseWallButton.id='createCaseWallFrame';caseWallButton.className='wide';caseWallButton.textContent='▱ Seitenwand-Rahmen aus Kontur erzeugen';paneMap.draw.left.appendChild(caseWallButton);
+  const caseCutButton=document.createElement('button');caseCutButton.type='button';caseCutButton.id='cutCaseOpening';caseCutButton.className='wide';caseCutButton.textContent='− Ausgewählte Aussparung ausschneiden';paneMap.draw.left.appendChild(caseCutButton);
   const sketchLockNote=document.createElement('p'); sketchLockNote.id='sketchViewLockNote'; sketchLockNote.className='note'; sketchLockNote.textContent='Während des Zeichnens ist die Kameradrehung gesperrt. Zoomen bleibt möglich.'; paneMap.draw.left.appendChild(sketchLockNote);
   const startSketchButton=document.createElement('button'); startSketchButton.type='button'; startSketchButton.id='startSketch'; startSketchButton.className='wide primary'; startSketchButton.textContent='✎ Zeichnen starten'; paneMap.draw.left.appendChild(startSketchButton);
   const createSketchButton=document.createElement('button'); createSketchButton.type='button'; createSketchButton.id='createSketchSolid'; createSketchButton.className='wide'; createSketchButton.textContent='▰ Als 3D-Körper erstellen'; createSketchButton.disabled=true; paneMap.draw.left.appendChild(createSketchButton);
@@ -1274,6 +1275,8 @@ input:focus{outline:1px solid var(--cyan)}
           locked: obj.userData.locked === true,
           groupId: typeof obj.userData.groupId === 'string' ? obj.userData.groupId : null,
           unionParts: Array.isArray(obj.userData.unionParts) ? obj.userData.unionParts : null,
+          caseOutline: Array.isArray(obj.userData.caseOutline) ? obj.userData.caseOutline : null,
+          caseWallFrame: obj.userData.caseWallFrame || null,
           geometry: serializeGeometry(obj.geometry)
         }))
       };
@@ -1336,7 +1339,9 @@ input:focus{outline:1px solid var(--cyan)}
               : { x: scale[0] * 100, y: scale[1] * 100, z: scale[2] * 100 },
             locked: item.locked === true,
             groupId: typeof item.groupId === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(item.groupId) ? item.groupId : null,
-             unionParts: Array.isArray(item.unionParts) && item.unionParts.length >= 2 && item.unionParts.length <= 100 ? item.unionParts.map(part => JSON.parse(JSON.stringify(part))) : null
+             unionParts: Array.isArray(item.unionParts) && item.unionParts.length >= 2 && item.unionParts.length <= 100 ? item.unionParts.map(part => JSON.parse(JSON.stringify(part))) : null,
+             caseOutline: Array.isArray(item.caseOutline) && item.caseOutline.length >= 3 && item.caseOutline.length <= 240 && item.caseOutline.every(point => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite)) ? item.caseOutline.map(point => [point[0],point[1]]) : null,
+             caseWallFrame: item.caseWallFrame && Number.isFinite(item.caseWallFrame.wallThicknessMM) && Number.isFinite(item.caseWallFrame.wallHeightMM) ? {wallThicknessMM:item.caseWallFrame.wallThicknessMM,wallHeightMM:item.caseWallFrame.wallHeightMM} : null
            };
            if (Array.isArray(item.unionParts)) {
              if (item.unionParts.length < 2 || item.unionParts.length > 100) { geometry.dispose(); material.dispose(); throw new Error('Ungültige Anzahl ursprünglicher Formteile.'); }
@@ -2640,6 +2645,18 @@ input:focus{outline:1px solid var(--cyan)}
     updateObjects();showProperties();updateMoveGizmo();
   }
 
+  window.__silmoTestCreateCaseWallFrame=()=>{
+    const points=[[-1,-1],[1,-1],[1,1],[-1,1]];
+    const shape=new THREE.Shape();shape.moveTo(points[0][0],points[0][1]);points.slice(1).forEach(point=>shape.lineTo(point[0],point[1]));shape.closePath();
+    const geometry=new THREE.ExtrudeGeometry(shape,{depth:0.15,bevelEnabled:false});
+    const material=new THREE.MeshStandardMaterial({color:'#4b91ed'});
+    const base=new THREE.Mesh(geometry,material);base.userData={label:'Test-Rückwand',baseDimensions:{x:2,y:2,z:0.15},percent:{x:100,y:100,z:100},caseOutline:points};
+    scene.add(base);objects.push(base);selectObject(base);
+    document.getElementById('caseWallThicknessMM').value='1.4';document.getElementById('caseWallHeightMM').value='12';
+    createCaseWallFrame();
+    const frame=objects.find(obj=>obj.userData.caseWallFrame);
+    return {objectCount:objects.length,frameFound:!!frame,label:frame?.userData.label,wallThicknessMM:frame?.userData.caseWallFrame?.wallThicknessMM,wallHeightMM:frame?.userData.caseWallFrame?.wallHeightMM,dimensions:frame?.userData.baseDimensions,geometryVertices:frame?.geometry?.attributes?.position?.count||0};
+  };
   function createSketchSolid() {
     if (!sketchDraft) { status.textContent = 'Bitte zuerst eine Skizze zeichnen.'; return; }
     try {
@@ -2673,7 +2690,8 @@ input:focus{outline:1px solid var(--cyan)}
         const minX = Math.min(...points.map(point => point.x)), maxX = Math.max(...points.map(point => point.x));
         const minY = Math.min(...points.map(point => point.y)), maxY = Math.max(...points.map(point => point.y));
         const centerX = (minX + maxX) / 2, centerY = (minY + maxY) / 2;
-        const localPoints = points.map(point => new THREE.Vector2(point.x - centerX, point.y - centerY));
+        let localPoints = points.map(point => new THREE.Vector2(point.x - centerX, point.y - centerY));
+        if(localPoints.length>220){const stride=Math.ceil(localPoints.length/220);localPoints=localPoints.filter((point,index)=>index%stride===0);}
         let twiceArea = 0, perimeter = 0;
         localPoints.forEach((point, index) => {
           const next = localPoints[(index + 1) % localPoints.length];
@@ -2786,6 +2804,7 @@ input:focus{outline:1px solid var(--cyan)}
   });
   document.getElementById('createSketchSolid').addEventListener('click', createSketchSolid);
   document.getElementById('createCaseWallFrame').addEventListener('click',createCaseWallFrame);
+  document.getElementById('cutCaseOpening').addEventListener('click',()=>runBooleanOperation('subtract'));
   document.getElementById('cancelSketch').addEventListener('click', () => {
     sketchMode = false; sketchDrawing = false; sketchPointerId = null; sketchDraft = null;
     updateGizmoModeButton();
