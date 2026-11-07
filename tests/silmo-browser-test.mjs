@@ -305,6 +305,7 @@ try {
   await page.locator('#booleanSeparate').click();
   assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+2,'Verbindung lösen stellt die ursprünglichen Objekte nicht wieder her');
   assert.match(await page.locator('#status').innerText(),/Verbindung gelöst: 2 ursprüngliche Einzelobjekte/,'Trennen meldet keinen Erfolg');
+  await page.locator('#viewport canvas').focus();
   await page.keyboard.press('Control+z');
   assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+1,'Rückgängig stellt die verbundene Form nicht wieder her');
   assert.equal((await page.evaluate(()=>window.__silmoUnionSnapshot())).partCount,2,'Rückgängig verliert die gespeicherten Einzelteile');
