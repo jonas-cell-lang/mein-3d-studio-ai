@@ -130,7 +130,7 @@ jobs:
               "id='ungroupObjects'",
               "id='booleanSeparate'",
               "id='createPhoneCase'",
-              "function createPhoneCase()",
+              "function createPhoneCase(spec)",
               "phoneCaseComponent:component",
               "function splitBooleanUnion()",
               "unionParts: Array.isArray(obj.userData.unionParts) ? obj.userData.unionParts : null",
