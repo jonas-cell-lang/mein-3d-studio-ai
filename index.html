@@ -504,6 +504,12 @@ input:focus{outline:1px solid var(--cyan)}
   addCaseField('caseCameraWidth','Kameraöffnung Breite (mm)',22,8,40,0.5);
   addCaseField('caseCameraHeight','Kameraöffnung Höhe (mm)',22,8,40,0.5);
   const caseCreateButton=document.createElement('button');caseCreateButton.type='button';caseCreateButton.id='createPhoneCase';caseCreateButton.className='wide';caseCreateButton.textContent='＋ Handyhülle-Rohling erstellen';paneMap.create.left.appendChild(caseCreateButton);
+  caseCreateButton.addEventListener('click',()=>createPhoneCase({
+    phoneWidth:Number(caseFields.casePhoneWidth.value),phoneLength:Number(caseFields.casePhoneLength.value),phoneThickness:Number(caseFields.casePhoneThickness.value),
+    wallHeight:Number(caseFields.caseWallHeight.value),wallThickness:Number(caseFields.caseWallThickness.value),clearance:Number(caseFields.caseClearance.value),
+    cornerRadius:Number(caseFields.caseCornerRadius.value),backThickness:Number(caseFields.caseBackThickness.value),
+    cameraWidth:Number(caseFields.caseCameraWidth.value),cameraHeight:Number(caseFields.caseCameraHeight.value)
+  }));
   const caseStatus=document.createElement('p');caseStatus.id='phoneCaseHelp';caseStatus.className='note';caseStatus.textContent='Erstellt Rückwand und Seitenwände als zusammengehörige, einzeln bearbeitbare Teile mit Kameraöffnung.';paneMap.create.left.appendChild(caseStatus);
   heading(paneMap.create.left,'Formen kombinieren');
   const booleanHelp=document.createElement('p'); booleanHelp.className='note'; booleanHelp.textContent='Wähle mindestens zwei Objekte in der Objektliste. Mit Strg-Klick kannst du mehrere auswählen. Das erste ausgewählte Objekt ist die Grundform.'; paneMap.create.left.appendChild(booleanHelp);
@@ -1052,14 +1058,7 @@ input:focus{outline:1px solid var(--cyan)}
     }
   }
 
-  function createPhoneCase(){
-    const read=(id)=>Number(caseFields[id]?.value);
-    const spec={
-      phoneWidth:read('casePhoneWidth'),phoneLength:read('casePhoneLength'),phoneThickness:read('casePhoneThickness'),
-      wallHeight:read('caseWallHeight'),wallThickness:read('caseWallThickness'),clearance:read('caseClearance'),
-      cornerRadius:read('caseCornerRadius'),backThickness:read('caseBackThickness'),
-      cameraWidth:read('caseCameraWidth'),cameraHeight:read('caseCameraHeight')
-    };
+  function createPhoneCase(spec){
     const limits={
       phoneWidth:[35,120],phoneLength:[70,250],phoneThickness:[4,25],wallHeight:[5,25],
       wallThickness:[1,4],clearance:[0.1,1.5],cornerRadius:[2,20],backThickness:[0.8,3],
@@ -1092,6 +1091,7 @@ input:focus{outline:1px solid var(--cyan)}
       material=new THREE.MeshStandardMaterial({color:0x4b91ed,roughness:0.58,metalness:0.02,side:THREE.DoubleSide});
       const backMesh=new THREE.Mesh(backGeometry,material.clone());
       const wallMesh=new THREE.Mesh(wallGeometry,material.clone());
+      material.dispose();material=null;
       wallMesh.position.z=spec.backThickness;
       const groupId='case_'+Math.random().toString(36).slice(2,12);
       const setData=(mesh,label,geometry,component)=>{
@@ -1741,7 +1741,6 @@ input:focus{outline:1px solid var(--cyan)}
       : 'Mehrfachauswahl ausgeschaltet.';
   });
   window.__silmoPhoneCaseSnapshot=()=>({objectCount:objects.length,selectedCount:selectedObjects.length,groupIds:[...new Set(objects.filter(o=>o.userData.phoneCaseComponent).map(o=>o.userData.groupId))],components:objects.filter(o=>o.userData.phoneCaseComponent).map(o=>({component:o.userData.phoneCaseComponent,label:o.userData.label,dimensions:o.userData.baseDimensions,spec:o.userData.phoneCaseSpec}))});
-  $('createPhoneCase').addEventListener('click',createPhoneCase);
   window.__silmoUnionSnapshot = () => ({partCount:Array.isArray(selected?.userData?.unionParts)?selected.userData.unionParts.length:0,objectCount:objects.length});
   window.__silmoGroupSnapshot = () => ({
     objectCount: objects.length,
