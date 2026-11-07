@@ -169,7 +169,7 @@ jobs:
               "cad-tool-button",
               "Mittelpunkt X muss zwischen −2000 und 2000 mm liegen.",
               "id='sketchConstraint'",
-              "id='editSketchWidthMM'",
+              "makeProField('editSketchWidthMM'",
               "id='applySketchDimensions'",
               "id='applyEdgeFillet'",
               "id='applyEdgeChamfer'",
