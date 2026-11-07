@@ -141,8 +141,43 @@ try {
   });
   assert.equal(changedAfterUngroup.length, 1, 'Nach dem Aufheben muss genau ein Objekt unabhängig bewegt werden können');
 
+  // Zahlenfelder müssen den tatsächlichen Drehwinkel des ausgewählten Objekts setzen.
+  const beforeNumericRotation = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
+  const rotationX = page.locator('#rotationFields input').nth(0);
+  await rotationX.fill('45');
+  await rotationX.press('Enter');
+  await page.waitForTimeout(200);
+  const afterNumericRotation = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
+  assert.ok(Math.abs(afterNumericRotation.qx - beforeNumericRotation.qx) > 0.05 ||
+            Math.abs(afterNumericRotation.qy - beforeNumericRotation.qy) > 0.05 ||
+            Math.abs(afterNumericRotation.qz - beforeNumericRotation.qz) > 0.05 ||
+            Math.abs(afterNumericRotation.qw - beforeNumericRotation.qw) > 0.05,
+            'Drehung über das Zahlenfeld verändert die Objektrotation nicht');
+  assert.match(await page.locator('#status').innerText(), /Drehung um X auf 45° gesetzt/, 'Zahlenfeld meldet die gesetzte Drehung nicht');
+
+  // Einen Ring wirklich mit der Maus ziehen. Das Modell darunter darf dabei
+  // nicht neu ausgewählt werden und seine Rotation muss sich ändern.
+  const selectedBeforeRing = await page.locator('#objects .object-select[aria-pressed="true"]').evaluate(el => el.dataset.objectId);
+  const beforeRingRotation = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
+  const ringStart = await page.evaluate(() => window.__silmoTutorialRotationRingPoint('z', 0.45));
+  const ringEnd = await page.evaluate(() => window.__silmoTutorialRotationRingPoint('z', 0.95));
+  assert.ok(ringStart && ringEnd, 'Test konnte die Position des Z-Drehrings nicht bestimmen');
+  await page.mouse.move(ringStart.x, ringStart.y);
+  await page.mouse.down();
+  await page.mouse.move(ringEnd.x, ringEnd.y, { steps: 12 });
+  await page.mouse.up();
+  await page.waitForTimeout(200);
+  const afterRingRotation = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
+  const selectedAfterRing = await page.locator('#objects .object-select[aria-pressed="true"]').evaluate(el => el.dataset.objectId);
+  assert.equal(selectedAfterRing, selectedBeforeRing, 'Beim Ziehen des Drehrings wurde ein anderes Objekt ausgewählt');
+  assert.ok(Math.abs(afterRingRotation.qx - beforeRingRotation.qx) > 0.01 ||
+            Math.abs(afterRingRotation.qy - beforeRingRotation.qy) > 0.01 ||
+            Math.abs(afterRingRotation.qz - beforeRingRotation.qz) > 0.01 ||
+            Math.abs(afterRingRotation.qw - beforeRingRotation.qw) > 0.01,
+            'Ziehen am Drehring verändert die Objektrotation nicht');
+
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
-  console.log('BESTANDEN: 3D-Start, Objekterstellung, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln und Gruppierung aufheben.');
+  console.log('BESTANDEN: 3D-Start, Objekterstellung, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, numerische Drehung und Drehring.');
   console.log(JSON.stringify({ canvasSize, beforeAlign, afterAlign, selectedCount, alignStatus }));
 } catch (error) {
   console.error('BROWSERTEST FEHLGESCHLAGEN:', error);
