@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v58/, 'Build-Metadaten zeigen nicht v58');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v59/, 'Build-Metadaten zeigen nicht v59');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -64,7 +64,8 @@ try {
   assert.ok(currentBuild, 'Build-Metadaten fehlen');
   assert.ok(tutorialDebug.includes(`Build: ${currentBuild}`), 'Tutorial-Diagnose zeigt nicht den aktuellen Build');
   assert.equal(await page.locator('#tutorialBuild').innerText(), currentBuild, 'Tutorial-Kopfzeile zeigt nicht den aktuellen Build');
-  assert.equal(await page.locator('#tutorialQuickGuide').count(), 1, 'Schnellhilfe fehlt im Tutorial');
+  assert.equal(await page.locator('#tutorialQuickGuide').count(), 1, 'Werkzeugübersicht fehlt im Tutorial');
+  assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Weiter ist vor der ersten erkannten Aufgabe nicht gesperrt');
   const quickGuide = await page.locator('#tutorialQuickGuide').textContent();
   assert.match(quickGuide, /Alle Werkzeuge/, 'Visuelle Werkzeugübersicht fehlt');
   assert.ok(await page.locator('#tutorialToolGallery .tutorial-tool-card').count() >= 25, 'Tutorial zeigt nicht alle Werkzeugkarten');
@@ -77,7 +78,8 @@ try {
   const tutorialStartRows = await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click();
   assert.equal(await page.locator('#objects .object-row').count(), tutorialStartRows + 1, 'Tutorial-Testobjekt wurde nicht erstellt');
-  assert.match(await page.locator('#tutorialFeedback').innerText(), /Erfolgskontrolle bestanden/, 'Tutorial erkennt das neu erstellte Objekt nicht');
+  assert.match(await page.locator('#tutorialFeedback').innerText(), /Aufgabe erkannt/, 'Tutorial erkennt das neu erstellte Objekt nicht');
+  assert.equal(await page.locator('#tutorialNext').isDisabled(), false, 'Weiter wird nach erkannter Aufgabe nicht freigeschaltet');
   await page.locator('#tutorialClose').click();
 
   assert.ok(canvasSize.width > 0 && canvasSize.height > 0, '3D canvas hat keine gültige Grösse');
