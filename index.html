@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v41 – 2D-Zeichnen</title>
+<title>SILMO 3D Studio AI – v42 – 3D-Zeichnen</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v41 – 2D-Zeichnen">
+<meta name="silmo-build" content="v42 – 3D-Zeichnen">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -482,11 +482,19 @@ input:focus{outline:1px solid var(--cyan)}
   heading(paneMap.create.left,'Objektliste'); put(paneMap.create.left,'objects');
 
   heading(paneMap.draw.left,'2D-Skizze');
-  const sketchIntro=document.createElement('p'); sketchIntro.className='note'; sketchIntro.textContent='Zeichne auf der XY-Zeichenebene mit Maus, Touch oder Apple Pencil. Ziehe auf der 3D-Fläche, um eine Skizze aufzuspannen. Danach kannst du die Masse exakt eingeben und daraus einen 3D-Körper erstellen.'; paneMap.draw.left.appendChild(sketchIntro);
+  const sketchIntro=document.createElement('p'); sketchIntro.className='note'; sketchIntro.textContent='Zeichne Rechtecke und Kreise auf XY oder räumliche Linien auf XY, XZ oder YZ – mit Maus, Touch oder Apple Pencil. Passe die Masse exakt an und erstelle daraus echte 3D-Körper.'; paneMap.draw.left.appendChild(sketchIntro);
   const sketchToolWrap=document.createElement('div'); sketchToolWrap.className='field';
   const sketchToolLabel=document.createElement('label'); sketchToolLabel.htmlFor='sketchTool'; sketchToolLabel.textContent='Zeichenwerkzeug';
-  const sketchTool=document.createElement('select'); sketchTool.id='sketchTool'; sketchTool.innerHTML='<option value="rectangle">Rechteck</option><option value="circle">Kreis</option>';
+  const sketchTool=document.createElement('select'); sketchTool.id='sketchTool'; sketchTool.innerHTML='<option value="rectangle">2D-Rechteck</option><option value="circle">2D-Kreis</option><option value="line3d">3D-Linie</option>';
   sketchToolWrap.append(sketchToolLabel,sketchTool); paneMap.draw.left.appendChild(sketchToolWrap);
+  const sketchPlaneWrap=document.createElement('div'); sketchPlaneWrap.className='field'; sketchPlaneWrap.id='sketchPlaneWrap';
+  const sketchPlaneLabel=document.createElement('label'); sketchPlaneLabel.htmlFor='sketchPlaneSelect'; sketchPlaneLabel.textContent='Zeichenebene für 3D-Linie';
+  const sketchPlaneSelect=document.createElement('select'); sketchPlaneSelect.id='sketchPlaneSelect'; sketchPlaneSelect.innerHTML='<option value="xy">XY – von oben</option><option value="xz">XZ – von vorne</option><option value="yz">YZ – von der Seite</option>';
+  sketchPlaneWrap.append(sketchPlaneLabel,sketchPlaneSelect); paneMap.draw.left.appendChild(sketchPlaneWrap);
+  const sketchDiameterWrap=document.createElement('div'); sketchDiameterWrap.className='field'; sketchDiameterWrap.id='sketchDiameterWrap';
+  const sketchDiameterLabel=document.createElement('label'); sketchDiameterLabel.htmlFor='sketchDiameterMM'; sketchDiameterLabel.textContent='Linienstärke / Durchmesser (mm)';
+  const sketchDiameter=document.createElement('input'); sketchDiameter.id='sketchDiameterMM'; sketchDiameter.type='number'; sketchDiameter.min='0.2'; sketchDiameter.max='50'; sketchDiameter.step='0.1'; sketchDiameter.value='1.2';
+  sketchDiameterWrap.append(sketchDiameterLabel,sketchDiameter); paneMap.draw.left.appendChild(sketchDiameterWrap);
   const sketchWidthWrap=document.createElement('div'); sketchWidthWrap.className='field';
   const sketchWidthLabel=document.createElement('label'); sketchWidthLabel.htmlFor='sketchWidthMM'; sketchWidthLabel.textContent='Breite / Durchmesser (mm)';
   const sketchWidth=document.createElement('input'); sketchWidth.id='sketchWidthMM'; sketchWidth.type='number'; sketchWidth.min='0.1'; sketchWidth.max='2000'; sketchWidth.step='0.1'; sketchWidth.value='20';
@@ -499,10 +507,10 @@ input:focus{outline:1px solid var(--cyan)}
   const sketchHeightLabel=document.createElement('label'); sketchHeightLabel.htmlFor='sketchHeightMM'; sketchHeightLabel.textContent='Extrusionshöhe Z (mm)';
   const sketchHeight=document.createElement('input'); sketchHeight.id='sketchHeightMM'; sketchHeight.type='number'; sketchHeight.min='0.1'; sketchHeight.max='2000'; sketchHeight.step='0.1'; sketchHeight.value='10';
   sketchHeightWrap.append(sketchHeightLabel,sketchHeight); paneMap.draw.left.appendChild(sketchHeightWrap);
-  const startSketchButton=document.createElement('button'); startSketchButton.type='button'; startSketchButton.id='startSketch'; startSketchButton.className='wide primary'; startSketchButton.textContent='✎ 2D-Zeichnen starten'; paneMap.draw.left.appendChild(startSketchButton);
+  const startSketchButton=document.createElement('button'); startSketchButton.type='button'; startSketchButton.id='startSketch'; startSketchButton.className='wide primary'; startSketchButton.textContent='✎ Zeichnen starten'; paneMap.draw.left.appendChild(startSketchButton);
   const createSketchButton=document.createElement('button'); createSketchButton.type='button'; createSketchButton.id='createSketchSolid'; createSketchButton.className='wide'; createSketchButton.textContent='▰ Als 3D-Körper erstellen'; createSketchButton.disabled=true; paneMap.draw.left.appendChild(createSketchButton);
   const cancelSketchButton=document.createElement('button'); cancelSketchButton.type='button'; cancelSketchButton.id='cancelSketch'; cancelSketchButton.className='wide'; cancelSketchButton.textContent='Skizze abbrechen'; cancelSketchButton.disabled=true; paneMap.draw.left.appendChild(cancelSketchButton);
-  const sketchStatus=document.createElement('p'); sketchStatus.id='sketchStatus'; sketchStatus.className='note'; sketchStatus.setAttribute('aria-live','polite'); sketchStatus.textContent='Noch keine Skizze. Wähle Rechteck oder Kreis und starte den Zeichenmodus.'; paneMap.draw.left.appendChild(sketchStatus);
+  const sketchStatus=document.createElement('p'); sketchStatus.id='sketchStatus'; sketchStatus.className='note'; sketchStatus.setAttribute('aria-live','polite'); sketchStatus.textContent='Noch keine Skizze. Wähle ein 2D-Werkzeug oder eine 3D-Linie und starte den Zeichenmodus.'; paneMap.draw.left.appendChild(sketchStatus);
 
   heading(paneMap.edit.left,'Bearbeiten');
   ['delete','fitView'].forEach(id=>put(paneMap.edit.left,id));
@@ -2216,7 +2224,14 @@ input:focus{outline:1px solid var(--cyan)}
     raycaster.setFromCamera(pointerNDC, camera);
   }
 
-  const sketchPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+  let sketchPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+  function updateSketchPlaneFromUI() {
+    const plane = document.getElementById('sketchPlaneSelect')?.value || 'xy';
+    const normal = plane === 'xz' ? new THREE.Vector3(0,1,0) :
+      plane === 'yz' ? new THREE.Vector3(1,0,0) : new THREE.Vector3(0,0,1);
+    sketchPlane = new THREE.Plane(normal, 0);
+    return plane;
+  }
   const sketchPoint = new THREE.Vector3();
   const sketchStart = new THREE.Vector3();
   let sketchMode = false, sketchDrawing = false, sketchPointerId = null;
@@ -2246,33 +2261,47 @@ input:focus{outline:1px solid var(--cyan)}
   function updateSketchPreview() {
     if (!sketchDraft) return;
     clearSketchPreview();
-    let points = [];
-    if (document.getElementById('sketchTool')?.value === 'circle') {
-      const radius = sketchDraft.width / 2;
-      for (let i = 0; i < 64; i++) {
-        const angle = (i / 64) * Math.PI * 2;
-        points.push(new THREE.Vector3(
-          sketchDraft.centerX + Math.cos(angle) * radius,
-          sketchDraft.centerY + Math.sin(angle) * radius,
-          0.025
-        ));
-      }
+    if (sketchDraft.type === 'line3d') {
+      if (!Array.isArray(sketchDraft.points) || sketchDraft.points.length < 2) return;
+      const geometry = new THREE.BufferGeometry().setFromPoints(sketchDraft.points);
+      sketchPreview = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0xffd166, depthTest: false }));
     } else {
-      const halfW = sketchDraft.width / 2, halfD = sketchDraft.depth / 2;
-      points = [
-        new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY-halfD,0.025),
-        new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY-halfD,0.025),
-        new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY+halfD,0.025),
-        new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY+halfD,0.025)
-      ];
+      let points = [];
+      if (document.getElementById('sketchTool')?.value === 'circle') {
+        const radius = sketchDraft.width / 2;
+        for (let i = 0; i < 64; i++) {
+          const angle = (i / 64) * Math.PI * 2;
+          points.push(new THREE.Vector3(
+            sketchDraft.centerX + Math.cos(angle) * radius,
+            sketchDraft.centerY + Math.sin(angle) * radius,
+            0.025
+          ));
+        }
+      } else {
+        const halfW = sketchDraft.width / 2, halfD = sketchDraft.depth / 2;
+        points = [
+          new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY-halfD,0.025),
+          new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY-halfD,0.025),
+          new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY+halfD,0.025),
+          new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY+halfD,0.025)
+        ];
+      }
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      sketchPreview = new THREE.LineLoop(geometry, new THREE.LineBasicMaterial({ color: 0x53d8e8, depthTest: false }));
     }
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    sketchPreview = new THREE.LineLoop(geometry, new THREE.LineBasicMaterial({ color: 0x53d8e8, depthTest: false }));
     sketchPreview.renderOrder = 20;
     scene.add(sketchPreview);
   }
   function updateSketchInputsFromDraft() {
     if (!sketchDraft) return;
+    if (sketchDraft.type === 'line3d') {
+      document.getElementById('createSketchSolid').disabled = sketchDraft.points.length < 2;
+      document.getElementById('cancelSketch').disabled = false;
+      document.getElementById('sketchStatus').textContent =
+        '3D-Linie bereit: ' + sketchDraft.points.length + ' räumliche Punkte auf ' +
+        document.getElementById('sketchPlaneSelect').selectedOptions[0].textContent + '. Du kannst jetzt die Linienstärke festlegen.';
+      return;
+    }
     const width = sketchDraft.width * MM_PER_UNIT;
     const depth = sketchDraft.depth * MM_PER_UNIT;
     document.getElementById('sketchWidthMM').value = width.toFixed(1);
@@ -2285,7 +2314,7 @@ input:focus{outline:1px solid var(--cyan)}
       'Skizze bereit: ' + width.toFixed(1) + ' × ' + depth.toFixed(1) + ' mm. Du kannst die Masse links exakt anpassen.';
   }
   function refreshSketchDraftFromInputs() {
-    if (!sketchDraft) return;
+    if (!sketchDraft || sketchDraft.type === 'line3d') return;
     try {
       const dims = sketchDimensionsFromInputs();
       sketchDraft.width = dims.width;
@@ -2301,7 +2330,20 @@ input:focus{outline:1px solid var(--cyan)}
   function finishSketchPointer(e) {
     if (!sketchDrawing || (e && e.pointerId !== sketchPointerId)) return false;
     if (e) setPointerRay(e);
-    if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
+    if (document.getElementById('sketchTool').value === 'line3d') {
+      if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
+        const points = sketchDraft?.type === 'line3d' ? sketchDraft.points : [sketchStart.clone()];
+        if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > 0.015) points.push(sketchPoint.clone());
+        sketchDraft = { type: 'line3d', points };
+      }
+      if (sketchDraft?.type === 'line3d' && sketchDraft.points.length >= 2) {
+        updateSketchInputsFromDraft();
+        updateSketchPreview();
+      } else {
+        sketchDraft = null;
+        document.getElementById('sketchStatus').textContent = 'Die Linie ist zu kurz. Ziehe eine längere räumliche Linie.';
+      }
+    } else if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
       const dx = sketchPoint.x - sketchStart.x, dy = sketchPoint.y - sketchStart.y;
       const width = Math.abs(dx), depth = Math.abs(dy);
       const tool = document.getElementById('sketchTool').value;
@@ -2324,10 +2366,10 @@ input:focus{outline:1px solid var(--cyan)}
     sketchDrawing = false;
     sketchPointerId = null;
     sketchMode = false;
-    document.getElementById('startSketch').textContent = '✎ 2D-Zeichnen starten';
+    document.getElementById('startSketch').textContent = '✎ Zeichnen starten';
     if (sketchDraft) {
       document.getElementById('createSketchSolid').disabled = false;
-      status.textContent = '2D-Skizze vorbereitet. Masse prüfen und als 3D-Körper erstellen.';
+      status.textContent = sketchDraft.type === 'line3d' ? '3D-Linie vorbereitet. Linienstärke prüfen und Körper erstellen.' : '2D-Skizze vorbereitet. Masse prüfen und als 3D-Körper erstellen.';
     } else {
       document.getElementById('startSketch').textContent = '✎ Erneut zeichnen';
       status.textContent = 'Keine gültige Skizze erstellt.';
@@ -2335,18 +2377,52 @@ input:focus{outline:1px solid var(--cyan)}
     return true;
   }
   function createSketchSolid() {
-    if (!sketchDraft) { status.textContent = 'Bitte zuerst eine 2D-Skizze zeichnen.'; return; }
+    if (!sketchDraft) { status.textContent = 'Bitte zuerst eine Skizze zeichnen.'; return; }
     try {
-      const dims = sketchDimensionsFromInputs();
-      const shape = new THREE.Shape();
-      if (document.getElementById('sketchTool').value === 'circle') {
-        shape.absarc(0, 0, dims.width / 2, 0, Math.PI * 2, false);
+      const tool = document.getElementById('sketchTool').value;
+      let geometry, meshPosition = new THREE.Vector3(), sketchMetadata, label;
+      if (tool === 'line3d') {
+        const diameterMM = Number(document.getElementById('sketchDiameterMM').value);
+        if (!Number.isFinite(diameterMM) || diameterMM < 0.2 || diameterMM > 50) {
+          throw new Error('Der Liniendurchmesser muss zwischen 0,2 und 50 mm liegen.');
+        }
+        const points = sketchDraft.points.map(point => point.clone());
+        if (points.length < 2) throw new Error('Eine 3D-Linie braucht mindestens zwei Punkte.');
+        const curve = new THREE.CatmullRomCurve3(points);
+        const radius = diameterMM / MM_PER_UNIT / 2;
+        geometry = new THREE.TubeGeometry(curve, Math.max(24, Math.min(300, points.length * 4)), radius, 8, false);
+        geometry.computeBoundingBox();
+        const center = geometry.boundingBox.getCenter(new THREE.Vector3());
+        geometry.translate(-center.x, -center.y, -center.z);
+        meshPosition.copy(center);
+        sketchMetadata = {
+          type: 'line3d',
+          plane: document.getElementById('sketchPlaneSelect').value,
+          diameterMM,
+          pointCount: points.length,
+          lengthMM: curve.getLength() * MM_PER_UNIT
+        };
+        label = '3D-Linie';
       } else {
-        const x = dims.width / 2, y = dims.depth / 2;
-        shape.moveTo(-x, -y); shape.lineTo(x, -y); shape.lineTo(x, y); shape.lineTo(-x, y); shape.closePath();
+        const dims = sketchDimensionsFromInputs();
+        const shape = new THREE.Shape();
+        if (tool === 'circle') {
+          shape.absarc(0, 0, dims.width / 2, 0, Math.PI * 2, false);
+        } else {
+          const x = dims.width / 2, y = dims.depth / 2;
+          shape.moveTo(-x, -y); shape.lineTo(x, -y); shape.lineTo(x, y); shape.lineTo(-x, y); shape.closePath();
+        }
+        geometry = new THREE.ExtrudeGeometry(shape, { depth: dims.height, bevelEnabled: false, curveSegments: 64 });
+        geometry.computeVertexNormals();
+        meshPosition.set(sketchDraft.centerX, sketchDraft.centerY, 0);
+        sketchMetadata = {
+          type: tool,
+          widthMM: dims.width * MM_PER_UNIT,
+          depthMM: dims.depth * MM_PER_UNIT,
+          extrusionMM: dims.height * MM_PER_UNIT
+        };
+        label = tool === 'circle' ? 'Skizze Kreis' : 'Skizze Rechteck';
       }
-      const geometry = new THREE.ExtrudeGeometry(shape, { depth: dims.height, bevelEnabled: false, curveSegments: 64 });
-      geometry.computeVertexNormals();
       geometry.computeBoundingBox();
       geometry.computeBoundingSphere();
       const size = new THREE.Vector3();
@@ -2357,16 +2433,11 @@ input:focus{outline:1px solid var(--cyan)}
         roughness: 0.42, metalness: 0.08
       });
       const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.set(sketchDraft.centerX, sketchDraft.centerY, 0);
+      mesh.position.copy(meshPosition);
       mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
       mesh.userData.percent = { x: 100, y: 100, z: 100 };
-      mesh.userData.label = document.getElementById('sketchTool').value === 'circle' ? 'Skizze Kreis' : 'Skizze Rechteck';
-      mesh.userData.sketch = {
-        type: document.getElementById('sketchTool').value,
-        widthMM: dims.width * MM_PER_UNIT,
-        depthMM: dims.depth * MM_PER_UNIT,
-        extrusionMM: dims.height * MM_PER_UNIT
-      };
+      mesh.userData.label = label;
+      mesh.userData.sketch = sketchMetadata;
       scene.add(mesh);
       objects.push(mesh);
       selectObject(mesh);
@@ -2375,7 +2446,7 @@ input:focus{outline:1px solid var(--cyan)}
       document.getElementById('createSketchSolid').disabled = true;
       document.getElementById('cancelSketch').disabled = true;
       document.getElementById('sketchStatus').textContent = '3D-Körper erstellt. Du kannst ihn jetzt wie jedes andere Objekt bearbeiten.';
-      status.textContent = '2D-Skizze erfolgreich zu einem 3D-Körper extrudiert.';
+      status.textContent = tool === 'line3d' ? '3D-Linie erfolgreich in einen räumlichen Körper umgewandelt.' : '2D-Skizze erfolgreich zu einem 3D-Körper extrudiert.';
     } catch (error) {
       status.textContent = 'Skizze konnte nicht erstellt werden: ' + (error.message || 'Eingaben prüfen.');
     }
@@ -2385,6 +2456,7 @@ input:focus{outline:1px solid var(--cyan)}
     sketchDraft = null;
     sketchDrawing = false;
     sketchMode = true;
+    updateSketchPlaneFromUI();
     document.getElementById('createSketchSolid').disabled = true;
     document.getElementById('cancelSketch').disabled = true;
     document.getElementById('startSketch').textContent = 'Zeichenmodus aktiv';
@@ -2397,28 +2469,42 @@ input:focus{outline:1px solid var(--cyan)}
     clearSketchPreview();
     document.getElementById('createSketchSolid').disabled = true;
     document.getElementById('cancelSketch').disabled = true;
-    document.getElementById('startSketch').textContent = '✎ 2D-Zeichnen starten';
+    document.getElementById('startSketch').textContent = '✎ Zeichnen starten';
     document.getElementById('sketchStatus').textContent = 'Skizze abgebrochen. Du kannst neu zeichnen.';
     status.textContent = 'Skizze abgebrochen.';
   });
   ['sketchWidthMM','sketchDepthMM','sketchHeightMM'].forEach(id =>
     document.getElementById(id).addEventListener('input', refreshSketchDraftFromInputs));
+  function updateSketchToolFields() {
+    const tool = document.getElementById('sketchTool').value;
+    const isLine = tool === 'line3d';
+    document.getElementById('sketchPlaneWrap').hidden = !isLine;
+    document.getElementById('sketchDiameterWrap').hidden = !isLine;
+    document.getElementById('sketchWidthMM').closest('.field').hidden = isLine;
+    document.getElementById('sketchDepthMM').closest('.field').hidden = isLine || tool === 'circle';
+    document.getElementById('sketchHeightMM').closest('.field').hidden = isLine;
+  }
   document.getElementById('sketchTool').addEventListener('change', () => {
-    const circle = document.getElementById('sketchTool').value === 'circle';
-    document.getElementById('sketchDepthMM').closest('.field').hidden = circle;
-    if (sketchDraft) {
-      if (circle) {
-        const diameter = Math.max(sketchDraft.width, sketchDraft.depth);
-        sketchDraft.width = diameter; sketchDraft.depth = diameter;
-      }
-      updateSketchInputsFromDraft();
-      updateSketchPreview();
-    }
+    sketchDraft = null;
+    clearSketchPreview();
+    document.getElementById('createSketchSolid').disabled = true;
+    document.getElementById('cancelSketch').disabled = true;
+    updateSketchToolFields();
+    document.getElementById('sketchStatus').textContent = 'Werkzeug gewechselt. Starte eine neue Skizze.';
+  });
+  document.getElementById('sketchPlaneSelect').addEventListener('change', () => {
+    updateSketchPlaneFromUI();
+    sketchDraft = null;
+    clearSketchPreview();
+    document.getElementById('createSketchSolid').disabled = true;
+    document.getElementById('cancelSketch').disabled = true;
+    document.getElementById('sketchStatus').textContent = 'Zeichenebene geändert. Starte eine neue 3D-Linie auf dieser Ebene.';
   });
   document.getElementById('sketchDepthMM').closest('.field').hidden = false;
+  updateSketchToolFields();
 
-  window.__silmoSketchPointForTest = (x, y) => {
-    const point = new THREE.Vector3(x, y, 0).project(camera);
+  window.__silmoSketchPointForTest = (x, y, z=0) => {
+    const point = new THREE.Vector3(x, y, z).project(camera);
     const rect = canvas.getBoundingClientRect();
     return { x: rect.left + (point.x + 1) * rect.width / 2, y: rect.top + (1 - point.y) * rect.height / 2 };
   };
@@ -2429,10 +2515,7 @@ input:focus{outline:1px solid var(--cyan)}
     const size = new THREE.Vector3(); box.getSize(size);
     return {
       label: obj.userData.label,
-      type: obj.userData.sketch.type,
-      widthMM: obj.userData.sketch.widthMM,
-      depthMM: obj.userData.sketch.depthMM,
-      extrusionMM: obj.userData.sketch.extrusionMM,
+      ...obj.userData.sketch,
       actualWidthMM: size.x * MM_PER_UNIT,
       actualDepthMM: size.y * MM_PER_UNIT,
       actualHeightMM: size.z * MM_PER_UNIT
@@ -2564,17 +2647,26 @@ input:focus{outline:1px solid var(--cyan)}
     if (sketchDrawing && e.pointerId === sketchPointerId) {
       setPointerRay(e);
       if (raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
-        const dx = sketchPoint.x - sketchStart.x, dy = sketchPoint.y - sketchStart.y;
         const tool = document.getElementById('sketchTool').value;
-        const width = Math.abs(dx), depth = Math.abs(dy);
-        const diameter = Math.max(width, depth);
-        sketchDraft = {
-          centerX: (sketchStart.x + sketchPoint.x) / 2,
-          centerY: (sketchStart.y + sketchPoint.y) / 2,
-          width: tool === 'circle' ? diameter : width,
-          depth: tool === 'circle' ? diameter : depth
-        };
-        updateSketchPreview();
+        if (tool === 'line3d') {
+          const points = sketchDraft?.type === 'line3d' ? sketchDraft.points : [sketchStart.clone()];
+          if (points[points.length - 1].distanceTo(sketchPoint) > 0.02) {
+            points.push(sketchPoint.clone());
+            sketchDraft = { type: 'line3d', points };
+            updateSketchPreview();
+          }
+        } else {
+          const dx = sketchPoint.x - sketchStart.x, dy = sketchPoint.y - sketchStart.y;
+          const width = Math.abs(dx), depth = Math.abs(dy);
+          const diameter = Math.max(width, depth);
+          sketchDraft = {
+            centerX: (sketchStart.x + sketchPoint.x) / 2,
+            centerY: (sketchStart.y + sketchPoint.y) / 2,
+            width: tool === 'circle' ? diameter : width,
+            depth: tool === 'circle' ? diameter : depth
+          };
+          updateSketchPreview();
+        }
       }
       return;
     }

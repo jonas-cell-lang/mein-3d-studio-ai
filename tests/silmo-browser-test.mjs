@@ -95,6 +95,27 @@ try {
   assert.equal(await page.locator('#createSketchSolid').isDisabled(), true, 'Erstellte Skizze bleibt fälschlich zur erneuten Extrusion bereit');
   await page.locator('#sketchTool').selectOption('circle');
   assert.equal(await page.locator('#sketchDepthMM').isVisible(), false, 'Kreis zeigt ein unnötiges separates Tiefenfeld');
+
+  // 3D-Linie: eine räumliche Freihandlinie auf der XZ-Ebene zeichnen und als Körper erzeugen.
+  await page.locator('#sketchTool').selectOption('line3d');
+  await page.locator('#sketchPlaneSelect').selectOption('xz');
+  await page.locator('#sketchDiameterMM').fill('1.2');
+  await page.locator('#startSketch').click();
+  const lineStart = await page.evaluate(() => window.__silmoSketchPointForTest(-0.7, 0, 0.2));
+  const lineEnd = await page.evaluate(() => window.__silmoSketchPointForTest(0.7, 0, 0.9));
+  await page.mouse.move(lineStart.x, lineStart.y);
+  await page.mouse.down();
+  await page.mouse.move(lineEnd.x, lineEnd.y, { steps: 14 });
+  await page.mouse.up();
+  assert.equal(await page.locator('#createSketchSolid').isEnabled(), true, '3D-Linie wird nach dem Zeichnen nicht vorbereitet');
+  await page.locator('#createSketchSolid').click();
+  const lineSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
+  assert.equal(lineSnapshot.type, 'line3d', 'Räumliche Linie wurde nicht als 3D-Linie erkannt');
+  assert.equal(lineSnapshot.plane, 'xz', 'Ausgewählte Zeichenebene wurde nicht gespeichert');
+  assert.equal(lineSnapshot.diameterMM, 1.2, 'Linienstärke wurde nicht übernommen');
+  assert.ok(lineSnapshot.pointCount >= 2, '3D-Linie enthält nicht mindestens zwei Punkte');
+  assert.ok(lineSnapshot.lengthMM > 0, '3D-Linie hat keine Länge');
+  assert.ok(lineSnapshot.actualWidthMM > 0 && lineSnapshot.actualDepthMM > 0 && lineSnapshot.actualHeightMM > 0, '3D-Linie hat keine echte räumliche Ausdehnung');
   await page.locator('[data-tab="create"]').click();
 
   // Die App kann bereits ein Startobjekt enthalten. Nur die beiden neu erstellten prüfen.
