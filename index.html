@@ -691,6 +691,21 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   const loadSketchDims=document.createElement('button');loadSketchDims.type='button';loadSketchDims.id='loadSketchDimensions';loadSketchDims.className='wide';loadSketchDims.textContent='↧ Masse der Auswahl laden';proGroup.appendChild(loadSketchDims);
   const applySketchDims=document.createElement('button');applySketchDims.type='button';applySketchDims.id='applySketchDimensions';applySketchDims.className='wide primary';applySketchDims.textContent='✓ Skizzenmasse übernehmen';proGroup.appendChild(applySketchDims);
   const editNote=document.createElement('p');editNote.className='cad-pro-note';editNote.textContent='Wähle einen zuvor extrudierten Skizzenkörper. Die Geometrie wird angepasst; Position und Drehung bleiben erhalten.';proGroup.appendChild(editNote);
+  const pointDivider=document.createElement('div');pointDivider.className='cad-pro-divider';proGroup.appendChild(pointDivider);
+  const pointHeading=document.createElement('h3');pointHeading.textContent='Einzelne Skizzenpunkte bearbeiten';proGroup.appendChild(pointHeading);
+  const pointHelp=document.createElement('p');pointHelp.className='cad-pro-note';pointHelp.textContent='Lade die Kontur eines ausgewählten Skizzenkörpers. Wähle einen Punkt und ändere seine X-/Y-Koordinate millimetergenau. Die Extrusion wird danach neu aufgebaut.';proGroup.appendChild(pointHelp);
+  const pointSelectWrap=document.createElement('div');pointSelectWrap.className='field';
+  const pointSelectLabel=document.createElement('label');pointSelectLabel.htmlFor='sketchPointIndex';pointSelectLabel.textContent='Konturpunkt';
+  const pointSelect=document.createElement('select');pointSelect.id='sketchPointIndex';pointSelect.innerHTML='<option value="0">Punkt 1</option>';
+  pointSelectWrap.append(pointSelectLabel,pointSelect);proGroup.appendChild(pointSelectWrap);
+  const pointGrid=document.createElement('div');pointGrid.className='cad-pro-grid';
+  const makePointField=(id,labelText,value)=>{const wrap=document.createElement('div');wrap.className='field';const label=document.createElement('label');label.htmlFor=id;label.textContent=labelText;const input=document.createElement('input');input.id=id;input.type='number';input.step='0.1';input.value=String(value);wrap.append(label,input);pointGrid.appendChild(wrap);return input;};
+  makePointField('sketchPointXMM','Punkt X (mm)',0);makePointField('sketchPointYMM','Punkt Y (mm)',0);proGroup.appendChild(pointGrid);
+  const pointActions=document.createElement('div');pointActions.className='cad-pro-actions';
+  const loadPointButton=document.createElement('button');loadPointButton.type='button';loadPointButton.id='loadSketchPoints';loadPointButton.textContent='Konturpunkte laden';
+  const applyPointButton=document.createElement('button');applyPointButton.type='button';applyPointButton.id='applySketchPoint';applyPointButton.className='primary';applyPointButton.textContent='Punkt übernehmen';
+  pointActions.append(loadPointButton,applyPointButton);proGroup.appendChild(pointActions);
+  const pointNote=document.createElement('p');pointNote.className='cad-pro-note';pointNote.textContent='Hinweis: Das ist ein direkter Kontur-Editor. Er löst noch keine vollständigen parametrischen Abhängigkeiten zwischen mehreren Linien.';proGroup.appendChild(pointNote);
   const proDivider2=document.createElement('div');proDivider2.className='cad-pro-divider';proGroup.appendChild(proDivider2);
   const edgeHeading=document.createElement('h3');edgeHeading.textContent='Kanten abrunden oder abfasen';proGroup.appendChild(edgeHeading);
   const edgeRadiusWrap=document.createElement('div');edgeRadiusWrap.className='field';const edgeRadiusLabel=document.createElement('label');edgeRadiusLabel.htmlFor='edgeTreatmentMM';edgeRadiusLabel.textContent='Radius / Fasenbreite (mm)';const edgeRadius=document.createElement('input');edgeRadius.id='edgeTreatmentMM';edgeRadius.type='number';edgeRadius.min='0.1';edgeRadius.max='20';edgeRadius.step='0.1';edgeRadius.value='1';edgeRadiusWrap.append(edgeRadiusLabel,edgeRadius);proGroup.appendChild(edgeRadiusWrap);
@@ -2833,6 +2848,13 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     updateObjects();showProperties();updateMoveGizmo();
   }
 
+  window.__silmoTestEditSketchPoint=()=>{
+    document.getElementById('sketchTool').value='rectangle';document.getElementById('sketchWidthMM').value='20';document.getElementById('sketchDepthMM').value='20';document.getElementById('sketchHeightMM').value='3';
+    sketchDraft={type:'rectangle',centerX:0,centerY:0,width:20/MM_PER_UNIT,depth:20/MM_PER_UNIT};createSketchSolid();
+    const obj=selected,old=obj.userData.sketchOutline[0].slice();loadSelectedSketchPoints();document.getElementById('sketchPointIndex').value='0';
+    document.getElementById('sketchPointXMM').value=String(old[0]*MM_PER_UNIT-2);document.getElementById('sketchPointYMM').value=String(old[1]*MM_PER_UNIT);applySelectedSketchPoint();
+    return {pointCount:obj.userData.sketchOutline.length,oldXMM:old[0]*MM_PER_UNIT,newXMM:obj.userData.sketchOutline[0][0]*MM_PER_UNIT,widthMM:obj.userData.sketch.widthMM,vertices:obj.geometry.attributes.position.count};
+  };
   window.__silmoTestCreatePreciselyPositionedSketch=()=>{
     document.getElementById('sketchTool').value='rectangle';
     document.getElementById('sketchWidthMM').value='20';
@@ -3026,6 +3048,45 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     obj.userData.baseDimensions={x:values[0]/MM_PER_UNIT,y:values[1]/MM_PER_UNIT,z:values[2]/MM_PER_UNIT};
     obj.userData.sketch.widthMM=values[0];obj.userData.sketch.depthMM=values[1];obj.userData.sketch.extrusionMM=values[2];
     updateObjects();showProperties();updateMoveGizmo();status.textContent='Skizzenmasse aktualisiert: '+values.map(v=>v.toFixed(1)).join(' × ')+' mm.';
+  }
+  function loadSelectedSketchPoints(){
+    const obj=selectedCadObject(),outline=obj.userData.sketchOutline||obj.userData.sketch?.outlinePoints;
+    if(!obj.userData.sketch||!Array.isArray(outline)||outline.length<3)throw new Error('Bitte einen extrudierten 2D-Skizzenkörper mit gespeicherter Kontur auswählen.');
+    const select=document.getElementById('sketchPointIndex'),current=Number(select.value)||0;
+    select.innerHTML=outline.map((point,index)=>'<option value="'+index+'">Punkt '+(index+1)+'</option>').join('');
+    select.value=String(Math.min(current,outline.length-1));loadSelectedSketchPoint();
+    status.textContent=outline.length+' Konturpunkte geladen. Wähle einen Punkt und ändere seine Koordinaten.';
+  }
+  function loadSelectedSketchPoint(){
+    const obj=selectedCadObject(),outline=obj.userData.sketchOutline||obj.userData.sketch?.outlinePoints;
+    if(!obj.userData.sketch||!Array.isArray(outline)||outline.length<3)throw new Error('Bitte zuerst die Konturpunkte laden.');
+    const index=Number(document.getElementById('sketchPointIndex').value);
+    if(!Number.isInteger(index)||index<0||index>=outline.length)throw new Error('Ungültiger Konturpunkt.');
+    document.getElementById('sketchPointXMM').value=(outline[index][0]*MM_PER_UNIT).toFixed(2);
+    document.getElementById('sketchPointYMM').value=(outline[index][1]*MM_PER_UNIT).toFixed(2);
+  }
+  function applySelectedSketchPoint(){
+    const obj=selectedCadObject(),meta=obj.userData.sketch,outline=obj.userData.sketchOutline||meta?.outlinePoints;
+    if(!meta||!Array.isArray(outline)||outline.length<3||!Number.isFinite(meta.extrusionMM))throw new Error('Bitte einen extrudierten 2D-Skizzenkörper mit Kontur auswählen.');
+    const index=Number(document.getElementById('sketchPointIndex').value),xMM=Number(document.getElementById('sketchPointXMM').value),yMM=Number(document.getElementById('sketchPointYMM').value);
+    if(!Number.isInteger(index)||index<0||index>=outline.length)throw new Error('Ungültiger Konturpunkt.');
+    if(!Number.isFinite(xMM)||!Number.isFinite(yMM)||Math.abs(xMM)>2000||Math.abs(yMM)>2000)throw new Error('Punktkoordinaten müssen zwischen −2000 und 2000 mm liegen.');
+    const updated=outline.map(point=>[point[0],point[1]]);updated[index]=[xMM/MM_PER_UNIT,yMM/MM_PER_UNIT];
+    const points=updated.map(point=>new THREE.Vector2(point[0],point[1]));
+    let area=0;for(let i=0;i<points.length;i++){const a=points[i],b=points[(i+1)%points.length];area+=a.x*b.y-b.x*a.y;}
+    if(Math.abs(area)<1e-7)throw new Error('Die Kontur wäre entartet. Wähle andere Punktkoordinaten.');
+    for(let i=0;i<points.length;i++)if(points[i].distanceTo(points[(i+1)%points.length])<1e-5)throw new Error('Zwei benachbarte Konturpunkte liegen zu nahe beieinander.');
+    const shape=new THREE.Shape();shape.moveTo(points[0].x,points[0].y);points.slice(1).forEach(point=>shape.lineTo(point.x,point.y));shape.closePath();
+    const geometry=new THREE.ExtrudeGeometry(shape,{depth:meta.extrusionMM/MM_PER_UNIT,bevelEnabled:false,curveSegments:32});
+    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
+    if(![size.x,size.y,size.z].every(value=>Number.isFinite(value)&&value>CSG_EPSILON)){geometry.dispose();throw new Error('Die geänderte Kontur erzeugt keine gültige 3D-Geometrie.');}
+    recordHistory();obj.geometry.dispose();obj.geometry=geometry;obj.userData.sketchOutline=updated;meta.outlinePoints=updated;
+    meta.widthMM=size.x*MM_PER_UNIT;meta.depthMM=size.y*MM_PER_UNIT;meta.areaMM2=Math.abs(area)/2*MM_PER_UNIT*MM_PER_UNIT;
+    meta.perimeterMM=points.reduce((sum,point,i)=>sum+point.distanceTo(points[(i+1)%points.length])*MM_PER_UNIT,0);
+    obj.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
+    updateObjects();showProperties();updateMoveGizmo();status.textContent='Konturpunkt '+(index+1)+' geändert. Die Skizzenfläche wurde neu aufgebaut.';
+    loadSelectedSketchPoints();
   }
   function createEdgeTreatment(mode){
     const obj=selectedCadObject(),outline=obj.userData.sketchOutline,meta=obj.userData.sketch;
@@ -3263,6 +3324,9 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   document.getElementById('createSketchSolid').addEventListener('click', createSketchSolid);
   document.getElementById('loadSketchDimensions').addEventListener('click',()=>{try{loadSelectedSketchDimensions();}catch(e){status.textContent=e.message;}});
   document.getElementById('applySketchDimensions').addEventListener('click',()=>{try{applySelectedSketchDimensions();}catch(e){status.textContent='Masse konnten nicht übernommen werden: '+e.message;}});
+  document.getElementById('loadSketchPoints').addEventListener('click',()=>{try{loadSelectedSketchPoints();}catch(e){status.textContent=e.message;}});
+  document.getElementById('sketchPointIndex').addEventListener('change',()=>{try{loadSelectedSketchPoint();}catch(e){status.textContent=e.message;}});
+  document.getElementById('applySketchPoint').addEventListener('click',()=>{try{applySelectedSketchPoint();}catch(e){status.textContent='Punkt konnte nicht übernommen werden: '+e.message;}});
   document.getElementById('applyEdgeFillet').addEventListener('click',()=>{try{createEdgeTreatment('fillet');}catch(e){status.textContent='Abrundung nicht möglich: '+e.message;}});
   document.getElementById('applyEdgeChamfer').addEventListener('click',()=>{try{createEdgeTreatment('chamfer');}catch(e){status.textContent='Fase nicht möglich: '+e.message;}});
   document.getElementById('createLoft').addEventListener('click',()=>{try{createLoftFromSelection();}catch(e){status.textContent='Loft nicht möglich: '+e.message;}});

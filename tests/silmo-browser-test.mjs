@@ -476,7 +476,7 @@ try {
   assert.equal(await page.locator('#sketchPositionXMM').isVisible(),true,'Exakte X-Position der Skizze fehlt');
   assert.equal(await page.locator('#sketchPositionYMM').isVisible(),true,'Exakte Y-Position der Skizze fehlt');
   await page.locator('#pane-draw-right details').filter({hasText:'Professionelle CAD-Bearbeitung'}).locator('summary').click();
-  for (const id of ['sketchConstraint','editSketchWidthMM','editSketchDepthMM','editSketchHeightMM','loadSketchDimensions','applySketchDimensions','edgeTreatmentMM','applyEdgeFillet','applyEdgeChamfer','createLoft','createSweep','cadRelationSelect','applySketchRelation','editPathLengthMM','loadPathLength','applyPathLength','objectDistanceAxis','objectDistanceMM','applyObjectDistance']) {
+  for (const id of ['sketchConstraint','editSketchWidthMM','editSketchDepthMM','editSketchHeightMM','loadSketchDimensions','applySketchDimensions','sketchPointIndex','sketchPointXMM','sketchPointYMM','loadSketchPoints','applySketchPoint','edgeTreatmentMM','applyEdgeFillet','applyEdgeChamfer','createLoft','createSweep','cadRelationSelect','applySketchRelation','editPathLengthMM','loadPathLength','applyPathLength','objectDistanceAxis','objectDistanceMM','applyObjectDistance']) {
     assert.equal(await page.locator('#'+id).isVisible(),true, 'Professionelles CAD-Werkzeug '+id+' fehlt');
   }
   assert.match(await page.locator('#pane-draw-right').innerText(),/Exakte Masse und Position/,'Skizzenparameter sind nicht übersichtlich gruppiert');
@@ -510,6 +510,11 @@ try {
   assert.equal(roundedShellTest.wallHeightMM,12,'Höhe des abgerundeten Rahmens stimmt nicht');
   assert.ok(roundedShellTest.outlinePoints>=8,'Abgerundete Kontur wurde nicht ausreichend aufgelöst');
   assert.ok(roundedShellTest.frameVertices>0,'Abgerundeter Hohlrahmen enthält keine Geometrie');
+  const pointEditTest=await page.evaluate(()=>window.__silmoTestEditSketchPoint());
+  assert.equal(pointEditTest.pointCount,4,'Skizzenpunkt-Editor lädt nicht alle vier Rechteckpunkte');
+  assert.ok(Math.abs(pointEditTest.newXMM-pointEditTest.oldXMM+2)<0.01,'Konturpunkt-X wurde nicht exakt angepasst');
+  assert.ok(pointEditTest.widthMM>21.9&&pointEditTest.widthMM<22.1,'Geometrie wurde nach Punktänderung nicht neu aufgebaut');
+  assert.ok(pointEditTest.vertices>0,'Punktbearbeitung erzeugt keine 3D-Geometrie');
   const proCadTest=await page.evaluate(()=>window.__silmoTestRunProCad());
   for (const key of ['dimensionOK','filletOK','chamferOK','loftOK','sweepOK']) assert.equal(proCadTest[key],true,'Professionelle CAD-Funktion '+key+' funktioniert nicht');
   assert.ok(proCadTest.loftVertices>0&&proCadTest.sweepVertices>0,'Loft/Sweep erzeugt keine Geometrie');
@@ -517,7 +522,7 @@ try {
   for (const key of ['parallelOK','perpendicularOK','tangentOK','concentricOK','lengthOK','distanceOK']) assert.equal(relationTest[key],true,'Skizzenbedingung/Bemaßung '+key+' funktioniert nicht');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
-  console.log('BESTANDEN: 3D-Start, CAD-Zeichenarbeitsplatz, Werkzeugpalette, exakte Skizzenposition, Skizzenbearbeitung, Kantenbearbeitung, Loft, Sweep, Parallel/Senkrecht, Tangential/Konzentrisch, Pfadlänge und Objektabstand, Zeichnen, allgemeine CAD-Konstruktion, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
+  console.log('BESTANDEN: 3D-Start, CAD-Zeichenarbeitsplatz, Werkzeugpalette, exakte Skizzenposition, Skizzenbearbeitung, Konturpunkt-Editor, Kantenbearbeitung, Loft, Sweep, Parallel/Senkrecht, Tangential/Konzentrisch, Pfadlänge und Objektabstand, Zeichnen, allgemeine CAD-Konstruktion, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
   console.log(JSON.stringify({ canvasSize, beforeAlign, afterAlign, selectedCount, alignStatus }));
 } catch (error) {
   console.error('BROWSERTEST FEHLGESCHLAGEN:', error);
