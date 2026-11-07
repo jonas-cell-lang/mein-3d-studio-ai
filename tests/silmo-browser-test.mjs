@@ -72,6 +72,31 @@ try {
 
   assert.ok(canvasSize.width > 0 && canvasSize.height > 0, '3D canvas hat keine gültige Grösse');
 
+  // 2D-Skizze: Rechteck auf der XY-Ebene zeichnen und mit exakten Massen extrudieren.
+  await page.locator('[data-tab="draw"]').click();
+  await page.locator('#sketchTool').selectOption('rectangle');
+  await page.locator('#startSketch').click();
+  const sketchStart = await page.evaluate(() => window.__silmoSketchPointForTest(-0.8, -0.8));
+  const sketchEnd = await page.evaluate(() => window.__silmoSketchPointForTest(0.8, 0.8));
+  await page.mouse.move(sketchStart.x, sketchStart.y);
+  await page.mouse.down();
+  await page.mouse.move(sketchEnd.x, sketchEnd.y, { steps: 8 });
+  await page.mouse.up();
+  assert.equal(await page.locator('#createSketchSolid').isEnabled(), true, '2D-Skizze wird nach dem Ziehen nicht vorbereitet');
+  await page.locator('#sketchWidthMM').fill('25');
+  await page.locator('#sketchDepthMM').fill('15');
+  await page.locator('#sketchHeightMM').fill('5');
+  await page.locator('#createSketchSolid').click();
+  const sketchSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
+  assert.equal(sketchSnapshot.type, 'rectangle', 'Rechteck-Skizze wurde nicht als Rechteck erkannt');
+  assert.ok(Math.abs(sketchSnapshot.actualWidthMM - 25) < 0.01, 'Exakte Rechteckbreite wurde nicht übernommen');
+  assert.ok(Math.abs(sketchSnapshot.actualDepthMM - 15) < 0.01, 'Exakte Rechtecktiefe wurde nicht übernommen');
+  assert.ok(Math.abs(sketchSnapshot.actualHeightMM - 5) < 0.01, 'Extrusionshöhe wurde nicht übernommen');
+  assert.equal(await page.locator('#createSketchSolid').isDisabled(), true, 'Erstellte Skizze bleibt fälschlich zur erneuten Extrusion bereit');
+  await page.locator('#sketchTool').selectOption('circle');
+  assert.equal(await page.locator('#sketchDepthMM').isVisible(), false, 'Kreis zeigt ein unnötiges separates Tiefenfeld');
+  await page.locator('[data-tab="create"]').click();
+
   // Die App kann bereits ein Startobjekt enthalten. Nur die beiden neu erstellten prüfen.
   const initialCount = await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click();

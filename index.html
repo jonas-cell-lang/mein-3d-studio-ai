@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v40 – Drehwinkelanzeige</title>
+<title>SILMO 3D Studio AI – v41 – 2D-Zeichnen</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v40 – Drehwinkelanzeige">
+<meta name="silmo-build" content="v41 – 2D-Zeichnen">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -372,6 +372,7 @@ input:focus{outline:1px solid var(--cyan)}
 </header>
 <nav class="tool-tabs" role="tablist" aria-label="Werkzeugbereiche">
   <button class="tool-tab" type="button" role="tab" data-tab="create" aria-selected="true">Erstellen</button>
+  <button class="tool-tab" type="button" role="tab" data-tab="draw" aria-selected="false" tabindex="-1">Zeichnen</button>
   <button class="tool-tab" type="button" role="tab" data-tab="edit" aria-selected="false" tabindex="-1">Bearbeiten</button>
   <button class="tool-tab" type="button" role="tab" data-tab="measure" aria-selected="false" tabindex="-1">Messen &amp; Prüfen</button>
   <button class="tool-tab" type="button" role="tab" data-tab="print" aria-selected="false" tabindex="-1">3D-Druck</button>
@@ -413,7 +414,7 @@ input:focus{outline:1px solid var(--cyan)}
     <button id="gizmoModeToggle" type="button" aria-pressed="false" title="Zwischen Verschieben mit Pfeilen und Drehen mit Ringen wechseln">⟳ Drehen</button>
     <button id="expandViewport" type="button" aria-label="3D-Ansicht maximieren">⛶</button>
     <input id="rotationAngleLabel" type="number" inputmode="decimal" step="1" min="-36000" max="36000" value="0" aria-label="Drehwinkel in Grad" title="Gradzahl direkt eingeben und mit Enter bestätigen" hidden>
-    <div class="viewport-label">3D-Ansicht <span style="color:#6ee7f9">●</span> · Kamera frei</div><div id="hint"><strong>Bedienung</strong><br>Pfeile am Objekt ziehen: X / Y / Z verschieben<br>Objektkörper ziehen: in X/Y verschieben<br>Freie Fläche ziehen: Ansicht drehen<br>Maus rechts ziehen oder Shift + Ziehen: Kamera drehen<br>Touch: freie Fläche ziehen, auf Modell ziehen zum Verschieben<br>Scrollrad: zoomen<br>Strg/Cmd+S: Projekt speichern · Strg/Cmd+O: Projekt öffnen</div>
+    <div class="viewport-label">3D-Ansicht <span style="color:#6ee7f9">●</span> · Kamera frei</div><div id="hint"><strong>Bedienung</strong><br>Pfeile am Objekt ziehen: X / Y / Z verschieben<br>Objektkörper ziehen: in X/Y verschieben<br>Freie Fläche ziehen: Ansicht drehen<br>Im Reiter „Zeichnen“: Rechteck/Kreis auf XY skizzieren<br>Maus rechts ziehen oder Shift + Ziehen: Kamera drehen<br>Touch: freie Fläche ziehen, auf Modell ziehen zum Verschieben<br>Scrollrad: zoomen<br>Strg/Cmd+S: Projekt speichern · Strg/Cmd+O: Projekt öffnen</div>
   </section>
   <aside class="right-panel" aria-label="Eigenschaften des ausgewählten Modells">
     <h2>Position</h2><div id="positionFields"></div>
@@ -456,7 +457,7 @@ input:focus{outline:1px solid var(--cyan)}
   const rightContainer = document.createElement('div'); rightContainer.className = 'tab-content';
   const paneMap = {};
   const tabDefs = [
-    ['create','Erstellen'],['edit','Bearbeiten'],['measure','Messen & Prüfen'],['print','3D-Druck'],['expert','Expertenzentrum']
+    ['create','Erstellen'],['draw','Zeichnen'],['edit','Bearbeiten'],['measure','Messen & Prüfen'],['print','3D-Druck'],['expert','Expertenzentrum']
   ];
   for (const [key] of tabDefs) {
     paneMap[key] = {};
@@ -479,6 +480,29 @@ input:focus{outline:1px solid var(--cyan)}
   ['booleanUnion','booleanSubtract'].forEach(id=>put(paneMap.create.left,id));
   const booleanNote=document.createElement('p'); booleanNote.className='note'; booleanNote.textContent='Beim Abziehen bleibt die erste Form erhalten; alle weiteren ausgewählten Formen schneiden sie aus.'; paneMap.create.left.appendChild(booleanNote);
   heading(paneMap.create.left,'Objektliste'); put(paneMap.create.left,'objects');
+
+  heading(paneMap.draw.left,'2D-Skizze');
+  const sketchIntro=document.createElement('p'); sketchIntro.className='note'; sketchIntro.textContent='Zeichne auf der XY-Zeichenebene mit Maus, Touch oder Apple Pencil. Ziehe auf der 3D-Fläche, um eine Skizze aufzuspannen. Danach kannst du die Masse exakt eingeben und daraus einen 3D-Körper erstellen.'; paneMap.draw.left.appendChild(sketchIntro);
+  const sketchToolWrap=document.createElement('div'); sketchToolWrap.className='field';
+  const sketchToolLabel=document.createElement('label'); sketchToolLabel.htmlFor='sketchTool'; sketchToolLabel.textContent='Zeichenwerkzeug';
+  const sketchTool=document.createElement('select'); sketchTool.id='sketchTool'; sketchTool.innerHTML='<option value="rectangle">Rechteck</option><option value="circle">Kreis</option>';
+  sketchToolWrap.append(sketchToolLabel,sketchTool); paneMap.draw.left.appendChild(sketchToolWrap);
+  const sketchWidthWrap=document.createElement('div'); sketchWidthWrap.className='field';
+  const sketchWidthLabel=document.createElement('label'); sketchWidthLabel.htmlFor='sketchWidthMM'; sketchWidthLabel.textContent='Breite / Durchmesser (mm)';
+  const sketchWidth=document.createElement('input'); sketchWidth.id='sketchWidthMM'; sketchWidth.type='number'; sketchWidth.min='0.1'; sketchWidth.max='2000'; sketchWidth.step='0.1'; sketchWidth.value='20';
+  sketchWidthWrap.append(sketchWidthLabel,sketchWidth); paneMap.draw.left.appendChild(sketchWidthWrap);
+  const sketchDepthWrap=document.createElement('div'); sketchDepthWrap.className='field';
+  const sketchDepthLabel=document.createElement('label'); sketchDepthLabel.htmlFor='sketchDepthMM'; sketchDepthLabel.textContent='Tiefe Y (mm)';
+  const sketchDepth=document.createElement('input'); sketchDepth.id='sketchDepthMM'; sketchDepth.type='number'; sketchDepth.min='0.1'; sketchDepth.max='2000'; sketchDepth.step='0.1'; sketchDepth.value='20';
+  sketchDepthWrap.append(sketchDepthLabel,sketchDepth); paneMap.draw.left.appendChild(sketchDepthWrap);
+  const sketchHeightWrap=document.createElement('div'); sketchHeightWrap.className='field';
+  const sketchHeightLabel=document.createElement('label'); sketchHeightLabel.htmlFor='sketchHeightMM'; sketchHeightLabel.textContent='Extrusionshöhe Z (mm)';
+  const sketchHeight=document.createElement('input'); sketchHeight.id='sketchHeightMM'; sketchHeight.type='number'; sketchHeight.min='0.1'; sketchHeight.max='2000'; sketchHeight.step='0.1'; sketchHeight.value='10';
+  sketchHeightWrap.append(sketchHeightLabel,sketchHeight); paneMap.draw.left.appendChild(sketchHeightWrap);
+  const startSketchButton=document.createElement('button'); startSketchButton.type='button'; startSketchButton.id='startSketch'; startSketchButton.className='wide primary'; startSketchButton.textContent='✎ 2D-Zeichnen starten'; paneMap.draw.left.appendChild(startSketchButton);
+  const createSketchButton=document.createElement('button'); createSketchButton.type='button'; createSketchButton.id='createSketchSolid'; createSketchButton.className='wide'; createSketchButton.textContent='▰ Als 3D-Körper erstellen'; createSketchButton.disabled=true; paneMap.draw.left.appendChild(createSketchButton);
+  const cancelSketchButton=document.createElement('button'); cancelSketchButton.type='button'; cancelSketchButton.id='cancelSketch'; cancelSketchButton.className='wide'; cancelSketchButton.textContent='Skizze abbrechen'; cancelSketchButton.disabled=true; paneMap.draw.left.appendChild(cancelSketchButton);
+  const sketchStatus=document.createElement('p'); sketchStatus.id='sketchStatus'; sketchStatus.className='note'; sketchStatus.setAttribute('aria-live','polite'); sketchStatus.textContent='Noch keine Skizze. Wähle Rechteck oder Kreis und starte den Zeichenmodus.'; paneMap.draw.left.appendChild(sketchStatus);
 
   heading(paneMap.edit.left,'Bearbeiten');
   ['delete','fitView'].forEach(id=>put(paneMap.edit.left,id));
@@ -527,7 +551,7 @@ input:focus{outline:1px solid var(--cyan)}
 
   heading(paneMap.measure.left,'Messen & Prüfen'); put(paneMap.measure.left,'checkBed');
   function addBedButton(pane,key){ const b=document.createElement('button'); b.type='button'; b.className='wide'; b.textContent='⬇ Auf Arbeitsplatte stellen'; b.dataset.bedAction=key; b.addEventListener('click',()=>document.getElementById('dropToBed').click()); pane.appendChild(b); }
-  ['create','edit','measure','print','expert'].forEach(key=>addBedButton(paneMap[key].left,key));
+  ['create','draw','edit','measure','print','expert'].forEach(key=>addBedButton(paneMap[key].left,key));
   heading(paneMap.measure.right,'Skalierung (%)'); put(paneMap.measure.right,'percentFields');
   heading(paneMap.measure.right,'Exakte Masse (mm)'); put(paneMap.measure.right,'sizeFields');
   heading(paneMap.measure.right,'Farbe'); put(paneMap.measure.right,'color');
@@ -2192,6 +2216,229 @@ input:focus{outline:1px solid var(--cyan)}
     raycaster.setFromCamera(pointerNDC, camera);
   }
 
+  const sketchPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+  const sketchPoint = new THREE.Vector3();
+  const sketchStart = new THREE.Vector3();
+  let sketchMode = false, sketchDrawing = false, sketchPointerId = null;
+  let sketchDraft = null, sketchPreview = null;
+
+  function clearSketchPreview() {
+    if (sketchPreview) {
+      scene.remove(sketchPreview);
+      sketchPreview.geometry.dispose();
+      sketchPreview.material.dispose();
+      sketchPreview = null;
+    }
+  }
+  function sketchDimensionsFromInputs() {
+    const widthMM = Number(document.getElementById('sketchWidthMM')?.value);
+    const depthMM = document.getElementById('sketchTool')?.value === 'circle'
+      ? widthMM
+      : Number(document.getElementById('sketchDepthMM')?.value);
+    const heightMM = Number(document.getElementById('sketchHeightMM')?.value);
+    if (![widthMM, depthMM, heightMM].every(Number.isFinite) ||
+        widthMM < 0.1 || depthMM < 0.1 || heightMM < 0.1 ||
+        widthMM > 2000 || depthMM > 2000 || heightMM > 2000) {
+      throw new Error('Breite, Tiefe und Extrusionshöhe müssen zwischen 0,1 und 2000 mm liegen.');
+    }
+    return { width: widthMM / MM_PER_UNIT, depth: depthMM / MM_PER_UNIT, height: heightMM / MM_PER_UNIT };
+  }
+  function updateSketchPreview() {
+    if (!sketchDraft) return;
+    clearSketchPreview();
+    let points = [];
+    if (document.getElementById('sketchTool')?.value === 'circle') {
+      const radius = sketchDraft.width / 2;
+      for (let i = 0; i < 64; i++) {
+        const angle = (i / 64) * Math.PI * 2;
+        points.push(new THREE.Vector3(
+          sketchDraft.centerX + Math.cos(angle) * radius,
+          sketchDraft.centerY + Math.sin(angle) * radius,
+          0.025
+        ));
+      }
+    } else {
+      const halfW = sketchDraft.width / 2, halfD = sketchDraft.depth / 2;
+      points = [
+        new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY-halfD,0.025),
+        new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY-halfD,0.025),
+        new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY+halfD,0.025),
+        new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY+halfD,0.025)
+      ];
+    }
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    sketchPreview = new THREE.LineLoop(geometry, new THREE.LineBasicMaterial({ color: 0x53d8e8, depthTest: false }));
+    sketchPreview.renderOrder = 20;
+    scene.add(sketchPreview);
+  }
+  function updateSketchInputsFromDraft() {
+    if (!sketchDraft) return;
+    const width = sketchDraft.width * MM_PER_UNIT;
+    const depth = sketchDraft.depth * MM_PER_UNIT;
+    document.getElementById('sketchWidthMM').value = width.toFixed(1);
+    if (document.getElementById('sketchTool').value !== 'circle') {
+      document.getElementById('sketchDepthMM').value = depth.toFixed(1);
+    }
+    document.getElementById('createSketchSolid').disabled = false;
+    document.getElementById('cancelSketch').disabled = false;
+    document.getElementById('sketchStatus').textContent =
+      'Skizze bereit: ' + width.toFixed(1) + ' × ' + depth.toFixed(1) + ' mm. Du kannst die Masse links exakt anpassen.';
+  }
+  function refreshSketchDraftFromInputs() {
+    if (!sketchDraft) return;
+    try {
+      const dims = sketchDimensionsFromInputs();
+      sketchDraft.width = dims.width;
+      sketchDraft.depth = dims.depth;
+      updateSketchPreview();
+      const widthMM = dims.width * MM_PER_UNIT, depthMM = dims.depth * MM_PER_UNIT;
+      document.getElementById('sketchStatus').textContent =
+        'Skizze angepasst: ' + widthMM.toFixed(1) + ' × ' + depthMM.toFixed(1) + ' mm. Extrusion: ' + (dims.height * MM_PER_UNIT).toFixed(1) + ' mm.';
+    } catch (error) {
+      document.getElementById('sketchStatus').textContent = error.message;
+    }
+  }
+  function finishSketchPointer(e) {
+    if (!sketchDrawing || (e && e.pointerId !== sketchPointerId)) return false;
+    if (e) setPointerRay(e);
+    if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
+      const dx = sketchPoint.x - sketchStart.x, dy = sketchPoint.y - sketchStart.y;
+      const width = Math.abs(dx), depth = Math.abs(dy);
+      const tool = document.getElementById('sketchTool').value;
+      const size = tool === 'circle' ? Math.max(width, depth) : null;
+      const actualWidth = tool === 'circle' ? size : width;
+      const actualDepth = tool === 'circle' ? size : depth;
+      if (actualWidth >= 0.01 && actualDepth >= 0.01) {
+        sketchDraft = {
+          centerX: (sketchStart.x + sketchPoint.x) / 2,
+          centerY: (sketchStart.y + sketchPoint.y) / 2,
+          width: actualWidth,
+          depth: actualDepth
+        };
+        updateSketchInputsFromDraft();
+        updateSketchPreview();
+      } else {
+        document.getElementById('sketchStatus').textContent = 'Die Skizze ist zu klein. Ziehe ein grösseres Rechteck oder einen grösseren Kreis.';
+      }
+    }
+    sketchDrawing = false;
+    sketchPointerId = null;
+    sketchMode = false;
+    document.getElementById('startSketch').textContent = '✎ 2D-Zeichnen starten';
+    if (sketchDraft) {
+      document.getElementById('createSketchSolid').disabled = false;
+      status.textContent = '2D-Skizze vorbereitet. Masse prüfen und als 3D-Körper erstellen.';
+    } else {
+      document.getElementById('startSketch').textContent = '✎ Erneut zeichnen';
+      status.textContent = 'Keine gültige Skizze erstellt.';
+    }
+    return true;
+  }
+  function createSketchSolid() {
+    if (!sketchDraft) { status.textContent = 'Bitte zuerst eine 2D-Skizze zeichnen.'; return; }
+    try {
+      const dims = sketchDimensionsFromInputs();
+      const shape = new THREE.Shape();
+      if (document.getElementById('sketchTool').value === 'circle') {
+        shape.absarc(0, 0, dims.width / 2, 0, Math.PI * 2, false);
+      } else {
+        const x = dims.width / 2, y = dims.depth / 2;
+        shape.moveTo(-x, -y); shape.lineTo(x, -y); shape.lineTo(x, y); shape.lineTo(-x, y); shape.closePath();
+      }
+      const geometry = new THREE.ExtrudeGeometry(shape, { depth: dims.height, bevelEnabled: false, curveSegments: 64 });
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      const size = new THREE.Vector3();
+      geometry.boundingBox.getSize(size);
+      recordHistory();
+      const material = new THREE.MeshStandardMaterial({
+        color: new THREE.Color().setHSL(Math.random(), 0.65, 0.55),
+        roughness: 0.42, metalness: 0.08
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(sketchDraft.centerX, sketchDraft.centerY, 0);
+      mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
+      mesh.userData.percent = { x: 100, y: 100, z: 100 };
+      mesh.userData.label = document.getElementById('sketchTool').value === 'circle' ? 'Skizze Kreis' : 'Skizze Rechteck';
+      mesh.userData.sketch = {
+        type: document.getElementById('sketchTool').value,
+        widthMM: dims.width * MM_PER_UNIT,
+        depthMM: dims.depth * MM_PER_UNIT,
+        extrusionMM: dims.height * MM_PER_UNIT
+      };
+      scene.add(mesh);
+      objects.push(mesh);
+      selectObject(mesh);
+      clearSketchPreview();
+      sketchDraft = null;
+      document.getElementById('createSketchSolid').disabled = true;
+      document.getElementById('cancelSketch').disabled = true;
+      document.getElementById('sketchStatus').textContent = '3D-Körper erstellt. Du kannst ihn jetzt wie jedes andere Objekt bearbeiten.';
+      status.textContent = '2D-Skizze erfolgreich zu einem 3D-Körper extrudiert.';
+    } catch (error) {
+      status.textContent = 'Skizze konnte nicht erstellt werden: ' + (error.message || 'Eingaben prüfen.');
+    }
+  }
+  document.getElementById('startSketch').addEventListener('click', () => {
+    clearSketchPreview();
+    sketchDraft = null;
+    sketchDrawing = false;
+    sketchMode = true;
+    document.getElementById('createSketchSolid').disabled = true;
+    document.getElementById('cancelSketch').disabled = true;
+    document.getElementById('startSketch').textContent = 'Zeichenmodus aktiv';
+    document.getElementById('sketchStatus').textContent = 'Ziehe jetzt auf der XY-Zeichenebene, um ein Rechteck oder einen Kreis aufzuspannen.';
+    status.textContent = '2D-Zeichenmodus aktiv: auf der Zeichenfläche ziehen.';
+  });
+  document.getElementById('createSketchSolid').addEventListener('click', createSketchSolid);
+  document.getElementById('cancelSketch').addEventListener('click', () => {
+    sketchMode = false; sketchDrawing = false; sketchPointerId = null; sketchDraft = null;
+    clearSketchPreview();
+    document.getElementById('createSketchSolid').disabled = true;
+    document.getElementById('cancelSketch').disabled = true;
+    document.getElementById('startSketch').textContent = '✎ 2D-Zeichnen starten';
+    document.getElementById('sketchStatus').textContent = 'Skizze abgebrochen. Du kannst neu zeichnen.';
+    status.textContent = 'Skizze abgebrochen.';
+  });
+  ['sketchWidthMM','sketchDepthMM','sketchHeightMM'].forEach(id =>
+    document.getElementById(id).addEventListener('input', refreshSketchDraftFromInputs));
+  document.getElementById('sketchTool').addEventListener('change', () => {
+    const circle = document.getElementById('sketchTool').value === 'circle';
+    document.getElementById('sketchDepthMM').closest('.field').hidden = circle;
+    if (sketchDraft) {
+      if (circle) {
+        const diameter = Math.max(sketchDraft.width, sketchDraft.depth);
+        sketchDraft.width = diameter; sketchDraft.depth = diameter;
+      }
+      updateSketchInputsFromDraft();
+      updateSketchPreview();
+    }
+  });
+  document.getElementById('sketchDepthMM').closest('.field').hidden = false;
+
+  window.__silmoSketchPointForTest = (x, y) => {
+    const point = new THREE.Vector3(x, y, 0).project(camera);
+    const rect = canvas.getBoundingClientRect();
+    return { x: rect.left + (point.x + 1) * rect.width / 2, y: rect.top + (1 - point.y) * rect.height / 2 };
+  };
+  window.__silmoSketchSnapshot = () => {
+    const obj = selected;
+    if (!obj || !obj.userData.sketch) return null;
+    const box = new THREE.Box3().setFromObject(obj);
+    const size = new THREE.Vector3(); box.getSize(size);
+    return {
+      label: obj.userData.label,
+      type: obj.userData.sketch.type,
+      widthMM: obj.userData.sketch.widthMM,
+      depthMM: obj.userData.sketch.depthMM,
+      extrusionMM: obj.userData.sketch.extrusionMM,
+      actualWidthMM: size.x * MM_PER_UNIT,
+      actualDepthMM: size.y * MM_PER_UNIT,
+      actualHeightMM: size.z * MM_PER_UNIT
+    };
+  };
+
   function closestAxisParameter(ray, origin, direction) {
     // Kürzester Abstand zwischen Kamerastrahl und Bewegungsachse.
     const w0 = ray.origin.clone().sub(origin);
@@ -2203,6 +2450,16 @@ input:focus{outline:1px solid var(--cyan)}
   }
 
   canvas.addEventListener('pointerdown', e => {
+    if (sketchMode) {
+      if (e.cancelable) e.preventDefault();
+      setPointerRay(e);
+      if (!raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) return;
+      sketchStart.copy(sketchPoint);
+      sketchDrawing = true;
+      sketchPointerId = e.pointerId;
+      try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+      return;
+    }
     // iPad-Safari darf weder beim Verschieben noch beim Drehen ein
     // Textauswahl-/Nachschlagen-Menü öffnen (Touch und Apple Pencil).
     if (e.pointerType !== 'mouse' && e.cancelable) e.preventDefault();
@@ -2304,6 +2561,23 @@ input:focus{outline:1px solid var(--cyan)}
   });
 
   canvas.addEventListener('pointermove', e => {
+    if (sketchDrawing && e.pointerId === sketchPointerId) {
+      setPointerRay(e);
+      if (raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
+        const dx = sketchPoint.x - sketchStart.x, dy = sketchPoint.y - sketchStart.y;
+        const tool = document.getElementById('sketchTool').value;
+        const width = Math.abs(dx), depth = Math.abs(dy);
+        const diameter = Math.max(width, depth);
+        sketchDraft = {
+          centerX: (sketchStart.x + sketchPoint.x) / 2,
+          centerY: (sketchStart.y + sketchPoint.y) / 2,
+          width: tool === 'circle' ? diameter : width,
+          depth: tool === 'circle' ? diameter : depth
+        };
+        updateSketchPreview();
+      }
+      return;
+    }
     if (!dragging || e.pointerId !== pointerId) return;
     if (activeRotationAxis && selected) {
       setPointerRay(e);
@@ -2356,7 +2630,11 @@ input:focus{outline:1px solid var(--cyan)}
     lastY = e.clientY;
   });
 
-  function stopDrag() {
+  function stopDrag(e) {
+    if (sketchDrawing) {
+      finishSketchPointer(e);
+      return;
+    }
     dragging = false;
     rotatingView = false;
     draggingObject = false;
