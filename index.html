@@ -530,8 +530,8 @@ input:focus{outline:1px solid var(--cyan)}
   const sketchDepth=document.createElement('input'); sketchDepth.id='sketchDepthMM'; sketchDepth.type='number'; sketchDepth.min='0.1'; sketchDepth.max='2000'; sketchDepth.step='0.1'; sketchDepth.value='20';
   sketchDepthWrap.append(sketchDepthLabel,sketchDepth); paneMap.draw.left.appendChild(sketchDepthWrap);
   const sketchHeightWrap=document.createElement('div'); sketchHeightWrap.className='field';
-  const sketchHeightLabel=document.createElement('label'); sketchHeightLabel.htmlFor='sketchHeightMM'; sketchHeightLabel.textContent='Extrusionshöhe Z (mm)';
-  const sketchHeight=document.createElement('input'); sketchHeight.id='sketchHeightMM'; sketchHeight.type='number'; sketchHeight.min='0.1'; sketchHeight.max='2000'; sketchHeight.step='0.1'; sketchHeight.value='10';
+  const sketchHeightLabel=document.createElement('label'); sketchHeightLabel.htmlFor='sketchHeightMM'; sketchHeightLabel.textContent='Extrusionshöhe / Bodenstärke Z (mm)';
+  const sketchHeight=document.createElement('input'); sketchHeight.id='sketchHeightMM'; sketchHeight.type='number'; sketchHeight.min='0.1'; sketchHeight.max='2000'; sketchHeight.step='0.1'; sketchHeight.value='2';
   sketchHeightWrap.append(sketchHeightLabel,sketchHeight); paneMap.draw.left.appendChild(sketchHeightWrap);
   const contourToolsHeading=document.createElement('h2');contourToolsHeading.textContent='Kontur- und Wandwerkzeuge';paneMap.draw.left.appendChild(contourToolsHeading);
   const contourHelp=document.createElement('p');contourHelp.className='note';contourHelp.textContent='Erzeuge aus einer selbst gezeichneten geschlossenen Kontur einen hohlen Rahmen oder Wandkörper. Für Bohrungen und Ausschnitte wählst du den Grundkörper zuerst und den Schneidkörper danach.';paneMap.draw.left.appendChild(contourHelp);
@@ -2667,6 +2667,23 @@ input:focus{outline:1px solid var(--cyan)}
     updateObjects();showProperties();updateMoveGizmo();
   }
 
+  window.__silmoTestCreateRoundedShell=()=>{
+    document.getElementById('sketchTool').value='roundedRectangle';
+    document.getElementById('sketchWidthMM').value='72';
+    document.getElementById('sketchDepthMM').value='150';
+    document.getElementById('sketchHeightMM').value='2';
+    document.getElementById('sketchCornerRadiusMM').value='8';
+    document.getElementById('wallThicknessMM').value='1.4';
+    document.getElementById('frameHeightMM').value='12';
+    sketchDraft={type:'rectangle',centerX:0,centerY:0,width:72/MM_PER_UNIT,depth:150/MM_PER_UNIT};
+    createSketchSolid();
+    const base=selected;
+    const baseOK=!!base&&Array.isArray(base.userData.sketchOutline)&&base.userData.sketchOutline.length>=8;
+    if(!baseOK) return {baseFound:false,frameFound:false};
+    createContourFrame();
+    const frame=objects.find(obj=>obj.userData.contourFrame);
+    return {baseFound:true,frameFound:!!frame,baseWidthMM:base.userData.sketch?.widthMM,baseDepthMM:base.userData.sketch?.depthMM,baseThicknessMM:base.userData.sketch?.extrusionMM,outlinePoints:base.userData.sketchOutline.length,wallThicknessMM:frame?.userData.contourFrame?.wallThicknessMM,wallHeightMM:frame?.userData.contourFrame?.wallHeightMM,frameVertices:frame?.geometry?.attributes?.position?.count||0};
+  };
   window.__silmoTestCreateContourFrame=()=>{
     const points=[[-1,-1],[1,-1],[1,1],[-1,1]];
     const shape=new THREE.Shape();shape.moveTo(points[0][0],points[0][1]);points.slice(1).forEach(point=>shape.lineTo(point[0],point[1]));shape.closePath();
@@ -2768,7 +2785,7 @@ input:focus{outline:1px solid var(--cyan)}
           depthMM: dims.depth * MM_PER_UNIT,
           extrusionMM: dims.height * MM_PER_UNIT
         };
-        if(tool==='roundedRectangle') sketchMetadata.outlinePoints=shape.getPoints(10).map(point=>[point.x,point.y]);
+        if(tool==='roundedRectangle') { const outline=shape.getPoints(10); if(outline.length>1&&outline[0].distanceTo(outline[outline.length-1])<1e-7)outline.pop(); sketchMetadata.outlinePoints=outline.map(point=>[point.x,point.y]); }
         label = tool === 'circle' ? 'Skizze Kreis' : tool === 'ellipse' ? 'Skizze Ellipse' : tool === 'triangle' ? 'Skizze Dreieck' : tool === 'roundedRectangle' ? 'Abgerundete Rechteck-Skizze' : 'Skizze Rechteck';
       }
       geometry.computeBoundingBox();
