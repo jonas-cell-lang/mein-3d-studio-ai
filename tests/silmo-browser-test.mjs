@@ -93,7 +93,7 @@ try {
   assert.ok(Math.abs(cameraAfterSketch.targetRY - cameraBeforeSketch.targetRY) < 1e-10, 'Kamera wurde im Zeichenmodus horizontal gedreht');
   assert.equal(cameraAfterSketch.rotatingView, false, 'Kameradrehung blieb nach Zeichnen aktiv');
   assert.equal(await page.locator('#createSketchSolid').isEnabled(), true, 'Rechtsklick-Zeichnung wurde nicht als Skizze vorbereitet');
-  await page.locator('#cancelSketch').click();
+  await page.locator('#createSketchSolid').click();
 
   // 2D-Skizze: Rechteck auf der XY-Ebene zeichnen und mit exakten Massen extrudieren.
   await page.locator('[data-tab="draw"]').click();
