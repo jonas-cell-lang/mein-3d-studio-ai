@@ -2449,12 +2449,14 @@ input:focus{outline:1px solid var(--cyan)}
     updateGizmoModeButton();
     canvas.style.cursor = 'crosshair';
     document.getElementById('startSketch').textContent = '✎ Weiter zeichnen';
+    document.getElementById('cancelSketch').disabled = false;
+    document.getElementById('cancelSketch').textContent = sketchDraft ? 'Skizze verwerfen' : 'Zeichenmodus beenden';
     if (sketchDraft) {
       document.getElementById('createSketchSolid').disabled = false;
-      status.textContent = sketchDraft.type === 'line3d' ? '3D-Linie vorbereitet. Linienstärke prüfen und Körper erstellen.' : '2D-Skizze vorbereitet. Masse prüfen und als 3D-Körper erstellen.';
+      status.textContent = ['line3d','line2d','curve2d'].includes(sketchDraft.type) ? 'Linie/Kurve vorbereitet. Linienstärke prüfen und Körper erstellen.' : '2D-Skizze vorbereitet. Masse prüfen und als 3D-Körper erstellen.';
     } else {
-      document.getElementById('startSketch').textContent = '✎ Erneut zeichnen';
-      status.textContent = 'Keine gültige Skizze erstellt.';
+      document.getElementById('startSketch').textContent = '✎ Weiter zeichnen';
+      status.textContent = 'Keine gültige Skizze. Der Zeichenmodus bleibt gesperrt; zeichne erneut oder beende ihn.';
     }
     return true;
   }
@@ -2564,9 +2566,10 @@ input:focus{outline:1px solid var(--cyan)}
       clearSketchPreview();
       sketchDraft = null;
       document.getElementById('createSketchSolid').disabled = true;
-      document.getElementById('cancelSketch').disabled = true;
-      document.getElementById('sketchStatus').textContent = '3D-Körper erstellt. Du kannst ihn jetzt wie jedes andere Objekt bearbeiten.';
-      status.textContent = tool === 'line3d' ? '3D-Linie erfolgreich in einen räumlichen Körper umgewandelt.' : tool === 'freeform2d' ? 'Freiform erfolgreich zu einem 3D-Körper extrudiert.' : '2D-Skizze erfolgreich zu einem 3D-Körper extrudiert.';
+      document.getElementById('cancelSketch').disabled = false;
+      document.getElementById('cancelSketch').textContent = 'Zeichenmodus beenden';
+      document.getElementById('sketchStatus').textContent = '3D-Körper erstellt. Du kannst weiterzeichnen oder den Zeichenmodus beenden.';
+      status.textContent = tool === 'line3d' ? '3D-Linie erfolgreich in einen räumlichen Körper umgewandelt.' : tool === 'line2d' ? '2D-Linie erfolgreich in einen Körper umgewandelt.' : tool === 'curve2d' ? '2D-Kurve erfolgreich in einen Körper umgewandelt.' : tool === 'freeform2d' ? 'Freiform erfolgreich zu einem 3D-Körper extrudiert.' : '2D-Skizze erfolgreich zu einem 3D-Körper extrudiert.';
     } catch (error) {
       status.textContent = 'Skizze konnte nicht erstellt werden: ' + (error.message || 'Eingaben prüfen.');
     }
@@ -2575,7 +2578,7 @@ input:focus{outline:1px solid var(--cyan)}
     clearSketchPreview();
     sketchDraft = null;
     sketchDrawing = false;
-    if (gizmoMode === 'rotate') { gizmoMode = 'move'; activeRotationAxis = null; setRotationGuideAxis(null); }
+    if (gizmoMode === 'rotate') { gizmoMode = 'move'; activeRotationAxis = null; setRotationGuideAxis(null); updateMoveGizmo(); }
     sketchMode = true;
     updateGizmoModeButton();
     rotationAngleLabel.hidden = true;
@@ -2583,7 +2586,8 @@ input:focus{outline:1px solid var(--cyan)}
     canvas.style.cursor = 'crosshair';
     document.getElementById('sketchViewLockNote').textContent = '🔒 ZEICHENMODUS AKTIV: Kamera- und Objektdrehung gesperrt. Zoomen bleibt möglich.';
     document.getElementById('createSketchSolid').disabled = true;
-    document.getElementById('cancelSketch').disabled = true;
+    document.getElementById('cancelSketch').disabled = false;
+    document.getElementById('cancelSketch').textContent = 'Zeichenmodus beenden';
     document.getElementById('startSketch').textContent = 'Zeichenmodus aktiv';
     document.getElementById('sketchStatus').textContent = document.getElementById('sketchTool').value === 'freeform2d' ? 'Zeichne eine geschlossene Freiform mit mindestens drei Punkten. Beim Loslassen wird die Kontur automatisch geschlossen.' : 'Ziehe jetzt auf der XY-Zeichenebene, um deine Skizze zu zeichnen.';
     status.textContent = 'Zeichenmodus aktiv: auf der Zeichenfläche ziehen.';
@@ -2598,6 +2602,7 @@ input:focus{outline:1px solid var(--cyan)}
     clearSketchPreview();
     document.getElementById('createSketchSolid').disabled = true;
     document.getElementById('cancelSketch').disabled = true;
+    document.getElementById('cancelSketch').textContent = 'Zeichenmodus beenden';
     document.getElementById('startSketch').textContent = '✎ Zeichnen starten';
     document.getElementById('sketchStatus').textContent = 'Skizze abgebrochen. Du kannst neu zeichnen.';
     status.textContent = 'Skizze abgebrochen.';
