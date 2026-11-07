@@ -3223,7 +3223,7 @@ input:focus{outline:1px solid var(--cyan)}
     ['💾','Projekt sichern','print','saveProjectButton'],['📂','Projekt öffnen','print','openProjectButton']
   ];
   $('tutorialToolGallery').innerHTML = toolCards.map(([icon,label,tab,target]) =>
-    '<button type="button" class="tutorial-tool-card" data-tab="'+tab+'" data-target="'+target+'"><span class="tutorial-tool-icon" aria-hidden="true">'+icon+'</span><span>'+label+'</span></button>'
+    '<button type="button" class="tutorial-tool-card" data-tool-tab="'+tab+'" data-target="'+target+'"><span class="tutorial-tool-icon" aria-hidden="true">'+icon+'</span><span>'+label+'</span></button>'
   ).join('');
   const steps = [
     {title:'Würfel erstellen',text:'Erstelle mit „＋ Würfel“ ein zusätzliches Objekt. Die Aufgabe ist bestanden, wenn tatsächlich ein weiteres Objekt in der Objektliste erscheint.',target:'addCube',tab:'create',check:()=>objectCount()>tutorialStartCount,initialise:()=>{tutorialStartCount=objectCount();feedback('Klicke auf die markierte Schaltfläche.');}},
@@ -3295,7 +3295,7 @@ input:focus{outline:1px solid var(--cyan)}
   function close(){clearHighlight();shade.hidden=true;card.hidden=true;}
   $('tutorialToolGallery').addEventListener('click',event=>{
     const tool=event.target.closest('.tutorial-tool-card');if(!tool)return;
-    selectTutorialTab(tool.dataset.tab);clearHighlight();
+    selectTutorialTab(tool.dataset.toolTab);clearHighlight();
     const target=tool.dataset.target&&$(tool.dataset.target);
     if(target){highlight=target;highlight.classList.add('tutorial-highlight');target.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});}
     feedback('Werkzeug geöffnet: '+tool.textContent.trim()+'. Die gelbe Markierung zeigt dir den Ort.');
