@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v51 – Freies Handyhüllen-Zeichnen</title>
+<title>SILMO 3D Studio AI – v52 – Eigene Handyhüllen-Konstruktion</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v51 – Freies Handyhüllen-Zeichnen">
+<meta name="silmo-build" content="v52 – Eigene Handyhüllen-Konstruktion">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -151,7 +151,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v51 – Freies Handyhüllen-Zeichnen -->
+<!-- SILMO BUILD: v52 – Eigene Handyhüllen-Konstruktion -->
 <script id="silmoDeveloperDiagnostics">
 (function(){
   'use strict';
@@ -292,7 +292,7 @@ input:focus{outline:1px solid var(--cyan)}
         cssRuleCount=styles?styles.split('{').length-1:0;
         add('HINWEIS','Dieser Browser bietet keinen vollständigen CSS-Parser für die Zusatzprüfung; CSS-Regeln wurden gezählt.');
       }
-      ['#createObjectGroup','#ungroupObjects','#alignSelected','#booleanSeparate','#sketchTool','#startSketch','#createSketchSolid'].forEach(selector=>{if(!document.querySelector(selector))issues.push('App: Werkzeug '+selector+' wurde nicht initialisiert.');});
+      ['#createObjectGroup','#ungroupObjects','#alignSelected','#booleanSeparate','#sketchTool','#startSketch','#createSketchSolid','#createCaseWallFrame','#cutCaseOpening','#caseWallThicknessMM','#caseWallHeightMM'].forEach(selector=>{if(!document.querySelector(selector))issues.push('App: Werkzeug '+selector+' wurde nicht initialisiert.');});
       if(!window.THREE)issues.push('3D: Three.js ist nicht geladen.');
       else{
         if(!window.THREE.STLLoader)issues.push('3D: STLLoader ist nicht geladen.');
@@ -494,7 +494,6 @@ input:focus{outline:1px solid var(--cyan)}
 
   heading(paneMap.draw.left,'2D-Skizze');
   const sketchIntro=document.createElement('p'); sketchIntro.className='note'; sketchIntro.textContent='Zeichne Rechtecke, Kreise und freie geschlossene Konturen auf XY oder räumliche Linien auf XY, XZ oder YZ – mit Maus, Touch oder Apple Pencil. Extrudiere deine 2D-Skizze zu einem echten 3D-Körper.'; paneMap.draw.left.appendChild(sketchIntro);
-  const caseGuide=document.createElement('div');caseGuide.id='manualPhoneCaseGuide';caseGuide.className='note';caseGuide.style.cssText='padding:10px;border:1px solid #3c6387;border-radius:9px;background:#10243a;color:#d9ebff';caseGuide.innerHTML='<strong style="color:#8cddff">Handyhülle selbst konstruieren</strong><br>Es wird kein Handy und keine Hülle automatisch erstellt. Zeichne deine eigene Form Schritt für Schritt:<br>1. Wähle <strong>2D-Freiform</strong> und zeichne die Rückwand-Kontur von oben.<br>2. Stelle die Rückwanddicke bei <strong>Extrusionshöhe Z</strong> ein und erstelle den Körper.<br>3. Zeichne die Seitenwände selbst als schmale Rechtecke oder Freiformen, extrudiere sie und verschiebe sie an die richtige Stelle.<br>4. Erstelle Kamera- und Anschlussöffnungen als eigene Körper und nutze <strong>Formen kombinieren → Abziehen</strong>.<br>Du bestimmst alle Formen und Masse selbst.';paneMap.draw.left.appendChild(caseGuide);
   const sketchToolWrap=document.createElement('div'); sketchToolWrap.className='field';
   const sketchToolLabel=document.createElement('label'); sketchToolLabel.htmlFor='sketchTool'; sketchToolLabel.textContent='Zeichenwerkzeug';
   const sketchTool=document.createElement('select'); sketchTool.id='sketchTool'; sketchTool.innerHTML='<option value="rectangle">2D-Rechteck</option><option value="circle">2D-Kreis</option><option value="ellipse">2D-Ellipse</option><option value="triangle">2D-Dreieck</option><option value="line2d">2D-Linie</option><option value="curve2d">2D-Kurve</option><option value="freeform2d">2D-Freiform</option><option value="line3d">3D-Linie</option>';
@@ -527,6 +526,17 @@ input:focus{outline:1px solid var(--cyan)}
   const sketchHeightLabel=document.createElement('label'); sketchHeightLabel.htmlFor='sketchHeightMM'; sketchHeightLabel.textContent='Extrusionshöhe Z (mm)';
   const sketchHeight=document.createElement('input'); sketchHeight.id='sketchHeightMM'; sketchHeight.type='number'; sketchHeight.min='0.1'; sketchHeight.max='2000'; sketchHeight.step='0.1'; sketchHeight.value='10';
   sketchHeightWrap.append(sketchHeightLabel,sketchHeight); paneMap.draw.left.appendChild(sketchHeightWrap);
+  const caseWallHeading=document.createElement('h2');caseWallHeading.textContent='Eigene Hüllen-Konstruktion';paneMap.draw.left.appendChild(caseWallHeading);
+  const caseWallThicknessWrap=document.createElement('div');caseWallThicknessWrap.className='field';
+  const caseWallThicknessLabel=document.createElement('label');caseWallThicknessLabel.htmlFor='caseWallThicknessMM';caseWallThicknessLabel.textContent='Seitenwand-Stärke (mm)';
+  const caseWallThickness=document.createElement('input');caseWallThickness.id='caseWallThicknessMM';caseWallThickness.type='number';caseWallThickness.min='0.6';caseWallThickness.max='5';caseWallThickness.step='0.1';caseWallThickness.value='1.4';
+  caseWallThicknessWrap.append(caseWallThicknessLabel,caseWallThickness);paneMap.draw.left.appendChild(caseWallThicknessWrap);
+  const caseWallHeightWrap=document.createElement('div');caseWallHeightWrap.className='field';
+  const caseWallHeightLabel=document.createElement('label');caseWallHeightLabel.htmlFor='caseWallHeightMM';caseWallHeightLabel.textContent='Seitenwand-Höhe (mm)';
+  const caseWallHeight=document.createElement('input');caseWallHeight.id='caseWallHeightMM';caseWallHeight.type='number';caseWallHeight.min='2';caseWallHeight.max='40';caseWallHeight.step='0.1';caseWallHeight.value='12';
+  caseWallHeightWrap.append(caseWallHeightLabel,caseWallHeight);paneMap.draw.left.appendChild(caseWallHeightWrap);
+  const caseWallButton=document.createElement('button');caseWallButton.type='button';caseWallButton.id='createCaseWallFrame';caseWallButton.className='wide';caseWallButton.textContent='▱ Seitenwand-Rahmen aus Kontur erzeugen';paneMap.draw.left.appendChild(caseWallButton);
+  const caseCutButton=document.createElement('button');caseCutButton.type='button';caseCutButton.id='cutCaseOpening';caseCutButton.className='wide';caseCutButton.textContent='− Ausgewählte Aussparung ausschneiden';paneMap.draw.left.appendChild(caseCutButton);
   const sketchLockNote=document.createElement('p'); sketchLockNote.id='sketchViewLockNote'; sketchLockNote.className='note'; sketchLockNote.textContent='Während des Zeichnens ist die Kameradrehung gesperrt. Zoomen bleibt möglich.'; paneMap.draw.left.appendChild(sketchLockNote);
   const startSketchButton=document.createElement('button'); startSketchButton.type='button'; startSketchButton.id='startSketch'; startSketchButton.className='wide primary'; startSketchButton.textContent='✎ Zeichnen starten'; paneMap.draw.left.appendChild(startSketchButton);
   const createSketchButton=document.createElement('button'); createSketchButton.type='button'; createSketchButton.id='createSketchSolid'; createSketchButton.className='wide'; createSketchButton.textContent='▰ Als 3D-Körper erstellen'; createSketchButton.disabled=true; paneMap.draw.left.appendChild(createSketchButton);
@@ -1265,6 +1275,8 @@ input:focus{outline:1px solid var(--cyan)}
           locked: obj.userData.locked === true,
           groupId: typeof obj.userData.groupId === 'string' ? obj.userData.groupId : null,
           unionParts: Array.isArray(obj.userData.unionParts) ? obj.userData.unionParts : null,
+          caseOutline: Array.isArray(obj.userData.caseOutline) ? obj.userData.caseOutline : null,
+          caseWallFrame: obj.userData.caseWallFrame || null,
           geometry: serializeGeometry(obj.geometry)
         }))
       };
@@ -1327,7 +1339,9 @@ input:focus{outline:1px solid var(--cyan)}
               : { x: scale[0] * 100, y: scale[1] * 100, z: scale[2] * 100 },
             locked: item.locked === true,
             groupId: typeof item.groupId === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(item.groupId) ? item.groupId : null,
-             unionParts: Array.isArray(item.unionParts) && item.unionParts.length >= 2 && item.unionParts.length <= 100 ? item.unionParts.map(part => JSON.parse(JSON.stringify(part))) : null
+             unionParts: Array.isArray(item.unionParts) && item.unionParts.length >= 2 && item.unionParts.length <= 100 ? item.unionParts.map(part => JSON.parse(JSON.stringify(part))) : null,
+             caseOutline: Array.isArray(item.caseOutline) && item.caseOutline.length >= 3 && item.caseOutline.length <= 240 && item.caseOutline.every(point => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite)) ? item.caseOutline.map(point => [point[0],point[1]]) : null,
+             caseWallFrame: item.caseWallFrame && Number.isFinite(item.caseWallFrame.wallThicknessMM) && Number.isFinite(item.caseWallFrame.wallHeightMM) ? {wallThicknessMM:item.caseWallFrame.wallThicknessMM,wallHeightMM:item.caseWallFrame.wallHeightMM} : null
            };
            if (Array.isArray(item.unionParts)) {
              if (item.unionParts.length < 2 || item.unionParts.length > 100) { geometry.dispose(); material.dispose(); throw new Error('Ungültige Anzahl ursprünglicher Formteile.'); }
@@ -2571,6 +2585,78 @@ input:focus{outline:1px solid var(--cyan)}
     }
     return true;
   }
+  function createCaseWallFrame() {
+    const base=selectedObjects.length===1?selectedObjects[0]:selected;
+    if(!base||!objects.includes(base)||!Array.isArray(base.userData.caseOutline)||base.userData.caseOutline.length<3){
+      status.textContent='Wähle zuerst eine selbst gezeichnete 2D-Freiform als Rückwand-Kontur aus.';return;
+    }
+    if(base.userData.locked===true){status.textContent='Die ausgewählte Rückwand ist gesperrt. Entsperre sie zuerst.';return;}
+    const thicknessMM=Number(document.getElementById('caseWallThicknessMM').value);
+    const heightMM=Number(document.getElementById('caseWallHeightMM').value);
+    if(!Number.isFinite(thicknessMM)||thicknessMM<0.6||thicknessMM>5||!Number.isFinite(heightMM)||heightMM<2||heightMM>40){
+      status.textContent='Wandstärke muss 0,6–5 mm und Wandhöhe 2–40 mm betragen.';return;
+    }
+    const outer=base.userData.caseOutline.map(point=>new THREE.Vector2(point[0],point[1]));
+    if(outer.length>240){status.textContent='Die Kontur hat zu viele Punkte. Zeichne sie etwas einfacher neu.';return;}
+    const signedArea=points=>points.reduce((sum,p,i)=>{const n=points[(i+1)%points.length];return sum+p.x*n.y-n.x*p.y;},0)/2;
+    const area=signedArea(outer);
+    if(!Number.isFinite(area)||Math.abs(area)<0.0001){status.textContent='Die Rückwand-Kontur ist zu klein oder ungültig.';return;}
+    const ccw=area>0,offset=thicknessMM/MM_PER_UNIT,inner=[];
+    const cross=(a,b)=>a.x*b.y-a.y*b.x;
+    for(let i=0;i<outer.length;i++){
+      const prev=outer[(i+outer.length-1)%outer.length],p=outer[i],next=outer[(i+1)%outer.length];
+      const e1=new THREE.Vector2(p.x-prev.x,p.y-prev.y),e2=new THREE.Vector2(next.x-p.x,next.y-p.y);
+      if(e1.length()<1e-5||e2.length()<1e-5)continue;
+      e1.normalize();e2.normalize();
+      const n1=ccw?new THREE.Vector2(-e1.y,e1.x):new THREE.Vector2(e1.y,-e1.x);
+      const n2=ccw?new THREE.Vector2(-e2.y,e2.x):new THREE.Vector2(e2.y,-e2.x);
+      const q1=p.clone().addScaledVector(n1,offset),q2=p.clone().addScaledVector(n2,offset),den=cross(e1,e2);
+      let hit;
+      if(Math.abs(den)<1e-5){
+        const normal=n1.clone().add(n2);
+        if(normal.length()<1e-5)throw new Error('Kontur enthält einen ungültigen Knick.');
+        hit=p.clone().addScaledVector(normal.normalize(),offset);
+      }else{
+        const u=cross(new THREE.Vector2(q2.x-q1.x,q2.y-q1.y),e2)/den;
+        hit=q1.clone().addScaledVector(e1,u);
+      }
+      if(hit.distanceTo(p)>offset*8+0.02)throw new Error('Die Kontur ist für diese Wandstärke zu eng. Verringere die Wandstärke.');
+      inner.push(hit);
+    }
+    const innerArea=signedArea(inner);
+    if(inner.length<3||Math.abs(innerArea)<0.0001||Math.sign(innerArea)!==Math.sign(area))
+      throw new Error('Innenkontur ist zu eng oder überschneidet sich. Verringere die Wandstärke oder glätte die gezeichnete Kontur.');
+    const shape=new THREE.Shape();
+    shape.moveTo(outer[0].x,outer[0].y);outer.slice(1).forEach(p=>shape.lineTo(p.x,p.y));shape.closePath();
+    const hole=new THREE.Path(),reversed=inner.slice().reverse();
+    hole.moveTo(reversed[0].x,reversed[0].y);reversed.slice(1).forEach(p=>hole.lineTo(p.x,p.y));hole.closePath();shape.holes.push(hole);
+    const geometry=new THREE.ExtrudeGeometry(shape,{depth:heightMM/MM_PER_UNIT,bevelEnabled:false,curveSegments:16});
+    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
+    if(![size.x,size.y,size.z].every(v=>Number.isFinite(v)&&v>CSG_EPSILON)){geometry.dispose();throw new Error('Seitenwand-Rahmen hat ungültige Abmessungen.');}
+    recordHistory();
+    const mesh=new THREE.Mesh(geometry,base.material.clone());
+    mesh.position.set(base.position.x,base.position.y,base.position.z+(base.userData.baseDimensions?.z||size.z)-0.02/MM_PER_UNIT);
+    mesh.userData.baseDimensions={x:size.x,y:size.y,z:size.z};mesh.userData.percent={x:100,y:100,z:100};
+    mesh.userData.label='Selbst gezeichneter Seitenwand-Rahmen';
+    mesh.userData.caseWallFrame={source:base.uuid,wallThicknessMM:thicknessMM,wallHeightMM:heightMM};
+    scene.add(mesh);objects.push(mesh);selectObject(mesh);
+    status.textContent='Seitenwand-Rahmen aus deiner eigenen Kontur erstellt. Rückwand und Rahmen sind getrennte, bearbeitbare Teile.';
+    updateObjects();showProperties();updateMoveGizmo();
+  }
+
+  window.__silmoTestCreateCaseWallFrame=()=>{
+    const points=[[-1,-1],[1,-1],[1,1],[-1,1]];
+    const shape=new THREE.Shape();shape.moveTo(points[0][0],points[0][1]);points.slice(1).forEach(point=>shape.lineTo(point[0],point[1]));shape.closePath();
+    const geometry=new THREE.ExtrudeGeometry(shape,{depth:0.15,bevelEnabled:false});
+    const material=new THREE.MeshStandardMaterial({color:'#4b91ed'});
+    const base=new THREE.Mesh(geometry,material);base.userData={label:'Test-Rückwand',baseDimensions:{x:2,y:2,z:0.15},percent:{x:100,y:100,z:100},caseOutline:points};
+    scene.add(base);objects.push(base);selectObject(base);
+    document.getElementById('caseWallThicknessMM').value='1.4';document.getElementById('caseWallHeightMM').value='12';
+    createCaseWallFrame();
+    const frame=objects.find(obj=>obj.userData.caseWallFrame);
+    return {objectCount:objects.length,frameFound:!!frame,label:frame?.userData.label,wallThicknessMM:frame?.userData.caseWallFrame?.wallThicknessMM,wallHeightMM:frame?.userData.caseWallFrame?.wallHeightMM,dimensions:frame?.userData.baseDimensions,geometryVertices:frame?.geometry?.attributes?.position?.count||0};
+  };
   function createSketchSolid() {
     if (!sketchDraft) { status.textContent = 'Bitte zuerst eine Skizze zeichnen.'; return; }
     try {
@@ -2604,7 +2690,8 @@ input:focus{outline:1px solid var(--cyan)}
         const minX = Math.min(...points.map(point => point.x)), maxX = Math.max(...points.map(point => point.x));
         const minY = Math.min(...points.map(point => point.y)), maxY = Math.max(...points.map(point => point.y));
         const centerX = (minX + maxX) / 2, centerY = (minY + maxY) / 2;
-        const localPoints = points.map(point => new THREE.Vector2(point.x - centerX, point.y - centerY));
+        let localPoints = points.map(point => new THREE.Vector2(point.x - centerX, point.y - centerY));
+        if(localPoints.length>220){const stride=Math.ceil(localPoints.length/220);localPoints=localPoints.filter((point,index)=>index%stride===0);}
         let twiceArea = 0, perimeter = 0;
         localPoints.forEach((point, index) => {
           const next = localPoints[(index + 1) % localPoints.length];
@@ -2628,7 +2715,8 @@ input:focus{outline:1px solid var(--cyan)}
           depthMM: (maxY - minY) * MM_PER_UNIT,
           areaMM2: area * MM_PER_UNIT * MM_PER_UNIT,
           perimeterMM: perimeter * MM_PER_UNIT,
-          extrusionMM: heightMM
+          extrusionMM: heightMM,
+          outlinePoints: localPoints.map(point=>[point.x,point.y])
         };
         label = 'Freiform-Skizze';
       } else {
@@ -2681,6 +2769,7 @@ input:focus{outline:1px solid var(--cyan)}
       mesh.userData.percent = { x: 100, y: 100, z: 100 };
       mesh.userData.label = label;
       mesh.userData.sketch = sketchMetadata;
+      if(tool==='freeform2d')mesh.userData.caseOutline=sketchMetadata.outlinePoints;
       scene.add(mesh);
       objects.push(mesh);
       selectObject(mesh);
@@ -2714,6 +2803,8 @@ input:focus{outline:1px solid var(--cyan)}
     status.textContent = 'Zeichenmodus aktiv: auf der Zeichenfläche ziehen.';
   });
   document.getElementById('createSketchSolid').addEventListener('click', createSketchSolid);
+  document.getElementById('createCaseWallFrame').addEventListener('click',createCaseWallFrame);
+  document.getElementById('cutCaseOpening').addEventListener('click',()=>runBooleanOperation('subtract'));
   document.getElementById('cancelSketch').addEventListener('click', () => {
     sketchMode = false; sketchDrawing = false; sketchPointerId = null; sketchDraft = null;
     updateGizmoModeButton();

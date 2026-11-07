@@ -148,7 +148,11 @@ jobs:
               raise SystemExit("Einzelbearbeitung in Gruppen unvollständig: " + ", ".join(missing))
           if "id='createPhoneCase'" in html or "function createPhoneCase(spec)" in html:
               raise SystemExit("Automatischer Handyhüllen-Generator ist noch vorhanden.")
-          if "id='manualPhoneCaseGuide'" not in html or "Handyhülle selbst konstruieren" not in html:
-              raise SystemExit("Anleitung zum freien Handyhüllen-Zeichnen fehlt.")
-          print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung, Objektsperre, Gruppen, Spiegeln, Verbindung lösen, freies Handyhüllen-Zeichnen und Einzelbearbeitung in Gruppen sind statisch geprüft.")
+          if "id='manualPhoneCaseGuide'" in html:
+              raise SystemExit("Die entfernte Handyhüllen-Anleitung ist noch vorhanden.")
+          required_case_drawing = ["function createCaseWallFrame()", "id='createCaseWallFrame'", "id='cutCaseOpening'", "id='caseWallThicknessMM'", "id='caseWallHeightMM'", "mesh.userData.caseOutline=sketchMetadata.outlinePoints", "window.__silmoTestCreateCaseWallFrame"]
+          missing = [item for item in required_case_drawing if item not in html]
+          if missing:
+              raise SystemExit("Werkzeuge zum selbstständigen Handyhüllen-Zeichnen unvollständig: " + ", ".join(missing))
+          print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung, Objektsperre, Gruppen, Spiegeln, Verbindung lösen, selbst gezeichnete Handyhüllen-Kontur, Seitenwand-Rahmen und Aussparungen sind statisch geprüft.")
           PY
