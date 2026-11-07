@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v53 – Allgemeine CAD-Werkzeuge</title>
+<title>SILMO 3D Studio AI – v54 – Präzise Kontur- und Schalenkonstruktion</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v53 – Allgemeine CAD-Werkzeuge">
+<meta name="silmo-build" content="v54 – Präzise Kontur- und Schalenkonstruktion">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -151,7 +151,7 @@ input:focus{outline:1px solid var(--cyan)}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v53 – Allgemeine CAD-Werkzeuge -->
+<!-- SILMO BUILD: v54 – Präzise Kontur- und Schalenkonstruktion -->
 <script id="silmoDeveloperDiagnostics">
 (function(){
   'use strict';
@@ -499,7 +499,7 @@ input:focus{outline:1px solid var(--cyan)}
   const sketchIntro=document.createElement('p'); sketchIntro.className='note'; sketchIntro.textContent='Zeichne Rechtecke, Kreise und freie geschlossene Konturen auf XY oder räumliche Linien auf XY, XZ oder YZ – mit Maus, Touch oder Apple Pencil. Extrudiere deine 2D-Skizze zu einem echten 3D-Körper.'; paneMap.draw.left.appendChild(sketchIntro);
   const sketchToolWrap=document.createElement('div'); sketchToolWrap.className='field';
   const sketchToolLabel=document.createElement('label'); sketchToolLabel.htmlFor='sketchTool'; sketchToolLabel.textContent='Zeichenwerkzeug';
-  const sketchTool=document.createElement('select'); sketchTool.id='sketchTool'; sketchTool.innerHTML='<option value="rectangle">2D-Rechteck</option><option value="circle">2D-Kreis</option><option value="ellipse">2D-Ellipse</option><option value="triangle">2D-Dreieck</option><option value="line2d">2D-Linie</option><option value="curve2d">2D-Kurve</option><option value="freeform2d">2D-Freiform</option><option value="line3d">3D-Linie</option>';
+  const sketchTool=document.createElement('select'); sketchTool.id='sketchTool'; sketchTool.innerHTML='<option value="rectangle">2D-Rechteck</option><option value="roundedRectangle">2D-Rechteck mit Rundungen</option><option value="circle">2D-Kreis</option><option value="ellipse">2D-Ellipse</option><option value="triangle">2D-Dreieck</option><option value="line2d">2D-Linie</option><option value="curve2d">2D-Kurve</option><option value="freeform2d">2D-Freiform</option><option value="line3d">3D-Linie</option>';
   sketchToolWrap.append(sketchToolLabel,sketchTool); paneMap.draw.left.appendChild(sketchToolWrap);
   const sketchSnapWrap=document.createElement('div'); sketchSnapWrap.className='field';
   const sketchSnapLabel=document.createElement('label'); sketchSnapLabel.htmlFor='sketchSnapEnabled'; sketchSnapLabel.textContent='Rasterfang aktivieren';
@@ -521,13 +521,17 @@ input:focus{outline:1px solid var(--cyan)}
   const sketchWidthLabel=document.createElement('label'); sketchWidthLabel.htmlFor='sketchWidthMM'; sketchWidthLabel.textContent='Breite / Durchmesser (mm)';
   const sketchWidth=document.createElement('input'); sketchWidth.id='sketchWidthMM'; sketchWidth.type='number'; sketchWidth.min='0.1'; sketchWidth.max='2000'; sketchWidth.step='0.1'; sketchWidth.value='20';
   sketchWidthWrap.append(sketchWidthLabel,sketchWidth); paneMap.draw.left.appendChild(sketchWidthWrap);
+  const cornerRadiusWrap=document.createElement('div'); cornerRadiusWrap.className='field'; cornerRadiusWrap.id='sketchCornerRadiusWrap';
+  const cornerRadiusLabel=document.createElement('label'); cornerRadiusLabel.htmlFor='sketchCornerRadiusMM'; cornerRadiusLabel.textContent='Eckenradius (mm)';
+  const cornerRadiusInput=document.createElement('input'); cornerRadiusInput.id='sketchCornerRadiusMM'; cornerRadiusInput.type='number'; cornerRadiusInput.min='0'; cornerRadiusInput.max='500'; cornerRadiusInput.step='0.1'; cornerRadiusInput.value='6';
+  cornerRadiusWrap.append(cornerRadiusLabel,cornerRadiusInput); paneMap.draw.left.appendChild(cornerRadiusWrap);
   const sketchDepthWrap=document.createElement('div'); sketchDepthWrap.className='field';
   const sketchDepthLabel=document.createElement('label'); sketchDepthLabel.htmlFor='sketchDepthMM'; sketchDepthLabel.textContent='Tiefe Y (mm)';
   const sketchDepth=document.createElement('input'); sketchDepth.id='sketchDepthMM'; sketchDepth.type='number'; sketchDepth.min='0.1'; sketchDepth.max='2000'; sketchDepth.step='0.1'; sketchDepth.value='20';
   sketchDepthWrap.append(sketchDepthLabel,sketchDepth); paneMap.draw.left.appendChild(sketchDepthWrap);
   const sketchHeightWrap=document.createElement('div'); sketchHeightWrap.className='field';
-  const sketchHeightLabel=document.createElement('label'); sketchHeightLabel.htmlFor='sketchHeightMM'; sketchHeightLabel.textContent='Extrusionshöhe Z (mm)';
-  const sketchHeight=document.createElement('input'); sketchHeight.id='sketchHeightMM'; sketchHeight.type='number'; sketchHeight.min='0.1'; sketchHeight.max='2000'; sketchHeight.step='0.1'; sketchHeight.value='10';
+  const sketchHeightLabel=document.createElement('label'); sketchHeightLabel.htmlFor='sketchHeightMM'; sketchHeightLabel.textContent='Extrusionshöhe / Bodenstärke Z (mm)';
+  const sketchHeight=document.createElement('input'); sketchHeight.id='sketchHeightMM'; sketchHeight.type='number'; sketchHeight.min='0.1'; sketchHeight.max='2000'; sketchHeight.step='0.1'; sketchHeight.value='2';
   sketchHeightWrap.append(sketchHeightLabel,sketchHeight); paneMap.draw.left.appendChild(sketchHeightWrap);
   const contourToolsHeading=document.createElement('h2');contourToolsHeading.textContent='Kontur- und Wandwerkzeuge';paneMap.draw.left.appendChild(contourToolsHeading);
   const contourHelp=document.createElement('p');contourHelp.className='note';contourHelp.textContent='Erzeuge aus einer selbst gezeichneten geschlossenen Kontur einen hohlen Rahmen oder Wandkörper. Für Bohrungen und Ausschnitte wählst du den Grundkörper zuerst und den Schneidkörper danach.';paneMap.draw.left.appendChild(contourHelp);
@@ -2455,6 +2459,12 @@ input:focus{outline:1px solid var(--cyan)}
             0.025
           ));
         }
+      } else if(activeTool==='roundedRectangle') {
+        const path=new THREE.Shape();
+        const radiusMM=Number(document.getElementById('sketchCornerRadiusMM').value);
+        const radius=Math.max(0,Math.min(radiusMM/MM_PER_UNIT,sketchDraft.width/2,sketchDraft.depth/2));
+        addRoundedRectPath(path,sketchDraft.width,sketchDraft.depth,radius,sketchDraft.centerX,sketchDraft.centerY);
+        points=path.getPoints(10).map(point=>new THREE.Vector3(point.x,point.y,0.025));
       } else {
         const halfW = sketchDraft.width / 2, halfD = sketchDraft.depth / 2;
         points = activeTool === 'triangle' ? [
@@ -2657,6 +2667,23 @@ input:focus{outline:1px solid var(--cyan)}
     updateObjects();showProperties();updateMoveGizmo();
   }
 
+  window.__silmoTestCreateRoundedShell=()=>{
+    document.getElementById('sketchTool').value='roundedRectangle';
+    document.getElementById('sketchWidthMM').value='72';
+    document.getElementById('sketchDepthMM').value='150';
+    document.getElementById('sketchHeightMM').value='2';
+    document.getElementById('sketchCornerRadiusMM').value='8';
+    document.getElementById('wallThicknessMM').value='1.4';
+    document.getElementById('frameHeightMM').value='12';
+    sketchDraft={type:'rectangle',centerX:0,centerY:0,width:72/MM_PER_UNIT,depth:150/MM_PER_UNIT};
+    createSketchSolid();
+    const base=selected;
+    const baseOK=!!base&&Array.isArray(base.userData.sketchOutline)&&base.userData.sketchOutline.length>=8;
+    if(!baseOK) return {baseFound:false,frameFound:false};
+    createContourFrame();
+    const frame=objects.find(obj=>obj.userData.contourFrame);
+    return {baseFound:true,frameFound:!!frame,baseWidthMM:base.userData.sketch?.widthMM,baseDepthMM:base.userData.sketch?.depthMM,baseThicknessMM:base.userData.sketch?.extrusionMM,outlinePoints:base.userData.sketchOutline.length,wallThicknessMM:frame?.userData.contourFrame?.wallThicknessMM,wallHeightMM:frame?.userData.contourFrame?.wallHeightMM,frameVertices:frame?.geometry?.attributes?.position?.count||0};
+  };
   window.__silmoTestCreateContourFrame=()=>{
     const points=[[-1,-1],[1,-1],[1,1],[-1,1]];
     const shape=new THREE.Shape();shape.moveTo(points[0][0],points[0][1]);points.slice(1).forEach(point=>shape.lineTo(point[0],point[1]));shape.closePath();
@@ -2741,6 +2768,10 @@ input:focus{outline:1px solid var(--cyan)}
         } else if (tool === 'triangle') {
           const x = dims.width / 2, y = dims.depth / 2;
           shape.moveTo(-x, -y); shape.lineTo(x, -y); shape.lineTo(0, y); shape.closePath();
+        } else if(tool==='roundedRectangle') {
+          const radiusMM=Number(document.getElementById('sketchCornerRadiusMM').value);
+          if(!Number.isFinite(radiusMM)||radiusMM<0||radiusMM>Math.min(dims.width,dims.depth)*MM_PER_UNIT/2) throw new Error('Der Eckenradius muss zwischen 0 und der halben kleineren Seitenlänge liegen.');
+          addRoundedRectPath(shape,dims.width,dims.depth,radiusMM/MM_PER_UNIT);
         } else {
           const x = dims.width / 2, y = dims.depth / 2;
           shape.moveTo(-x, -y); shape.lineTo(x, -y); shape.lineTo(x, y); shape.lineTo(-x, y); shape.closePath();
@@ -2754,7 +2785,8 @@ input:focus{outline:1px solid var(--cyan)}
           depthMM: dims.depth * MM_PER_UNIT,
           extrusionMM: dims.height * MM_PER_UNIT
         };
-        label = tool === 'circle' ? 'Skizze Kreis' : tool === 'ellipse' ? 'Skizze Ellipse' : tool === 'triangle' ? 'Skizze Dreieck' : 'Skizze Rechteck';
+        if(tool==='roundedRectangle') { const outline=shape.getPoints(10); if(outline.length>1&&outline[0].distanceTo(outline[outline.length-1])<1e-7)outline.pop(); sketchMetadata.outlinePoints=outline.map(point=>[point.x,point.y]); }
+        label = tool === 'circle' ? 'Skizze Kreis' : tool === 'ellipse' ? 'Skizze Ellipse' : tool === 'triangle' ? 'Skizze Dreieck' : tool === 'roundedRectangle' ? 'Abgerundete Rechteck-Skizze' : 'Skizze Rechteck';
       }
       geometry.computeBoundingBox();
       geometry.computeBoundingSphere();
@@ -2781,7 +2813,7 @@ input:focus{outline:1px solid var(--cyan)}
       mesh.userData.percent = { x: 100, y: 100, z: 100 };
       mesh.userData.label = label;
       mesh.userData.sketch = sketchMetadata;
-      if(tool==='freeform2d')mesh.userData.sketchOutline=sketchMetadata.outlinePoints;
+      if(['freeform2d','roundedRectangle'].includes(tool))mesh.userData.sketchOutline=sketchMetadata.outlinePoints;
       scene.add(mesh);
       objects.push(mesh);
       selectObject(mesh);
@@ -2833,6 +2865,7 @@ input:focus{outline:1px solid var(--cyan)}
   });
   ['sketchWidthMM','sketchDepthMM','sketchHeightMM'].forEach(id =>
     document.getElementById(id).addEventListener('input', refreshSketchDraftFromInputs));
+  document.getElementById('sketchCornerRadiusMM').addEventListener('input',()=>{if(sketchDraft&&document.getElementById('sketchTool').value==='roundedRectangle')updateSketchPreview();});
   document.getElementById('sketchGridMM').addEventListener('input', () => {
     const value = Number(document.getElementById('sketchGridMM').value);
     if (Number.isFinite(value) && value >= 0.1 && value <= 100) {
@@ -2855,6 +2888,7 @@ input:focus{outline:1px solid var(--cyan)}
     document.getElementById('sketchWidthMM').closest('.field').hidden = isPath || isFreeform;
     document.getElementById('sketchDepthMM').closest('.field').hidden = isPath || isFreeform || tool === 'circle';
     document.getElementById('sketchHeightMM').closest('.field').hidden = isPath;
+    document.getElementById('sketchCornerRadiusWrap').hidden = tool !== 'roundedRectangle';
   }
   document.getElementById('sketchTool').addEventListener('change', () => {
     sketchDraft = null;
@@ -3461,7 +3495,7 @@ input:focus{outline:1px solid var(--cyan)}
     ['↔','Verschieben','edit','gizmoModeToggle'],['⟳','Drehen','edit','gizmoModeToggle'],['⇥','Ausrichten','edit','alignSelected'],
     ['▤','Verteilen','edit','alignSelected'],['▧','Gruppieren','edit','createObjectGroup'],['◐','Spiegeln','edit','mirror'],
     ['↔','Masse in mm','measure','sizeFields'],['％','Skalierung','measure','percentFields'],['◉','Farbe','measure','color'],
-    ['▭','Rechteck','draw','sketchTool'],['◯','Kreis / Ellipse','draw','sketchTool'],['△','Dreieck','draw','sketchTool'],
+    ['▭','Rechteck','draw','sketchTool'],['▢','Rechteck mit Rundungen','draw','sketchTool'],['◯','Kreis / Ellipse','draw','sketchTool'],['△','Dreieck','draw','sketchTool'],
     ['／','2D-Linie','draw','sketchTool'],['〰','2D-Kurve','draw','sketchTool'],['✎','Freiform','draw','sketchTool'],
     ['⌁','3D-Linie','draw','sketchTool'],['▦','Rasterfang','draw','sketchSnapEnabled'],
     ['⬇','STL exportieren','print','exportModel'],['▣','Druckbett','print','dropToBed'],['✓','Druckprüfung','expert','checkBed'],
