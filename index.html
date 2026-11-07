@@ -487,6 +487,14 @@ input:focus{outline:1px solid var(--cyan)}
   const sketchToolLabel=document.createElement('label'); sketchToolLabel.htmlFor='sketchTool'; sketchToolLabel.textContent='Zeichenwerkzeug';
   const sketchTool=document.createElement('select'); sketchTool.id='sketchTool'; sketchTool.innerHTML='<option value="rectangle">2D-Rechteck</option><option value="circle">2D-Kreis</option><option value="freeform2d">2D-Freiform</option><option value="line3d">3D-Linie</option>';
   sketchToolWrap.append(sketchToolLabel,sketchTool); paneMap.draw.left.appendChild(sketchToolWrap);
+  const sketchSnapWrap=document.createElement('div'); sketchSnapWrap.className='field';
+  const sketchSnapLabel=document.createElement('label'); sketchSnapLabel.htmlFor='sketchSnapEnabled'; sketchSnapLabel.textContent='Rasterfang aktivieren';
+  const sketchSnapEnabled=document.createElement('input'); sketchSnapEnabled.id='sketchSnapEnabled'; sketchSnapEnabled.type='checkbox'; sketchSnapEnabled.checked=false;
+  sketchSnapWrap.append(sketchSnapLabel,sketchSnapEnabled); paneMap.draw.left.appendChild(sketchSnapWrap);
+  const sketchGridWrap=document.createElement('div'); sketchGridWrap.className='field';
+  const sketchGridLabel=document.createElement('label'); sketchGridLabel.htmlFor='sketchGridMM'; sketchGridLabel.textContent='Rasterabstand (mm)';
+  const sketchGridMM=document.createElement('input'); sketchGridMM.id='sketchGridMM'; sketchGridMM.type='number'; sketchGridMM.min='0.1'; sketchGridMM.max='100'; sketchGridMM.step='0.1'; sketchGridMM.value='1';
+  sketchGridWrap.append(sketchGridLabel,sketchGridMM); paneMap.draw.left.appendChild(sketchGridWrap);
   const sketchPlaneWrap=document.createElement('div'); sketchPlaneWrap.className='field'; sketchPlaneWrap.id='sketchPlaneWrap';
   const sketchPlaneLabel=document.createElement('label'); sketchPlaneLabel.htmlFor='sketchPlaneSelect'; sketchPlaneLabel.textContent='Zeichenebene für 3D-Linie';
   const sketchPlaneSelect=document.createElement('select'); sketchPlaneSelect.id='sketchPlaneSelect'; sketchPlaneSelect.innerHTML='<option value="xy">XY – von oben</option><option value="xz">XZ – von vorne</option><option value="yz">YZ – von der Seite</option>';
@@ -2245,6 +2253,21 @@ input:focus{outline:1px solid var(--cyan)}
       sketchPreview = null;
     }
   }
+  function snapSketchPoint(point) {
+    if (!document.getElementById('sketchSnapEnabled')?.checked) return point;
+    const stepMM = Number(document.getElementById('sketchGridMM')?.value);
+    if (!Number.isFinite(stepMM) || stepMM < 0.1 || stepMM > 100) {
+      document.getElementById('sketchStatus').textContent = 'Der Rasterabstand muss zwischen 0,1 und 100 mm liegen.';
+      return point;
+    }
+    const step = stepMM / MM_PER_UNIT;
+    point.set(
+      Math.round(point.x / step) * step,
+      Math.round(point.y / step) * step,
+      Math.round(point.z / step) * step
+    );
+    return point;
+  }
   function sketchDimensionsFromInputs() {
     const widthMM = Number(document.getElementById('sketchWidthMM')?.value);
     const depthMM = document.getElementById('sketchTool')?.value === 'circle'
@@ -2344,6 +2367,7 @@ input:focus{outline:1px solid var(--cyan)}
     const activeTool = document.getElementById('sketchTool').value;
     if (activeTool === 'line3d') {
       if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
+        snapSketchPoint(sketchPoint);
         const points = sketchDraft?.type === 'line3d' ? sketchDraft.points : [sketchStart.clone()];
         if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > 0.015) points.push(sketchPoint.clone());
         sketchDraft = { type: 'line3d', points };
@@ -2377,6 +2401,7 @@ input:focus{outline:1px solid var(--cyan)}
         document.getElementById('sketchStatus').textContent = 'Eine Freiform braucht mindestens drei unterschiedliche Punkte.';
       }
     } else if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
+      snapSketchPoint(sketchPoint);
       const dx = sketchPoint.x - sketchStart.x, dy = sketchPoint.y - sketchStart.y;
       const width = Math.abs(dx), depth = Math.abs(dy);
       const tool = document.getElementById('sketchTool').value;
@@ -2604,6 +2629,7 @@ input:focus{outline:1px solid var(--cyan)}
       if (e.cancelable) e.preventDefault();
       setPointerRay(e);
       if (!raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) return;
+      snapSketchPoint(sketchPoint);
       sketchStart.copy(sketchPoint);
       if (document.getElementById('sketchTool').value === 'freeform2d') sketchDraft = { type: 'freeform2d', points: [sketchStart.clone()] };
       sketchDrawing = true;
@@ -2715,6 +2741,7 @@ input:focus{outline:1px solid var(--cyan)}
     if (sketchDrawing && e.pointerId === sketchPointerId) {
       setPointerRay(e);
       if (raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
+        snapSketchPoint(sketchPoint);
         const tool = document.getElementById('sketchTool').value;
         if (tool === 'line3d') {
           const points = sketchDraft?.type === 'line3d' ? sketchDraft.points : [sketchStart.clone()];
