@@ -482,6 +482,18 @@ try {
   assert.equal(contourFrameTest.wallThicknessMM,1.4,'Hohlrahmen übernimmt die Wandstärke nicht');
   assert.equal(contourFrameTest.wallHeightMM,12,'Hohlrahmen übernimmt die Höhe nicht');
   assert.ok(contourFrameTest.geometryVertices>0,'Hohlrahmen enthält keine Geometrie');
+  assert.ok((await page.locator('#sketchTool option').allTextContents()).some(x=>/Rundungen/.test(x)),'Werkzeug für abgerundete Rechtecke fehlt');
+  assert.equal(await page.locator('#sketchCornerRadiusMM').inputValue(),'6','Eckenradius-Eingabe fehlt');
+  const roundedShellTest = await page.evaluate(() => window.__silmoTestCreateRoundedShell());
+  assert.equal(roundedShellTest.baseFound,true,'Abgerundete Kontur erzeugt keinen Grundkörper');
+  assert.equal(roundedShellTest.frameFound,true,'Aus abgerundetem Grundkörper wird kein Hohlrahmen erzeugt');
+  assert.equal(roundedShellTest.baseWidthMM,72,'Breite der abgerundeten Skizze stimmt nicht');
+  assert.equal(roundedShellTest.baseDepthMM,150,'Tiefe der abgerundeten Skizze stimmt nicht');
+  assert.equal(roundedShellTest.baseThicknessMM,2,'Dünne Extrusion / Bodenstärke stimmt nicht');
+  assert.equal(roundedShellTest.wallThicknessMM,1.4,'Wandstärke des abgerundeten Rahmens stimmt nicht');
+  assert.equal(roundedShellTest.wallHeightMM,12,'Höhe des abgerundeten Rahmens stimmt nicht');
+  assert.ok(roundedShellTest.outlinePoints>=8,'Abgerundete Kontur wurde nicht ausreichend aufgelöst');
+  assert.ok(roundedShellTest.frameVertices>0,'Abgerundeter Hohlrahmen enthält keine Geometrie');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
   console.log('BESTANDEN: 3D-Start, Zeichnen, allgemeine CAD-Konstruktion, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
