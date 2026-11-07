@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v54/, 'Build-Metadaten zeigen nicht v52');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v55/, 'Build-Metadaten zeigen nicht v52');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -471,12 +471,24 @@ try {
   assert.equal(await page.locator('#objects .object-row').count(),primitiveStart+3,'Zusätzliche CAD-Grundkörper werden nicht erstellt');
   await page.locator('[data-tab="draw"]').click();
   assert.equal(await page.locator('#sketchTool').isVisible(),true,'Freie Zeichenwerkzeuge sind nicht erreichbar');
+  assert.equal(await page.locator('#cadSketchToolPalette button').count(),9,'Die CAD-Werkzeugpalette ist unvollständig');
+  assert.equal(await page.locator('#pane-draw-right').isVisible(),true,'Das rechte CAD-Eigenschaftenpanel fehlt');
+  assert.equal(await page.locator('#sketchPositionXMM').isVisible(),true,'Exakte X-Position der Skizze fehlt');
+  assert.equal(await page.locator('#sketchPositionYMM').isVisible(),true,'Exakte Y-Position der Skizze fehlt');
+  assert.match(await page.locator('#pane-draw-right').innerText(),/Exakte Masse und Position/,'Skizzenparameter sind nicht übersichtlich gruppiert');
   assert.ok((await page.locator('#sketchTool option').allTextContents()).some(x=>/Freiform/.test(x)),'Freiform-Zeichenwerkzeug fehlt');
+  await page.locator('#pane-draw-right details').filter({hasText:'Wand und Kontur bearbeiten'}).locator('summary').click();
   assert.equal(await page.locator('#createContourFrame').isVisible(),true,'Allgemeines Kontur-Rahmenwerkzeug fehlt');
   assert.equal(await page.locator('#wallThicknessMM').inputValue(),'1.4','Standard-Wandstärke fehlt');
   assert.equal(await page.locator('#frameHeightMM').inputValue(),'12','Standard-Rahmenhöhe fehlt');
   assert.equal(await page.locator('#subtractSelected').isVisible(),true,'Allgemeines Abziehwerkzeug fehlt');
   assert.doesNotMatch(await page.locator('body').innerText(),/Handyhüllen-Konstruktion|Seitenwand-Rahmen/,'Die Oberfläche enthält noch produktgebundene Sonderfunktionen');
+  const preciseSketchTest = await page.evaluate(() => window.__silmoTestCreatePreciselyPositionedSketch());
+  assert.equal(preciseSketchTest.found,true,'Präzise platzierte Skizze wird nicht erstellt');
+  assert.equal(preciseSketchTest.xMM,15,'Exakte X-Position der Skizze wird nicht übernommen');
+  assert.equal(preciseSketchTest.yMM,-10,'Exakte Y-Position der Skizze wird nicht übernommen');
+  assert.equal(preciseSketchTest.widthMM,20,'Exakte Skizzenbreite stimmt nicht');
+  assert.equal(preciseSketchTest.depthMM,30,'Exakte Skizzentiefe stimmt nicht');
   const contourFrameTest = await page.evaluate(() => window.__silmoTestCreateContourFrame());
   assert.equal(contourFrameTest.frameFound,true,'Aus eigener Kontur wurde kein Hohlrahmen erzeugt');
   assert.equal(contourFrameTest.wallThicknessMM,1.4,'Hohlrahmen übernimmt die Wandstärke nicht');
@@ -496,7 +508,7 @@ try {
   assert.ok(roundedShellTest.frameVertices>0,'Abgerundeter Hohlrahmen enthält keine Geometrie');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
-  console.log('BESTANDEN: 3D-Start, Zeichnen, allgemeine CAD-Konstruktion, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
+  console.log('BESTANDEN: 3D-Start, CAD-Zeichenarbeitsplatz, Werkzeugpalette, exakte Skizzenposition, Zeichnen, allgemeine CAD-Konstruktion, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
   console.log(JSON.stringify({ canvasSize, beforeAlign, afterAlign, selectedCount, alignStatus }));
 } catch (error) {
   console.error('BROWSERTEST FEHLGESCHLAGEN:', error);
