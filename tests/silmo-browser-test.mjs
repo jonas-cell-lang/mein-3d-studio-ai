@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v45/, 'Build-Metadaten zeigen nicht v43');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v46/, 'Build-Metadaten zeigen nicht v46');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freie 2D-Skizze/, 'Schnellhilfe erklärt die neue Freiform nicht');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Präzise zeichnen/, 'Schnellhilfe erklärt den Rasterfang nicht');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Neue 2D-Formen/, 'Schnellhilfe erklärt Ellipse und Dreieck nicht');
@@ -65,8 +65,13 @@ try {
   assert.equal(await page.locator('#tutorialBuild').innerText(), currentBuild, 'Tutorial-Kopfzeile zeigt nicht den aktuellen Build');
   assert.equal(await page.locator('#tutorialQuickGuide').count(), 1, 'Schnellhilfe fehlt im Tutorial');
   const quickGuide = await page.locator('#tutorialQuickGuide').textContent();
-  assert.match(quickGuide, /Escape bricht.*ab/, 'Schnellhilfe erklärt das Abbrechen einer Winkel-Eingabe nicht');
-  assert.match(quickGuide, /Projekt speichern/, 'Schnellhilfe erklärt das Sichern eines Projekts nicht');
+  assert.match(quickGuide, /Alle Werkzeuge/, 'Visuelle Werkzeugübersicht fehlt');
+  assert.ok(await page.locator('#tutorialToolGallery .tutorial-tool-card').count() >= 25, 'Tutorial zeigt nicht alle Werkzeugkarten');
+  assert.ok(await page.locator('#tutorialVisualGlyph').isVisible(), 'Bildliche Schritt-Darstellung fehlt');
+  assert.match(await page.locator('#tutorialToolGallery').textContent(), /2D-Linie.*2D-Kurve.*Freiform/s, 'Neue Zeichenwerkzeuge fehlen in der visuellen Übersicht');
+  const tutorialBox = await page.locator('#tutorialCard').boundingBox();
+  const propertiesBox = await page.locator('[aria-label="Eigenschaften des ausgewählten Modells"]').boundingBox();
+  assert.ok(tutorialBox && propertiesBox && tutorialBox.x + tutorialBox.width < propertiesBox.x, 'Tutorialfenster verdeckt weiterhin den Skalierungsbereich');
   assert.ok((await page.title()).includes(currentBuild), 'Seitentitel zeigt nicht den aktuellen Build');
   const tutorialStartRows = await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click();
@@ -92,6 +97,10 @@ try {
   assert.ok(Math.abs(cameraAfterSketch.targetRX - cameraBeforeSketch.targetRX) < 1e-10, 'Kamera wurde im Zeichenmodus vertikal gedreht');
   assert.ok(Math.abs(cameraAfterSketch.targetRY - cameraBeforeSketch.targetRY) < 1e-10, 'Kamera wurde im Zeichenmodus horizontal gedreht');
   assert.equal(cameraAfterSketch.rotatingView, false, 'Kameradrehung blieb nach Zeichnen aktiv');
+  assert.equal(cameraAfterSketch.active, true, 'Zeichenmodus wurde nach dem ersten Strich unerwartet beendet');
+  assert.equal(cameraAfterSketch.rotateButtonDisabled, true, 'Drehschaltfläche ist im Zeichenmodus nicht gesperrt');
+  assert.equal(cameraAfterSketch.gizmoMode, 'move', 'Drehringe wurden im Zeichenmodus nicht deaktiviert');
+  assert.equal(cameraAfterSketch.rotationInputHidden, true, 'Direkte Winkeleingabe ist im Zeichenmodus noch sichtbar');
   assert.equal(await page.locator('#createSketchSolid').isEnabled(), true, 'Rechtsklick-Zeichnung wurde nicht als Skizze vorbereitet');
   await page.locator('#createSketchSolid').click();
 
@@ -194,6 +203,46 @@ try {
   assert.ok(Math.abs(freeformSnapshot.extrusionMM - 7) < 0.01, 'Freiform-Extrusionshöhe wurde nicht übernommen');
   assert.ok(freeformSnapshot.actualHeightMM > 0, 'Freiform wurde nicht zu einem 3D-Körper extrudiert');
 
+  // 2D-Linie: eine gerade Linie auf XY als echten runden Körper erzeugen.
+  await page.locator('#sketchTool').selectOption('line2d');
+  assert.equal(await page.locator('#sketchDiameterMM').isVisible(), true, '2D-Linie zeigt kein Durchmesserfeld');
+  await page.locator('#sketchDiameterMM').fill('1.5');
+  await page.locator('#startSketch').click();
+  const line2dStart = await page.evaluate(() => window.__silmoSketchPointForTest(-0.65, -0.25));
+  const line2dEnd = await page.evaluate(() => window.__silmoSketchPointForTest(0.65, 0.25));
+  await page.mouse.move(line2dStart.x, line2dStart.y);
+  await page.mouse.down();
+  await page.mouse.move(line2dEnd.x, line2dEnd.y, { steps: 6 });
+  await page.mouse.up();
+  assert.equal(await page.locator('#createSketchSolid').isEnabled(), true, '2D-Linie wurde nicht vorbereitet');
+  await page.locator('#createSketchSolid').click();
+  const line2dSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
+  assert.equal(line2dSnapshot.type, 'line2d', '2D-Linie wurde nicht als solche gespeichert');
+  assert.equal(line2dSnapshot.plane, 'xy', '2D-Linie liegt nicht auf XY');
+  assert.equal(line2dSnapshot.diameterMM, 1.5, 'Durchmesser der 2D-Linie wurde nicht übernommen');
+  assert.ok(line2dSnapshot.lengthMM > 0, '2D-Linie hat keine Länge');
+
+  // 2D-Kurve: freie Kurve auf XY mit mehreren Punkten erzeugen.
+  await page.locator('#sketchTool').selectOption('curve2d');
+  await page.locator('#sketchDiameterMM').fill('1.0');
+  await page.locator('#startSketch').click();
+  const curvePoints = [
+    await page.evaluate(() => window.__silmoSketchPointForTest(-0.7, -0.2)),
+    await page.evaluate(() => window.__silmoSketchPointForTest(-0.3, 0.45)),
+    await page.evaluate(() => window.__silmoSketchPointForTest(0.15, -0.35)),
+    await page.evaluate(() => window.__silmoSketchPointForTest(0.7, 0.3))
+  ];
+  await page.mouse.move(curvePoints[0].x, curvePoints[0].y);
+  await page.mouse.down();
+  for (const point of curvePoints.slice(1)) await page.mouse.move(point.x, point.y, { steps: 5 });
+  await page.mouse.up();
+  assert.equal(await page.locator('#createSketchSolid').isEnabled(), true, '2D-Kurve wurde nicht vorbereitet');
+  await page.locator('#createSketchSolid').click();
+  const curve2dSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
+  assert.equal(curve2dSnapshot.type, 'curve2d', '2D-Kurve wurde nicht als solche gespeichert');
+  assert.ok(curve2dSnapshot.pointCount >= 2, '2D-Kurve enthält zu wenige Punkte');
+  assert.ok(curve2dSnapshot.lengthMM > 0, '2D-Kurve hat keine Länge');
+
   // 3D-Linie: eine räumliche Freihandlinie auf der XZ-Ebene zeichnen und als Körper erzeugen.
   await page.locator('#sketchTool').selectOption('line3d');
   await page.locator('#sketchPlaneSelect').selectOption('xz');
@@ -214,6 +263,10 @@ try {
   assert.ok(lineSnapshot.pointCount >= 2, '3D-Linie enthält nicht mindestens zwei Punkte');
   assert.ok(lineSnapshot.lengthMM > 0, '3D-Linie hat keine Länge');
   assert.ok(lineSnapshot.actualWidthMM > 0 && lineSnapshot.actualDepthMM > 0 && lineSnapshot.actualHeightMM > 0, '3D-Linie hat keine echte räumliche Ausdehnung');
+  assert.equal((await page.evaluate(() => window.__silmoSketchCameraLockSnapshot())).active, true, 'Zeichenmodus wurde nach dem Extrudieren beendet');
+  await page.locator('#cancelSketch').click();
+  assert.equal((await page.evaluate(() => window.__silmoSketchCameraLockSnapshot())).active, false, 'Zeichenmodus lässt sich nicht beenden');
+  assert.equal(await page.locator('#gizmoModeToggle').isDisabled(), false, 'Drehfunktion wurde nach dem Beenden nicht freigegeben');
   await page.locator('[data-tab="create"]').click();
 
   // Die App kann bereits ein Startobjekt enthalten. Nur die beiden neu erstellten prüfen.
