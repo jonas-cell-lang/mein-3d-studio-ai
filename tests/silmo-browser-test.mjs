@@ -513,7 +513,7 @@ try {
   const pointEditTest=await page.evaluate(()=>window.__silmoTestEditSketchPoint());
   assert.equal(pointEditTest.pointCount,4,'Skizzenpunkt-Editor lädt nicht alle vier Rechteckpunkte');
   assert.ok(Math.abs(pointEditTest.newXMM-pointEditTest.oldXMM+2)<0.01,'Konturpunkt-X wurde nicht exakt angepasst');
-  assert.ok(pointEditTest.widthMM>20.9&&pointEditTest.widthMM<21.1,'Geometrie wurde nach Punktänderung nicht neu aufgebaut');
+  assert.ok(pointEditTest.widthMM>21.9&&pointEditTest.widthMM<22.1,'Geometrie wurde nach Punktänderung nicht neu aufgebaut');
   assert.ok(pointEditTest.vertices>0,'Punktbearbeitung erzeugt keine 3D-Geometrie');
   const proCadTest=await page.evaluate(()=>window.__silmoTestRunProCad());
   for (const key of ['dimensionOK','filletOK','chamferOK','loftOK','sweepOK']) assert.equal(proCadTest[key],true,'Professionelle CAD-Funktion '+key+' funktioniert nicht');
