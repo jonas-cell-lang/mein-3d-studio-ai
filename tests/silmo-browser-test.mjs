@@ -141,20 +141,8 @@ try {
   });
   assert.equal(changedAfterUngroup.length, 1, 'Nach dem Aufheben muss genau ein Objekt unabhängig bewegt werden können');
 
-  // Zahlenfelder müssen den tatsächlichen Drehwinkel des ausgewählten Objekts setzen.
-  await page.locator('[data-tab="measure"]').click();
-  const beforeNumericRotation = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
-  const rotationX = page.locator('#rotationFields input').nth(0);
-  await rotationX.fill('45');
-  await rotationX.press('Enter');
-  await page.waitForTimeout(200);
-  const afterNumericRotation = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
-  assert.ok(Math.abs(afterNumericRotation.qx - beforeNumericRotation.qx) > 0.05 ||
-            Math.abs(afterNumericRotation.qy - beforeNumericRotation.qy) > 0.05 ||
-            Math.abs(afterNumericRotation.qz - beforeNumericRotation.qz) > 0.05 ||
-            Math.abs(afterNumericRotation.qw - beforeNumericRotation.qw) > 0.05,
-            'Drehung über das Zahlenfeld verändert die Objektrotation nicht');
-  assert.match(await page.locator('#status').innerText(), /Drehung um X auf 45° gesetzt/, 'Zahlenfeld meldet die gesetzte Drehung nicht');
+  // Die Gradzahl soll direkt neben dem Würfel editierbar sein, nicht mehr in der Seitenleiste.
+  assert.equal(await page.locator('#rotationFields').count(), 0, 'Alte Drehfelder in der Seitenleiste wurden nicht entfernt');
 
   // Verschieben und Drehen müssen getrennte Modi sein: standardmässig
   // erscheinen die Pfeile, erst nach dem Umschalten die Drehringe.
@@ -181,7 +169,16 @@ try {
   assert.equal(rotationGuide.activeAxis, 'z', 'Aktive Drehachse wird nicht erkannt');
   assert.ok(rotationGuide.activeLineOpacity > 0.8, 'Drehachse durch den Würfel wird nicht hervorgehoben');
   await page.mouse.up();
-  assert.equal((await page.evaluate(() => window.__silmoRotationGuideSnapshot())).labelVisible, false, 'Gradzahl bleibt nach dem Drehen eingeblendet');
+  assert.equal((await page.evaluate(() => window.__silmoRotationGuideSnapshot())).labelVisible, true, 'Gradzahl-Eingabe verschwindet nach dem Ziehen');
+  const angleInput = page.locator('#rotationAngleLabel');
+  assert.equal(await angleInput.getAttribute('type'), 'number', 'Gradzahl neben dem Würfel ist kein Zahlenfeld');
+  await angleInput.fill('45');
+  await angleInput.press('Enter');
+  await page.waitForTimeout(200);
+  assert.match(await page.locator('#status').innerText(), /Drehung um Z auf 45° gesetzt/, 'Direkte Gradzahl-Eingabe wurde nicht übernommen');
+  const afterTypedAngle = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
+  assert.ok(Math.abs(afterTypedAngle.qz) > 0.05 || Math.abs(afterTypedAngle.qw) < 0.99, 'Eingetippte Gradzahl verändert das Modell nicht');
+  await angleInput.blur();
   await page.waitForTimeout(200);
   const afterRingRotation = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
   const selectedAfterRing = await page.locator('#objects .object-select[aria-pressed="true"]').evaluate(el => el.dataset.objectId);
@@ -196,7 +193,7 @@ try {
   assert.equal(await page.evaluate(() => window.__silmoTutorialRotationRingPoint('z', 0.45)), null, 'Drehringe bleiben nach dem Zurückschalten aktiv');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
-  console.log('BESTANDEN: 3D-Start, Objekterstellung, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, numerische Drehung, Moduswechsel und Drehring.');
+  console.log('BESTANDEN: 3D-Start, Objekterstellung, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
   console.log(JSON.stringify({ canvasSize, beforeAlign, afterAlign, selectedCount, alignStatus }));
 } catch (error) {
   console.error('BROWSERTEST FEHLGESCHLAGEN:', error);
