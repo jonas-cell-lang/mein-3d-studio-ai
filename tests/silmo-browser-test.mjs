@@ -472,6 +472,12 @@ try {
   assert.equal(await page.locator('#createCaseWallFrame').isVisible(),true,'Werkzeug für den Seitenwand-Rahmen fehlt');
   assert.equal(await page.locator('#caseWallThicknessMM').inputValue(),'1.4','Standard-Wandstärke fehlt');
   assert.equal(await page.locator('#caseWallHeightMM').inputValue(),'12','Standard-Wandhöhe fehlt');
+  assert.equal(await page.locator('#cutCaseOpening').isVisible(),true,'Werkzeug zum Ausschneiden eigener Öffnungen fehlt');
+  const caseFrameTest = await page.evaluate(() => window.__silmoTestCreateCaseWallFrame());
+  assert.equal(caseFrameTest.frameFound,true,'Aus eigener Rückwand-Kontur wurde kein Seitenwand-Rahmen erzeugt');
+  assert.equal(caseFrameTest.wallThicknessMM,1.4,'Seitenwand-Rahmen übernimmt die Wandstärke nicht');
+  assert.equal(caseFrameTest.wallHeightMM,12,'Seitenwand-Rahmen übernimmt die Wandhöhe nicht');
+  assert.ok(caseFrameTest.geometryVertices>0,'Seitenwand-Rahmen enthält keine Geometrie');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
   console.log('BESTANDEN: 3D-Start, Zeichnen, freies Handyhüllen-Zeichnen, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
