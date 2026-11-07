@@ -116,7 +116,7 @@ input:focus{outline:1px solid var(--cyan)}
 .tutorial-tool-icon{font-size:25px;line-height:1.05;color:#8cddff}
 #tutorialQuickGuide{max-height:230px;overflow:auto}
 #tutorialDebug{position:absolute!important;width:1px;height:1px;max-height:1px;padding:0;margin:0;border:0;overflow:hidden;clip-path:inset(50%);opacity:0;pointer-events:none}
-#tutorialQuickGuide{margin:10px 0;padding:9px 10px;border:1px solid #324d6b;border-radius:9px;background:#0b192a;color:#d5e4f8;font-size:12px}
+#tutorialWhere{margin:9px 0;padding:9px 10px;border:1px solid #345778;border-radius:9px;background:#0b1b2d;color:#bfe3ff;font-size:12px;line-height:1.5}\n#tutorialQuickGuide{margin:10px 0;padding:9px 10px;border:1px solid #324d6b;border-radius:9px;background:#0b192a;color:#d5e4f8;font-size:12px}
 #tutorialQuickGuide summary{cursor:pointer;color:#9edcff;font-weight:700}
 #tutorialQuickGuide ul{margin:9px 0 2px;padding-left:18px}
 #tutorialQuickGuide li{margin:7px 0;line-height:1.45}
@@ -3975,7 +3975,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   const shade = document.createElement('div'); shade.id='tutorialShade'; shade.hidden=true;
   const card = document.createElement('section'); card.id='tutorialCard'; card.hidden=true;
   card.setAttribute('role','dialog'); card.setAttribute('aria-modal','false'); card.setAttribute('aria-label','SILMO Lernkurs');
-  card.innerHTML = '<button id="tutorialClose" type="button" aria-label="Tutorial schliessen">✕</button><div style="font-size:10px;color:#ffcf70;margin-bottom:6px">SILMO LERNKURS · <span id="tutorialBuild"></span></div><div id="tutorialStepLabel" style="color:#80c7ff;font-size:11px;font-weight:700;letter-spacing:.08em"></div><div id="tutorialVisual" aria-label="Bildliche Darstellung des aktuellen Lernschritts"><span id="tutorialVisualGlyph" aria-hidden="true">◧</span><span id="tutorialVisualCaption">Werkzeug</span></div><h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div><div id="tutorialWhere" class="tutorial-where"></div><details id="tutorialQuickGuide"><summary>Werkzeugübersicht öffnen</summary><div id="tutorialToolGallery" aria-label="SILMO-Werkzeugübersicht"></div></details><div id="tutorialFeedback" aria-live="polite"></div><div id="tutorialExamHint" hidden><button id="tutorialHintButton" type="button">Mittleren Tipp anzeigen</button><p id="tutorialHintText" hidden></p></div><pre id="tutorialDebug" aria-live="polite"></pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialNext" type="button" class="primary" disabled>Weiter</button><button id="tutorialSkip" type="button">Beenden</button></div>';
+  card.innerHTML = '<button id="tutorialClose" type="button" aria-label="Tutorial schliessen">✕</button><div style="font-size:10px;color:#ffcf70;margin-bottom:6px">SILMO LERNKURS · <span id="tutorialBuild"></span></div><div id="tutorialStepLabel" style="color:#80c7ff;font-size:11px;font-weight:700;letter-spacing:.08em"></div><div id="tutorialVisual" aria-label="Bildliche Darstellung des aktuellen Lernschritts"><span id="tutorialVisualGlyph" aria-hidden="true">◧</span><span id="tutorialVisualCaption">Werkzeug</span></div><h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div><div id="tutorialWhere" class="tutorial-where"></div><details id="tutorialQuickGuide"><summary>Alle Werkzeuge – visuelle Übersicht</summary><div id="tutorialToolGallery" aria-label="SILMO-Werkzeugübersicht"></div></details><div id="tutorialFeedback" aria-live="polite"></div><div id="tutorialExamHint" hidden><button id="tutorialHintButton" type="button">Mittleren Tipp anzeigen</button><p id="tutorialHintText" hidden></p></div><pre id="tutorialDebug" aria-live="polite"></pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialNext" type="button" class="primary" disabled>Weiter</button><button id="tutorialSkip" type="button">Beenden</button></div>';
   document.body.append(shade,card);
   $('tutorialBuild').textContent = document.querySelector('meta[name="silmo-build"]')?.content || 'Build unbekannt';
 
@@ -3985,7 +3985,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     ['↔','Verschieben','edit','positionFields'],['⟳','Drehen','edit','gizmoModeToggle'],['⇥','Ausrichten','edit','alignSelected'],
     ['▧','Gruppieren','edit','createObjectGroup'],['◐','Spiegeln','edit','mirrorX'],['↔','Masse in mm','measure','sizeFields'],
     ['％','Skalierung','measure','percentFields'],['◉','Farbe','measure','color'],['▭','Skizzen','draw','cadSketchToolPalette'],
-    ['⌁','3D-Linien','draw','cadSketchToolPalette'],['▦','Rasterfang','draw','cadSketchToolPalette'],
+    ['／','2D-Linie','draw','cadSketchToolPalette'],['〰','2D-Kurve','draw','cadSketchToolPalette'],['✎','Freiform','draw','cadSketchToolPalette'],['⌁','3D-Linie','draw','cadSketchToolPalette'],['▦','Rasterfang','draw','cadSketchToolPalette'],
     ['⬇','STL exportieren','print','exportModel'],['▣','Druckbett','print','applyBedSize'],
     ['✓','Druckprüfung','print','checkBed'],['💾','Projekt sichern','print','saveProjectButton'],['📂','Projekt öffnen','print','openProjectButton']
   ];
@@ -4075,7 +4075,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       updateDebug();
     }catch(error){console.error('SILMO Lernkurs-Prüfung:',error);}
   }
-  function open(){index=0;shade.hidden=false;card.hidden=false;bedApplied=false;exportSucceeded=false;projectSaved=false;render();}
+  function open(){index=0;shade.hidden=false;card.hidden=false;bedApplied=false;exportSucceeded=false;projectSaved=false;examHintShown=false;render();}
   function close(){clearHighlight();shade.hidden=true;card.hidden=true;}
   $('tutorialToolGallery').addEventListener('click',event=>{
     const tool=event.target.closest('.tutorial-tool-card');if(!tool)return;
