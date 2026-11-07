@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v54 – Präzise Kontur- und Schalenkonstruktion</title>
+<title>SILMO 3D Studio AI – v55 – Professioneller CAD-Zeichenarbeitsplatz</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v54 – Präzise Kontur- und Schalenkonstruktion">
+<meta name="silmo-build" content="v55 – Professioneller CAD-Zeichenarbeitsplatz">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -148,10 +148,53 @@ input:focus{outline:1px solid var(--cyan)}
 #silmoDiagBanner:hover{background:#a91e2e;border-color:#ff9aa2}
 @media(max-width:680px){#silmoDiagPanel{inset:8px;width:calc(100vw - 16px);max-height:calc(100vh - 16px)}#silmoDiagLog{max-height:48vh}#silmoDiagBanner{top:44px;left:8px;right:8px;width:calc(100% - 16px);padding:9px 10px;font-size:11px}}
 
+
+/* v55 – übersichtlicher, CAD-orientierter Zeichenarbeitsplatz */
+main{grid-template-columns:250px minmax(0,1fr) 286px}
+.left-panel,.right-panel{padding:14px}
+.tab-pane[data-pane="draw"]{min-height:100%}
+#pane-draw-left,#pane-draw-right{display:none}
+#pane-draw-left.active-pane,#pane-draw-right.active-pane{display:block}
+.cad-workspace-intro{padding:10px 11px;margin:0 0 14px;border:1px solid #2b4968;border-radius:10px;background:linear-gradient(120deg,#10243b,#0c192a);color:#c8ddf4;font-size:11px;line-height:1.55}
+.cad-tool-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:9px 0 14px}
+.cad-tool-button{display:flex;align-items:center;gap:8px;min-height:44px;padding:7px 9px;text-align:left;font-size:11px;background:#12243a;border-color:#304965;touch-action:manipulation}
+.cad-tool-button .cad-tool-icon{display:grid;place-items:center;width:27px;height:27px;flex:none;border-radius:7px;background:#203d5b;color:#9de8ff;font-size:17px}
+.cad-tool-button[aria-pressed="true"]{background:#17435a;border-color:#53d8e8;box-shadow:inset 0 0 0 1px #53d8e833}
+.cad-group{margin:0 0 10px;border:1px solid #2b405a;border-radius:10px;background:#0d1929;overflow:hidden}
+.cad-group>summary{display:flex;align-items:center;justify-content:space-between;min-height:42px;padding:10px 12px;cursor:pointer;list-style:none;color:#dcecff;font-size:12px;font-weight:700}
+.cad-group>summary::-webkit-details-marker{display:none}
+.cad-group>summary::after{content:"＋";color:#7ecfe9;font-size:16px}
+.cad-group[open]>summary::after{content:"−"}
+.cad-group-body{padding:0 11px 10px;border-top:1px solid #233951}
+.cad-group-body>.field:first-child{margin-top:10px}
+.cad-group-body .note{margin:7px 0}
+.cad-group-body input,.cad-group-body select{min-height:38px}
+#pane-draw-left h2,#pane-draw-right h2{margin-top:9px}
+#pane-draw-left .wide,#pane-draw-right .wide{min-height:42px}
+#pane-draw-left #sketchStatus{padding:10px;border:1px solid #2c4965;border-radius:9px;background:#0a1929;color:#b9d6ee}
+#pane-draw-left #sketchViewLockNote{padding:8px 9px;border-left:3px solid #4aa9d8;background:#10243a}
+.cad-draw-actions{display:grid;grid-template-columns:1fr;gap:7px;margin:12px 0}
+.cad-draw-actions button{min-height:44px}
+.cad-dimension-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 9px}
+.cad-dimension-grid .field{min-width:0}
+.cad-dimension-grid label{line-height:1.35;min-height:28px}
+.cad-inline-help{font-size:10px;color:#8fa8c5;line-height:1.5;margin:4px 0 9px}
+@media(max-width:900px){main{grid-template-columns:205px minmax(0,1fr) 250px}.left-panel,.right-panel{padding:11px}}
+@media(max-width:680px){
+ main{grid-template-columns:126px minmax(0,1fr)}
+ .left-panel{padding:9px}
+ .right-panel{padding:12px}
+ .cad-tool-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .cad-tool-button{min-height:44px;padding:6px;font-size:10px;gap:5px}
+ .cad-tool-button .cad-tool-icon{width:23px;height:23px;font-size:15px}
+ .cad-group>summary{min-height:44px}
+ .cad-dimension-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v54 – Präzise Kontur- und Schalenkonstruktion -->
+<!-- SILMO BUILD: v55 – Professioneller CAD-Zeichenarbeitsplatz -->
 <script id="silmoDeveloperDiagnostics">
 (function(){
   'use strict';
@@ -533,6 +576,16 @@ input:focus{outline:1px solid var(--cyan)}
   const sketchHeightLabel=document.createElement('label'); sketchHeightLabel.htmlFor='sketchHeightMM'; sketchHeightLabel.textContent='Extrusionshöhe / Bodenstärke Z (mm)';
   const sketchHeight=document.createElement('input'); sketchHeight.id='sketchHeightMM'; sketchHeight.type='number'; sketchHeight.min='0.1'; sketchHeight.max='2000'; sketchHeight.step='0.1'; sketchHeight.value='2';
   sketchHeightWrap.append(sketchHeightLabel,sketchHeight); paneMap.draw.left.appendChild(sketchHeightWrap);
+
+  const sketchPositionXWrap=document.createElement('div'); sketchPositionXWrap.className='field';
+  const sketchPositionXLabel=document.createElement('label'); sketchPositionXLabel.htmlFor='sketchPositionXMM'; sketchPositionXLabel.textContent='Mittelpunkt X (mm)';
+  const sketchPositionX=document.createElement('input'); sketchPositionX.id='sketchPositionXMM'; sketchPositionX.type='number'; sketchPositionX.step='0.1'; sketchPositionX.placeholder='Mausposition';
+  sketchPositionXWrap.append(sketchPositionXLabel,sketchPositionX);
+  const sketchPositionYWrap=document.createElement('div'); sketchPositionYWrap.className='field';
+  const sketchPositionYLabel=document.createElement('label'); sketchPositionYLabel.htmlFor='sketchPositionYMM'; sketchPositionYLabel.textContent='Mittelpunkt Y (mm)';
+  const sketchPositionY=document.createElement('input'); sketchPositionY.id='sketchPositionYMM'; sketchPositionY.type='number'; sketchPositionY.step='0.1'; sketchPositionY.placeholder='Mausposition';
+  sketchPositionYWrap.append(sketchPositionYLabel,sketchPositionY);
+
   const contourToolsHeading=document.createElement('h2');contourToolsHeading.textContent='Kontur- und Wandwerkzeuge';paneMap.draw.left.appendChild(contourToolsHeading);
   const contourHelp=document.createElement('p');contourHelp.className='note';contourHelp.textContent='Erzeuge aus einer selbst gezeichneten geschlossenen Kontur einen hohlen Rahmen oder Wandkörper. Für Bohrungen und Ausschnitte wählst du den Grundkörper zuerst und den Schneidkörper danach.';paneMap.draw.left.appendChild(contourHelp);
   const wallThicknessWrap=document.createElement('div');wallThicknessWrap.className='field';
@@ -550,6 +603,55 @@ input:focus{outline:1px solid var(--cyan)}
   const createSketchButton=document.createElement('button'); createSketchButton.type='button'; createSketchButton.id='createSketchSolid'; createSketchButton.className='wide'; createSketchButton.textContent='▰ Als 3D-Körper erstellen'; createSketchButton.disabled=true; paneMap.draw.left.appendChild(createSketchButton);
   const cancelSketchButton=document.createElement('button'); cancelSketchButton.type='button'; cancelSketchButton.id='cancelSketch'; cancelSketchButton.className='wide'; cancelSketchButton.textContent='Skizze abbrechen'; cancelSketchButton.disabled=true; paneMap.draw.left.appendChild(cancelSketchButton);
   const sketchStatus=document.createElement('p'); sketchStatus.id='sketchStatus'; sketchStatus.className='note'; sketchStatus.setAttribute('aria-live','polite'); sketchStatus.textContent='Noch keine Skizze. Wähle ein 2D-Werkzeug oder eine 3D-Linie und starte den Zeichenmodus.'; paneMap.draw.left.appendChild(sketchStatus);
+
+  // CAD-Zeichenarbeitsplatz v55: Werkzeugpalette links, exakte Eigenschaften rechts.
+  const drawIntro=document.createElement('div');drawIntro.className='cad-workspace-intro';
+  drawIntro.textContent='Skizziere präzise Konturen, lege Masse und Position fest und wandle sie anschliessend in editierbare 3D-Körper um.';
+  sketchIntro.textContent='Wähle ein Werkzeug und starte den Zeichenmodus. Die Skizze wird auf der XY-Ebene gezeichnet.';
+  paneMap.draw.left.insertBefore(drawIntro,sketchIntro);
+  const toolPalette=document.createElement('div');toolPalette.className='cad-tool-grid';toolPalette.id='cadSketchToolPalette';
+  const paletteTools=[
+    ['rectangle','▭','Rechteck'],['roundedRectangle','▢','Rundung'],['circle','○','Kreis'],['ellipse','⬭','Ellipse'],
+    ['triangle','△','Dreieck'],['line2d','／','Linie'],['curve2d','〰','Kurve'],['freeform2d','✎','Freiform'],['line3d','⌁','3D-Linie']
+  ];
+  paletteTools.forEach(([value,glyph,label])=>{
+    const button=document.createElement('button');button.type='button';button.className='cad-tool-button';button.dataset.sketchTool=value;button.setAttribute('aria-pressed',String(sketchTool.value===value));
+    const icon=document.createElement('span');icon.className='cad-tool-icon';icon.textContent=glyph;
+    const text=document.createElement('span');text.textContent=label;button.append(icon,text);
+    button.addEventListener('click',()=>{sketchTool.value=value;sketchTool.dispatchEvent(new Event('change',{bubbles:true}));});
+    toolPalette.appendChild(button);
+  });
+  paneMap.draw.left.insertBefore(toolPalette,sketchToolWrap);
+  const createGroup=(parent,title,open=false)=>{
+    const details=document.createElement('details');details.className='cad-group';details.open=open;
+    const summary=document.createElement('summary');summary.textContent=title;
+    const body=document.createElement('div');body.className='cad-group-body';
+    details.append(summary,body);parent.appendChild(details);return body;
+  };
+  const drawRight=paneMap.draw.right;
+  heading(drawRight,'Skizzen-Eigenschaften');
+  const typeGroup=createGroup(drawRight,'Werkzeugtyp',true);typeGroup.appendChild(sketchToolWrap);
+  const dimensionGroup=createGroup(drawRight,'Exakte Masse und Position',true);
+  const dimensionGrid=document.createElement('div');dimensionGrid.className='cad-dimension-grid';
+  [sketchWidthWrap,sketchDepthWrap,sketchHeightWrap,cornerRadiusWrap,sketchPositionXWrap,sketchPositionYWrap].forEach(node=>dimensionGrid.appendChild(node));
+  dimensionGroup.appendChild(dimensionGrid);
+  const dimensionHelp=document.createElement('p');dimensionHelp.className='cad-inline-help';dimensionHelp.textContent='Masse in Millimetern. Mittelpunkt X/Y leer lassen, um die Position deiner Zeichnung zu übernehmen.';dimensionGroup.appendChild(dimensionHelp);
+  const snapGroup=createGroup(drawRight,'Raster und Zeichenoptionen',true);
+  snapGroup.append(sketchSnapWrap,sketchGridWrap,sketchPlaneWrap,sketchDiameterWrap);
+  const wallGroup=createGroup(drawRight,'Wand und Kontur bearbeiten',false);
+  wallGroup.appendChild(contourHelp);
+  const wallGrid=document.createElement('div');wallGrid.className='cad-dimension-grid';wallGrid.append(wallThicknessWrap,frameHeightWrap);wallGroup.appendChild(wallGrid);
+  wallGroup.append(contourFrameButton,subtractSelectedButton);
+  heading(paneMap.draw.left,'Werkzeuge');
+  paneMap.draw.left.appendChild(sketchLockNote);
+  const actionWrap=document.createElement('div');actionWrap.className='cad-draw-actions';actionWrap.append(startSketchButton,createSketchButton,cancelSketchButton);
+  paneMap.draw.left.appendChild(actionWrap);
+  paneMap.draw.left.appendChild(sketchStatus);
+  // Die Werkzeugauswahl und Parameter liegen nun bewusst rechts; links bleibt die Werkzeugpalette.
+  [sketchToolWrap,sketchSnapWrap,sketchGridWrap,sketchPlaneWrap,sketchDiameterWrap,sketchWidthWrap,cornerRadiusWrap,sketchDepthWrap,sketchHeightWrap,wallThicknessWrap,frameHeightWrap,contourFrameButton,subtractSelectedButton,contourHelp].forEach(node=>{if(node.parentElement===paneMap.draw.left)node.remove();});
+  const syncPalette=()=>toolPalette.querySelectorAll('[data-sketch-tool]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.sketchTool===sketchTool.value)));
+  sketchTool.addEventListener('change',syncPalette);syncPalette();
+
 
   heading(paneMap.edit.left,'Bearbeiten');
   ['delete','fitView'].forEach(id=>put(paneMap.edit.left,id));
@@ -2667,6 +2769,18 @@ input:focus{outline:1px solid var(--cyan)}
     updateObjects();showProperties();updateMoveGizmo();
   }
 
+  window.__silmoTestCreatePreciselyPositionedSketch=()=>{
+    document.getElementById('sketchTool').value='rectangle';
+    document.getElementById('sketchWidthMM').value='20';
+    document.getElementById('sketchDepthMM').value='30';
+    document.getElementById('sketchHeightMM').value='4';
+    document.getElementById('sketchPositionXMM').value='15';
+    document.getElementById('sketchPositionYMM').value='-10';
+    sketchDraft={type:'rectangle',centerX:0,centerY:0,width:20/MM_PER_UNIT,depth:30/MM_PER_UNIT};
+    createSketchSolid();
+    const obj=selected;
+    return {found:!!obj&&obj.userData.label==='Skizze Rechteck',xMM:obj?obj.position.x*MM_PER_UNIT:null,yMM:obj?obj.position.y*MM_PER_UNIT:null,widthMM:obj?obj.userData.sketch?.widthMM:null,depthMM:obj?obj.userData.sketch?.depthMM:null};
+  };
   window.__silmoTestCreateRoundedShell=()=>{
     document.getElementById('sketchTool').value='roundedRectangle';
     document.getElementById('sketchWidthMM').value='72';
@@ -2787,6 +2901,12 @@ input:focus{outline:1px solid var(--cyan)}
         };
         if(tool==='roundedRectangle') { const outline=shape.getPoints(10); if(outline.length>1&&outline[0].distanceTo(outline[outline.length-1])<1e-7)outline.pop(); sketchMetadata.outlinePoints=outline.map(point=>[point.x,point.y]); }
         label = tool === 'circle' ? 'Skizze Kreis' : tool === 'ellipse' ? 'Skizze Ellipse' : tool === 'triangle' ? 'Skizze Dreieck' : tool === 'roundedRectangle' ? 'Abgerundete Rechteck-Skizze' : 'Skizze Rechteck';
+      }
+      if (!['line3d','line2d','curve2d'].includes(tool)) {
+        const exactX=document.getElementById('sketchPositionXMM')?.value;
+        const exactY=document.getElementById('sketchPositionYMM')?.value;
+        if(exactX!==undefined&&exactX.trim()!==''){const value=Number(exactX);if(!Number.isFinite(value)||Math.abs(value)>2000)throw new Error('Mittelpunkt X muss zwischen −2000 und 2000 mm liegen.');meshPosition.x=value/MM_PER_UNIT;}
+        if(exactY!==undefined&&exactY.trim()!==''){const value=Number(exactY);if(!Number.isFinite(value)||Math.abs(value)>2000)throw new Error('Mittelpunkt Y muss zwischen −2000 und 2000 mm liegen.');meshPosition.y=value/MM_PER_UNIT;}
       }
       geometry.computeBoundingBox();
       geometry.computeBoundingSphere();
