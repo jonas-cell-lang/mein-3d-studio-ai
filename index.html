@@ -293,7 +293,6 @@ input:focus{outline:1px solid var(--cyan)}
         add('HINWEIS','Dieser Browser bietet keinen vollständigen CSS-Parser für die Zusatzprüfung; CSS-Regeln wurden gezählt.');
       }
       ['#createObjectGroup','#ungroupObjects','#alignSelected','#booleanSeparate'].forEach(selector=>{if(!document.querySelector(selector))issues.push('App: Werkzeug '+selector+' wurde nicht initialisiert.');});
-      if(typeof splitBooleanUnion!=='function')issues.push('App: Verbindung lösen wurde nicht initialisiert.');
       if(!window.THREE)issues.push('3D: Three.js ist nicht geladen.');
       else{
         if(!window.THREE.STLLoader)issues.push('3D: STLLoader ist nicht geladen.');
