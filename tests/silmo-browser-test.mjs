@@ -142,6 +142,7 @@ try {
   assert.equal(changedAfterUngroup.length, 1, 'Nach dem Aufheben muss genau ein Objekt unabhängig bewegt werden können');
 
   // Zahlenfelder müssen den tatsächlichen Drehwinkel des ausgewählten Objekts setzen.
+  await page.locator('[data-tab="measure"]').click();
   const beforeNumericRotation = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
   const rotationX = page.locator('#rotationFields input').nth(0);
   await rotationX.fill('45');
