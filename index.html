@@ -54,9 +54,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-o
 .danger{color:#ffb6bd}
 .active{background:#234d78!important;border-color:#63a6ff!important;box-shadow:inset 0 0 0 1px #63a6ff22}
 #viewport,#viewport *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#viewport canvas{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none}
 #viewport{position:relative;min-width:0;overflow:hidden;touch-action:none;background:radial-gradient(ellipse at 50% 42%,#182b43 0%,#0d1728 55%,#08111e 100%)}
 canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:grab;outline:none;z-index:0}
-#viewport .viewport-label,#viewport #hint,#viewport #expandViewport{z-index:5}
+#viewport .viewport-label,#viewport #hint,#viewport #expandViewport,#viewport #gizmoModeToggle{z-index:5}
+#gizmoModeToggle{position:absolute;right:58px;top:12px;min-height:38px;padding:7px 11px;background:#142c46;border-color:#4d83b9;font-size:12px;font-weight:650}
+#gizmoModeToggle[aria-pressed="true"]{background:#17434a;border-color:#53d8e8;color:#a8f4ff}
+@media(max-width:680px){#gizmoModeToggle{right:54px;top:8px;min-height:38px;padding:6px 9px;font-size:11px}}
 #viewport{isolation:isolate}
 canvas:focus-visible{outline:2px solid var(--cyan);outline-offset:-3px}
 .left-panel,.right-panel{min-width:0}
@@ -398,6 +402,7 @@ input:focus{outline:1px solid var(--cyan)}
     <div id="status">Bereit</div>
   </aside>
   <section id="viewport">
+    <button id="gizmoModeToggle" type="button" aria-pressed="false" title="Zwischen Verschieben mit Pfeilen und Drehen mit Ringen wechseln">⟳ Drehen</button>
     <button id="expandViewport" type="button" aria-label="3D-Ansicht maximieren">⛶</button>
     <div class="viewport-label">3D-Ansicht <span style="color:#6ee7f9">●</span> · Kamera frei</div><div id="hint"><strong>Bedienung</strong><br>Pfeile am Objekt ziehen: X / Y / Z verschieben<br>Objektkörper ziehen: in X/Y verschieben<br>Freie Fläche ziehen: Ansicht drehen<br>Maus rechts ziehen oder Shift + Ziehen: Kamera drehen<br>Touch: freie Fläche ziehen, auf Modell ziehen zum Verschieben<br>Scrollrad: zoomen<br>Strg/Cmd+S: Projekt speichern · Strg/Cmd+O: Projekt öffnen</div>
   </section>
@@ -711,6 +716,7 @@ input:focus{outline:1px solid var(--cyan)}
   const MM_PER_UNIT = 10;
   let moveGizmo = null;
   let rotationGizmo = null;
+  let gizmoMode = 'move';
   const gizmoParts = [];
   let activeAxis = null;
   let activeRotationAxis = null;
@@ -1649,6 +1655,7 @@ input:focus{outline:1px solid var(--cyan)}
       rotationGizmo.traverse(part => { if (part.geometry) part.geometry.dispose(); if (part.material) part.material.dispose(); });
       rotationGizmo = null;
     }
+    if (gizmoMode !== 'rotate') return;
     const targets = getSelectedTargets();
     if (!targets.length) return;
     const bounds = new THREE.Box3();
@@ -1673,7 +1680,10 @@ input:focus{outline:1px solid var(--cyan)}
 
       // Breite, unsichtbare Trefferfläche: auf Touchscreens lässt sich der Ring
       // dadurch ziehen, ohne versehentlich das Modell darunter auszuwählen.
-      const hitGeometry = new THREE.TorusGeometry(radius, Math.max(0.11, radius * 0.085), 8, 72);
+      // Die unsichtbare Touch-Trefferfläche bleibt eng am sichtbaren Ring;
+      // sie darf nicht wie ein deutlich grösserer Ring wirken oder andere
+      // Bedienflächen überdecken.
+      const hitGeometry = new THREE.TorusGeometry(radius, Math.max(0.045, radius * 0.035), 8, 72);
       const hitMaterial = new THREE.MeshBasicMaterial({
         transparent: true, opacity: 0, colorWrite: false,
         depthTest: false, depthWrite: false, side: THREE.DoubleSide
@@ -1697,7 +1707,7 @@ input:focus{outline:1px solid var(--cyan)}
       moveGizmo = null;
     }
     const targets = getSelectedTargets();
-    if (!targets.length) { updateRotationGizmo(); return; }
+    if (!targets.length || gizmoMode !== 'move') { updateRotationGizmo(); return; }
     moveGizmo = new THREE.Group();
     const box = new THREE.Box3();
     targets.forEach(obj => { obj.updateMatrixWorld(true); box.union(new THREE.Box3().setFromObject(obj)); });
@@ -1721,6 +1731,25 @@ input:focus{outline:1px solid var(--cyan)}
     scene.add(moveGizmo);
     updateRotationGizmo();
   }
+
+  function updateGizmoModeButton() {
+    const button = $('gizmoModeToggle');
+    const rotating = gizmoMode === 'rotate';
+    button.textContent = rotating ? '↔ Verschieben' : '⟳ Drehen';
+    button.setAttribute('aria-pressed', String(rotating));
+    button.title = rotating
+      ? 'Zu den Verschiebepfeilen wechseln'
+      : 'Zu den Drehringen wechseln';
+  }
+  $('gizmoModeToggle').addEventListener('click', () => {
+    gizmoMode = gizmoMode === 'move' ? 'rotate' : 'move';
+    updateGizmoModeButton();
+    updateMoveGizmo();
+    status.textContent = gizmoMode === 'rotate'
+      ? 'Drehen aktiv: Einen farbigen Ring ziehen, um das Modell zu drehen.'
+      : 'Verschieben aktiv: Die farbigen Pfeile ziehen, um das Modell zu verschieben.';
+  });
+  updateGizmoModeButton();
 
   function setBedSize() {
     const width = Number($('bedWidth').value), depth = Number($('bedDepth').value);
@@ -1997,6 +2026,9 @@ input:focus{outline:1px solid var(--cyan)}
   const focus = new THREE.Vector3(0, 0, 0.5);
   const canvas = renderer.domElement;
   canvas.style.touchAction = 'none';
+  canvas.style.webkitUserSelect = 'none';
+  canvas.style.userSelect = 'none';
+  canvas.style.webkitTouchCallout = 'none';
   canvas.tabIndex = 0;
   // Nur für automatisierte Browserprüfungen: liefert einen Punkt auf dem sichtbaren Ring.
   window.__silmoTutorialRotationRingPoint = (axis, angle) => {
@@ -2041,8 +2073,9 @@ input:focus{outline:1px solid var(--cyan)}
   }
 
   canvas.addEventListener('pointerdown', e => {
-    // iPad-Safari darf eine Ringbewegung nicht als Textauswahl behandeln.
-    if (e.pointerType === 'touch') e.preventDefault();
+    // iPad-Safari darf weder beim Verschieben noch beim Drehen ein
+    // Textauswahl-/Nachschlagen-Menü öffnen (Touch und Apple Pencil).
+    if (e.pointerType !== 'mouse' && e.cancelable) e.preventDefault();
     // Linke Taste: Gizmo/Objekt auswählen und ziehen. Rechte Taste oder Shift+Ziehen:
     // Kamera drehen, auch wenn der Zeiger über einem Modell liegt.
     if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 2) return;
