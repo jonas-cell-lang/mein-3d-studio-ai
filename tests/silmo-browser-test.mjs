@@ -177,7 +177,7 @@ try {
   await page.mouse.move(ringEnd.x, ringEnd.y, { steps: 12 });
   const rotationGuide = await page.evaluate(() => window.__silmoRotationGuideSnapshot());
   assert.equal(rotationGuide.labelVisible, true, 'Gradzahl wird während des Drehens nicht angezeigt');
-  assert.match(rotationGuide.label, /^-?\\d+°$/, 'Drehwinkel wird nicht als Gradzahl angezeigt');
+  assert.match(rotationGuide.label, /^-?\d+°$/, 'Drehwinkel wird nicht als Gradzahl angezeigt');
   assert.equal(rotationGuide.activeAxis, 'z', 'Aktive Drehachse wird nicht erkannt');
   assert.ok(rotationGuide.activeLineOpacity > 0.8, 'Drehachse durch den Würfel wird nicht hervorgehoben');
   await page.mouse.up();
