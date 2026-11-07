@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v55 – Professioneller CAD-Zeichenarbeitsplatz</title>
+<title>SILMO 3D Studio AI – v56 – Parametrisches CAD und Formoperationen</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v55 – Professioneller CAD-Zeichenarbeitsplatz">
+<meta name="silmo-build" content="v56 – Parametrisches CAD und Formoperationen">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -191,10 +191,23 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
  .cad-dimension-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
+
+/* v56 – CAD sketch constraints, editable dimensions and solid-form operations */
+.cad-pro-group{margin-top:12px}
+.cad-pro-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.cad-pro-grid .field{min-width:0}
+.cad-pro-grid input,.cad-pro-grid select{min-height:38px}
+.cad-pro-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+.cad-pro-actions button{min-height:42px;font-size:11px}
+.cad-pro-note{font-size:10px;line-height:1.5;color:#9db4cd;margin:7px 0}
+.cad-pro-divider{height:1px;background:#263c54;margin:11px 0}
+#pane-draw-right .cad-pro-group button{width:100%}
+@media(max-width:680px){.cad-pro-actions{grid-template-columns:1fr}.cad-pro-grid{grid-template-columns:1fr 1fr}}
+
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v55 – Professioneller CAD-Zeichenarbeitsplatz -->
+<!-- SILMO BUILD: v56 – Parametrisches CAD und Formoperationen -->
 <script id="silmoDeveloperDiagnostics">
 (function(){
   'use strict';
@@ -642,6 +655,39 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   wallGroup.appendChild(contourHelp);
   const wallGrid=document.createElement('div');wallGrid.className='cad-dimension-grid';wallGrid.append(wallThicknessWrap,frameHeightWrap);wallGroup.appendChild(wallGrid);
   wallGroup.append(contourFrameButton,subtractSelectedButton);
+  const proGroup=createGroup(drawRight,'Professionelle CAD-Bearbeitung',false);proGroup.classList.add('cad-pro-group');
+  const constraintLabel=document.createElement('label');constraintLabel.htmlFor='sketchConstraint';constraintLabel.textContent='Skizzenbedingung';
+  const sketchConstraint=document.createElement('select');sketchConstraint.id='sketchConstraint';
+  sketchConstraint.innerHTML='<option value="none">Keine zusätzliche Bedingung</option><option value="horizontal">Horizontal (Linie)</option><option value="vertical">Vertikal (Linie)</option><option value="equal">Gleiche Breite und Tiefe</option><option value="centered">Auf Ursprung zentrieren</option>';
+  const constraintWrap=document.createElement('div');constraintWrap.className='field';constraintWrap.append(constraintLabel,sketchConstraint);proGroup.appendChild(constraintWrap);
+  const constraintNote=document.createElement('p');constraintNote.className='cad-pro-note';constraintNote.textContent='Rechteckige Profile besitzen bereits parallele und rechtwinklige Kanten. Diese Bedingungen richten Linien aus, gleichen Masse an oder zentrieren Profile.';
+  proGroup.appendChild(constraintNote);
+  const proDivider1=document.createElement('div');proDivider1.className='cad-pro-divider';proGroup.appendChild(proDivider1);
+  const editHeading=document.createElement('h3');editHeading.textContent='Ausgewählte Skizze nachträglich bemaßen';proGroup.appendChild(editHeading);
+  const editGrid=document.createElement('div');editGrid.className='cad-pro-grid';
+  const makeProField=(id,labelText,value)=>{const wrap=document.createElement('div');wrap.className='field';const label=document.createElement('label');label.htmlFor=id;label.textContent=labelText;const input=document.createElement('input');input.id=id;input.type='number';input.min='0.1';input.max='2000';input.step='0.1';input.value=String(value);wrap.append(label,input);editGrid.appendChild(wrap);return input;};
+  const editSketchWidth=makeProField('editSketchWidthMM','Breite X (mm)',20);
+  const editSketchDepth=makeProField('editSketchDepthMM','Tiefe Y (mm)',20);
+  const editSketchHeight=makeProField('editSketchHeightMM','Höhe Z (mm)',2);
+  proGroup.appendChild(editGrid);
+  const loadSketchDims=document.createElement('button');loadSketchDims.type='button';loadSketchDims.id='loadSketchDimensions';loadSketchDims.className='wide';loadSketchDims.textContent='↧ Masse der Auswahl laden';proGroup.appendChild(loadSketchDims);
+  const applySketchDims=document.createElement('button');applySketchDims.type='button';applySketchDims.id='applySketchDimensions';applySketchDims.className='wide primary';applySketchDims.textContent='✓ Skizzenmasse übernehmen';proGroup.appendChild(applySketchDims);
+  const editNote=document.createElement('p');editNote.className='cad-pro-note';editNote.textContent='Wähle einen zuvor extrudierten Skizzenkörper. Die Geometrie wird angepasst; Position und Drehung bleiben erhalten.';proGroup.appendChild(editNote);
+  const proDivider2=document.createElement('div');proDivider2.className='cad-pro-divider';proGroup.appendChild(proDivider2);
+  const edgeHeading=document.createElement('h3');edgeHeading.textContent='Kanten abrunden oder abfasen';proGroup.appendChild(edgeHeading);
+  const edgeRadiusWrap=document.createElement('div');edgeRadiusWrap.className='field';const edgeRadiusLabel=document.createElement('label');edgeRadiusLabel.htmlFor='edgeTreatmentMM';edgeRadiusLabel.textContent='Radius / Fasenbreite (mm)';const edgeRadius=document.createElement('input');edgeRadius.id='edgeTreatmentMM';edgeRadius.type='number';edgeRadius.min='0.1';edgeRadius.max='20';edgeRadius.step='0.1';edgeRadius.value='1';edgeRadiusWrap.append(edgeRadiusLabel,edgeRadius);proGroup.appendChild(edgeRadiusWrap);
+  const edgeActions=document.createElement('div');edgeActions.className='cad-pro-actions';
+  const filletButton=document.createElement('button');filletButton.type='button';filletButton.id='applyEdgeFillet';filletButton.textContent='◜ Kanten abrunden';
+  const chamferButton=document.createElement('button');chamferButton.type='button';chamferButton.id='applyEdgeChamfer';chamferButton.textContent='／ Kanten abfasen';
+  edgeActions.append(filletButton,chamferButton);proGroup.appendChild(edgeActions);
+  const edgeNote=document.createElement('p');edgeNote.className='cad-pro-note';edgeNote.textContent='Funktioniert auf extrudierten 2D-Skizzen mit gespeicherter Kontur. Bei sehr engen oder konkaven Konturen kann ein kleinerer Wert nötig sein.';proGroup.appendChild(edgeNote);
+  const proDivider3=document.createElement('div');proDivider3.className='cad-pro-divider';proGroup.appendChild(proDivider3);
+  const formHeading=document.createElement('h3');formHeading.textContent='Komplexe Formoperationen';proGroup.appendChild(formHeading);
+  const formActions=document.createElement('div');formActions.className='cad-pro-actions';
+  const loftButton=document.createElement('button');loftButton.type='button';loftButton.id='createLoft';loftButton.textContent='⤢ Loft zwischen Profilen';
+  const sweepButton=document.createElement('button');sweepButton.type='button';sweepButton.id='createSweep';sweepButton.textContent='〰 Profil entlang Pfad';
+  formActions.append(loftButton,sweepButton);proGroup.appendChild(formActions);
+  const formNote=document.createElement('p');formNote.className='cad-pro-note';formNote.textContent='Loft: Wähle zwei geschlossene Skizzenprofile. Sweep: Wähle zuerst ein geschlossenes Profil und danach eine gezeichnete 2D-/3D-Linie oder Kurve als Pfad.';proGroup.appendChild(formNote);
   heading(paneMap.draw.left,'Werkzeuge');
   paneMap.draw.left.appendChild(sketchLockNote);
   const actionWrap=document.createElement('div');actionWrap.className='cad-draw-actions';actionWrap.append(startSketchButton,createSketchButton,cancelSketchButton);
@@ -2798,6 +2844,33 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     const frame=objects.find(obj=>obj.userData.contourFrame);
     return {baseFound:true,frameFound:!!frame,baseWidthMM:base.userData.sketch?.widthMM,baseDepthMM:base.userData.sketch?.depthMM,baseThicknessMM:base.userData.sketch?.extrusionMM,outlinePoints:base.userData.sketchOutline.length,wallThicknessMM:frame?.userData.contourFrame?.wallThicknessMM,wallHeightMM:frame?.userData.contourFrame?.wallHeightMM,frameVertices:frame?.geometry?.attributes?.position?.count||0};
   };
+  window.__silmoTestRunProCad=()=>{
+    const makeProfile=(name,x,y,z,w,d,h)=>{
+      const shape=new THREE.Shape();shape.moveTo(-w/2,-d/2);shape.lineTo(w/2,-d/2);shape.lineTo(w/2,d/2);shape.lineTo(-w/2,d/2);shape.closePath();
+      const outline=shape.getPoints(16).slice(0,-1).map(p=>[p.x,p.y]);
+      const geometry=new THREE.ExtrudeGeometry(shape,{depth:h,bevelEnabled:false});geometry.computeVertexNormals();
+      const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:'#4b91ed'}));mesh.position.set(x,y,z);
+      mesh.userData={label:name,percent:{x:100,y:100,z:100},baseDimensions:{x:w,y:d,z:h},sketch:{type:'rectangle',widthMM:w*MM_PER_UNIT,depthMM:d*MM_PER_UNIT,extrusionMM:h*MM_PER_UNIT,outlinePoints:outline},sketchOutline:outline};
+      scene.add(mesh);objects.push(mesh);return mesh;
+    };
+    const before=objects.length;
+    const p1=makeProfile('Testprofil A',-1,0,0,2,2,0.2),p2=makeProfile('Testprofil B',1,0,1,1.2,1.2,0.2);
+    selectedObjects=[p1];selected=p1;
+    document.getElementById('editSketchWidthMM').value='30';document.getElementById('editSketchDepthMM').value='25';document.getElementById('editSketchHeightMM').value='4';
+    applySelectedSketchDimensions();
+    const dimensionOK=Math.abs(p1.geometry.boundingBox.getSize(new THREE.Vector3()).x*MM_PER_UNIT-30)<0.01;
+    document.getElementById('edgeTreatmentMM').value='0.5';createEdgeTreatment('fillet');
+    const filletOK=p1.userData.edgeTreatment?.type==='fillet'&&p1.geometry.attributes.position.count>0;
+    selectedObjects=[p1,p2];selected=p2;createLoftFromSelection();
+    const loft=objects[objects.length-1],loftOK=loft.userData.loft?.sections===2&&loft.geometry.attributes.position.count>0;
+    const pathGeometry=new THREE.BoxGeometry(0.08,0.08,2);
+    const path=new THREE.Mesh(pathGeometry,new THREE.MeshStandardMaterial({color:'#53d8e8'}));path.userData={label:'Testpfad',sketch:{type:'line3d',pathPoints:[[0,0,0],[0,0,1],[0.4,0,2]]}};
+    scene.add(path);objects.push(path);selectedObjects=[p2,path];selected=path;createSweepFromSelection();
+    const sweep=objects[objects.length-1],sweepOK=!!sweep.userData.sweep&&sweep.geometry.attributes.position.count>0;
+    selectedObjects=[p2];selected=p2;document.getElementById('edgeTreatmentMM').value='0.3';createEdgeTreatment('chamfer');
+    const chamferOK=p2.userData.edgeTreatment?.type==='chamfer'&&p2.geometry.attributes.position.count>0;
+    return {dimensionOK,filletOK,chamferOK,loftOK,sweepOK,objectDelta:objects.length-before,loftVertices:loft.geometry.attributes.position.count,sweepVertices:sweep.geometry.attributes.position.count};
+  };
   window.__silmoTestCreateContourFrame=()=>{
     const points=[[-1,-1],[1,-1],[1,1],[-1,1]];
     const shape=new THREE.Shape();shape.moveTo(points[0][0],points[0][1]);points.slice(1).forEach(point=>shape.lineTo(point[0],point[1]));shape.closePath();
@@ -2810,10 +2883,114 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     const frame=objects.find(obj=>obj.userData.contourFrame);
     return {objectCount:objects.length,frameFound:!!frame,label:frame?.userData.label,wallThicknessMM:frame?.userData.contourFrame?.wallThicknessMM,wallHeightMM:frame?.userData.contourFrame?.wallHeightMM,dimensions:frame?.userData.baseDimensions,geometryVertices:frame?.geometry?.attributes?.position?.count||0};
   };
-  function createSketchSolid() {
+
+  function selectedCadObject(){
+    const target=selectedObjects.length===1?selectedObjects[0]:selected;
+    if(!target||!objects.includes(target))throw new Error('Bitte zuerst genau ein passendes Objekt auswählen.');
+    return target;
+  }
+  function loadSelectedSketchDimensions(){
+    const obj=selectedCadObject();
+    if(!obj.userData.sketch)throw new Error('Die Auswahl ist keine bearbeitbare Skizzen-Extrusion.');
+    obj.geometry.computeBoundingBox();const size=obj.geometry.boundingBox.getSize(new THREE.Vector3());
+    document.getElementById('editSketchWidthMM').value=(size.x*Math.abs(obj.scale.x)*MM_PER_UNIT).toFixed(1);
+    document.getElementById('editSketchDepthMM').value=(size.y*Math.abs(obj.scale.y)*MM_PER_UNIT).toFixed(1);
+    document.getElementById('editSketchHeightMM').value=(size.z*Math.abs(obj.scale.z)*MM_PER_UNIT).toFixed(1);
+    status.textContent='Skizzenmasse geladen. Werte ändern und anschliessend übernehmen.';
+  }
+  function applySelectedSketchDimensions(){
+    const obj=selectedCadObject();
+    if(!obj.userData.sketch)throw new Error('Die Auswahl ist keine bearbeitbare Skizzen-Extrusion.');
+    const values=['editSketchWidthMM','editSketchDepthMM','editSketchHeightMM'].map(id=>Number(document.getElementById(id).value));
+    if(values.some(v=>!Number.isFinite(v)||v<0.1||v>2000))throw new Error('Breite, Tiefe und Höhe müssen zwischen 0,1 und 2000 mm liegen.');
+    obj.geometry.computeBoundingBox();const old=obj.geometry.boundingBox.getSize(new THREE.Vector3());
+    if(old.x<1e-6||old.y<1e-6||old.z<1e-6)throw new Error('Diese Skizze besitzt keine skalierbare Fläche oder Extrusionshöhe.');
+    const factors=[values[0]/(old.x*Math.abs(obj.scale.x)*MM_PER_UNIT),values[1]/(old.y*Math.abs(obj.scale.y)*MM_PER_UNIT),values[2]/(old.z*Math.abs(obj.scale.z)*MM_PER_UNIT)];
+    if(factors.some(v=>!Number.isFinite(v)||v<=0||v>20000))throw new Error('Die gewünschte Skalierung ist ausserhalb des gültigen Bereichs.');
+    recordHistory();obj.geometry.scale(...factors);obj.geometry.computeVertexNormals();obj.geometry.computeBoundingBox();obj.geometry.computeBoundingSphere();
+    obj.userData.baseDimensions={x:values[0]/MM_PER_UNIT,y:values[1]/MM_PER_UNIT,z:values[2]/MM_PER_UNIT};
+    obj.userData.sketch.widthMM=values[0];obj.userData.sketch.depthMM=values[1];obj.userData.sketch.extrusionMM=values[2];
+    updateObjects();showProperties();updateMoveGizmo();status.textContent='Skizzenmasse aktualisiert: '+values.map(v=>v.toFixed(1)).join(' × ')+' mm.';
+  }
+  function createEdgeTreatment(mode){
+    const obj=selectedCadObject(),outline=obj.userData.sketchOutline,meta=obj.userData.sketch;
+    if(!Array.isArray(outline)||outline.length<3||!meta||!Number.isFinite(meta.extrusionMM))throw new Error('Kantenbearbeitung benötigt eine extrudierte Skizze mit gespeicherter Kontur.');
+    const radiusMM=Number(document.getElementById('edgeTreatmentMM').value);
+    if(!Number.isFinite(radiusMM)||radiusMM<0.1||radiusMM>20)throw new Error('Radius/Fasenbreite muss zwischen 0,1 und 20 mm liegen.');
+    const maxAllowed=Math.min(meta.widthMM||2000,meta.depthMM||2000,meta.extrusionMM)/2;
+    if(radiusMM>=maxAllowed)throw new Error('Der Wert ist zu gross für diese Skizze. Verwende weniger als '+maxAllowed.toFixed(1)+' mm.');
+    const shape=new THREE.Shape();shape.moveTo(outline[0][0],outline[0][1]);outline.slice(1).forEach(p=>shape.lineTo(p[0],p[1]));shape.closePath();
+    const bevel=radiusMM/MM_PER_UNIT;
+    const geometry=new THREE.ExtrudeGeometry(shape,{depth:meta.extrusionMM/MM_PER_UNIT,bevelEnabled:true,bevelSegments:mode==='fillet'?8:1,bevelSize:bevel,bevelThickness:bevel,curveSegments:32});
+    geometry.translate(0,0,bevel);geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    recordHistory();obj.geometry.dispose();obj.geometry=geometry;
+    const size=new THREE.Vector3();geometry.boundingBox.getSize(size);obj.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
+    obj.userData.edgeTreatment={type:mode,radiusMM};obj.userData.label=(obj.userData.label||'Skizze')+(mode==='fillet'?' – abgerundet':' – abgefast');
+    updateObjects();showProperties();updateMoveGizmo();
+    status.textContent=(mode==='fillet'?'Kanten abgerundet':'Kanten abgefast')+' – '+radiusMM.toFixed(1)+' mm. Dies betrifft die Kanten der extrudierten Skizze.';
+  }
+  function resampleCadOutline(points,count=64){
+    const pts=points.map(p=>new THREE.Vector2(p[0],p[1]));const lengths=[];let total=0;
+    for(let i=0;i<pts.length;i++){const len=pts[i].distanceTo(pts[(i+1)%pts.length]);lengths.push(len);total+=len;}
+    if(total<1e-6)throw new Error('Profilkontur ist ungültig.');
+    const out=[];
+    for(let k=0;k<count;k++){let target=total*k/count,seg=0;while(seg<lengths.length-1&&target>lengths[seg]){target-=lengths[seg];seg++;}
+      const a=pts[seg],b=pts[(seg+1)%pts.length],t=lengths[seg]>0?target/lengths[seg]:0;out.push(a.clone().lerp(b,t));}
+    return out;
+  }
+  function appendCadTriangle(out,a,b,c){out.push(a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z);}
+  function createLoftFromSelection(){
+    const pair=selectedObjects.length===2?selectedObjects.slice():(selected?[selected]:[]);
+    if(pair.length!==2)throw new Error('Für Loft müssen genau zwei Skizzenprofile ausgewählt sein.');
+    const [a,b]=pair;
+    if(!Array.isArray(a.userData.sketchOutline)||!Array.isArray(b.userData.sketchOutline))throw new Error('Beide ausgewählten Objekte brauchen eine gespeicherte geschlossene Skizzenkontur.');
+    a.updateMatrixWorld(true);b.updateMatrixWorld(true);
+    const ra=resampleCadOutline(a.userData.sketchOutline,64).map(p=>a.localToWorld(new THREE.Vector3(p.x,p.y,0)));
+    const rb=resampleCadOutline(b.userData.sketchOutline,64).map(p=>b.localToWorld(new THREE.Vector3(p.x,p.y,0)));
+    const vertices=[];
+    for(let i=0;i<64;i++){const n=(i+1)%64;appendCadTriangle(vertices,ra[i],ra[n],rb[i]);appendCadTriangle(vertices,ra[n],rb[n],rb[i]);}
+    // Close both ends with triangulated planar caps. This supports simple convex and concave profiles.
+    const cap=(ring,reverse)=>{
+      const contour=ring.map(p=>new THREE.Vector2(p.x,p.y));
+      const triangles=THREE.ShapeUtils.triangulateShape(contour,[]);
+      triangles.forEach(tri=>{const ids=reverse?[tri[2],tri[1],tri[0]]:tri;appendCadTriangle(vertices,ring[ids[0]],ring[ids[1]],ring[ids[2]]);});
+    };
+    cap(ra,true);cap(rb,false);
+    const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    if(!geometry.boundingBox||geometry.boundingBox.isEmpty()){geometry.dispose();throw new Error('Loft konnte keine gültige Geometrie erzeugen.');}
+    const loftSize=new THREE.Vector3();geometry.boundingBox.getSize(loftSize);
+    recordHistory();const mesh=new THREE.Mesh(geometry,a.material.clone());mesh.userData={label:'Loft-Körper',baseDimensions:{x:loftSize.x,y:loftSize.y,z:loftSize.z},percent:{x:100,y:100,z:100},loft:{sourceA:a.uuid,sourceB:b.uuid,sections:2}};
+    scene.add(mesh);objects.push(mesh);selectObject(mesh);updateObjects();showProperties();updateMoveGizmo();
+    status.textContent='Loft erstellt: zwei Skizzenprofile wurden zu einem Körper verbunden.';
+  }
+  function createSweepFromSelection(){
+    const pair=selectedObjects.length===2?selectedObjects.slice():[];
+    if(pair.length!==2)throw new Error('Für Sweep genau zwei Objekte auswählen: zuerst Profil, danach Pfad.');
+    const [profile,pathObject]=pair,outline=profile.userData.sketchOutline,pathData=pathObject.userData.sketch;
+    if(!Array.isArray(outline)||!pathData||!Array.isArray(pathData.pathPoints)||pathData.pathPoints.length<2)throw new Error('Sweep braucht ein geschlossenes Profil und eine gespeicherte Linien-/Kurvenbahn.');
+    profile.updateMatrixWorld(true);pathObject.updateMatrixWorld(true);
+    const shape=new THREE.Shape();shape.moveTo(outline[0][0],outline[0][1]);outline.slice(1).forEach(p=>shape.lineTo(p[0],p[1]));shape.closePath();
+    const points=pathData.pathPoints.map(p=>pathObject.localToWorld(new THREE.Vector3(p[0],p[1],p[2])));
+    const curve=new THREE.CatmullRomCurve3(points);
+    const geometry=new THREE.ExtrudeGeometry(shape,{steps:Math.max(48,points.length*16),bevelEnabled:false,extrudePath:curve,curveSegments:24});
+    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    if(!geometry.boundingBox||geometry.boundingBox.isEmpty()){geometry.dispose();throw new Error('Sweep konnte keine gültige Geometrie erzeugen.');}
+    const sweepSize=new THREE.Vector3();geometry.boundingBox.getSize(sweepSize);
+    recordHistory();const mesh=new THREE.Mesh(geometry,profile.material.clone());mesh.userData={label:'Sweep-Körper',baseDimensions:{x:sweepSize.x,y:sweepSize.y,z:sweepSize.z},percent:{x:100,y:100,z:100},sweep:{profile:profile.uuid,path:pathObject.uuid}};
+    scene.add(mesh);objects.push(mesh);selectObject(mesh);updateObjects();showProperties();updateMoveGizmo();
+    status.textContent='Sweep erstellt: Profil entlang der gewählten Kurve geführt.';
+  }
+    function createSketchSolid() {
     if (!sketchDraft) { status.textContent = 'Bitte zuerst eine Skizze zeichnen.'; return; }
     try {
       const tool = document.getElementById('sketchTool').value;
+      const constraint=document.getElementById('sketchConstraint')?.value||'none';
+      if(constraint==='equal'&&!['line3d','line2d','curve2d','freeform2d'].includes(tool))document.getElementById('sketchDepthMM').value=document.getElementById('sketchWidthMM').value;
+      if(constraint==='centered'&&sketchDraft){sketchDraft.centerX=0;sketchDraft.centerY=0;}
+      if((constraint==='horizontal'||constraint==='vertical')&&sketchDraft?.points?.length>=2){
+        const first=sketchDraft.points[0],axis=constraint==='horizontal'?'y':'x';
+        for(let i=1;i<sketchDraft.points.length;i++)sketchDraft.points[i][axis]=first[axis];
+      }
       let geometry, meshPosition = new THREE.Vector3(), sketchMetadata, label;
       if (['line3d','line2d','curve2d'].includes(tool)) {
         const diameterMM = Number(document.getElementById('sketchDiameterMM').value);
@@ -2834,7 +3011,8 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
           plane: tool === 'line3d' ? document.getElementById('sketchPlaneSelect').value : 'xy',
           diameterMM,
           pointCount: points.length,
-          lengthMM: curve.getLength() * MM_PER_UNIT
+          lengthMM: curve.getLength() * MM_PER_UNIT,
+          pathPoints: points.map(point=>[point.x-center.x,point.y-center.y,point.z-center.z])
         };
         label = tool === 'line3d' ? '3D-Linie' : tool === 'line2d' ? '2D-Linie' : '2D-Kurve';
       } else if (tool === 'freeform2d') {
@@ -2892,14 +3070,15 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
         }
         geometry = new THREE.ExtrudeGeometry(shape, { depth: dims.height, bevelEnabled: false, curveSegments: 64 });
         geometry.computeVertexNormals();
+        const profileOutline=shape.getPoints(32);if(profileOutline.length>1&&profileOutline[0].distanceTo(profileOutline[profileOutline.length-1])<1e-7)profileOutline.pop();
         meshPosition.set(sketchDraft.centerX, sketchDraft.centerY, 0);
         sketchMetadata = {
           type: tool,
           widthMM: dims.width * MM_PER_UNIT,
           depthMM: dims.depth * MM_PER_UNIT,
-          extrusionMM: dims.height * MM_PER_UNIT
+          extrusionMM: dims.height * MM_PER_UNIT,
+          outlinePoints: profileOutline.map(point=>[point.x,point.y])
         };
-        if(tool==='roundedRectangle') { const outline=shape.getPoints(10); if(outline.length>1&&outline[0].distanceTo(outline[outline.length-1])<1e-7)outline.pop(); sketchMetadata.outlinePoints=outline.map(point=>[point.x,point.y]); }
         label = tool === 'circle' ? 'Skizze Kreis' : tool === 'ellipse' ? 'Skizze Ellipse' : tool === 'triangle' ? 'Skizze Dreieck' : tool === 'roundedRectangle' ? 'Abgerundete Rechteck-Skizze' : 'Skizze Rechteck';
       }
       if (!['line3d','line2d','curve2d'].includes(tool)) {
@@ -2933,7 +3112,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       mesh.userData.percent = { x: 100, y: 100, z: 100 };
       mesh.userData.label = label;
       mesh.userData.sketch = sketchMetadata;
-      if(['freeform2d','roundedRectangle'].includes(tool))mesh.userData.sketchOutline=sketchMetadata.outlinePoints;
+      if(Array.isArray(sketchMetadata.outlinePoints)&&sketchMetadata.outlinePoints.length>=3)mesh.userData.sketchOutline=sketchMetadata.outlinePoints;
       scene.add(mesh);
       objects.push(mesh);
       selectObject(mesh);
@@ -2967,6 +3146,13 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     status.textContent = 'Zeichenmodus aktiv: auf der Zeichenfläche ziehen.';
   });
   document.getElementById('createSketchSolid').addEventListener('click', createSketchSolid);
+  document.getElementById('loadSketchDimensions').addEventListener('click',()=>{try{loadSelectedSketchDimensions();}catch(e){status.textContent=e.message;}});
+  document.getElementById('applySketchDimensions').addEventListener('click',()=>{try{applySelectedSketchDimensions();}catch(e){status.textContent='Masse konnten nicht übernommen werden: '+e.message;}});
+  document.getElementById('applyEdgeFillet').addEventListener('click',()=>{try{createEdgeTreatment('fillet');}catch(e){status.textContent='Abrundung nicht möglich: '+e.message;}});
+  document.getElementById('applyEdgeChamfer').addEventListener('click',()=>{try{createEdgeTreatment('chamfer');}catch(e){status.textContent='Fase nicht möglich: '+e.message;}});
+  document.getElementById('createLoft').addEventListener('click',()=>{try{createLoftFromSelection();}catch(e){status.textContent='Loft nicht möglich: '+e.message;}});
+  document.getElementById('createSweep').addEventListener('click',()=>{try{createSweepFromSelection();}catch(e){status.textContent='Sweep nicht möglich: '+e.message;}});
+
   document.getElementById('createContourFrame').addEventListener('click',()=>{try{createContourFrame();}catch(error){status.textContent='Hohlrahmen konnte nicht erstellt werden: '+(error.message||'Kontur prüfen.');}});
   document.getElementById('subtractSelected').addEventListener('click',()=>runBooleanOperation('subtract'));
   document.getElementById('cancelSketch').addEventListener('click', () => {

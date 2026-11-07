@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v55/, 'Build-Metadaten zeigen nicht v52');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v56/, 'Build-Metadaten zeigen nicht v52');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -475,6 +475,10 @@ try {
   assert.equal(await page.locator('#pane-draw-right').isVisible(),true,'Das rechte CAD-Eigenschaftenpanel fehlt');
   assert.equal(await page.locator('#sketchPositionXMM').isVisible(),true,'Exakte X-Position der Skizze fehlt');
   assert.equal(await page.locator('#sketchPositionYMM').isVisible(),true,'Exakte Y-Position der Skizze fehlt');
+  await page.locator('#pane-draw-right details').filter({hasText:'Professionelle CAD-Bearbeitung'}).locator('summary').click();
+  for (const id of ['sketchConstraint','editSketchWidthMM','editSketchDepthMM','editSketchHeightMM','loadSketchDimensions','applySketchDimensions','edgeTreatmentMM','applyEdgeFillet','applyEdgeChamfer','createLoft','createSweep']) {
+    assert.equal(await page.locator('#'+id).isVisible(),true, 'Professionelles CAD-Werkzeug '+id+' fehlt');
+  }
   assert.match(await page.locator('#pane-draw-right').innerText(),/Exakte Masse und Position/,'Skizzenparameter sind nicht übersichtlich gruppiert');
   assert.ok((await page.locator('#sketchTool option').allTextContents()).some(x=>/Freiform/.test(x)),'Freiform-Zeichenwerkzeug fehlt');
   await page.locator('#pane-draw-right details').filter({hasText:'Wand und Kontur bearbeiten'}).locator('summary').click();
@@ -506,9 +510,12 @@ try {
   assert.equal(roundedShellTest.wallHeightMM,12,'Höhe des abgerundeten Rahmens stimmt nicht');
   assert.ok(roundedShellTest.outlinePoints>=8,'Abgerundete Kontur wurde nicht ausreichend aufgelöst');
   assert.ok(roundedShellTest.frameVertices>0,'Abgerundeter Hohlrahmen enthält keine Geometrie');
+  const proCadTest=await page.evaluate(()=>window.__silmoTestRunProCad());
+  for (const key of ['dimensionOK','filletOK','chamferOK','loftOK','sweepOK']) assert.equal(proCadTest[key],true,'Professionelle CAD-Funktion '+key+' funktioniert nicht');
+  assert.ok(proCadTest.loftVertices>0&&proCadTest.sweepVertices>0,'Loft/Sweep erzeugt keine Geometrie');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
-  console.log('BESTANDEN: 3D-Start, CAD-Zeichenarbeitsplatz, Werkzeugpalette, exakte Skizzenposition, Zeichnen, allgemeine CAD-Konstruktion, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
+  console.log('BESTANDEN: 3D-Start, CAD-Zeichenarbeitsplatz, Werkzeugpalette, exakte Skizzenposition, Skizzenbearbeitung, Kantenbearbeitung, Loft, Sweep, Zeichnen, allgemeine CAD-Konstruktion, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
   console.log(JSON.stringify({ canvasSize, beforeAlign, afterAlign, selectedCount, alignStatus }));
 } catch (error) {
   console.error('BROWSERTEST FEHLGESCHLAGEN:', error);
