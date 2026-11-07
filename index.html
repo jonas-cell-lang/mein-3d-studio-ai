@@ -2876,7 +2876,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     selectedObjects=[c,d];selected=d;document.getElementById('cadRelationSelect').value='tangent';applySketchRelation();
     const tangentPointsA=cadPathWorldPoints(c),tangentPointsB=cadPathWorldPoints(d);
     const tangentOK=tangentPointsA.at(-1).distanceTo(tangentPointsB[0])<0.02;
-    const profile1=objects.find(o=>o.userData.label==='Testprofil A'),profile2=objects.find(o=>o.userData.label==='Testprofil B');
+    const profile1=objects.find(o=>String(o.userData.label||'').startsWith('Testprofil A')),profile2=objects.find(o=>String(o.userData.label||'').startsWith('Testprofil B'));
     selectedObjects=[profile1,profile2];selected=profile2;document.getElementById('cadRelationSelect').value='concentric';applySketchRelation();
     const concentricOK=Math.abs(profile1.position.x-profile2.position.x)<1e-6&&Math.abs(profile1.position.y-profile2.position.y)<1e-6;
     selectedObjects=[a];selected=a;loadSelectedPathLength();document.getElementById('editPathLengthMM').value='30';applySelectedPathLength();
