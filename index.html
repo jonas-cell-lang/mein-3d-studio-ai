@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v44 – Präzisionsraster</title>
+<title>SILMO 3D Studio AI – v45 – Zeichenmodus und Formen</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v44 – Präzisionsraster">
+<meta name="silmo-build" content="v45 – Zeichenmodus und Formen">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -485,7 +485,7 @@ input:focus{outline:1px solid var(--cyan)}
   const sketchIntro=document.createElement('p'); sketchIntro.className='note'; sketchIntro.textContent='Zeichne Rechtecke, Kreise und freie geschlossene Konturen auf XY oder räumliche Linien auf XY, XZ oder YZ – mit Maus, Touch oder Apple Pencil. Extrudiere deine 2D-Skizze zu einem echten 3D-Körper.'; paneMap.draw.left.appendChild(sketchIntro);
   const sketchToolWrap=document.createElement('div'); sketchToolWrap.className='field';
   const sketchToolLabel=document.createElement('label'); sketchToolLabel.htmlFor='sketchTool'; sketchToolLabel.textContent='Zeichenwerkzeug';
-  const sketchTool=document.createElement('select'); sketchTool.id='sketchTool'; sketchTool.innerHTML='<option value="rectangle">2D-Rechteck</option><option value="circle">2D-Kreis</option><option value="freeform2d">2D-Freiform</option><option value="line3d">3D-Linie</option>';
+  const sketchTool=document.createElement('select'); sketchTool.id='sketchTool'; sketchTool.innerHTML='<option value="rectangle">2D-Rechteck</option><option value="circle">2D-Kreis</option><option value="ellipse">2D-Ellipse</option><option value="triangle">2D-Dreieck</option><option value="freeform2d">2D-Freiform</option><option value="line3d">3D-Linie</option>';
   sketchToolWrap.append(sketchToolLabel,sketchTool); paneMap.draw.left.appendChild(sketchToolWrap);
   const sketchSnapWrap=document.createElement('div'); sketchSnapWrap.className='field';
   const sketchSnapLabel=document.createElement('label'); sketchSnapLabel.htmlFor='sketchSnapEnabled'; sketchSnapLabel.textContent='Rasterfang aktivieren';
@@ -515,6 +515,7 @@ input:focus{outline:1px solid var(--cyan)}
   const sketchHeightLabel=document.createElement('label'); sketchHeightLabel.htmlFor='sketchHeightMM'; sketchHeightLabel.textContent='Extrusionshöhe Z (mm)';
   const sketchHeight=document.createElement('input'); sketchHeight.id='sketchHeightMM'; sketchHeight.type='number'; sketchHeight.min='0.1'; sketchHeight.max='2000'; sketchHeight.step='0.1'; sketchHeight.value='10';
   sketchHeightWrap.append(sketchHeightLabel,sketchHeight); paneMap.draw.left.appendChild(sketchHeightWrap);
+  const sketchLockNote=document.createElement('p'); sketchLockNote.id='sketchViewLockNote'; sketchLockNote.className='note'; sketchLockNote.textContent='Während des Zeichnens ist die Kameradrehung gesperrt. Zoomen bleibt möglich.'; paneMap.draw.left.appendChild(sketchLockNote);
   const startSketchButton=document.createElement('button'); startSketchButton.type='button'; startSketchButton.id='startSketch'; startSketchButton.className='wide primary'; startSketchButton.textContent='✎ Zeichnen starten'; paneMap.draw.left.appendChild(startSketchButton);
   const createSketchButton=document.createElement('button'); createSketchButton.type='button'; createSketchButton.id='createSketchSolid'; createSketchButton.className='wide'; createSketchButton.textContent='▰ Als 3D-Körper erstellen'; createSketchButton.disabled=true; paneMap.draw.left.appendChild(createSketchButton);
   const cancelSketchButton=document.createElement('button'); cancelSketchButton.type='button'; cancelSketchButton.id='cancelSketch'; cancelSketchButton.className='wide'; cancelSketchButton.textContent='Skizze abbrechen'; cancelSketchButton.disabled=true; paneMap.draw.left.appendChild(cancelSketchButton);
@@ -2295,19 +2296,25 @@ input:focus{outline:1px solid var(--cyan)}
       sketchPreview = new THREE.LineLoop(geometry, new THREE.LineBasicMaterial({ color: 0x53d8e8, depthTest: false }));
     } else {
       let points = [];
-      if (document.getElementById('sketchTool')?.value === 'circle') {
-        const radius = sketchDraft.width / 2;
+      const activeTool = document.getElementById('sketchTool')?.value;
+      if (activeTool === 'circle' || activeTool === 'ellipse') {
+        const radiusX = sketchDraft.width / 2;
+        const radiusY = activeTool === 'circle' ? radiusX : sketchDraft.depth / 2;
         for (let i = 0; i < 64; i++) {
           const angle = (i / 64) * Math.PI * 2;
           points.push(new THREE.Vector3(
-            sketchDraft.centerX + Math.cos(angle) * radius,
-            sketchDraft.centerY + Math.sin(angle) * radius,
+            sketchDraft.centerX + Math.cos(angle) * radiusX,
+            sketchDraft.centerY + Math.sin(angle) * radiusY,
             0.025
           ));
         }
       } else {
         const halfW = sketchDraft.width / 2, halfD = sketchDraft.depth / 2;
-        points = [
+        points = activeTool === 'triangle' ? [
+          new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY-halfD,0.025),
+          new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY-halfD,0.025),
+          new THREE.Vector3(sketchDraft.centerX,sketchDraft.centerY+halfD,0.025)
+        ] : [
           new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY-halfD,0.025),
           new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY-halfD,0.025),
           new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY+halfD,0.025),
@@ -2425,6 +2432,8 @@ input:focus{outline:1px solid var(--cyan)}
     sketchDrawing = false;
     sketchPointerId = null;
     sketchMode = false;
+    document.getElementById('sketchViewLockNote').textContent = 'Während des Zeichnens ist die Kameradrehung gesperrt. Zoomen bleibt möglich.';
+    canvas.style.cursor = 'grab';
     document.getElementById('startSketch').textContent = '✎ Zeichnen starten';
     if (sketchDraft) {
       document.getElementById('createSketchSolid').disabled = false;
@@ -2500,6 +2509,11 @@ input:focus{outline:1px solid var(--cyan)}
         const shape = new THREE.Shape();
         if (tool === 'circle') {
           shape.absarc(0, 0, dims.width / 2, 0, Math.PI * 2, false);
+        } else if (tool === 'ellipse') {
+          shape.absellipse(0, 0, dims.width / 2, dims.depth / 2, 0, Math.PI * 2, false, 0);
+        } else if (tool === 'triangle') {
+          const x = dims.width / 2, y = dims.depth / 2;
+          shape.moveTo(-x, -y); shape.lineTo(x, -y); shape.lineTo(0, y); shape.closePath();
         } else {
           const x = dims.width / 2, y = dims.depth / 2;
           shape.moveTo(-x, -y); shape.lineTo(x, -y); shape.lineTo(x, y); shape.lineTo(-x, y); shape.closePath();
@@ -2513,7 +2527,7 @@ input:focus{outline:1px solid var(--cyan)}
           depthMM: dims.depth * MM_PER_UNIT,
           extrusionMM: dims.height * MM_PER_UNIT
         };
-        label = tool === 'circle' ? 'Skizze Kreis' : 'Skizze Rechteck';
+        label = tool === 'circle' ? 'Skizze Kreis' : tool === 'ellipse' ? 'Skizze Ellipse' : tool === 'triangle' ? 'Skizze Dreieck' : 'Skizze Rechteck';
       }
       geometry.computeBoundingBox();
       geometry.computeBoundingSphere();
@@ -2549,6 +2563,8 @@ input:focus{outline:1px solid var(--cyan)}
     sketchDrawing = false;
     sketchMode = true;
     updateSketchPlaneFromUI();
+    canvas.style.cursor = 'crosshair';
+    document.getElementById('sketchViewLockNote').textContent = 'ZEICHENMODUS AKTIV: Kameradrehung gesperrt. Zoomen bleibt möglich.';
     document.getElementById('createSketchSolid').disabled = true;
     document.getElementById('cancelSketch').disabled = true;
     document.getElementById('startSketch').textContent = 'Zeichenmodus aktiv';
@@ -2558,6 +2574,8 @@ input:focus{outline:1px solid var(--cyan)}
   document.getElementById('createSketchSolid').addEventListener('click', createSketchSolid);
   document.getElementById('cancelSketch').addEventListener('click', () => {
     sketchMode = false; sketchDrawing = false; sketchPointerId = null; sketchDraft = null;
+    document.getElementById('sketchViewLockNote').textContent = 'Während des Zeichnens ist die Kameradrehung gesperrt. Zoomen bleibt möglich.';
+    canvas.style.cursor = 'grab';
     clearSketchPreview();
     document.getElementById('createSketchSolid').disabled = true;
     document.getElementById('cancelSketch').disabled = true;
@@ -2601,6 +2619,7 @@ input:focus{outline:1px solid var(--cyan)}
     const rect = canvas.getBoundingClientRect();
     return { x: rect.left + (point.x + 1) * rect.width / 2, y: rect.top + (1 - point.y) * rect.height / 2 };
   };
+  window.__silmoSketchCameraLockSnapshot = () => ({ active: sketchMode, targetRX, targetRY, rotatingView });
   window.__silmoSketchSnapshot = () => {
     const obj = selected;
     if (!obj || !obj.userData.sketch) return null;
@@ -2628,6 +2647,7 @@ input:focus{outline:1px solid var(--cyan)}
   canvas.addEventListener('pointerdown', e => {
     if (sketchMode) {
       if (e.cancelable) e.preventDefault();
+      e.stopPropagation();
       setPointerRay(e);
       if (!raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) return;
       snapSketchPoint(sketchPoint);
@@ -2774,6 +2794,7 @@ input:focus{outline:1px solid var(--cyan)}
       }
       return;
     }
+    if (sketchMode) return; // Während des Zeichenmodus darf die Kamera nicht gedreht werden.
     if (!dragging || e.pointerId !== pointerId) return;
     if (activeRotationAxis && selected) {
       setPointerRay(e);
@@ -3154,7 +3175,7 @@ input:focus{outline:1px solid var(--cyan)}
   const shade = document.createElement('div'); shade.id='tutorialShade'; shade.hidden=true;
   const card = document.createElement('section'); card.id='tutorialCard'; card.hidden=true;
   card.setAttribute('role','dialog'); card.setAttribute('aria-modal','false'); card.setAttribute('aria-label','SILMO Tutorial');
-  card.innerHTML = '<button id="tutorialClose" type="button" aria-label="Tutorial schliessen">✕</button><div style="font-size:10px;color:#ffcf70;margin-bottom:6px">LERNMODUS · <span id="tutorialBuild"></span></div><div id="tutorialStepLabel" style="color:#80c7ff;font-size:11px;font-weight:700;letter-spacing:.08em"></div><h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div><details id="tutorialQuickGuide"><summary>Schnellhilfe: weitere Werkzeuge</summary><ul><li><strong>Drehen:</strong> Oben rechts auf „Drehen“ wechseln, einen farbigen Ring ziehen oder den angezeigten Winkel als Gradzahl eingeben. Enter bestätigt, Escape bricht eine nicht bestätigte Eingabe ab.</li><li><strong>Duplizieren:</strong> Objekt auswählen und im Reiter „Erstellen“ auf „Duplizieren“ tippen.</li><li><strong>Mehrere Objekte:</strong> Im Reiter „Bearbeiten“ die Mehrfachauswahl einschalten und weitere Objekte in der Objektliste auswählen.</li><li><strong>Ausrichten und Verteilen:</strong> Im Reiter „Bearbeiten“ Achse und gewünschte Aktion wählen. Für Gruppieren zuerst mindestens zwei Objekte auswählen.</li><li><strong>Spiegeln:</strong> Im Reiter „Bearbeiten“ X, Y oder Z wählen. Gruppierungen lassen sich dort auch wieder aufheben.</li><li><strong>Exakte Masse:</strong> Im Reiter „Messen &amp; Prüfen“ Breite, Tiefe und Höhe in Millimetern bearbeiten.</li><li><strong>Freie 2D-Skizze:</strong> Im Reiter „Zeichnen“ „2D-Freiform“ wählen, eine geschlossene Kontur mit mindestens drei Punkten zeichnen und die Extrusionshöhe einstellen.</li><li><strong>Präzise zeichnen:</strong> Im Reiter „Zeichnen“ den Rasterfang einschalten und den Rasterabstand in Millimetern festlegen. Die Zeichenpunkte werden auf das Raster gesetzt.</li><li><strong>Formen verbinden oder abziehen:</strong> Mindestens zwei Objekte auswählen und die passende Funktion im Reiter „Erstellen“ verwenden.</li><li><strong>Projekt sichern:</strong> Im Reiter „3D-Druck“ „Projekt speichern“ oder „Projekt öffnen“ verwenden. STL exportiert das Modell für den Druck-Workflow.</li></ul></details><div id="tutorialFeedback" aria-live="polite"></div><pre id="tutorialDebug" aria-live="polite">Diagnose wird gestartet …</pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialNext" type="button" class="primary">Prüfen</button><button id="tutorialSkip" type="button">Beenden</button></div>';
+  card.innerHTML = '<button id="tutorialClose" type="button" aria-label="Tutorial schliessen">✕</button><div style="font-size:10px;color:#ffcf70;margin-bottom:6px">LERNMODUS · <span id="tutorialBuild"></span></div><div id="tutorialStepLabel" style="color:#80c7ff;font-size:11px;font-weight:700;letter-spacing:.08em"></div><h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div><details id="tutorialQuickGuide"><summary>Schnellhilfe: weitere Werkzeuge</summary><ul><li><strong>Drehen:</strong> Oben rechts auf „Drehen“ wechseln, einen farbigen Ring ziehen oder den angezeigten Winkel als Gradzahl eingeben. Enter bestätigt, Escape bricht eine nicht bestätigte Eingabe ab.</li><li><strong>Duplizieren:</strong> Objekt auswählen und im Reiter „Erstellen“ auf „Duplizieren“ tippen.</li><li><strong>Mehrere Objekte:</strong> Im Reiter „Bearbeiten“ die Mehrfachauswahl einschalten und weitere Objekte in der Objektliste auswählen.</li><li><strong>Ausrichten und Verteilen:</strong> Im Reiter „Bearbeiten“ Achse und gewünschte Aktion wählen. Für Gruppieren zuerst mindestens zwei Objekte auswählen.</li><li><strong>Spiegeln:</strong> Im Reiter „Bearbeiten“ X, Y oder Z wählen. Gruppierungen lassen sich dort auch wieder aufheben.</li><li><strong>Exakte Masse:</strong> Im Reiter „Messen &amp; Prüfen“ Breite, Tiefe und Höhe in Millimetern bearbeiten.</li><li><strong>Freie 2D-Skizze:</strong> Im Reiter „Zeichnen“ „2D-Freiform“ wählen, eine geschlossene Kontur mit mindestens drei Punkten zeichnen und die Extrusionshöhe einstellen.</li><li><strong>Präzise zeichnen:</strong> Im Reiter „Zeichnen“ den Rasterfang einschalten und den Rasterabstand in Millimetern festlegen. Die Zeichenpunkte werden auf das Raster gesetzt.</li><li><strong>Neue 2D-Formen:</strong> Ellipse und Dreieck lassen sich zeichnen, exakt vermassen und extrudieren. Während des Zeichnens ist die Kameradrehung gesperrt.</li><li><strong>Formen verbinden oder abziehen:</strong> Mindestens zwei Objekte auswählen und die passende Funktion im Reiter „Erstellen“ verwenden.</li><li><strong>Projekt sichern:</strong> Im Reiter „3D-Druck“ „Projekt speichern“ oder „Projekt öffnen“ verwenden. STL exportiert das Modell für den Druck-Workflow.</li></ul></details><div id="tutorialFeedback" aria-live="polite"></div><pre id="tutorialDebug" aria-live="polite">Diagnose wird gestartet …</pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialNext" type="button" class="primary">Prüfen</button><button id="tutorialSkip" type="button">Beenden</button></div>';
   document.body.append(shade,card);
   $('tutorialBuild').textContent = document.querySelector('meta[name="silmo-build"]')?.content || 'Build unbekannt';
   const steps = [
