@@ -187,6 +187,21 @@ try {
   assert.equal(afterTyping.activeGlowVisible, true, 'Achsen-Leuchten verschwindet nach der Gradzahl-Eingabe');
   const afterTypedAngle = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
   assert.ok(Math.abs(afterTypedAngle.qz) > 0.05 || Math.abs(afterTypedAngle.qw) < 0.99, 'Eingetippte Gradzahl verändert das Modell nicht');
+
+  // Escape muss eine noch nicht bestätigte Änderung abbrechen.
+  const committedAngle = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
+  const committedStatus = await page.locator('#status').innerText();
+  await angleInput.fill('120');
+  await angleInput.press('Escape');
+  await page.waitForTimeout(100);
+  assert.equal(await angleInput.inputValue(), '45', 'Escape stellt den zuvor bestätigten Winkel nicht wieder her');
+  assert.equal(await page.locator('#status').innerText(), committedStatus, 'Escape hat fälschlich eine Drehung bestätigt');
+  const afterEscape = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
+  assert.ok(Math.abs(afterEscape.qx - committedAngle.qx) < 1e-6 &&
+            Math.abs(afterEscape.qy - committedAngle.qy) < 1e-6 &&
+            Math.abs(afterEscape.qz - committedAngle.qz) < 1e-6 &&
+            Math.abs(afterEscape.qw - committedAngle.qw) < 1e-6,
+            'Escape hat die Objektrotation verändert');
   await angleInput.blur();
   await page.waitForTimeout(200);
   const afterRingRotation = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));

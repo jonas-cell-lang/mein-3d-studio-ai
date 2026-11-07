@@ -1782,7 +1782,16 @@ input:focus{outline:1px solid var(--cyan)}
     rotationAngleLabel.style.top = Math.max(28, Math.min(viewport.clientHeight - 28, y)) + 'px';
   }
 
+  let suppressRotationAngleChange = false;
+  rotationAngleLabel.addEventListener('focus', () => {
+    rotationAngleLabel.dataset.originalValue = rotationAngleLabel.value;
+  });
   rotationAngleLabel.addEventListener('change', () => {
+    if (suppressRotationAngleChange) {
+      suppressRotationAngleChange = false;
+      updateRotationAngleLabel();
+      return;
+    }
     const value = Number(rotationAngleLabel.value);
     const axis = rotationAngleLabel.dataset.axis || 'z';
     if (!Number.isFinite(value) || value < -36000 || value > 36000 || !selected || selected.userData.locked === true) {
@@ -1800,8 +1809,18 @@ input:focus{outline:1px solid var(--cyan)}
     updateRotationAngleLabel();
   });
   rotationAngleLabel.addEventListener('keydown', event => {
-    if (event.key === 'Enter') { rotationAngleLabel.blur(); }
-    if (event.key === 'Escape') { updateRotationAngleLabel(); rotationAngleLabel.blur(); }
+    if (event.key === 'Enter') {
+      rotationAngleLabel.blur();
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      // Escape stellt den Wert beim Fokusbeginn wieder her und darf keine Drehung auslösen.
+      suppressRotationAngleChange = true;
+      rotationAngleLabel.value = rotationAngleLabel.dataset.originalValue ?? rotationAngleLabel.value;
+      rotationAngleLabel.blur();
+      suppressRotationAngleChange = false;
+      updateRotationAngleLabel();
+    }
   });
 
   // Prüfschnittstelle für Browser-Tests: Gradzahl und aktive Achsenlinie.
