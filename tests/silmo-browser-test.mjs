@@ -160,6 +160,21 @@ try {
   assert.ok(Math.abs(triangleSnapshot.actualDepthMM - 18) < 0.01, 'Dreieckstiefe stimmt nicht');
   assert.ok(Math.abs(triangleSnapshot.actualHeightMM - 6) < 0.01, 'Dreieckshöhe stimmt nicht');
 
+  // Das sichtbare Druckplattenraster muss dieselbe einstellbare Weite verwenden.
+  await page.locator('#sketchGridMM').fill('2');
+  const gridAt2 = await page.evaluate(() => window.__silmoSketchGridSnapshot());
+  assert.equal(gridAt2.spacingMM, 2, 'Rasterweite 2 mm wird nicht übernommen');
+  assert.equal(gridAt2.visualSpacingMM, 2, 'Sichtbares Raster aktualisiert sich nicht auf 2 mm');
+  await page.locator('#sketchGridMM').fill('5');
+  const gridAt5 = await page.evaluate(() => window.__silmoSketchGridSnapshot());
+  assert.equal(gridAt5.spacingMM, 5, 'Rasterweite 5 mm wird nicht übernommen');
+  assert.equal(gridAt5.visualSpacingMM, 5, 'Sichtbares Raster aktualisiert sich nicht auf 5 mm');
+
+  // Zeichenpunkte werden an allen vier Seiten auf die tatsächliche Druckplatte begrenzt.
+  const boundedPoint = await page.evaluate(() => window.__silmoSketchClampPointForTest(25, -25, 0));
+  assert.ok(Math.abs(boundedPoint.x) <= 10.00001, 'Zeichenpunkt kann über die X-Grenze der 200-mm-Druckplatte hinaus');
+  assert.ok(Math.abs(boundedPoint.y) <= 10.00001, 'Zeichenpunkt kann über die Y-Grenze der 200-mm-Druckplatte hinaus');
+
   // Rasterfang: gezeichnete Rechteckkanten werden auf das gewählte 5-mm-Raster gesetzt.
   await page.locator('#sketchTool').selectOption('rectangle');
   await page.locator('#sketchSnapEnabled').check();
