@@ -705,7 +705,7 @@ input:focus{outline:1px solid var(--cyan)}
   // Tutorial-safe snapshot of every model object; selection changes do not hide real movement.
   window.__silmoTutorialAllPositions = () => objects.map(obj => ({ uuid: obj.uuid, x: obj.position.x, y: obj.position.y, z: obj.position.z }));
   // Test snapshot includes scale signs so mirror operations can be verified, not just their status text.
-  window.__silmoTutorialAllTransforms = () => objects.map(obj => ({ uuid: obj.uuid, x: obj.position.x, y: obj.position.y, z: obj.position.z, sx: obj.scale.x, sy: obj.scale.y, sz: obj.scale.z }));
+  window.__silmoTutorialAllTransforms = () => objects.map(obj => ({ uuid: obj.uuid, x: obj.position.x, y: obj.position.y, z: obj.position.z, sx: obj.scale.x, sy: obj.scale.y, sz: obj.scale.z, qx: obj.quaternion.x, qy: obj.quaternion.y, qz: obj.quaternion.z, qw: obj.quaternion.w }));
   let uniform = true;
   const MM_PER_UNIT = 10;
   let moveGizmo = null;
@@ -1629,14 +1629,19 @@ input:focus{outline:1px solid var(--cyan)}
     return center.multiplyScalar(1 / targets.length);
   }
 
-  function applyGroupRotation(axis, delta, targets = getSelectedTargets()) {
-    if (!targets.length || !Number.isFinite(delta) || Math.abs(delta) < 1e-12) return;
-    const direction = axis === 'x' ? new THREE.Vector3(1,0,0) : axis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
+  function applyGroupRotation(axis, degrees, obj = selected) {
+    if (!obj || obj.userData.locked === true || !Number.isFinite(degrees)) return;
+    const targets = getSelectedTargets();
+    if (!targets.includes(obj)) targets.push(obj);
+    const nextEuler = obj.rotation.clone();
+    nextEuler[axis] = THREE.MathUtils.degToRad(degrees);
+    const nextQuaternion = new THREE.Quaternion().setFromEuler(nextEuler);
+    const deltaRotation = nextQuaternion.clone().multiply(obj.quaternion.clone().invert());
     const center = getSelectionCenter(targets);
-    const deltaRotation = new THREE.Quaternion().setFromAxisAngle(direction, delta);
-    targets.forEach(obj => {
-      obj.position.sub(center).applyQuaternion(deltaRotation).add(center);
-      obj.quaternion.premultiply(deltaRotation);
+    targets.forEach(target => {
+      target.position.sub(center).applyQuaternion(deltaRotation).add(center);
+      target.quaternion.premultiply(deltaRotation);
+      target.updateMatrixWorld(true);
     });
     updateMoveGizmo();
     showProperties();
@@ -1669,6 +1674,20 @@ input:focus{outline:1px solid var(--cyan)}
       ring.renderOrder = 4;
       ring.frustumCulled = false;
       rotationGizmo.add(ring);
+
+      // Breite, unsichtbare Trefferfläche: auf Touchscreens lässt sich der Ring
+      // dadurch ziehen, ohne versehentlich das Modell darunter auszuwählen.
+      const hitGeometry = new THREE.TorusGeometry(radius, Math.max(0.11, radius * 0.085), 8, 72);
+      const hitMaterial = new THREE.MeshBasicMaterial({
+        transparent: true, opacity: 0, colorWrite: false,
+        depthTest: false, depthWrite: false, side: THREE.DoubleSide
+      });
+      const hitTarget = new THREE.Mesh(hitGeometry, hitMaterial);
+      if (def.rotateX) hitTarget.rotation.x = def.rotateX;
+      if (def.rotateY) hitTarget.rotation.y = def.rotateY;
+      hitTarget.userData.rotationAxis = def.axis;
+      hitTarget.frustumCulled = false;
+      rotationGizmo.add(hitTarget);
     });
     rotationGizmo.position.copy(getSelectionCenter(targets));
     rotationGizmo.userData.isRotationGizmo = true;
@@ -1771,7 +1790,7 @@ input:focus{outline:1px solid var(--cyan)}
         if (obj.userData.locked === true || !Number.isFinite(value)) return;
         const targets = getSelectedTargets();
         if (!targets.includes(obj)) targets.push(obj);
-        applyGroupRotation(axis, THREE.MathUtils.degToRad(value - currentDegrees), targets);
+        applyGroupRotation(axis, value, obj);
         status.textContent = 'Drehung um ' + axis.toUpperCase() + ' auf ' + value + '° gesetzt.';
       }, { min: -36000, max: 36000, title: 'Drehwinkel in Grad. Erlaubt sind −36000° bis +36000°.' });
     });
@@ -1981,6 +2000,7 @@ input:focus{outline:1px solid var(--cyan)}
   let distance = 9, targetDistance = 9;
   const focus = new THREE.Vector3(0, 0, 0.5);
   const canvas = renderer.domElement;
+  canvas.style.touchAction = 'none';
   canvas.tabIndex = 0;
   canvas.setAttribute("aria-label", "Interaktive 3D-Ansicht. Freie Fläche ziehen, um die Kamera zu drehen. Die farbigen Ringe drehen das ausgewählte Modell um X, Y oder Z. Mit rechter Maustaste oder Shift plus Ziehen auch über Modellen drehen.");
   canvas.addEventListener("contextmenu", e => e.preventDefault());
@@ -2038,21 +2058,26 @@ input:focus{outline:1px solid var(--cyan)}
         const direction = axis === 'x' ? new THREE.Vector3(1,0,0) : axis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
         const center = getSelectionCenter();
         rotationDragPlane.setFromNormalAndCoplanarPoint(direction, center);
-        if (raycaster.ray.intersectPlane(rotationDragPlane, rotationHitPoint)) {
-          activeRotationAxis = axis;
-          rotationCenter.copy(center);
-          rotationStartVector.copy(rotationHitPoint).sub(rotationCenter).normalize();
-          rotationLastVector.copy(rotationStartVector);
-          rotationAccumulatedAngle = 0;
-          dragTargets = getSelectedTargets();
-          dragStartPositions = dragTargets.map(obj => obj.position.clone());
-          rotationStartQuaternions = dragTargets.map(obj => obj.quaternion.clone());
-          recordHistory();
-          draggingObject = false;
-          rotatingView = false;
-          activeAxis = null;
-          canvas.style.cursor = 'grabbing';
+        activeRotationAxis = axis;
+        rotationCenter.copy(center);
+        // Die Ray-Ebene kann bei fast kantenparalleler Ansicht knapp verfehlt
+        // werden. Der Ring-Treffer selbst liefert dann einen sicheren Startpunkt.
+        if (!raycaster.ray.intersectPlane(rotationDragPlane, rotationHitPoint)) {
+          rotationHitPoint.copy(rotationHit.point);
         }
+        rotationStartVector.copy(rotationHitPoint).sub(rotationCenter);
+        rotationStartVector.addScaledVector(direction, -rotationStartVector.dot(direction)).normalize();
+        rotationLastVector.copy(rotationStartVector);
+        rotationAccumulatedAngle = 0;
+        dragTargets = getSelectedTargets();
+        dragStartPositions = dragTargets.map(obj => obj.position.clone());
+        rotationStartQuaternions = dragTargets.map(obj => obj.quaternion.clone());
+        recordHistory();
+        draggingObject = false;
+        rotatingView = false;
+        activeAxis = null;
+        canvas.style.cursor = 'grabbing';
+        e.preventDefault();
       } else if (axisHit && selected && getSelectedTargets().length) {
         const hitObject = axisHit.object;
         activeAxis = hitObject.userData.axis || hitObject.parent.userData.axis;
@@ -2106,7 +2131,8 @@ input:focus{outline:1px solid var(--cyan)}
       setPointerRay(e);
       const direction = activeRotationAxis === 'x' ? new THREE.Vector3(1,0,0) : activeRotationAxis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
       if (raycaster.ray.intersectPlane(rotationDragPlane, rotationHitPoint)) {
-        rotationCurrentVector.copy(rotationHitPoint).sub(rotationCenter).normalize();
+        rotationCurrentVector.copy(rotationHitPoint).sub(rotationCenter);
+        rotationCurrentVector.addScaledVector(direction, -rotationCurrentVector.dot(direction)).normalize();
         const cross = new THREE.Vector3().crossVectors(rotationLastVector, rotationCurrentVector);
         const stepAngle = Math.atan2(direction.dot(cross), rotationLastVector.dot(rotationCurrentVector));
         rotationAccumulatedAngle += stepAngle;
