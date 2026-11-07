@@ -175,7 +175,13 @@ try {
   await page.mouse.move(ringStart.x, ringStart.y);
   await page.mouse.down();
   await page.mouse.move(ringEnd.x, ringEnd.y, { steps: 12 });
+  const rotationGuide = await page.evaluate(() => window.__silmoRotationGuideSnapshot());
+  assert.equal(rotationGuide.labelVisible, true, 'Gradzahl wird während des Drehens nicht angezeigt');
+  assert.match(rotationGuide.label, /^-?\\d+°$/, 'Drehwinkel wird nicht als Gradzahl angezeigt');
+  assert.equal(rotationGuide.activeAxis, 'z', 'Aktive Drehachse wird nicht erkannt');
+  assert.ok(rotationGuide.activeLineOpacity > 0.8, 'Drehachse durch den Würfel wird nicht hervorgehoben');
   await page.mouse.up();
+  assert.equal((await page.evaluate(() => window.__silmoRotationGuideSnapshot())).labelVisible, false, 'Gradzahl bleibt nach dem Drehen eingeblendet');
   await page.waitForTimeout(200);
   const afterRingRotation = await page.evaluate(() => window.__silmoTutorialAllTransforms().at(-2));
   const selectedAfterRing = await page.locator('#objects .object-select[aria-pressed="true"]').evaluate(el => el.dataset.objectId);
