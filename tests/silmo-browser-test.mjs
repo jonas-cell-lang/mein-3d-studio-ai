@@ -123,6 +123,26 @@ try {
   await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 3000 });
   assert.match(await page.locator('#tutorialFeedback').innerText(),/Erfolgskontrolle bestanden/,'Erste Tastenkombination wird nicht erkannt');
   assert.match(await page.locator('#tutorialTitle').innerText(),/vorherigen Tutorial-Aufgabe/,'Tastenkombination springt während der Lernkontrolle unerwartet weg');
+  // Alle weiteren Shortcut-Lektionen müssen sowohl über Tastencode als auch
+  // über den sichtbaren Tastenwert erkannt werden (Windows und Mac).
+  const shortcutCases = [
+    {step:1,key:'ArrowRight',code:'ArrowRight',altKey:true,shiftKey:true},
+    {step:2,key:'s',code:'KeyS',metaKey:true},
+    {step:3,key:'o',code:'KeyO',ctrlKey:true},
+    {step:4,key:'a',code:'KeyA',metaKey:true},
+    {step:5,key:'c',code:'KeyC',ctrlKey:true},
+    {step:6,key:'v',code:'KeyV',metaKey:true},
+    {step:7,key:'d',code:'KeyD',ctrlKey:true},
+    {step:8,key:'z',code:'KeyZ',metaKey:true},
+    {step:9,key:'y',code:'KeyY',ctrlKey:true},
+    {step:10,key:'ArrowUp',code:'ArrowUp',shiftKey:true}
+  ];
+  for (const combo of shortcutCases) {
+    assert.equal(await page.evaluate(step=>window.__silmoTutorialShowStepForTest(step),combo.step),true,'Shortcut-Aufgabe '+combo.step+' ist nicht erreichbar');
+    await page.evaluate(combo=>window.dispatchEvent(new KeyboardEvent('keydown',{...combo,bubbles:true,cancelable:true})),combo);
+    await page.waitForFunction(() => /Erfolgskontrolle bestanden/.test(document.querySelector('#tutorialFeedback')?.innerText||''),null,{timeout:3000});
+    assert.equal(await page.locator('#tutorialNext').isDisabled(),false,'Tastenkombination bei Aufgabe '+(combo.step+1)+' wurde nicht erkannt');
+  }
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(11)),true,'Würfel-Aufgabe ist nach dem Shortcut-Training nicht erreichbar');
   assert.match(await page.locator('#tutorialTitle').innerText(),/Grundkörper erstellen/,'Würfel-Aufgabe folgt nicht auf das Shortcut-Training');
   assert.equal(await page.locator('#tutorialWordHelp').isVisible(),true,'Einfache Begriffserklärungen fehlen bei der Würfel-Aufgabe');
