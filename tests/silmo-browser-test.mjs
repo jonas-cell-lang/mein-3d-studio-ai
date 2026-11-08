@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v61/, 'Build-Metadaten zeigen nicht v61');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v62/, 'Build-Metadaten zeigen nicht v62');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -66,7 +66,7 @@ try {
   assert.ok(Number(await ipadPage.locator('#tutorialInstructionList li').first().evaluate(el => getComputedStyle(el).fontSize.replace('px',''))) >= 14, 'Anleitungsschrift ist auf dem iPad zu klein');
   assert.equal(await ipadPage.locator('#tutorialKeyboardGuide').isVisible(), true, 'Tastenkombinationen fehlen auf dem iPad');
   assert.equal(await ipadPage.locator('#tutorialCard > #tutorialKeyboardGuide').count(),1,'Tastenkombinationen stehen nicht am Anfang des Tutorials');
-  assert.equal(await ipadPage.locator('#tutorialKeyboardGuide').evaluate(el=>el.open),true,'Tastenkombinationen sind bei der ersten Aufgabe nicht geöffnet');
+  assert.match(await ipadPage.locator('#tutorialTitle').innerText(),/vorherigen Tutorial-Aufgabe/,'Erste iPad-Lernaufgabe ist keine Tastenkombination');
   assert.equal(await ipadPage.locator('#tutorialKeyboardGuide .tutorial-key-combo').count(), 11, 'Einzelerklärungen der Tastenkombinationen fehlen auf dem iPad');
   await ipadPage.locator('#tutorialCard').evaluate(el => { el.scrollTop = el.scrollHeight; });
   const ipadLastButtonBox = await ipadPage.locator('#tutorialSkip').boundingBox();
