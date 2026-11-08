@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v69 – Druckbettprüfung und Web-Import</title>
+<title>SILMO 3D Studio AI – v70 – Druckbettgrösse zuverlässig übernehmen</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v69 – Druckbettprüfung und Web-Import">
+<meta name="silmo-build" content="v70 – Druckbettgrösse zuverlässig übernehmen">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -2279,21 +2279,43 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   updateGizmoModeButton();
 
   function setBedSize() {
-    const width = Number($('bedWidth').value), depth = Number($('bedDepth').value);
-    if (!Number.isFinite(width) || !Number.isFinite(depth) || width < 5 || depth < 5 || width > 2000 || depth > 2000) {
-      status.textContent = 'Druckbett: Breite und Tiefe müssen zwischen 5 und 2000 mm liegen.';
-      return;
+    const widthField = $('bedWidth'), depthField = $('bedDepth');
+    const width = Number(widthField.value), depth = Number(depthField.value);
+    if (widthField.value.trim() === '' || depthField.value.trim() === '' ||
+        !Number.isFinite(width) || !Number.isFinite(depth) ||
+        width < 5 || depth < 5 || width > 2000 || depth > 2000) {
+      status.textContent = 'Druckbett nicht übernommen: Breite und Tiefe müssen jeweils zwischen 5 und 2000 mm liegen.';
+      return false;
     }
-    bedWidthMM = width; bedDepthMM = depth;
+    bedWidthMM = width;
+    bedDepthMM = depth;
     rebuildBed();
     // Ansicht passend zum Bett ausrichten, ohne Objekte zu verändern.
     focus.set(0, 0, 0);
     targetDistance = Math.max(5, Math.max(bedWidthMM, bedDepthMM) / MM_PER_UNIT * 1.6);
     resize();
-    status.textContent = `Druckbett eingestellt: ${width} × ${depth} mm`;
+    status.textContent = `Druckbett übernommen: ${width} × ${depth} mm`;
+    return true;
   }
-  $('applyBedSize').onclick = setBedSize;
-  ['bedWidth','bedDepth'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') setBedSize(); }));
+  // Die Werte werden bereits beim Verlassen eines Eingabefeldes übernommen.
+  // So bleibt die Änderung auch erhalten, wenn danach in einen anderen Reiter gewechselt wird.
+  ['bedWidth','bedDepth'].forEach(id => {
+    $(id).addEventListener('change', setBedSize);
+    $(id).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); setBedSize(); } });
+  });
+  $('applyBedSize').addEventListener('click', setBedSize);
+  // Prüft den tatsächlich aufgebauten Rand der 3D-Druckplatte, nicht nur den Textstatus.
+  window.__silmoBedSnapshot = () => {
+    if (!bedOutline) return null;
+    bedOutline.geometry.computeBoundingBox();
+    const bounds = bedOutline.geometry.boundingBox;
+    return {
+      widthMM: bedWidthMM,
+      depthMM: bedDepthMM,
+      outlineWidthMM: Number(((bounds.max.x - bounds.min.x) * MM_PER_UNIT).toFixed(4)),
+      outlineDepthMM: Number(((bounds.max.y - bounds.min.y) * MM_PER_UNIT).toFixed(4))
+    };
+  };
 
   function showProperties() {
     $('positionFields').replaceChildren();
@@ -3789,9 +3811,9 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
 
   // Neues Werkzeug 1: Druckbettprüfung anhand der tatsächlichen Welt-Bounding-Boxen.
   $('checkBed').addEventListener('click', () => {
-    // Beim Prüfen werden die aktuell sichtbaren Eingabefelder immer übernommen.
-    // Die Prüfung funktioniert damit auch ohne vorherigen Tutorial-Schritt.
-    setBedSize();
+    // Bei ungültigen Eingaben abbrechen, statt stillschweigend die alte Bettgrösse zu prüfen.
+    // Gültige Eingaben werden vor jeder Prüfung sicher in die echte 3D-Platte übernommen.
+    if (!setBedSize()) return;
     if (!objects.length) { status.textContent = 'Druckbettprüfung: keine Modelle vorhanden. Erstelle oder importiere zuerst ein Modell.'; return; }
     const halfW = bedWidthMM / (2 * MM_PER_UNIT), halfD = bedDepthMM / (2 * MM_PER_UNIT);
     const issues = [];
