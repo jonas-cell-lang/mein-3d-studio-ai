@@ -4144,7 +4144,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       }
       return hasTwoLobes&&maxWidth>0&&bottomWidth<maxWidth*.48;
     };
-    const structureOK=hasHeartStructure(userMask)||hasHeartStructure(Uint8Array.from(userMask).map((_,i)=>userMask[Math.floor(i/size)*size+(size-1-i%size)]));
+    const structureOK=hasHeartStructure(userMask)||hasHeartStructure(Uint8Array.from(userMask).map((_,i)=>userMask[(size-1-Math.floor(i/size))*size+(i%size)]));
     const recognized=score>=0.38&&structureOK;
     return {
       recognized,score:Number(score.toFixed(3)),pointCount:clean.length,aspectRatio:Number(ratio.toFixed(3)),
@@ -4152,17 +4152,17 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     };
   }
   window.__silmoHeartRecognitionSnapshot=()=>{
-    const candidates=[];
+    // Die aktuelle Skizze hat Vorrang: Ein früheres Herz darf eine neue Zeichnung nicht bestehen lassen.
     if(sketchDraft?.type==='freeform2d'&&Array.isArray(sketchDraft.points)){
-      candidates.push({source:'aktuelle Freiform',result:classifyHeartOutline(sketchDraft.points.map(p=>[p.x,p.y,p.z]))});
+      return {...classifyHeartOutline(sketchDraft.points.map(p=>[p.x,p.y,p.z])),source:'aktuelle Freiform'};
     }
     for(let i=objects.length-1;i>=0;i--){
       const outline=objects[i]?.userData?.sketchOutline;
-      if(Array.isArray(outline)&&outline.length>=3)candidates.push({source:objects[i].userData.label||'3D-Freiform',result:classifyHeartOutline(outline)});
+      if(Array.isArray(outline)&&outline.length>=3){
+        return {...classifyHeartOutline(outline),source:objects[i].userData.label||'3D-Freiform'};
+      }
     }
-    candidates.sort((a,b)=>(Number(b.result.recognized)-Number(a.result.recognized))||(b.source==='aktuelle Freiform'?1:0)-(a.source==='aktuelle Freiform'?1:0)||b.result.score-a.result.score);
-    const best=candidates[0];
-    return best?{...best.result,source:best.source}:{recognized:false,score:0,pointCount:0,source:'keine Freiform',reason:'Zeichne im Reiter „Zeichnen“ zuerst eine geschlossene Freiform.'};
+    return {recognized:false,score:0,pointCount:0,source:'keine Freiform',reason:'Zeichne im Reiter „Zeichnen“ zuerst eine geschlossene Freiform.'};
   };
   // Testzugang: nutzt denselben Freiform- und Extrusionsweg wie die normale Zeichenfunktion.
   window.__silmoTestRecognizeHeart=points=>classifyHeartOutline(points);
