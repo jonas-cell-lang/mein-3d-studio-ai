@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v65/, 'Build-Metadaten zeigen nicht v65');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v66/, 'Build-Metadaten zeigen nicht v66');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -96,6 +96,18 @@ try {
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/linke Maustaste.*Finger.*Apple Pencil/s,'Aufgabe 13 erklärt die Bedienung auf Computer und iPad nicht');
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/schliesst die Umrandung automatisch/i,'Aufgabe 13 erklärt das automatische Schliessen nicht');
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/Skizze als 3D-Körper erstellen/,'Aufgabe 13 erklärt nicht, wie die Freiform zu einem 3D-Körper wird');
+  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(22)),true,'Aufgabe 23 Loft/Sweep lässt sich nicht gezielt öffnen');
+  assert.match(await page.locator('#tutorialStepLabel').innerText(),/AUFGABE 23 VON 26/,'Loft/Sweep ist nicht Aufgabe 23');
+  assert.equal(await page.locator('#tutorialInstructionList li').count(),10,'Aufgabe 23 hat keine zehn konkreten Handlungsschritte');
+  assert.match(await page.locator('#tutorialInstructionList').innerText(),/genau zwei Skizzenprofile/,'Loft erklärt die zwei benötigten Profile nicht');
+  assert.match(await page.locator('#tutorialInstructionList').innerText(),/zuerst das Profil und danach den Pfad/,'Sweep erklärt die Auswahlreihenfolge nicht');
+  assert.match(await page.locator('#tutorialInstructionList').innerText(),/⌥\/Alt \+ ⇧ \+ →/,'Aufgabe 23 erklärt die Tastenkombination zum Überspringen nicht');
+  assert.equal(await page.locator('#tutorialSkipStep').isVisible(),true,'Schaltfläche zum Überspringen der aktuellen Aufgabe fehlt');
+  await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',code:'ArrowRight',altKey:true,shiftKey:true,bubbles:true,cancelable:true})));
+  assert.match(await page.locator('#tutorialStepLabel').innerText(),/AUFGABE 24 VON 26/,'Option/Alt+Shift+Pfeil rechts überspringt Aufgabe 23 nicht');
+  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(22)),true,'Aufgabe 23 kann nach Tastenkürzel nicht erneut geöffnet werden');
+  await page.locator('#tutorialSkipStep').click();
+  assert.match(await page.locator('#tutorialStepLabel').innerText(),/AUFGABE 24 VON 26/,'Schaltfläche überspringt Aufgabe 23 nicht');
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(0)),true,'Tutorial kann nach dem Aufgabe-13-Test nicht zur ersten Aufgabe zurückkehren');
   assert.match(await page.locator('#tutorialWhere').innerText(), /WO FINDEST DU ES/, 'Lernphase erklärt nicht, wo das Werkzeug liegt');
   const tutorialDebug = await page.locator('#tutorialDebug').innerText();
