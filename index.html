@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v70 – Druckbettgrösse zuverlässig übernehmen</title>
+<title>SILMO 3D Studio AI – v71 – Herzform und Kursabschluss</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v70 – Druckbettgrösse zuverlässig übernehmen">
+<meta name="silmo-build" content="v71 – Herzform und Kursabschluss">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -476,6 +476,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
      <button class="wide" id="addCone">＋ Kegel</button>
      <button class="wide" id="addHexPrism">＋ Sechskant-Prisma</button>
      <button class="wide" id="addTorus">＋ Ring / Torus</button>
+    <button class="wide" id="addHeart">♥ Herz</button>
     <button class="wide" id="duplicate">▣ Duplizieren</button>
     <div class="panel-rule"></div>
     <h2>Formen kombinieren</h2>
@@ -528,7 +529,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   const left = document.querySelector('.left-panel');
   const right = document.querySelector('.right-panel');
   const ids = [
-    'addCube','addSphere','addCylinder','addCone','addHexPrism','addTorus','duplicate','booleanUnion','booleanSubtract','importModel','exportModel',
+    'addCube','addSphere','addCylinder','addCone','addHexPrism','addTorus','addHeart','duplicate','booleanUnion','booleanSubtract','importModel','exportModel',
     'saveProjectButton','openProjectButton','fileInput','projectFileInput','delete',
     'dropToBed','checkBed','fitView','bedWidth','bedDepth','applyBedSize','objects',
     'status','positionFields','scaleLock','sizeFields','percentFields','color','expertCenterToggle'
@@ -1272,6 +1273,22 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     else if (type === 'Kegel') geometry = new THREE.ConeGeometry(0.8, 1.5, 48);
     else if (type === 'Sechskant-Prisma') geometry = new THREE.CylinderGeometry(0.85, 0.85, 1.5, 6);
     else if (type === 'Ring / Torus') geometry = new THREE.TorusGeometry(0.65, 0.18, 16, 48);
+    else if (type === 'Herz') {
+      // Symmetrisches Herzprofil mit zwei oberen Rundungen und einer unteren Spitze.
+      // Extrusion erzeugt daraus direkt einen druckbaren 3D-Körper.
+      const heartShape = new THREE.Shape();
+      heartShape.moveTo(0, -0.72);
+      heartShape.bezierCurveTo(-0.22, -0.48, -0.95, 0.02, -0.95, 0.48);
+      heartShape.bezierCurveTo(-0.95, 1.00, -0.30, 1.12, 0, 0.62);
+      heartShape.bezierCurveTo(0.30, 1.12, 0.95, 1.00, 0.95, 0.48);
+      heartShape.bezierCurveTo(0.95, 0.02, 0.22, -0.48, 0, -0.72);
+      heartShape.closePath();
+      geometry = new THREE.ExtrudeGeometry(heartShape, {
+        depth: 0.34, bevelEnabled: true, bevelSegments: 3, steps: 1,
+        bevelSize: 0.035, bevelThickness: 0.035, curveSegments: 24
+      });
+      geometry.computeVertexNormals();
+    }
     else geometry = new THREE.BoxGeometry(1, 1, 1);
 
     // Three.js-Standardformen haben ihre Höhe entlang Y. Wir drehen sie,
@@ -1280,7 +1297,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     geometry.computeBoundingBox();
 
     const material = new THREE.MeshStandardMaterial({
-      color: new THREE.Color().setHSL(Math.random(), 0.65, 0.55),
+      color: type === 'Herz' ? 0xe84d68 : new THREE.Color().setHSL(Math.random(), 0.65, 0.55),
       roughness: 0.45,
       metalness: 0.1
     });
@@ -1291,6 +1308,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
     mesh.userData.percent = { x: 100, y: 100, z: 100 };
     mesh.userData.label = type;
+    if (type === 'Herz') mesh.userData.shapeKind = 'heart';
 
     scene.add(mesh);
     objects.push(mesh);
@@ -2404,6 +2422,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   $('addCone').onclick = () => createObject('Kegel');
   $('addHexPrism').onclick = () => createObject('Sechskant-Prisma');
   $('addTorus').onclick = () => createObject('Ring / Torus');
+  $('addHeart').onclick = () => createObject('Herz');
 
   $('duplicate').onclick = () => {
     if (!selected) {
@@ -4123,14 +4142,14 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     '<details class="tutorial-key-combo"><summary>3. Alles auswählen – Strg/⌘ + A</summary><ol><li>Klicke in die 3D-Ansicht.</li><li>Halte Strg oder ⌘ gedrückt.</li><li>Drücke A. Alle 3D-Objekte werden ausgewählt.</li></ol></details>' +
     '<details class="tutorial-key-combo"><summary>4. Ausschneiden – Strg/⌘ + X</summary><ol><li>Wähle die Objekte aus.</li><li>Halte Strg oder ⌘ gedrückt.</li><li>Drücke X. Die Objekte werden ausgeschnitten und können mit V eingefügt werden.</li></ol></details>' +
     '<details class="tutorial-key-combo"><summary>5. Rückgängig – Strg/⌘ + Z</summary><ol><li>Halte Strg oder ⌘ gedrückt.</li><li>Drücke Z. Die letzte Änderung wird rückgängig gemacht.</li></ol></details></details>' +
-    '<div id="tutorialKeyboard" class="tutorial-where">Tastatur: Die Tastenkombinationen oben sind einzeln erklärt. Du kannst jede Erklärung aufklappen.</div><pre id="tutorialDebug" aria-live="polite"></pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialRetry" type="button">Erneut prüfen</button><button id="tutorialSkipStep" type="button" title="Nur diese Aufgabe auslassen">Aufgabe überspringen ⇧ Shift + →</button><button id="tutorialNext" type="button" class="primary" disabled>Weiter</button><button id="tutorialSkip" type="button">Beenden</button></div>';
+    '<div id="tutorialKeyboard" class="tutorial-where">Tastatur: Die Tastenkombinationen oben sind einzeln erklärt. Du kannst jede Erklärung aufklappen.</div><pre id="tutorialDebug" aria-live="polite"></pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialRetry" type="button">Erneut prüfen</button><button id="tutorialSkipStep" type="button" title="Nur diese Aufgabe auslassen">Aufgabe überspringen ⇧ Shift + →</button><button id="tutorialNext" type="button" class="primary" disabled>Weiter</button><button id="tutorialSkip" type="button">Kurs beenden</button></div>';
   document.body.append(shade, card);
   // Tastenkombinationen werden als normale Lernaufgaben unterrichtet, nicht als separate Übersicht vorangestellt.
   $('tutorialBuild').textContent = document.querySelector('meta[name="silmo-build"]')?.content || 'Build unbekannt';
 
   const toolCards = [
     ['◧','Würfel','create','addCube'],['●','Kugel','create','addSphere'],['⬭','Zylinder','create','addCylinder'],
-    ['△','Kegel','create','addCone'],['⬡','Sechskant-Prisma','create','addHexPrism'],['◎','Ring / Torus','create','addTorus'],
+    ['△','Kegel','create','addCone'],['⬡','Sechskant-Prisma','create','addHexPrism'],['◎','Ring / Torus','create','addTorus'],['♥','Herz','create','addHeart'],
     ['▢','Duplizieren','create','duplicate'],['⊕','Verbinden','create','booleanUnion'],['⊖','Abziehen','create','booleanSubtract'],
     ['↔','Verschieben','edit','positionFields'],['⟳','Drehen','edit','gizmoModeToggle'],['⇥','Ausrichten','edit','alignSelected'],
     ['▤','Verteilen','edit','alignSelected'],['▧','Gruppieren','edit','createObjectGroup'],['◐','Spiegeln','edit','mirror'],
@@ -4283,7 +4302,10 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     feedback('Führe die Aufgabe aus. Du kannst es beliebig oft versuchen. SILMO prüft automatisch; „Erneut prüfen“ startet eine zusätzliche Kontrolle.',false);updateDebug();
   }
   window.__silmoTutorialShowStepForTest = n => { if (phase !== 'learn' || !Number.isInteger(n) || n < 0 || n >= steps.length) return false; index=n; renderStep(); return true; };
+  window.__silmoTutorialStartExamForTest = () => { phase='exam'; examPassed=false; shade.hidden=false; card.hidden=false; renderExam(); return true; };
+  let examPassed = false;
   function renderExam(){
+    examPassed = false;
     clearHighlight();$('tutorialStepLabel').textContent='ABSCHLUSSTEST · SELBSTSTÄNDIG';
     $('tutorialVisualGlyph').textContent='♥';$('tutorialVisualCaption').textContent='Deine eigene Konstruktion';
     $('tutorialTitle').textContent='Baue ein eigenes 3D-Herz';
@@ -4320,8 +4342,16 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     else if(manual)feedback('Noch nicht erkannt. Du kannst es beliebig oft erneut versuchen. Prüfe, ob die Aufgabe wirklich ausgeführt wurde.',false);
     updateDebug();return passed;
   }
-  function open(){phase='learn';index=0;shade.hidden=false;card.hidden=false;renderStep();}
+  function open(){phase='learn';index=0;examPassed=false;shade.hidden=false;card.hidden=false;renderStep();}
   function close(){clearHighlight();shade.hidden=true;card.hidden=true;}
+  function endCourse(){
+    phase='ended';close();
+    status.textContent='Lernkurs beendet. Dein Modell bleibt erhalten.';
+  }
+  function completeCourse(){
+    phase='complete';close();
+    status.textContent='Lernkurs erfolgreich abgeschlossen. Glückwunsch! Dein Modell bleibt erhalten.';
+  }
   function skipCurrentStep(){
     if(phase!=='learn'||card.hidden)return;
     const skippedTitle=steps[index].title;
@@ -4335,6 +4365,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       if(index<steps.length-1){index++;renderStep();return;}
       phase='exam';renderExam();return;
     }
+    if(examPassed){completeCourse();return;}
     runExam();
   }
   function runExam(){
@@ -4350,8 +4381,9 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     ];
     $('tutorialExamChecks').innerHTML=checks.map(x=>'<div class="tutorial-exam-result '+(x.ok?'ok':'pending')+'">'+(x.ok?'✓ ':'○ ')+x.label+'</div>').join('');
     const count=checks.filter(x=>x.ok).length;
-    if(count===checks.length){
-      feedback('Abschlusstest bestanden. Die technischen Prüfungen sind erfüllt und du hast die Herzform selbst bestätigt.',true);
+    examPassed = count === checks.length;
+    if(examPassed){
+      feedback('Abschlusstest bestanden. Die technischen Prüfungen sind erfüllt und du hast die Herzform selbst bestätigt. Klicke nochmals, um den Kurs abzuschliessen.',true);
       $('tutorialNext').textContent='Kurs abschliessen';
     }else{
       feedback('Noch nicht bestanden: Erfülle die offenen Kriterien. Die Form selbst muss klar als Herz erkennbar sein.',false);
@@ -4396,7 +4428,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     card.style.left=Math.max(margin,Math.min(window.innerWidth-card.offsetWidth-margin,rect.left))+'px';
     card.style.top=Math.max(margin,Math.min(window.innerHeight-70,rect.top))+'px';
   });
-  launch.addEventListener('click',open);$('tutorialClose').addEventListener('click',close);$('tutorialSkip').addEventListener('click',close);
+  launch.addEventListener('click',open);$('tutorialClose').addEventListener('click',close);$('tutorialSkip').addEventListener('click',endCourse);
   $('tutorialBack').addEventListener('click',()=>{if(phase==='learn'&&index>0){index--;renderStep();}});
   $('tutorialNext').addEventListener('click',next);
   $('tutorialRetry').addEventListener('click',()=>verifyStep(true));

@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v70/, 'Build-Metadaten zeigen nicht v70');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v71/, 'Build-Metadaten zeigen nicht v70');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -694,7 +694,37 @@ try {
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
   console.log('BESTANDEN: 3D-Start, CAD-Zeichenarbeitsplatz, Werkzeugpalette, exakte Skizzenposition, Skizzenbearbeitung, Konturpunkt-Editor, Kantenbearbeitung, Loft, Sweep, Parallel/Senkrecht, Tangential/Konzentrisch, Pfadlänge und Objektabstand, Zeichnen, allgemeine CAD-Konstruktion, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
-  console.log(JSON.stringify({ canvasSize, beforeAlign, afterAlign, selectedCount, alignStatus }));
+  // Herz-Vorlage: SILMO erstellt einen echten, extrudierten 3D-Herzkörper.
+  await page.locator('[data-tab="create"]').click();
+  const heartCountBefore=await page.locator('#objects .object-row').count();
+  await page.locator('#addHeart').click();
+  assert.equal(await page.locator('#objects .object-row').count(),heartCountBefore+1,'Herz-Schaltfläche erstellt kein Objekt');
+  const heartAudit=await page.evaluate(()=>window.__silmoTutorialModelAudit?.()||[]);
+  const heart=heartAudit.at(-1);
+  assert.ok(heart && heart.vertexCount>=100,'Herz besteht nicht aus einer ausreichend detaillierten 3D-Geometrie');
+  assert.ok(heart.width>1.7 && heart.width<2.2,'Herzbreite passt nicht zum Herzprofil');
+  assert.ok(heart.height>1.5 && heart.height<2.2,'Herzhöhe passt nicht zum Herzprofil');
+  const heartRow=await page.locator('#objects .object-row').last().innerText();
+  assert.match(heartRow,/Herz/,'Herz wird in der Objektliste nicht als Herz bezeichnet');
+
+  // Sowohl „Kurs beenden“ als auch der erfolgreiche Kursabschluss müssen das Lernfenster schliessen.
+  await page.locator('#tutorialLaunch').click();
+  await page.locator('#tutorialSkip').click();
+  assert.equal(await page.locator('#tutorialCard').isVisible(),false,'Kurs beenden schliesst den Lernkurs nicht');
+  assert.match(await page.locator('#status').innerText(),/Lernkurs beendet/,'Kurs beenden meldet den Abschluss nicht');
+  assert.equal(await page.evaluate(()=>window.__silmoTutorialStartExamForTest()),true,'Abschlusstest kann nicht gestartet werden');
+  await page.locator('#tutorialHeartConfirm').check();
+  const heartExport=page.waitForEvent('download');
+  await page.locator('#exportModel').click();
+  await heartExport;
+  await page.waitForTimeout(400);
+  await page.locator('#tutorialNext').click();
+  assert.equal(await page.locator('#tutorialNext').innerText(),'Kurs abschliessen','Erfolgreicher Abschlusstest zeigt nicht den Abschlussknopf');
+  await page.locator('#tutorialNext').click();
+  assert.equal(await page.locator('#tutorialCard').isVisible(),false,'Kurs abschliessen schliesst das Lernfenster nicht');
+  assert.match(await page.locator('#status').innerText(),/erfolgreich abgeschlossen/,'Erfolgreicher Kursabschluss wird nicht gemeldet');
+  assert.deepEqual(pageErrors, [], 'Beim Herz-Erstellen oder Kursabschluss entstehen Browserfehler');
+  console.log(JSON.stringify({ canvasSize, beforeAlign, afterAlign, selectedCount, alignStatus, heartVertices:heart.vertexCount, courseFinish:'passed' }));
 } catch (error) {
   console.error('BROWSERTEST FEHLGESCHLAGEN:', error);
   if (pageErrors.length) console.error('BROWSERFEHLER:', pageErrors);
