@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v70 – Druckbettgrösse zuverlässig übernehmen</title>
+<title>SILMO 3D Studio AI – v71 – Herz erkennen und Lernkurs abschliessen</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v70 – Druckbettgrösse zuverlässig übernehmen">
+<meta name="silmo-build" content="v71 – Herz erkennen und Lernkurs abschliessen">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -151,6 +151,12 @@ input:focus{outline:1px solid var(--cyan)}
 #tutorialProgress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#3986f6,#53d8e8);transition:width .2s}
 #tutorialFeedback{padding:12px;border-radius:9px;background:#0b1b2d;border:1px solid #314965;font-size:14px;line-height:1.5;margin:12px 0;color:#d8e7f8}
 #tutorialFeedback.success{border-color:#38d6a3;color:#a6f0c2}
+.tutorial-heart-guide{display:flex;align-items:center;gap:12px;margin:12px 0;padding:10px;border:1px solid #594153;border-radius:10px;background:#211a2a;color:#e9ddec}
+.tutorial-heart-guide svg{width:76px;height:70px;flex:none}
+.tutorial-heart-guide strong{display:block;color:#ffc0d0;font-size:13px}
+.tutorial-heart-guide p{margin:4px 0 0;font-size:12px;line-height:1.45}
+#tutorialHeartRecognition{margin:9px 0;padding:10px;border:1px solid #3a506a;border-radius:8px;background:#0b192a;color:#d5e4f8;font-size:13px}
+#tutorialHeartRecognition.success{border-color:#38d6a3;color:#a6f0c2}
 #tutorialDebug{margin:8px 0 0;padding:8px;border:1px dashed #6583a7;border-radius:8px;background:#07111f;color:#c5d8ee;font:10px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:125px;overflow:auto}
 .tutorial-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;padding-top:10px;position:sticky;bottom:-20px;background:linear-gradient(180deg,#081525e8,#081525 35%);z-index:2}
 .tutorial-actions button{flex:1;min-height:46px;font-size:14px;touch-action:manipulation}
@@ -4067,6 +4073,80 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   }, {passive:false});
 
   // Read-only model audit used by the independent tutorial assessment.
+  // Erkennt eine grob herzförmige, geschlossene 2D-Kontur per Rastervergleich.
+  // Das ist eine lokale Formprüfung: Die Zeichnung wird nicht hochgeladen und muss nicht perfekt sein.
+  function classifyHeartOutline(rawPoints) {
+    const points=(Array.isArray(rawPoints)?rawPoints:[])
+      .map(point=>Array.isArray(point)?[Number(point[0]),Number(point[1])]:[Number(point?.x),Number(point?.y)])
+      .filter(point=>point.every(Number.isFinite));
+    const clean=[];
+    for(const point of points){
+      const last=clean[clean.length-1];
+      if(!last||Math.hypot(point[0]-last[0],point[1]-last[1])>1e-5)clean.push(point);
+    }
+    if(clean.length>2&&Math.hypot(clean[0][0]-clean[clean.length-1][0],clean[0][1]-clean[clean.length-1][1])<1e-5)clean.pop();
+    if(clean.length<8)return {recognized:false,score:0,pointCount:clean.length,reason:'Zeichne eine geschlossene Kontur mit mindestens acht Punkten.'};
+    const xs=clean.map(p=>p[0]),ys=clean.map(p=>p[1]);
+    const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+    const width=maxX-minX,height=maxY-minY,ratio=width/Math.max(height,1e-9);
+    if(width<1e-5||height<1e-5||ratio<0.45||ratio>1.9)return {recognized:false,score:0,pointCount:clean.length,aspectRatio:ratio,reason:'Die Form braucht eine erkennbare Breite und Höhe.'};
+    const polygon=clean.map(p=>[(p[0]-minX)/width,(p[1]-minY)/height]);
+    const inside=(x,y,poly)=>{
+      let hit=false;
+      for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+        const a=poly[i],b=poly[j];
+        if(((a[1]>y)!==(b[1]>y))&&(x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0]))hit=!hit;
+      }
+      return hit;
+    };
+    const size=56;
+    const mask=poly=>{
+      const result=new Uint8Array(size*size);
+      for(let y=0;y<size;y++)for(let x=0;x<size;x++)if(inside((x+.5)/size,(y+.5)/size,poly))result[y*size+x]=1;
+      return result;
+    };
+    const userMask=mask(polygon);
+    const template=[];
+    for(let i=0;i<180;i++){
+      const t=i/180*Math.PI*2;
+      const x=16*Math.pow(Math.sin(t),3);
+      const y=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
+      template.push([x,y]);
+    }
+    const tx=template.map(p=>p[0]),ty=template.map(p=>p[1]);
+    const tMinX=Math.min(...tx),tMaxX=Math.max(...tx),tMinY=Math.min(...ty),tMaxY=Math.max(...ty);
+    const normalizedTemplate=template.map(p=>[(p[0]-tMinX)/(tMaxX-tMinX),(p[1]-tMinY)/(tMaxY-tMinY)]);
+    const scoreFor=poly=>{
+      const refMask=mask(poly);let intersection=0,union=0;
+      for(let i=0;i<refMask.length;i++){if(userMask[i]&&refMask[i])intersection++;if(userMask[i]||refMask[i])union++;}
+      return union?intersection/union:0;
+    };
+    const normalScore=scoreFor(normalizedTemplate);
+    const flippedScore=scoreFor(normalizedTemplate.map(p=>[p[0],1-p[1]]));
+    const score=Math.max(normalScore,flippedScore);
+    return {recognized:score>=0.43,score:Number(score.toFixed(3)),pointCount:clean.length,aspectRatio:Number(ratio.toFixed(3)),reason:score>=0.43?'Die Kontur ähnelt ungefähr einer Herzform.':'Die Kontur ähnelt noch nicht deutlich genug einem Herz.'};
+  }
+  window.__silmoHeartRecognitionSnapshot=()=>{
+    const candidates=[];
+    if(sketchDraft?.type==='freeform2d'&&Array.isArray(sketchDraft.points)){
+      candidates.push({source:'aktuelle Freiform',result:classifyHeartOutline(sketchDraft.points.map(p=>[p.x,p.y]))});
+    }
+    for(let i=objects.length-1;i>=0;i--){
+      const outline=objects[i]?.userData?.sketchOutline;
+      if(Array.isArray(outline)&&outline.length>=3)candidates.push({source:objects[i].userData.label||'3D-Freiform',result:classifyHeartOutline(outline)});
+    }
+    candidates.sort((a,b)=>b.result.score-a.result.score);
+    const best=candidates[0];
+    return best?{...best.result,source:best.source}:{recognized:false,score:0,pointCount:0,source:'keine Freiform',reason:'Zeichne im Reiter „Zeichnen“ zuerst eine geschlossene Freiform.'};
+  };
+  // Testzugang: nutzt denselben Freiform- und Extrusionsweg wie die normale Zeichenfunktion.
+  window.__silmoTestRecognizeHeart=points=>classifyHeartOutline(points);
+  window.__silmoTestCreateHeartSketch=points=>{
+    document.getElementById('sketchTool').value='freeform2d';
+    sketchDraft={type:'freeform2d',points:points.map(p=>new THREE.Vector3(Number(p[0]),Number(p[1]),0))};
+    createSketchSolid();
+    return window.__silmoHeartRecognitionSnapshot();
+  };
   window.__silmoTutorialModelAudit = () => objects.map(obj => {
     try {
       const box = new THREE.Box3().setFromObject(obj);
@@ -4113,9 +4193,10 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     '<div id="tutorialStepLabel"></div><div id="tutorialVisual" aria-label="Bildliche Darstellung des Lernschritts"><span id="tutorialVisualGlyph" aria-hidden="true">◧</span><span id="tutorialVisualCaption">Werkzeug</span></div>' +
     '<h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div>' +
     '<div id="tutorialWhere" class="tutorial-where"></div><section id="tutorialInstructions" aria-label="Schritt-für-Schritt-Anleitung"><h3>So gehst du vor</h3><ol id="tutorialInstructionList"></ol></section><details id="tutorialWordHelp"><summary>Fachbegriffe einfach erklärt</summary><div id="tutorialTermList"></div></details><div id="tutorialFeedback" aria-live="polite"></div>' +
-    '<div id="tutorialExamPanel" hidden><div class="tutorial-exam-rule"><strong>Abschlusstest – ohne Anleitung</strong><p>Baue ein eigenes, dreidimensionales Herz, das für den 3D-Druck geeignet ist. SILMO zeigt dir jetzt keine Werkzeuge und keine Arbeitsschritte.</p></div>' +
-    '<button id="tutorialExamHint" type="button">Mittleren Tipp anzeigen</button><p id="tutorialExamHintText" hidden></p>' +
-    '<label class="tutorial-exam-confirm"><input id="tutorialHeartConfirm" type="checkbox"> Ich habe geprüft, dass mein eigenes Modell klar als Herz erkennbar ist.</label><div id="tutorialExamChecks"></div></div>' +
+    '<div id="tutorialExamPanel" hidden><div class="tutorial-exam-rule"><strong>Abschlusstest – zeichne selbst ein Herz</strong><p>Wechsle zu „Zeichnen“, wähle „2D-Freiform“ und zeichne die Umrandung eines Herzens. SILMO prüft deine eigene Zeichnung – sie muss nicht perfekt sein.</p></div>' +
+    '<div class="tutorial-heart-guide"><svg viewBox="0 0 100 92" role="img" aria-label="Beispiel für eine einfache Herzform"><path d="M50 84 C42 76 9 52 8 29 C7 12 28 3 42 16 L50 25 L58 16 C72 3 93 12 92 29 C91 52 58 76 50 84Z" fill="none" stroke="#ff8fa8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><div><strong>Woran erkennt man ein Herz?</strong><p>Zwei runde Bögen oben, eine kleine Einbuchtung in der Mitte und eine Spitze unten. Die Seiten sollten ungefähr zusammenpassen.</p></div></div>' +
+    '<button id="tutorialExamHint" type="button">Noch einen Zeichentipp anzeigen</button><p id="tutorialExamHintText" hidden></p>' +
+    '<button id="tutorialRecognizeHeart" type="button" class="primary">Meine Herzzeichnung erkennen</button><p id="tutorialHeartRecognition" aria-live="polite">Noch keine Herzzeichnung geprüft. Zeichne zuerst eine geschlossene Freiform.</p><div id="tutorialExamChecks"></div></div>' +
     '<details id="tutorialQuickGuide"><summary>Alle Werkzeuge – Übersicht während des Lernens</summary><div id="tutorialToolGallery" aria-label="SILMO-Werkzeugübersicht"></div></details>' +
     '<details id="tutorialKeyboardGuide"><summary>Tastenkombinationen – die fünf wichtigsten</summary><p class="tutorial-key-intro">Halte die Tasten gleichzeitig gedrückt. Auf Windows verwendest du Strg, auf dem Mac die Taste ⌘ Command.</p>' +
     '<details class="tutorial-key-combo"><summary>1. Kopieren – Strg/⌘ + C</summary><ol><li>Wähle ein oder mehrere Objekte aus.</li><li>Halte Strg oder ⌘ gedrückt.</li><li>Drücke C. SILMO merkt sich die ausgewählten Objekte.</li></ol></details>' +
@@ -4186,7 +4267,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     ['Slicer','Ein Programm, das dein 3D-Modell für einen 3D-Drucker vorbereitet.'],
     ['STL exportiert','Das Modell wird als Datei gespeichert, die ein Slicer öffnen kann.']
   ];
-  let phase = 'learn', index = 0, highlight = null, baseline = {}, exportObserved = false, savedObserved = false, renderingStep = false;
+  let phase = 'learn', index = 0, highlight = null, baseline = {}, exportObserved = false, savedObserved = false, renderingStep = false, examPassed = false;
   let observedShortcut = null;
   const steps = [
     {title:"1. Objekte kopieren",glyph:'⌨',tab:'create',target:'viewport',where:"Tastenkombination: Strg/⌘ + C. Die Tasten müssen gleichzeitig gedrückt werden.",text:"Lerne die Tastenkombination Strg/⌘ + C. Lies die Schritte und probiere sie danach aus.",instructions:["Wähle zuerst ein oder mehrere 3D-Objekte aus.","Halte Strg (Windows) oder ⌘ Command (Mac/iPad) gedrückt.","Drücke zusätzlich den Buchstaben C.","Lass beide Tasten los. SILMO merkt sich die ausgewählten Objekte zum Kopieren."],shortcutId:"mod-c",begin:()=>{observedShortcut=null;return{};},check:()=>observedShortcut==="mod-c"},
@@ -4284,20 +4365,31 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   }
   window.__silmoTutorialShowStepForTest = n => { if (phase !== 'learn' || !Number.isInteger(n) || n < 0 || n >= steps.length) return false; index=n; renderStep(); return true; };
   function renderExam(){
+    examPassed=false;
     clearHighlight();$('tutorialStepLabel').textContent='ABSCHLUSSTEST · SELBSTSTÄNDIG';
-    $('tutorialVisualGlyph').textContent='♥';$('tutorialVisualCaption').textContent='Deine eigene Konstruktion';
-    $('tutorialTitle').textContent='Baue ein eigenes 3D-Herz';
-    $('tutorialText').textContent='Konstruiere ohne Anleitung ein eigenes dreidimensionales Herz. Es soll als Herz erkennbar und für den 3D-Druck vorbereitet sein. Du entscheidest selbst, welche Werkzeuge und Konstruktionswege du verwendest.';
-    $('tutorialWhere').textContent='Es werden keine Werkzeuge markiert und keine Arbeitsschritte erklärt. Du kannst den Test selbstständig bearbeiten.';
+    $('tutorialVisualGlyph').textContent='♥';$('tutorialVisualCaption').textContent='Deine eigene Herzzeichnung';
+    $('tutorialTitle').textContent='Zeichne selbst ein Herz';
+    $('tutorialText').textContent='Zeichne im Reiter „Zeichnen“ eine geschlossene Freiform. SILMO vergleicht die Kontur mit einer ungefähren Herzform. Kleine Ungenauigkeiten sind erlaubt.';
+    $('tutorialWhere').textContent='Öffne oben den Reiter „Zeichnen“, wähle links „2D-Freiform“ und zeichne die Umrandung. Danach klicke auf „Als 3D-Körper erstellen“.';
     $('tutorialInstructions').hidden=true;
     $('tutorialWordHelp').hidden=true;
     $('tutorialExamPanel').hidden=false;$('tutorialQuickGuide').hidden=true;$('tutorialBack').hidden=true;$('tutorialRetry').hidden=true;$('tutorialSkipStep').hidden=true;$('tutorialKeyboard').hidden=true;$('tutorialKeyboardGuide').hidden=true;
     $('tutorialNext').textContent='Abschlusstest prüfen';$('tutorialNext').disabled=false;
-    $('tutorialExamHintText').hidden=true;$('tutorialExamHint').disabled=false;$('tutorialHeartConfirm').checked=false;
+    $('tutorialExamHintText').hidden=true;$('tutorialExamHint').disabled=false;
+    $('tutorialHeartRecognition').textContent='Noch keine Herzzeichnung geprüft. Zeichne zuerst eine geschlossene Freiform.';
     $('tutorialExamChecks').textContent='Noch nicht geprüft.';
     baseline={model:window.__silmoTutorialModelAudit?.()||[]};
-    feedback('Der Abschlusstest beginnt. SILMO gibt während der Konstruktion keine Hinweise.',false);
+    feedback('Der Abschlusstest beginnt. Zeichne ein Herz selbst – SILMO beurteilt die Form nur ungefähr.',false);
     updateProgress();updateDebug();
+  }
+  window.__silmoTutorialEnterExamForTest=()=>{phase='exam';shade.hidden=false;card.hidden=false;renderExam();return true;};
+  function refreshHeartRecognition(){
+    const result=window.__silmoHeartRecognitionSnapshot?.()||{recognized:false,score:0,reason:'Herzprüfung nicht verfügbar.'};
+    $('tutorialHeartRecognition').textContent=result.recognized
+      ? '✓ Herzform ungefähr erkannt ('+Math.round(result.score*100)+' % Ähnlichkeit). Du kannst den Abschlusstest prüfen.'
+      : 'Noch nicht erkannt: '+result.reason+' Zeichne zwei Rundungen oben, eine Einbuchtung in der Mitte und eine Spitze unten.';
+    $('tutorialHeartRecognition').classList.toggle('success',!!result.recognized);
+    return result;
   }
   function updateDebug(){
     const el=$('tutorialDebug');if(!el)return;
@@ -4330,31 +4422,42 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     phase='exam';renderExam();
   }
   function next(){
+    if(phase==='complete'){close();return;}
     if(phase==='learn'){
       verifyStep();if($('tutorialNext').disabled)return;
       if(index<steps.length-1){index++;renderStep();return;}
       phase='exam';renderExam();return;
     }
+    if(phase==='exam'&&examPassed){completeCourse();return;}
     runExam();
+  }
+  function completeCourse(){
+    if(!examPassed)return;
+    try{localStorage.setItem('silmoCourseCompleted','true');}catch(_){}
+    phase='complete';
+    $('status').textContent='Lernkurs erfolgreich abgeschlossen – deine Herzzeichnung wurde erkannt.';
+    launch.textContent='Lernkurs erneut starten';
+    close();
   }
   function runExam(){
     const audit=window.__silmoTutorialModelAudit?.()||[];
     const valid=audit.filter(x=>x&&x.vertexCount>=20&&x.width>0&&x.depth>0&&x.height>0&&[x.width,x.depth,x.height].every(Number.isFinite));
     const hasExport=exportObserved||/STL exportiert/i.test($('status')?.textContent||'');
-    const confirmed=$('tutorialHeartConfirm').checked;
+    const heart=refreshHeartRecognition();
     const checks=[
       {label:'Mindestens ein echter 3D-Körper mit ausreichend Geometrie',ok:valid.length>0},
       {label:'Modell besitzt messbare Abmessungen',ok:valid.some(x=>x.width>=2&&x.depth>=2&&x.height>=2)},
-      {label:'Herzform wurde vom Lernenden visuell bestätigt',ok:confirmed},
+      {label:'SILMO erkennt deine selbst gezeichnete Herzform ungefähr',ok:heart.recognized},
       {label:'STL-Export erfolgreich durchgeführt',ok:hasExport}
     ];
     $('tutorialExamChecks').innerHTML=checks.map(x=>'<div class="tutorial-exam-result '+(x.ok?'ok':'pending')+'">'+(x.ok?'✓ ':'○ ')+x.label+'</div>').join('');
     const count=checks.filter(x=>x.ok).length;
-    if(count===checks.length){
-      feedback('Abschlusstest bestanden. Die technischen Prüfungen sind erfüllt und du hast die Herzform selbst bestätigt.',true);
-      $('tutorialNext').textContent='Kurs abschliessen';
+    examPassed=count===checks.length;
+    if(examPassed){
+      feedback('Abschlusstest bestanden! SILMO hat deine Herzzeichnung ungefähr erkannt und die technischen Prüfungen sind erfüllt. Klicke auf „Kurs beenden“.',true);
+      $('tutorialNext').textContent='Kurs beenden';
     }else{
-      feedback('Noch nicht bestanden: Erfülle die offenen Kriterien. Die Form selbst muss klar als Herz erkennbar sein.',false);
+      feedback('Noch nicht bestanden: '+checks.filter(x=>!x.ok).map(x=>x.label).join('; ')+'. Du kannst deine Zeichnung verbessern und erneut prüfen.',false);
       $('tutorialNext').textContent='Erneut prüfen';
     }
     $('tutorialNext').disabled=false;updateDebug();
@@ -4403,10 +4506,12 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   $('tutorialSkipStep').addEventListener('click',skipCurrentStep);
   $('tutorialExamHint').addEventListener('click',()=>{
     $('tutorialExamHintText').hidden=false;
-    $('tutorialExamHintText').textContent='Mittlerer Tipp: Überlege, wie du eine symmetrische obere Rundung und eine nach unten zulaufende Spitze konstruieren kannst. Du kannst eigene Skizzen, Grundkörper und Boolesche Werkzeuge kombinieren. Die konkrete Form und Bedienung findest du selbst heraus.';
+    $('tutorialExamHintText').textContent='Zeichne die Aussenlinie möglichst in einem Zug: Beginne oben in der kleinen Einbuchtung, ziehe eine runde linke oder rechte Hälfte, führe die Linie unten zu einer Spitze und zeichne die andere Hälfte zurück. Die Kontur wird beim Erstellen des 3D-Körpers automatisch geschlossen.';
     $('tutorialExamHint').disabled=true;
   });
-  $('tutorialHeartConfirm').addEventListener('change',()=>{if(phase==='exam')feedback('Deine visuelle Bestätigung wurde übernommen. Prüfe jetzt den Abschlusstest.',false);});
+  $('tutorialRecognizeHeart').addEventListener('click',()=>refreshHeartRecognition());
+  document.addEventListener('pointerup',()=>{if(phase==='exam')setTimeout(refreshHeartRecognition,0);},true);
+  document.addEventListener('click',event=>{if(phase==='exam'&&event.target?.closest('#createSketchSolid'))setTimeout(refreshHeartRecognition,0);},true);
   $('exportModel').addEventListener('click',()=>{setTimeout(()=>{if(/STL exportiert/i.test($('status')?.textContent||''))exportObserved=true;},300);});
   $('saveProjectButton').addEventListener('click',()=>{setTimeout(()=>{if(/gespeichert|Projekt gespeichert/i.test($('status')?.textContent||''))savedObserved=true;},250);});
   document.addEventListener('click',()=>{if(!card.hidden)verifyStep();},true);
