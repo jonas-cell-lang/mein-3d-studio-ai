@@ -13,12 +13,41 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v70/, 'Build-Metadaten zeigen nicht v70');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v71/, 'Build-Metadaten zeigen nicht v71');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Rasterfang/, 'Visuelle Übersicht zeigt keinen Rasterfang');
   await page.waitForTimeout(1500);
+
+  // Eigenständige Prüfung der ungefähren Herz-Erkennung und des Kursabschlusses.
+  const examPage=await browser.newPage({viewport:{width:1440,height:1000}});
+  await examPage.goto('http://127.0.0.1:4173',{waitUntil:'domcontentloaded'});
+  await examPage.waitForFunction(()=>typeof window.__silmoTestRecognizeHeart==='function'&&typeof window.__silmoTutorialEnterExamForTest==='function',null,{timeout:20000});
+  const roughHeart=[[0,0.18],[0.13,0.04],[0.30,0],[0.43,0.06],[0.50,0.20],[0.57,0.06],[0.70,0],[0.87,0.04],[1,0.18],[0.97,0.39],[0.82,0.63],[0.50,1],[0.18,0.63],[0.03,0.39]];
+  const heartScore=await examPage.evaluate(points=>window.__silmoTestRecognizeHeart(points),roughHeart);
+  assert.equal(heartScore.recognized,true,'Eine grob gezeichnete Herzform wird nicht erkannt');
+  const rectangleScore=await examPage.evaluate(()=>window.__silmoTestRecognizeHeart([[0,0],[0.33,0],[0.66,0],[1,0],[1,0.33],[1,0.66],[1,1],[0.66,1],[0.33,1],[0,1],[0,0.66],[0,0.33]]));
+  assert.equal(rectangleScore.recognized,false,'Ein Rechteck wird fälschlich als Herz erkannt');
+  await examPage.evaluate(points=>window.__silmoTestCreateHeartSketch(points),roughHeart);
+  const createdHeart=await examPage.evaluate(()=>window.__silmoHeartRecognitionSnapshot());
+  assert.equal(createdHeart.recognized,true,'Herzform wird nach der Umwandlung in einen 3D-Körper nicht mehr erkannt');
+  await examPage.evaluate(()=>window.__silmoTutorialEnterExamForTest());
+  assert.match(await examPage.locator('#tutorialTitle').innerText(),/Zeichne selbst ein Herz/,'Abschlusstest erklärt die eigene Herzzeichnung nicht');
+  assert.equal(await examPage.locator('#tutorialRecognizeHeart').isVisible(),true,'Schaltfläche zur Herz-Erkennung fehlt');
+  await examPage.locator('[data-tab="print"]').click();
+  const examExport=examPage.waitForEvent('download');
+  await examPage.locator('#exportModel').click();
+  await examExport;
+  await examPage.locator('#tutorialRecognizeHeart').click();
+  assert.match(await examPage.locator('#tutorialHeartRecognition').innerText(),/Herzform ungefähr erkannt/,'Erkennungsergebnis wird nicht angezeigt');
+  await examPage.locator('#tutorialNext').click();
+  assert.match(await examPage.locator('#tutorialNext').innerText(),/Kurs beenden/,'Bestandener Abschlusstest zeigt keinen Kurs-beenden-Knopf');
+  await examPage.locator('#tutorialNext').click();
+  assert.equal(await examPage.locator('#tutorialCard').isVisible(),false,'Kurs-beenden-Knopf schliesst den Kurs nicht');
+  assert.match(await examPage.locator('#status').innerText(),/Lernkurs erfolgreich abgeschlossen/,'Kursabschluss wird nicht bestätigt');
+  assert.equal(await examPage.locator('#tutorialLaunch').innerText(),'Lernkurs erneut starten','Kursstart zeigt den Abschluss nicht an');
+  await examPage.close();
 
   // Prüftool: Strg+Leertaste öffnet es und startet automatisch die vollständige Codeprüfung.
   await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', {
