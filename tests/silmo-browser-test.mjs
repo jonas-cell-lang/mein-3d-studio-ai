@@ -113,6 +113,7 @@ try {
   assert.match(await page.locator('#tutorialTitle').innerText(),/Druckbett einstellen und prüfen/,'Aufgabe 25 hat den falschen Titel');
   assert.equal(await page.locator('#tutorialInstructionList li').count(),8,'Aufgabe 25 enthält nicht acht konkrete Schritte');
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/Messen & Prüfen/,'Aufgabe 25 nennt den richtigen Reiter für die Druckbettprüfung nicht');
+  await page.locator('[data-tab="print"]').click();
   const bedWidthBefore=Number(await page.locator('#bedWidth').inputValue());
   const bedDepthBefore=Number(await page.locator('#bedDepth').inputValue());
   await page.locator('#bedWidth').fill(String(Math.min(2000,bedWidthBefore+10)));
@@ -122,6 +123,7 @@ try {
   await page.waitForFunction(()=>document.querySelector('#tutorialNext')?.disabled===false,null,{timeout:5000});
   assert.match(await page.locator('#tutorialFeedback').innerText(),/Erfolgskontrolle bestanden/,'Aufgabe 25 erkennt die Druckbettprüfung nicht');
   // Testzustand zurücksetzen: nachfolgende Geometrieprüfungen erwarten das Standardbett 200 × 200 mm.
+  await page.locator('[data-tab="print"]').click();
   await page.locator('#bedWidth').fill(String(bedWidthBefore));
   await page.locator('#bedDepth').fill(String(bedDepthBefore));
   await page.locator('#applyBedSize').click();
