@@ -4280,7 +4280,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     if (!dragState || event.pointerId !== dragState.pointerId) return;
     const margin = 8;
     const maxLeft = Math.max(margin, window.innerWidth - card.offsetWidth - margin);
-    const maxTop = Math.max(margin, window.innerHeight - 70);
+    const maxTop = Math.max(margin, window.innerHeight - card.offsetHeight - margin);
     card.style.left = Math.max(margin, Math.min(maxLeft, event.clientX-dragState.offsetX)) + 'px';
     card.style.top = Math.max(margin, Math.min(maxTop, event.clientY-dragState.offsetY)) + 'px';
   });
