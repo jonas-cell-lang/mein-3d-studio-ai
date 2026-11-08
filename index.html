@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v58 – Konturpunkt-Editor</title>
+<title>SILMO 3D Studio AI – v59 – Tutorial-Prüfung verbessert</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v58 – Konturpunkt-Editor">
+<meta name="silmo-build" content="v59 – Tutorial-Prüfung verbessert">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -3993,7 +3993,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     '<button id="tutorialExamHint" type="button">Mittleren Tipp anzeigen</button><p id="tutorialExamHintText" hidden></p>' +
     '<label class="tutorial-exam-confirm"><input id="tutorialHeartConfirm" type="checkbox"> Ich habe geprüft, dass mein eigenes Modell klar als Herz erkennbar ist.</label><div id="tutorialExamChecks"></div></div>' +
     '<details id="tutorialQuickGuide"><summary>Alle Werkzeuge – Übersicht während des Lernens</summary><div id="tutorialToolGallery" aria-label="SILMO-Werkzeugübersicht"></div></details>' +
-    '<pre id="tutorialDebug" aria-live="polite"></pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialNext" type="button" class="primary" disabled>Weiter</button><button id="tutorialSkip" type="button">Beenden</button></div>';
+    '<div id="tutorialKeyboard" class="tutorial-where">Tastatur: ⌥ + ⇧ + ← zurück · ⌥ + ⇧ + → weiter (nur wenn freigeschaltet)</div><pre id="tutorialDebug" aria-live="polite"></pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialRetry" type="button">Erneut prüfen</button><button id="tutorialNext" type="button" class="primary" disabled>Weiter</button><button id="tutorialSkip" type="button">Beenden</button></div>';
   document.body.append(shade, card);
   $('tutorialBuild').textContent = document.querySelector('meta[name="silmo-build"]')?.content || 'Build unbekannt';
 
@@ -4016,7 +4016,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     '<button type="button" class="tutorial-tool-card" data-tool-tab="' + tab + '" data-target="' + target + '"><span class="tutorial-tool-icon" aria-hidden="true">' + glyph + '</span><span>' + label + '</span></button>'
   ).join('');
 
-  let phase = 'learn', index = 0, highlight = null, baseline = {}, exportObserved = false, savedObserved = false;
+  let phase = 'learn', index = 0, highlight = null, baseline = {}, exportObserved = false, savedObserved = false, renderingStep = false;
   const steps = [
     {title:'1. Grundkörper erstellen',glyph:'◧',tab:'create',target:'addCube',where:'Links im Bereich „Erstellen“ findest du die Grundkörper. Klicke auf „＋ Würfel“. Danach erscheint der neue Körper in der Objektliste.',text:'Erstelle einen zusätzlichen Würfel. Ein Grundkörper ist der Startpunkt vieler CAD-Konstruktionen.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count},
     {title:'2. Weitere Grundkörper',glyph:'●',tab:'create',target:'addSphere',where:'Im selben Bereich „Erstellen“ findest du Kugel, Zylinder, Kegel, Sechskant-Prisma und Ring.',text:'Erstelle zusätzlich eine Kugel. Schau dir danach auch die anderen Grundkörper an. Die Aufgabe zählt, wenn die Kugel wirklich in der Objektliste erscheint.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count},
@@ -4046,10 +4046,10 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   function transforms(){try{return window.__silmoTutorialAllTransforms?.()||[];}catch(_){return [];}}
   function sketchSnapshot(){try{return window.__silmoSketchSnapshot?.()||null;}catch(_){return null;}}
   function fieldValues(id){const el=$(id);return el?[...el.querySelectorAll('input,select')].map(x=>x.value).join('|'):'';}
-  function positionChanged(before){const now=positions();return before.some(p=>{const n=now.find(x=>x.uuid===p.uuid);return n&&(Math.abs(n.x-p.x)>1e-5||Math.abs(n.y-p.y)>1e-5||Math.abs(n.z-p.z)>1e-5);});}
-  function rotationChanged(before){const now=transforms();return before.some(p=>{const n=now.find(x=>x.uuid===p.uuid);return n&&['qx','qy','qz','qw'].some(k=>Math.abs((n[k]||0)-(p[k]||0))>0.01);});}
-  function scaleChanged(before){const now=transforms();return before.some(p=>{const n=now.find(x=>x.uuid===p.uuid);return n&&['sx','sy','sz'].some(k=>Math.abs((n[k]||1)-(p[k]||1))>0.01);});}
-  function transformChanged(before){const now=transforms();return before.some(p=>{const n=now.find(x=>x.uuid===p.uuid);return n&&['x','y','z','sx','sy','sz','qx','qy','qz','qw'].some(k=>Math.abs((n[k]||0)-(p[k]||0))>0.01);});}
+  function positionChanged(before){if(!Array.isArray(before))return false;const now=positions();return Array.isArray(now)&&before.some(p=>{const n=now.find(x=>x&&p&&x.uuid===p.uuid);return n&&(Math.abs(n.x-p.x)>1e-5||Math.abs(n.y-p.y)>1e-5||Math.abs(n.z-p.z)>1e-5);});}
+  function rotationChanged(before){if(!Array.isArray(before))return false;const now=transforms();return Array.isArray(now)&&before.some(p=>{const n=now.find(x=>x&&p&&x.uuid===p.uuid);return n&&['qx','qy','qz','qw'].some(k=>Math.abs((n[k]||0)-(p[k]||0))>0.01);});}
+  function scaleChanged(before){if(!Array.isArray(before))return false;const now=transforms();return Array.isArray(now)&&before.some(p=>{const n=now.find(x=>x&&p&&x.uuid===p.uuid);return n&&['sx','sy','sz'].some(k=>Math.abs((n[k]||1)-(p[k]||1))>0.01);});}
+  function transformChanged(before){if(!Array.isArray(before))return false;const now=transforms();return Array.isArray(now)&&before.some(p=>{const n=now.find(x=>x&&p&&x.uuid===p.uuid);return n&&['x','y','z','sx','sy','sz','qx','qy','qz','qw'].some(k=>Math.abs((n[k]||0)-(p[k]||0))>0.01);});}
   function groupCount(){return $('objects')?.querySelectorAll('.object-edit').length||0;}
   function feedback(message,success){const el=$('tutorialFeedback');el.textContent=message;el.classList.toggle('success',!!success);}
   function clearHighlight(){if(highlight)highlight.classList.remove('tutorial-highlight');highlight=null;}
@@ -4064,15 +4064,21 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   }
   function updateProgress(){$('tutorialProgress').querySelector('span').style.width=(phase==='exam'?100:((index+1)/steps.length*100))+'%';}
   function renderStep(){
-    const step=steps[index];selectTab(step.tab);
+    const step=steps[index];
+    // Capture the new task baseline before changing tabs: tab clicks trigger global
+    // interaction listeners, which used to evaluate the previous task's baseline.
+    renderingStep=true;
+    baseline=step.begin();
+    selectTab(step.tab);
     $('tutorialStepLabel').textContent='LERNPHASE · AUFGABE '+(index+1)+' VON '+steps.length;
     $('tutorialVisualGlyph').textContent=step.glyph;$('tutorialVisualCaption').textContent=step.title;
     $('tutorialTitle').textContent=step.title;$('tutorialText').textContent=step.text;
     $('tutorialWhere').textContent='WO FINDEST DU ES? '+step.where;
     $('tutorialExamPanel').hidden=true;$('tutorialQuickGuide').hidden=false;$('tutorialBack').hidden=false;
     $('tutorialBack').disabled=index===0;$('tutorialNext').textContent='Weiter';$('tutorialNext').disabled=true;
-    updateProgress();baseline=step.begin();if(step.target)revealTarget(step.target);else clearHighlight();
-    feedback('Führe die Aufgabe aus. SILMO prüft das Ergebnis automatisch.',false);updateDebug();
+    updateProgress();if(step.target)revealTarget(step.target);else clearHighlight();
+    renderingStep=false;
+    feedback('Führe die Aufgabe aus. Du kannst es beliebig oft versuchen. SILMO prüft automatisch; „Erneut prüfen“ startet eine zusätzliche Kontrolle.',false);updateDebug();
   }
   function renderExam(){
     clearHighlight();$('tutorialStepLabel').textContent='ABSCHLUSSTEST · SELBSTSTÄNDIG';
@@ -4094,12 +4100,20 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       '\nPhase: '+phase+'\nAufgabe: '+(phase==='learn'?(index+1)+' / '+steps.length:'Abschlusstest')+
       '\nObjekte: '+objectCount()+'\nLetzter Status: '+($('status')?.textContent||'').slice(0,160);
   }
-  function verifyStep(){
-    if(phase!=='learn'||card.hidden)return;
-    let passed=false;try{passed=!!steps[index].check(baseline);}catch(error){console.error('SILMO Lernkontrolle:',error);}
+  function verifyStep(manual=false){
+    if(phase!=='learn'||card.hidden||renderingStep)return false;
+    let passed=false;
+    try{passed=!!steps[index].check(baseline);}
+    catch(error){
+      console.error('SILMO Lernkontrolle:',error);
+      $('tutorialNext').disabled=true;
+      feedback('Die automatische Kontrolle hatte ein Problem. Deine Arbeit bleibt erhalten. Versuche es erneut oder führe die Aktion noch einmal aus.',false);
+      updateDebug();return false;
+    }
     $('tutorialNext').disabled=!passed;
     if(passed)feedback('Erfolgskontrolle bestanden: SILMO hat die erforderliche Änderung am Modell festgestellt. Klicke auf „Weiter“.',true);
-    updateDebug();
+    else if(manual)feedback('Noch nicht erkannt. Du kannst es beliebig oft erneut versuchen. Prüfe, ob die Aufgabe wirklich ausgeführt wurde.',false);
+    updateDebug();return passed;
   }
   function open(){phase='learn';index=0;shade.hidden=false;card.hidden=false;renderStep();}
   function close(){clearHighlight();shade.hidden=true;card.hidden=true;}
@@ -4142,6 +4156,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   launch.addEventListener('click',open);$('tutorialClose').addEventListener('click',close);$('tutorialSkip').addEventListener('click',close);
   $('tutorialBack').addEventListener('click',()=>{if(phase==='learn'&&index>0){index--;renderStep();}});
   $('tutorialNext').addEventListener('click',next);
+  $('tutorialRetry').addEventListener('click',()=>verifyStep(true));
   $('tutorialExamHint').addEventListener('click',()=>{
     $('tutorialExamHintText').hidden=false;
     $('tutorialExamHintText').textContent='Mittlerer Tipp: Überlege, wie du eine symmetrische obere Rundung und eine nach unten zulaufende Spitze konstruieren kannst. Du kannst eigene Skizzen, Grundkörper und Boolesche Werkzeuge kombinieren. Die konkrete Form und Bedienung findest du selbst heraus.';
@@ -4156,7 +4171,18 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   document.addEventListener('pointerup',()=>{if(!card.hidden)verifyStep();},true);
   function monitor(){if(!card.hidden){verifyStep();updateDebug();}requestAnimationFrame(monitor);}
   requestAnimationFrame(monitor);
-  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!card.hidden)close();});
+  // Tutorial navigation via external keyboard; capture before CAD arrow-key shortcuts.
+  window.addEventListener('keydown',event=>{
+    if(card.hidden)return;
+    if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();close();return;}
+    if(event.altKey&&event.shiftKey&&event.key==='ArrowLeft'){
+      event.preventDefault();event.stopImmediatePropagation();
+      if(phase==='learn'&&index>0){index--;renderStep();}
+    }else if(event.altKey&&event.shiftKey&&event.key==='ArrowRight'){
+      event.preventDefault();event.stopImmediatePropagation();
+      if(phase==='learn'&&!$('tutorialNext').disabled)next();
+    }
+  },true);
 })();
 </script>
 
