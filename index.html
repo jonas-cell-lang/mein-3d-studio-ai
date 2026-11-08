@@ -4080,7 +4080,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     $('tutorialWhere').textContent='WO FINDEST DU ES? '+step.where;
     const instructionList=$('tutorialInstructionList');
     instructionList.replaceChildren();
-    String(step.where).split(/(?<=[.!?])\\s+/).filter(Boolean).forEach((instruction,stepNumber)=>{
+    String(step.where).split(/(?<=[.!?])\s+/).filter(Boolean).forEach((instruction,stepNumber)=>{
       const item=document.createElement('li');
       item.textContent=instruction;
       instructionList.append(item);
