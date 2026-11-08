@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v67/, 'Build-Metadaten zeigen nicht v66');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v68/, 'Build-Metadaten zeigen nicht v68');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -108,6 +108,40 @@ try {
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(22)),true,'Aufgabe 23 kann nach Tastenkürzel nicht erneut geöffnet werden');
   await page.locator('#tutorialSkipStep').click();
   assert.match(await page.locator('#tutorialStepLabel').innerText(),/AUFGABE 24 VON 26/,'Schaltfläche überspringt Aufgabe 23 nicht');
+  // Aufgabe 25: Die Anleitung muss auf die getrennten Reiter für Bettgrösse und Prüfung hinweisen.
+  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(24)),true,'Aufgabe 25 kann nicht geöffnet werden');
+  assert.match(await page.locator('#tutorialTitle').innerText(),/Druckbett einstellen und prüfen/,'Aufgabe 25 hat den falschen Titel');
+  assert.equal(await page.locator('#tutorialInstructionList li').count(),8,'Aufgabe 25 enthält nicht acht konkrete Schritte');
+  assert.match(await page.locator('#tutorialInstructionList').innerText(),/Messen & Prüfen/,'Aufgabe 25 nennt den richtigen Reiter für die Druckbettprüfung nicht');
+  const bedWidthBefore=Number(await page.locator('#bedWidth').inputValue());
+  await page.locator('#bedWidth').fill(String(Math.min(2000,bedWidthBefore+10)));
+  await page.locator('#applyBedSize').click();
+  await page.locator('[data-tab="measure"]').click();
+  await page.locator('#checkBed').click();
+  await page.waitForFunction(()=>document.querySelector('#tutorialNext')?.disabled===false,null,{timeout:5000});
+  assert.match(await page.locator('#tutorialFeedback').innerText(),/Erfolgskontrolle bestanden/,'Aufgabe 25 erkennt die Druckbettprüfung nicht');
+  // Aufgabe 26: Projekt sichern, STL exportieren und eine STL direkt in die neue Ablage ziehen.
+  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(25)),true,'Aufgabe 26 kann nicht geöffnet werden');
+  assert.equal(await page.locator('#stlDropZone').count(),1,'STL-Ablagefläche fehlt');
+  assert.match(await page.locator('#tutorialInstructionList').innerText(),/Downloads-Ordner/,'Aufgabe 26 erklärt den Import aus Downloads nicht');
+  const saveDownload=page.waitForEvent('download');
+  await page.locator('#saveProjectButton').click();
+  await saveDownload;
+  const exportDownload=page.waitForEvent('download');
+  await page.locator('#exportModel').click();
+  await exportDownload;
+  const modelCountBeforeImport=await page.locator('#objects .object-row').count();
+  await page.locator('#stlDropZone').evaluate(zone=>{
+    const stl='solid test\\nfacet normal 0 0 1\\nouter loop\\nvertex 0 0 0\\nvertex 10 0 0\\nvertex 0 10 0\\nendloop\\nendfacet\\nendsolid test';
+    const transfer=new DataTransfer();
+    transfer.items.add(new File([stl],'test-import.stl',{type:'model/stl'}));
+    zone.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+    zone.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+  });
+  await page.waitForFunction(()=>Number(window.__silmoImportRevision||0)>0,null,{timeout:5000});
+  assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeImport+1,'STL-Drop importiert kein zusätzliches Modell oder hat bestehende Modelle ersetzt');
+  await page.waitForFunction(()=>document.querySelector('#tutorialNext')?.disabled===false,null,{timeout:5000});
+  assert.match(await page.locator('#tutorialFeedback').innerText(),/Erfolgskontrolle bestanden/,'Aufgabe 26 erkennt Speichern, Export und STL-Import nicht');
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(0)),true,'Tutorial kann nach dem Aufgabe-13-Test nicht zur ersten Aufgabe zurückkehren');
   assert.match(await page.locator('#tutorialWhere').innerText(), /WO FINDEST DU ES/, 'Lernphase erklärt nicht, wo das Werkzeug liegt');
   const tutorialDebug = await page.locator('#tutorialDebug').innerText();
