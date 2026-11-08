@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v58/, 'Build-Metadaten zeigen nicht v58');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v59/, 'Build-Metadaten zeigen nicht v59');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -43,7 +43,7 @@ try {
   await macPage.close();
 
   // iPad mit externer Tastatur: Option+Leertaste.
-  const ipadPage = await browser.newPage();
+  const ipadPage = await browser.newPage({ viewport: { width: 820, height: 1180 }, deviceScaleFactor: 2, hasTouch: true });
   await ipadPage.addInitScript(() => {
     Object.defineProperty(navigator, 'platform', { configurable: true, get: () => 'MacIntel' });
     Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, get: () => 5 });
@@ -54,6 +54,19 @@ try {
     key: ' ', code: 'Space', altKey: true, bubbles: true, cancelable: true
   })));
   assert.equal(await ipadPage.locator('#silmoDiagPanel').isVisible(), true, 'Option+Leertaste öffnet das Prüftool auf dem iPad nicht');
+  await ipadPage.evaluate(() => window.SILMO_DIAG.close());
+  await ipadPage.locator('#tutorialLaunch').click();
+  const ipadTutorialBox = await ipadPage.locator('#tutorialCard').boundingBox();
+  const ipadPropertiesBox = await ipadPage.locator('[aria-label="Eigenschaften des ausgewählten Modells"]').boundingBox();
+  assert.ok(ipadTutorialBox && ipadTutorialBox.width >= 380, 'Tutorial ist auf dem iPad nicht breit genug lesbar');
+  assert.ok(ipadTutorialBox && ipadTutorialBox.x >= 170 && ipadTutorialBox.x + ipadTutorialBox.width < 590, 'Tutorial überdeckt auf dem iPad die Eigenschaften');
+  assert.ok(ipadTutorialBox && ipadTutorialBox.y >= 0 && ipadTutorialBox.y + ipadTutorialBox.height <= 1180, 'Tutorial liegt ausserhalb des iPad-Bildschirms');
+  assert.ok(ipadPropertiesBox, 'Eigenschaftenpanel fehlt auf dem iPad');
+  assert.ok(await ipadPage.locator('#tutorialInstructionList li').count() >= 2, 'Schritt-für-Schritt-Anleitung fehlt auf dem iPad');
+  assert.ok(Number(await ipadPage.locator('#tutorialInstructionList li').first().evaluate(el => getComputedStyle(el).fontSize.replace('px',''))) >= 14, 'Anleitungsschrift ist auf dem iPad zu klein');
+  await ipadPage.locator('#tutorialCard').evaluate(el => { el.scrollTop = el.scrollHeight; });
+  const ipadLastButtonBox = await ipadPage.locator('#tutorialSkip').boundingBox();
+  assert.ok(ipadLastButtonBox && ipadLastButtonBox.y + ipadLastButtonBox.height <= 1180, 'Untere Tutorial-Schaltflächen sind auf dem iPad nicht erreichbar');
   await ipadPage.close();
 
   const canvasSize = await page.locator('#viewport canvas').evaluate(canvas => ({ width: canvas.width, height: canvas.height }));
@@ -75,8 +88,21 @@ try {
   assert.match(await page.locator('#tutorialToolGallery').textContent(), /2D-Linie.*2D-Kurve.*Freiform/s, 'Neue Zeichenwerkzeuge fehlen in der visuellen Übersicht');
   const tutorialBox = await page.locator('#tutorialCard').boundingBox();
   const propertiesBox = await page.locator('[aria-label="Eigenschaften des ausgewählten Modells"]').boundingBox();
+  assert.ok(tutorialBox && tutorialBox.width >= 430, 'Tutorialfenster ist auf dem Desktop zu schmal');
   assert.ok(tutorialBox && propertiesBox && tutorialBox.x + tutorialBox.width < propertiesBox.x, 'Tutorialfenster verdeckt weiterhin den Skalierungsbereich');
+  assert.ok(await page.locator('#tutorialInstructionList li').count() >= 2, 'Anleitung ist nicht in einzelne Schritte aufgeteilt');
+  assert.ok(Number(await page.locator('#tutorialInstructionList li').first().evaluate(el => getComputedStyle(el).fontSize.replace('px',''))) >= 14, 'Anleitungsschrift ist zu klein');
+  assert.equal(await page.locator('#tutorialWordHelp').isVisible(), true, 'Einfache Begriffserklärungen fehlen bei der ersten Aufgabe');
+  assert.match(await page.locator('#tutorialTermList').textContent(), /Grundkörper|Objektliste/, 'Grundbegriffe werden nicht einfach erklärt');
   assert.ok((await page.title()).includes(currentBuild), 'Seitentitel zeigt nicht den aktuellen Build');
+  assert.equal(await page.locator('#tutorialRetry').isVisible(), true, 'Manuelle Wiederholungsprüfung fehlt');
+  assert.equal(await page.locator('#tutorialKeyboard').isVisible(), true, 'Tastaturhinweise fehlen in der Lernphase');
+  await page.locator('#tutorialRetry').click();
+  assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Erneut prüfen darf eine unerledigte Aufgabe nicht freischalten');
+  assert.equal(await page.locator('#tutorialRetry').isVisible(), true, 'Manuelle Wiederholungsprüfung fehlt');
+  assert.equal(await page.locator('#tutorialKeyboard').isVisible(), true, 'Tastaturhinweise fehlen in der Lernphase');
+  await page.locator('#tutorialRetry').click();
+  assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Erneut prüfen darf eine unerledigte Aufgabe nicht freischalten');
   const tutorialStartRows = await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click();
   assert.equal(await page.locator('#objects .object-row').count(), tutorialStartRows + 1, 'Tutorial-Testobjekt wurde nicht erstellt');
@@ -86,6 +112,18 @@ try {
   await page.locator('#tutorialNext').click();
   assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 2 VON/, 'Tutorial geht nach erfolgreicher Kontrolle nicht zum nächsten Lernschritt');
   assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Nächste Aufgabe muss wieder bis zur Erfolgskontrolle gesperrt sein');
+  await page.locator('#addSphere').click();
+  await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 5000 });
+  await page.locator('#tutorialNext').click();
+  assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 3 VON/, 'Tutorial kann Aufgabe 2 nicht abschliessen');
+  await page.locator('#objects .object-select').last().click();
+  await page.locator('#duplicate').click();
+  await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 5000 });
+  await page.locator('#tutorialNext').click();
+  assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 4 VON/, 'Tutorial kann nicht bis zur Transformationsaufgabe navigieren');
+  assert.deepEqual(pageErrors, [], 'Beim Wechsel in die Verschiebeaufgabe entstehen Browserfehler');
+  await page.keyboard.press('Alt+Shift+ArrowLeft');
+  assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 3 VON/, 'Tastenkombination Alt+Shift+Pfeil links geht nicht zurück');
   await page.locator('#tutorialClose').click();
 
   assert.ok(canvasSize.width > 0 && canvasSize.height > 0, '3D canvas hat keine gültige Grösse');

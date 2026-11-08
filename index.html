@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v58 – Konturpunkt-Editor</title>
+<title>SILMO 3D Studio AI – v59 – Tutorial-Prüfung verbessert</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v58 – Konturpunkt-Editor">
+<meta name="silmo-build" content="v59 – Tutorial-Prüfung verbessert">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -103,33 +103,41 @@ input:focus{outline:1px solid var(--cyan)}
 .tutorial-highlight{position:relative!important;z-index:10020!important;outline:3px solid #ffd54a!important;outline-offset:3px!important;box-shadow:0 0 0 7px #ffd54a38,0 0 22px #ffd54a!important;animation:tutorialPulse 1.5s ease-in-out infinite}
 @keyframes tutorialPulse{50%{box-shadow:0 0 0 10px #ffd54a20,0 0 28px #ffd54a}}
 #tutorialShade{position:fixed;inset:0;z-index:10000;background:#02081766;pointer-events:none}
-#tutorialCard{position:fixed;z-index:10030;left:50%;right:auto;top:86px;transform:translateX(-50%);width:min(330px,calc(100vw - 32px));max-height:calc(100dvh - 110px);overflow:auto;padding:16px;border:1px solid #3986f6;border-radius:15px;background:linear-gradient(145deg,#122742,#081525);box-shadow:0 18px 60px #0009;color:#edf4ff}
+#tutorialCard{position:fixed;z-index:10030;left:max(185px,calc((100vw - 440px)/2));right:auto;top:24px;transform:none;width:min(440px,calc(100vw - 430px));max-height:calc(100dvh - 48px);overflow:auto;overscroll-behavior:contain;padding:20px;border:1px solid #3986f6;border-radius:15px;background:linear-gradient(145deg,#122742,#081525);box-shadow:0 18px 60px #0009;color:#edf4ff;scrollbar-gutter:stable}
 #tutorialCard[hidden],#tutorialShade[hidden]{display:none}
-#tutorialCard h2{margin:0 0 8px;color:#80c7ff;font-size:17px;letter-spacing:0;text-transform:none}
-#tutorialCard p{margin:6px 0;color:#d5e4f8;font-size:12px}
-#tutorialVisual{display:flex;align-items:center;justify-content:center;gap:14px;min-height:86px;margin:8px 0 10px;border:1px solid #345778;border-radius:12px;background:radial-gradient(circle at 50% 40%,#244d70,#0a1a2c 72%);overflow:hidden}
-#tutorialVisualGlyph{font-size:54px;line-height:1;color:#7edcff;text-shadow:0 0 20px #42b9ff80}
-#tutorialVisualCaption{font-size:12px;font-weight:750;color:#e8f5ff;max-width:110px}
-#tutorialToolGallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
-.tutorial-tool-card{display:flex;min-width:0;min-height:66px;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 3px;border:1px solid #2d4967;border-radius:9px;background:#10243a;color:#eaf5ff;font-size:10px;line-height:1.15;touch-action:manipulation}
+#tutorialCard h2{margin:0 0 10px;color:#80c7ff;font-size:22px;line-height:1.25;letter-spacing:0;text-transform:none}
+#tutorialCard p{margin:8px 0;color:#e0ebf8;font-size:15px;line-height:1.55}
+#tutorialVisual{display:flex;align-items:center;justify-content:center;gap:18px;min-height:104px;margin:12px 0;border:1px solid #345778;border-radius:12px;background:radial-gradient(circle at 50% 40%,#244d70,#0a1a2c 72%);overflow:hidden}
+#tutorialVisualGlyph{font-size:62px;line-height:1;color:#7edcff;text-shadow:0 0 20px #42b9ff80}
+#tutorialVisualCaption{font-size:15px;font-weight:750;color:#e8f5ff;max-width:180px}
+#tutorialWhere{margin:12px 0;padding:12px 14px;border-left:4px solid #64c8ff;border-radius:8px;background:#10243a;color:#e7f3ff;font-size:14px;line-height:1.55}\n#tutorialWordHelp{margin:12px 0;padding:11px 12px;border:1px solid #324d6b;border-radius:9px;background:#0b192a;color:#d5e4f8;font-size:14px}
+#tutorialWordHelp summary{cursor:pointer;color:#9edcff;font-weight:700;min-height:34px;display:flex;align-items:center}
+#tutorialTermList p{margin:9px 0;padding-top:8px;border-top:1px solid #263d57;font-size:14px;line-height:1.5}
+#tutorialTermList strong{color:#8cddff}
+#tutorialInstructions{margin:12px 0;padding:13px 15px;border:1px solid #3a5e82;border-radius:11px;background:#0b1b2d}
+#tutorialInstructions h3{margin:0 0 8px;color:#9edcff;font-size:16px}
+#tutorialInstructionList{margin:0;padding-left:25px}
+#tutorialInstructionList li{padding:4px 0 4px 3px;color:#f0f6ff;font-size:14px;line-height:1.5}
+#tutorialInstructionList li::marker{color:#7edcff;font-weight:800}
+#tutorialToolGallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.tutorial-tool-card{display:flex;min-width:0;min-height:76px;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 5px;border:1px solid #2d4967;border-radius:9px;background:#10243a;color:#eaf5ff;font-size:12px;line-height:1.25;touch-action:manipulation}
 .tutorial-tool-card:active,.tutorial-tool-card:focus-visible{border-color:#64d8ff;background:#17405d;outline:2px solid #64d8ff}
-.tutorial-tool-icon{font-size:25px;line-height:1.05;color:#8cddff}
-#tutorialQuickGuide{max-height:230px;overflow:auto}
+.tutorial-tool-icon{font-size:28px;line-height:1.05;color:#8cddff}
+#tutorialQuickGuide{max-height:260px;overflow:auto}
 #tutorialDebug{position:absolute!important;width:1px;height:1px;max-height:1px;padding:0;margin:0;border:0;overflow:hidden;clip-path:inset(50%);opacity:0;pointer-events:none}
-#tutorialQuickGuide{margin:10px 0;padding:9px 10px;border:1px solid #324d6b;border-radius:9px;background:#0b192a;color:#d5e4f8;font-size:12px}
-#tutorialQuickGuide summary{cursor:pointer;color:#9edcff;font-weight:700}
+#tutorialQuickGuide{margin:12px 0;padding:11px 12px;border:1px solid #324d6b;border-radius:9px;background:#0b192a;color:#d5e4f8;font-size:14px}
+#tutorialQuickGuide summary{cursor:pointer;color:#9edcff;font-weight:700;min-height:30px;display:flex;align-items:center}
 #tutorialQuickGuide ul{margin:9px 0 2px;padding-left:18px}
-#tutorialQuickGuide li{margin:7px 0;line-height:1.45}
+#tutorialQuickGuide li{margin:7px 0;line-height:1.5}
 #tutorialQuickGuide strong{color:#fff}
-#tutorialProgress{height:5px;background:#263953;border-radius:8px;overflow:hidden;margin:12px 0}
+#tutorialProgress{height:7px;background:#263953;border-radius:8px;overflow:hidden;margin:14px 0}
 #tutorialProgress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#3986f6,#53d8e8);transition:width .2s}
-#tutorialFeedback{padding:9px;border-radius:9px;background:#0b1b2d;border:1px solid #314965;font-size:12px;margin:10px 0;color:#c5d8ee}
-#tutorialFeedback.success{border-color:#38d6a3;color:#8ee5b1}
+#tutorialFeedback{padding:12px;border-radius:9px;background:#0b1b2d;border:1px solid #314965;font-size:14px;line-height:1.5;margin:12px 0;color:#d8e7f8}
+#tutorialFeedback.success{border-color:#38d6a3;color:#a6f0c2}
 #tutorialDebug{margin:8px 0 0;padding:8px;border:1px dashed #6583a7;border-radius:8px;background:#07111f;color:#c5d8ee;font:10px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:125px;overflow:auto}
-.tutorial-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.tutorial-actions button{flex:1}
-#tutorialClose{float:right;padding:4px 8px}
-@media(max-width:820px){#tutorialCard{left:50%;right:auto;top:auto;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(300px,calc(100vw - 32px));max-height:52dvh;overflow:auto;padding:13px}.tutorial-actions button{min-height:42px;touch-action:manipulation}}
-@media(max-width:680px){#tutorialCard{left:50%;right:auto;width:min(300px,calc(100vw - 24px));max-height:42dvh;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%)}.header-actions button{min-height:36px}.tutorial-highlight{outline-width:3px;outline-offset:2px}}
+.tutorial-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;padding-top:10px;position:sticky;bottom:-20px;background:linear-gradient(180deg,#081525e8,#081525 35%);z-index:2}
+.tutorial-actions button{flex:1;min-height:46px;font-size:14px;touch-action:manipulation}
+#tutorialClose{float:right;padding:7px 10px;min-height:38px;min-width:38px}
 
 
 /* SILMO Prüftool – Fehlerbanner und Tastenkürzel */
@@ -3988,12 +3996,12 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     '<div style="font-size:10px;color:#ffcf70;margin-bottom:6px">SILMO LERNKURS · <span id="tutorialBuild"></span></div>' +
     '<div id="tutorialStepLabel"></div><div id="tutorialVisual" aria-label="Bildliche Darstellung des Lernschritts"><span id="tutorialVisualGlyph" aria-hidden="true">◧</span><span id="tutorialVisualCaption">Werkzeug</span></div>' +
     '<h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div>' +
-    '<div id="tutorialWhere" class="tutorial-where"></div><div id="tutorialFeedback" aria-live="polite"></div>' +
+    '<div id="tutorialWhere" class="tutorial-where"></div><section id="tutorialInstructions" aria-label="Schritt-für-Schritt-Anleitung"><h3>So gehst du vor</h3><ol id="tutorialInstructionList"></ol></section><details id="tutorialWordHelp"><summary>Fachbegriffe einfach erklärt</summary><div id="tutorialTermList"></div></details><div id="tutorialFeedback" aria-live="polite"></div>' +
     '<div id="tutorialExamPanel" hidden><div class="tutorial-exam-rule"><strong>Abschlusstest – ohne Anleitung</strong><p>Baue ein eigenes, dreidimensionales Herz, das für den 3D-Druck geeignet ist. SILMO zeigt dir jetzt keine Werkzeuge und keine Arbeitsschritte.</p></div>' +
     '<button id="tutorialExamHint" type="button">Mittleren Tipp anzeigen</button><p id="tutorialExamHintText" hidden></p>' +
     '<label class="tutorial-exam-confirm"><input id="tutorialHeartConfirm" type="checkbox"> Ich habe geprüft, dass mein eigenes Modell klar als Herz erkennbar ist.</label><div id="tutorialExamChecks"></div></div>' +
     '<details id="tutorialQuickGuide"><summary>Alle Werkzeuge – Übersicht während des Lernens</summary><div id="tutorialToolGallery" aria-label="SILMO-Werkzeugübersicht"></div></details>' +
-    '<pre id="tutorialDebug" aria-live="polite"></pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialNext" type="button" class="primary" disabled>Weiter</button><button id="tutorialSkip" type="button">Beenden</button></div>';
+    '<div id="tutorialKeyboard" class="tutorial-where">Tastatur: ⌥ + ⇧ + ← zurück · ⌥ + ⇧ + → weiter (nur wenn freigeschaltet)</div><pre id="tutorialDebug" aria-live="polite"></pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialRetry" type="button">Erneut prüfen</button><button id="tutorialNext" type="button" class="primary" disabled>Weiter</button><button id="tutorialSkip" type="button">Beenden</button></div>';
   document.body.append(shade, card);
   $('tutorialBuild').textContent = document.querySelector('meta[name="silmo-build"]')?.content || 'Build unbekannt';
 
@@ -4016,7 +4024,46 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     '<button type="button" class="tutorial-tool-card" data-tool-tab="' + tab + '" data-target="' + target + '"><span class="tutorial-tool-icon" aria-hidden="true">' + glyph + '</span><span>' + label + '</span></button>'
   ).join('');
 
-  let phase = 'learn', index = 0, highlight = null, baseline = {}, exportObserved = false, savedObserved = false;
+  const beginnerDefinitions = [
+    ['Grundkörper','Eine einfache 3D-Startform, zum Beispiel ein Würfel, eine Kugel oder ein Zylinder.'],
+    ['Objektliste','Die Liste mit allen Teilen, die du in deinem Modell erstellt hast.'],
+    ['Duplizieren','Eine Kopie erstellen. Das ursprüngliche Teil bleibt erhalten.'],
+    ['Position','Der Ort, an dem ein Teil im 3D-Raum steht. X, Y und Z beschreiben die drei Richtungen.'],
+    ['Rotation','Das Fachwort für das Drehen eines Teils.'],
+    ['Skalierung','Ein Teil grösser oder kleiner machen, ohne es neu zu zeichnen.'],
+    ['Millimeter','Eine Längeneinheit. 10 Millimeter sind 1 Zentimeter.'],
+    ['Mehrfachauswahl','Mehr als ein Teil gleichzeitig auswählen.'],
+    ['Gruppieren','Mehrere Teile zu einer gemeinsamen Gruppe zusammenfassen.'],
+    ['Ausrichten','Teile so verschieben, dass sie zum Beispiel auf einer Linie oder mittig stehen.'],
+    ['Spiegeln','Ein Teil wie in einem Spiegel auf die andere Seite drehen.'],
+    ['Skizze','Eine flache 2D-Zeichnung, aus der du später einen 3D-Körper machen kannst.'],
+    ['Extrudieren','Einer flachen Zeichnung Höhe geben, damit ein 3D-Körper entsteht.'],
+    ['Kontur','Die Aussenlinie oder Umrandung einer gezeichneten Form.'],
+    ['Rasterfang','Der Mauszeiger springt auf feste Punkte eines Gitters. Das hilft beim genauen Zeichnen.'],
+    ['STL','Ein Dateiformat, das viele 3D-Druckprogramme für Modelle verwenden.'],
+    ['Druckbett','Die Fläche des 3D-Druckers, auf der das Modell gedruckt wird.'],
+    ['CAD','Ein Computerprogramm, mit dem du genaue technische Zeichnungen und 3D-Modelle bauen kannst.'],
+    ['2D','Flach wie ein Blatt Papier: Es gibt Breite und Höhe, aber keine Tiefe.'],
+    ['3D','Ein Körper mit Breite, Höhe und Tiefe. Du kannst ihn von verschiedenen Seiten ansehen.'],
+    ['Achse','Eine gedachte Richtung oder Linie, an der du etwas ausrichten oder drehen kannst.'],
+    ['Drehring','Der farbige Ring am ausgewählten Teil. Ziehe daran, um das Teil zu drehen.'],
+    ['Freiform','Eine Form, die du selbst mit mehreren Punkten zeichnest.'],
+    ['Rasterweite','Der Abstand zwischen zwei Linien oder Punkten im Zeichengitter.'],
+    ['Kante','Die Linie, an der zwei Flächen eines Körpers zusammentreffen.'],
+    ['Fase','Eine schräge, abgeschnittene Kante.'],
+    ['parallel','Zwei Linien verlaufen nebeneinander und treffen sich nicht.'],
+    ['senkrecht','Zwei Linien treffen sich im rechten Winkel, also bei 90 Grad.'],
+    ['tangential','Zwei Formen oder Linien berühren sich weich an einer Stelle.'],
+    ['konzentrisch','Zwei Kreise haben denselben Mittelpunkt.'],
+    ['Profil','Die Form oder Umrandung, die du für einen Körper verwendest.'],
+    ['Loft','SILMO verbindet mehrere gezeichnete Formen zu einem neuen Körper.'],
+    ['Sweep','SILMO zieht eine Form entlang einer gezeichneten Linie oder Kurve.'],
+    ['Pfad','Eine Linie oder Kurve, an der eine Form entlanggeführt wird.'],
+    ['Boolesche Operation','Ein Rechenschritt mit Körpern: Du kannst sie verbinden oder einen Körper aus einem anderen herausschneiden.'],
+    ['Slicer','Ein Programm, das dein 3D-Modell für einen 3D-Drucker vorbereitet.'],
+    ['STL exportiert','Das Modell wird als Datei gespeichert, die ein Slicer öffnen kann.']
+  ];
+  let phase = 'learn', index = 0, highlight = null, baseline = {}, exportObserved = false, savedObserved = false, renderingStep = false;
   const steps = [
     {title:'1. Grundkörper erstellen',glyph:'◧',tab:'create',target:'addCube',where:'Links im Bereich „Erstellen“ findest du die Grundkörper. Klicke auf „＋ Würfel“. Danach erscheint der neue Körper in der Objektliste.',text:'Erstelle einen zusätzlichen Würfel. Ein Grundkörper ist der Startpunkt vieler CAD-Konstruktionen.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count},
     {title:'2. Weitere Grundkörper',glyph:'●',tab:'create',target:'addSphere',where:'Im selben Bereich „Erstellen“ findest du Kugel, Zylinder, Kegel, Sechskant-Prisma und Ring.',text:'Erstelle zusätzlich eine Kugel. Schau dir danach auch die anderen Grundkörper an. Die Aufgabe zählt, wenn die Kugel wirklich in der Objektliste erscheint.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count},
@@ -4046,10 +4093,10 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   function transforms(){try{return window.__silmoTutorialAllTransforms?.()||[];}catch(_){return [];}}
   function sketchSnapshot(){try{return window.__silmoSketchSnapshot?.()||null;}catch(_){return null;}}
   function fieldValues(id){const el=$(id);return el?[...el.querySelectorAll('input,select')].map(x=>x.value).join('|'):'';}
-  function positionChanged(before){const now=positions();return before.some(p=>{const n=now.find(x=>x.uuid===p.uuid);return n&&(Math.abs(n.x-p.x)>1e-5||Math.abs(n.y-p.y)>1e-5||Math.abs(n.z-p.z)>1e-5);});}
-  function rotationChanged(before){const now=transforms();return before.some(p=>{const n=now.find(x=>x.uuid===p.uuid);return n&&['qx','qy','qz','qw'].some(k=>Math.abs((n[k]||0)-(p[k]||0))>0.01);});}
-  function scaleChanged(before){const now=transforms();return before.some(p=>{const n=now.find(x=>x.uuid===p.uuid);return n&&['sx','sy','sz'].some(k=>Math.abs((n[k]||1)-(p[k]||1))>0.01);});}
-  function transformChanged(before){const now=transforms();return before.some(p=>{const n=now.find(x=>x.uuid===p.uuid);return n&&['x','y','z','sx','sy','sz','qx','qy','qz','qw'].some(k=>Math.abs((n[k]||0)-(p[k]||0))>0.01);});}
+  function positionChanged(before){if(!Array.isArray(before))return false;const now=positions();return Array.isArray(now)&&before.some(p=>{const n=now.find(x=>x&&p&&x.uuid===p.uuid);return n&&(Math.abs(n.x-p.x)>1e-5||Math.abs(n.y-p.y)>1e-5||Math.abs(n.z-p.z)>1e-5);});}
+  function rotationChanged(before){if(!Array.isArray(before))return false;const now=transforms();return Array.isArray(now)&&before.some(p=>{const n=now.find(x=>x&&p&&x.uuid===p.uuid);return n&&['qx','qy','qz','qw'].some(k=>Math.abs((n[k]||0)-(p[k]||0))>0.01);});}
+  function scaleChanged(before){if(!Array.isArray(before))return false;const now=transforms();return Array.isArray(now)&&before.some(p=>{const n=now.find(x=>x&&p&&x.uuid===p.uuid);return n&&['sx','sy','sz'].some(k=>Math.abs((n[k]||1)-(p[k]||1))>0.01);});}
+  function transformChanged(before){if(!Array.isArray(before))return false;const now=transforms();return Array.isArray(now)&&before.some(p=>{const n=now.find(x=>x&&p&&x.uuid===p.uuid);return n&&['x','y','z','sx','sy','sz','qx','qy','qz','qw'].some(k=>Math.abs((n[k]||0)-(p[k]||0))>0.01);});}
   function groupCount(){return $('objects')?.querySelectorAll('.object-edit').length||0;}
   function feedback(message,success){const el=$('tutorialFeedback');el.textContent=message;el.classList.toggle('success',!!success);}
   function clearHighlight(){if(highlight)highlight.classList.remove('tutorial-highlight');highlight=null;}
@@ -4064,15 +4111,42 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   }
   function updateProgress(){$('tutorialProgress').querySelector('span').style.width=(phase==='exam'?100:((index+1)/steps.length*100))+'%';}
   function renderStep(){
-    const step=steps[index];selectTab(step.tab);
+    const step=steps[index];
+    // Capture the new task baseline before changing tabs: tab clicks trigger global
+    // interaction listeners, which used to evaluate the previous task's baseline.
+    renderingStep=true;
+    baseline=step.begin();
+    selectTab(step.tab);
     $('tutorialStepLabel').textContent='LERNPHASE · AUFGABE '+(index+1)+' VON '+steps.length;
     $('tutorialVisualGlyph').textContent=step.glyph;$('tutorialVisualCaption').textContent=step.title;
     $('tutorialTitle').textContent=step.title;$('tutorialText').textContent=step.text;
     $('tutorialWhere').textContent='WO FINDEST DU ES? '+step.where;
-    $('tutorialExamPanel').hidden=true;$('tutorialQuickGuide').hidden=false;$('tutorialBack').hidden=false;
+    const instructionList=$('tutorialInstructionList');
+    instructionList.replaceChildren();
+    String(step.where).split(/(?<=[.!?])\s+/).filter(Boolean).forEach((instruction,stepNumber)=>{
+      const item=document.createElement('li');
+      item.textContent=instruction;
+      instructionList.append(item);
+    });
+    $('tutorialInstructions').hidden=false;
+    const termList=$('tutorialTermList');
+    termList.replaceChildren();
+    const taskWords=[step.title,step.text,step.where].join(' ').toLocaleLowerCase('de-CH');
+    const relevantTerms=beginnerDefinitions.filter(([term])=>taskWords.includes(term.toLocaleLowerCase('de-CH')));
+    relevantTerms.forEach(([term,explanation])=>{
+      const paragraph=document.createElement('p');
+      const label=document.createElement('strong');
+      label.textContent=term+': ';
+      paragraph.append(label,document.createTextNode(explanation));
+      termList.append(paragraph);
+    });
+    $('tutorialWordHelp').hidden=relevantTerms.length===0;
+    $('tutorialWordHelp').open=false;
+    $('tutorialExamPanel').hidden=true;$('tutorialQuickGuide').hidden=false;$('tutorialBack').hidden=false;$('tutorialRetry').hidden=false;$('tutorialKeyboard').hidden=false;
     $('tutorialBack').disabled=index===0;$('tutorialNext').textContent='Weiter';$('tutorialNext').disabled=true;
-    updateProgress();baseline=step.begin();if(step.target)revealTarget(step.target);else clearHighlight();
-    feedback('Führe die Aufgabe aus. SILMO prüft das Ergebnis automatisch.',false);updateDebug();
+    updateProgress();if(step.target)revealTarget(step.target);else clearHighlight();
+    renderingStep=false;
+    feedback('Führe die Aufgabe aus. Du kannst es beliebig oft versuchen. SILMO prüft automatisch; „Erneut prüfen“ startet eine zusätzliche Kontrolle.',false);updateDebug();
   }
   function renderExam(){
     clearHighlight();$('tutorialStepLabel').textContent='ABSCHLUSSTEST · SELBSTSTÄNDIG';
@@ -4080,7 +4154,9 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     $('tutorialTitle').textContent='Baue ein eigenes 3D-Herz';
     $('tutorialText').textContent='Konstruiere ohne Anleitung ein eigenes dreidimensionales Herz. Es soll als Herz erkennbar und für den 3D-Druck vorbereitet sein. Du entscheidest selbst, welche Werkzeuge und Konstruktionswege du verwendest.';
     $('tutorialWhere').textContent='Es werden keine Werkzeuge markiert und keine Arbeitsschritte erklärt. Du kannst den Test selbstständig bearbeiten.';
-    $('tutorialExamPanel').hidden=false;$('tutorialQuickGuide').hidden=true;$('tutorialBack').hidden=true;
+    $('tutorialInstructions').hidden=true;
+    $('tutorialWordHelp').hidden=true;
+    $('tutorialExamPanel').hidden=false;$('tutorialQuickGuide').hidden=true;$('tutorialBack').hidden=true;$('tutorialRetry').hidden=true;$('tutorialKeyboard').hidden=true;
     $('tutorialNext').textContent='Abschlusstest prüfen';$('tutorialNext').disabled=false;
     $('tutorialExamHintText').hidden=true;$('tutorialExamHint').disabled=false;$('tutorialHeartConfirm').checked=false;
     $('tutorialExamChecks').textContent='Noch nicht geprüft.';
@@ -4094,12 +4170,20 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       '\nPhase: '+phase+'\nAufgabe: '+(phase==='learn'?(index+1)+' / '+steps.length:'Abschlusstest')+
       '\nObjekte: '+objectCount()+'\nLetzter Status: '+($('status')?.textContent||'').slice(0,160);
   }
-  function verifyStep(){
-    if(phase!=='learn'||card.hidden)return;
-    let passed=false;try{passed=!!steps[index].check(baseline);}catch(error){console.error('SILMO Lernkontrolle:',error);}
+  function verifyStep(manual=false){
+    if(phase!=='learn'||card.hidden||renderingStep)return false;
+    let passed=false;
+    try{passed=!!steps[index].check(baseline);}
+    catch(error){
+      console.error('SILMO Lernkontrolle:',error);
+      $('tutorialNext').disabled=true;
+      feedback('Die automatische Kontrolle hatte ein Problem. Deine Arbeit bleibt erhalten. Versuche es erneut oder führe die Aktion noch einmal aus.',false);
+      updateDebug();return false;
+    }
     $('tutorialNext').disabled=!passed;
     if(passed)feedback('Erfolgskontrolle bestanden: SILMO hat die erforderliche Änderung am Modell festgestellt. Klicke auf „Weiter“.',true);
-    updateDebug();
+    else if(manual)feedback('Noch nicht erkannt. Du kannst es beliebig oft erneut versuchen. Prüfe, ob die Aufgabe wirklich ausgeführt wurde.',false);
+    updateDebug();return passed;
   }
   function open(){phase='learn';index=0;shade.hidden=false;card.hidden=false;renderStep();}
   function close(){clearHighlight();shade.hidden=true;card.hidden=true;}
@@ -4142,6 +4226,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   launch.addEventListener('click',open);$('tutorialClose').addEventListener('click',close);$('tutorialSkip').addEventListener('click',close);
   $('tutorialBack').addEventListener('click',()=>{if(phase==='learn'&&index>0){index--;renderStep();}});
   $('tutorialNext').addEventListener('click',next);
+  $('tutorialRetry').addEventListener('click',()=>verifyStep(true));
   $('tutorialExamHint').addEventListener('click',()=>{
     $('tutorialExamHintText').hidden=false;
     $('tutorialExamHintText').textContent='Mittlerer Tipp: Überlege, wie du eine symmetrische obere Rundung und eine nach unten zulaufende Spitze konstruieren kannst. Du kannst eigene Skizzen, Grundkörper und Boolesche Werkzeuge kombinieren. Die konkrete Form und Bedienung findest du selbst heraus.';
@@ -4156,7 +4241,18 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   document.addEventListener('pointerup',()=>{if(!card.hidden)verifyStep();},true);
   function monitor(){if(!card.hidden){verifyStep();updateDebug();}requestAnimationFrame(monitor);}
   requestAnimationFrame(monitor);
-  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!card.hidden)close();});
+  // Tutorial navigation via external keyboard; capture before CAD arrow-key shortcuts.
+  window.addEventListener('keydown',event=>{
+    if(card.hidden)return;
+    if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();close();return;}
+    if(event.altKey&&event.shiftKey&&event.key==='ArrowLeft'){
+      event.preventDefault();event.stopImmediatePropagation();
+      if(phase==='learn'&&index>0){index--;renderStep();}
+    }else if(event.altKey&&event.shiftKey&&event.key==='ArrowRight'){
+      event.preventDefault();event.stopImmediatePropagation();
+      if(phase==='learn'&&!$('tutorialNext').disabled)next();
+    }
+  },true);
 })();
 </script>
 
