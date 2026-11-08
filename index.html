@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v59 – Tutorial-Prüfung verbessert</title>
+<title>SILMO 3D Studio AI – v60 – Tutorial-Prüfung verbessert</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v59 – Tutorial-Prüfung verbessert">
+<meta name="silmo-build" content="v60 – Tutorial-Prüfung verbessert">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -119,6 +119,14 @@ input:focus{outline:1px solid var(--cyan)}
 #tutorialInstructionList{margin:0;padding-left:25px}
 #tutorialInstructionList li{padding:4px 0 4px 3px;color:#f0f6ff;font-size:14px;line-height:1.5}
 #tutorialInstructionList li::marker{color:#7edcff;font-weight:800}
+#tutorialKeyboardGuide{margin:12px 0;padding:12px;border:1px solid #3a5e82;border-radius:11px;background:#0b1b2d;color:#e7f3ff;font-size:14px}
+#tutorialKeyboardGuide>summary{cursor:pointer;color:#9edcff;font-weight:750;min-height:42px;display:flex;align-items:center}
+.tutorial-key-intro{padding:9px 10px;border-left:3px solid #64c8ff;background:#10243a;border-radius:7px}
+.tutorial-key-combo{margin:9px 0;padding:9px 11px;border:1px solid #345778;border-radius:9px;background:#10243a}
+.tutorial-key-combo>summary{cursor:pointer;min-height:38px;display:flex;align-items:center;color:#f0f7ff;font-weight:700;line-height:1.4}
+.tutorial-key-combo ol{margin:7px 0 3px;padding-left:25px}
+.tutorial-key-combo li{padding:5px 2px;color:#e0ebf8;font-size:14px;line-height:1.5}
+.tutorial-key-combo li::marker{color:#7edcff;font-weight:800}
 #tutorialToolGallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
 .tutorial-tool-card{display:flex;min-width:0;min-height:76px;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 5px;border:1px solid #2d4967;border-radius:9px;background:#10243a;color:#eaf5ff;font-size:12px;line-height:1.25;touch-action:manipulation}
 .tutorial-tool-card:active,.tutorial-tool-card:focus-visible{border-color:#64d8ff;background:#17405d;outline:2px solid #64d8ff}
@@ -4001,7 +4009,19 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     '<button id="tutorialExamHint" type="button">Mittleren Tipp anzeigen</button><p id="tutorialExamHintText" hidden></p>' +
     '<label class="tutorial-exam-confirm"><input id="tutorialHeartConfirm" type="checkbox"> Ich habe geprüft, dass mein eigenes Modell klar als Herz erkennbar ist.</label><div id="tutorialExamChecks"></div></div>' +
     '<details id="tutorialQuickGuide"><summary>Alle Werkzeuge – Übersicht während des Lernens</summary><div id="tutorialToolGallery" aria-label="SILMO-Werkzeugübersicht"></div></details>' +
-    '<div id="tutorialKeyboard" class="tutorial-where">Tastatur: ⌥ + ⇧ + ← zurück · ⌥ + ⇧ + → weiter (nur wenn freigeschaltet)</div><pre id="tutorialDebug" aria-live="polite"></pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialRetry" type="button">Erneut prüfen</button><button id="tutorialNext" type="button" class="primary" disabled>Weiter</button><button id="tutorialSkip" type="button">Beenden</button></div>';
+    '<details id="tutorialKeyboardGuide"><summary>Tastenkombinationen – jede einzeln erklärt</summary><p class="tutorial-key-intro">Du musst die Tasten einer Kombination gleichzeitig gedrückt halten. Öffne eine Kombination, um sie Schritt für Schritt zu lernen. Auf Windows heisst die Taste Strg, auf Mac/iPad mit Tastatur heisst sie ⌘ Command. Alt heisst auf Mac/iPad Option (⌥).</p>' +
+    '<details class="tutorial-key-combo"><summary>1. Zur vorherigen Tutorial-Aufgabe</summary><ol><li>Suche die Taste Alt (Windows) oder Option (⌥, Mac/iPad).</li><li>Drücke diese Taste und halte sie gedrückt.</li><li>Drücke zusätzlich die Umschalttaste (Shift, ⇧) und halte beide Tasten weiter gedrückt.</li><li>Drücke einmal den Pfeil nach links (←).</li><li>Lass alle Tasten los. Die vorherige Aufgabe erscheint.</li></ol></details>' +
+    '<details class="tutorial-key-combo"><summary>2. Zur nächsten Tutorial-Aufgabe</summary><ol><li>Suche die Taste Alt (Windows) oder Option (⌥, Mac/iPad).</li><li>Drücke diese Taste und halte sie gedrückt.</li><li>Drücke zusätzlich die Umschalttaste (Shift, ⇧) und halte beide Tasten weiter gedrückt.</li><li>Drücke einmal den Pfeil nach rechts (→).</li><li>Lass alle Tasten los. Die nächste Aufgabe erscheint, wenn sie bereits freigeschaltet ist.</li></ol></details>' +
+    '<details class="tutorial-key-combo"><summary>3. Projekt speichern – Strg/⌘ + S</summary><ol><li>Suche Strg (Windows) oder ⌘ Command (Mac/iPad).</li><li>Halte diese Taste gedrückt.</li><li>Drücke zusätzlich den Buchstaben S.</li><li>Lass beide Tasten los. SILMO speichert dein Projekt.</li></ol></details>' +
+    '<details class="tutorial-key-combo"><summary>4. Projekt öffnen – Strg/⌘ + O</summary><ol><li>Suche Strg (Windows) oder ⌘ Command (Mac/iPad).</li><li>Halte diese Taste gedrückt.</li><li>Drücke zusätzlich den Buchstaben O.</li><li>Lass beide Tasten los und wähle deine gespeicherte Projektdatei aus.</li></ol></details>' +
+    '<details class="tutorial-key-combo"><summary>5. Alle 3D-Objekte auswählen – Strg/⌘ + A</summary><ol><li>Klicke zuerst auf einen freien Bereich der 3D-Ansicht oder auf die Objektliste, nicht in ein Texteingabefeld.</li><li>Halte Strg (Windows) oder ⌘ Command (Mac/iPad) gedrückt.</li><li>Drücke zusätzlich den Buchstaben A.</li><li>Lass beide Tasten los. Alle 3D-Objekte werden ausgewählt.</li></ol></details>' +
+    '<details class="tutorial-key-combo"><summary>6. Ausgewählte Objekte kopieren – Strg/⌘ + C</summary><ol><li>Wähle zuerst ein oder mehrere 3D-Objekte aus.</li><li>Halte Strg (Windows) oder ⌘ Command (Mac/iPad) gedrückt.</li><li>Drücke zusätzlich den Buchstaben C.</li><li>Lass beide Tasten los. SILMO merkt sich die ausgewählten Objekte zum Einfügen.</li></ol></details>' +
+    '<details class="tutorial-key-combo"><summary>7. Kopierte Objekte einfügen – Strg/⌘ + V</summary><ol><li>Kopiere zuerst ein Objekt mit Strg/⌘ + C.</li><li>Halte Strg (Windows) oder ⌘ Command (Mac/iPad) gedrückt.</li><li>Drücke zusätzlich den Buchstaben V.</li><li>Lass beide Tasten los. Die Kopie erscheint in deinem Modell.</li></ol></details>' +
+    '<details class="tutorial-key-combo"><summary>8. Objekt duplizieren – Strg/⌘ + D</summary><ol><li>Wähle zuerst ein oder mehrere 3D-Objekte aus.</li><li>Halte Strg (Windows) oder ⌘ Command (Mac/iPad) gedrückt.</li><li>Drücke zusätzlich den Buchstaben D.</li><li>Lass beide Tasten los. SILMO erstellt eine Kopie.</li></ol></details>' +
+    '<details class="tutorial-key-combo"><summary>9. Letzte Änderung rückgängig machen – Strg/⌘ + Z</summary><ol><li>Halte Strg (Windows) oder ⌘ Command (Mac/iPad) gedrückt.</li><li>Drücke zusätzlich den Buchstaben Z.</li><li>Lass beide Tasten los. Die letzte Änderung wird rückgängig gemacht.</li></ol></details>' +
+    '<details class="tutorial-key-combo"><summary>10. Rückgängig gemachte Änderung wiederholen – Strg/⌘ + Y</summary><ol><li>Halte Strg (Windows) oder ⌘ Command (Mac/iPad) gedrückt.</li><li>Drücke zusätzlich den Buchstaben Y.</li><li>Lass beide Tasten los. Die rückgängig gemachte Änderung wird wiederholt.</li></ol></details>' +
+    '<details class="tutorial-key-combo"><summary>11. Objekt mit grösseren Schritten bewegen – Shift + Pfeiltaste</summary><ol><li>Wähle zuerst ein 3D-Objekt aus.</li><li>Halte die Umschalttaste (Shift, ⇧) gedrückt.</li><li>Drücke zusätzlich eine Pfeiltaste. Das Objekt bewegt sich zehnmal so weit wie bei einem normalen Pfeiltastendruck.</li><li>Lass beide Tasten los.</li></ol></details></details>' +
+    '<div id="tutorialKeyboard" class="tutorial-where">Tastatur: Die Tastenkombinationen oben sind einzeln erklärt. Du kannst jede Erklärung aufklappen.</div><pre id="tutorialDebug" aria-live="polite"></pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialRetry" type="button">Erneut prüfen</button><button id="tutorialNext" type="button" class="primary" disabled>Weiter</button><button id="tutorialSkip" type="button">Beenden</button></div>';
   document.body.append(shade, card);
   $('tutorialBuild').textContent = document.querySelector('meta[name="silmo-build"]')?.content || 'Build unbekannt';
 
@@ -4142,7 +4162,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     });
     $('tutorialWordHelp').hidden=relevantTerms.length===0;
     $('tutorialWordHelp').open=false;
-    $('tutorialExamPanel').hidden=true;$('tutorialQuickGuide').hidden=false;$('tutorialBack').hidden=false;$('tutorialRetry').hidden=false;$('tutorialKeyboard').hidden=false;
+    $('tutorialExamPanel').hidden=true;$('tutorialQuickGuide').hidden=false;$('tutorialBack').hidden=false;$('tutorialRetry').hidden=false;$('tutorialKeyboard').hidden=false;$('tutorialKeyboardGuide').hidden=false;$('tutorialKeyboardGuide').open=false;
     $('tutorialBack').disabled=index===0;$('tutorialNext').textContent='Weiter';$('tutorialNext').disabled=true;
     updateProgress();if(step.target)revealTarget(step.target);else clearHighlight();
     renderingStep=false;
@@ -4156,7 +4176,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     $('tutorialWhere').textContent='Es werden keine Werkzeuge markiert und keine Arbeitsschritte erklärt. Du kannst den Test selbstständig bearbeiten.';
     $('tutorialInstructions').hidden=true;
     $('tutorialWordHelp').hidden=true;
-    $('tutorialExamPanel').hidden=false;$('tutorialQuickGuide').hidden=true;$('tutorialBack').hidden=true;$('tutorialRetry').hidden=true;$('tutorialKeyboard').hidden=true;
+    $('tutorialExamPanel').hidden=false;$('tutorialQuickGuide').hidden=true;$('tutorialBack').hidden=true;$('tutorialRetry').hidden=true;$('tutorialKeyboard').hidden=true;$('tutorialKeyboardGuide').hidden=true;
     $('tutorialNext').textContent='Abschlusstest prüfen';$('tutorialNext').disabled=false;
     $('tutorialExamHintText').hidden=true;$('tutorialExamHint').disabled=false;$('tutorialHeartConfirm').checked=false;
     $('tutorialExamChecks').textContent='Noch nicht geprüft.';
