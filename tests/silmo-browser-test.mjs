@@ -64,6 +64,8 @@ try {
   assert.ok(ipadPropertiesBox, 'Eigenschaftenpanel fehlt auf dem iPad');
   assert.ok(await ipadPage.locator('#tutorialInstructionList li').count() >= 2, 'Schritt-für-Schritt-Anleitung fehlt auf dem iPad');
   assert.ok(Number(await ipadPage.locator('#tutorialInstructionList li').first().evaluate(el => getComputedStyle(el).fontSize.replace('px',''))) >= 14, 'Anleitungsschrift ist auf dem iPad zu klein');
+  assert.equal(await ipadPage.locator('#tutorialKeyboardGuide').isVisible(), true, 'Tastenkombinationen fehlen auf dem iPad');
+  assert.equal(await ipadPage.locator('#tutorialKeyboardGuide .tutorial-key-combo').count(), 11, 'Einzelerklärungen der Tastenkombinationen fehlen auf dem iPad');
   await ipadPage.locator('#tutorialCard').evaluate(el => { el.scrollTop = el.scrollHeight; });
   const ipadLastButtonBox = await ipadPage.locator('#tutorialSkip').boundingBox();
   assert.ok(ipadLastButtonBox && ipadLastButtonBox.y + ipadLastButtonBox.height <= 1180, 'Untere Tutorial-Schaltflächen sind auf dem iPad nicht erreichbar');
@@ -97,6 +99,16 @@ try {
   assert.ok((await page.title()).includes(currentBuild), 'Seitentitel zeigt nicht den aktuellen Build');
   assert.equal(await page.locator('#tutorialRetry').isVisible(), true, 'Manuelle Wiederholungsprüfung fehlt');
   assert.equal(await page.locator('#tutorialKeyboard').isVisible(), true, 'Tastaturhinweise fehlen in der Lernphase');
+  const keyboardGuide = page.locator('#tutorialKeyboardGuide');
+  assert.equal(await keyboardGuide.isVisible(), true, 'Einzeln erklärte Tastenkombinationen fehlen');
+  const shortcutCards = keyboardGuide.locator('.tutorial-key-combo');
+  assert.equal(await shortcutCards.count(), 11, 'Nicht alle Tastenkombinationen haben eine eigene Erklärung');
+  for (let i = 0; i < await shortcutCards.count(); i++) {
+    assert.ok(await shortcutCards.nth(i).locator('ol li').count() >= 3, 'Tastenkombination ' + (i + 1) + ' hat keine einzelnen Erklärungsschritte');
+  }
+  await shortcutCards.first().locator('summary').click();
+  assert.equal(await shortcutCards.first().evaluate(el => el.open), true, 'Einzelne Tastenkombination lässt sich nicht aufklappen');
+  assert.match(await shortcutCards.first().innerText(), /Option|Alt|Umschalttaste|links/i, 'Tastenkombination wird nicht in einfacher Sprache erklärt');
   await page.locator('#tutorialRetry').click();
   assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Erneut prüfen darf eine unerledigte Aufgabe nicht freischalten');
   assert.equal(await page.locator('#tutorialRetry').isVisible(), true, 'Manuelle Wiederholungsprüfung fehlt');
