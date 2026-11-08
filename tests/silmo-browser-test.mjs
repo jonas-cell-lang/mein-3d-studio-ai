@@ -27,7 +27,7 @@ try {
   const roughHeart=[[0,0.18],[0.13,0.04],[0.30,0],[0.43,0.06],[0.50,0.20],[0.57,0.06],[0.70,0],[0.87,0.04],[1,0.18],[0.97,0.39],[0.82,0.63],[0.50,1],[0.18,0.63],[0.03,0.39]];
   const heartScore=await examPage.evaluate(points=>window.__silmoTestRecognizeHeart(points),roughHeart);
   assert.equal(heartScore.recognized,true,'Eine grob gezeichnete Herzform wird nicht erkannt');
-  const rectangleScore=await examPage.evaluate(()=>window.__silmoTestRecognizeHeart([[0,0],[1,0],[1,1],[0,1],[0.01,0.01],[0.2,0.01],[0.4,0.01],[0.6,0.01],[0.8,0.01]]));
+  const rectangleScore=await examPage.evaluate(()=>window.__silmoTestRecognizeHeart([[0,0],[0.33,0],[0.66,0],[1,0],[1,0.33],[1,0.66],[1,1],[0.66,1],[0.33,1],[0,1],[0,0.66],[0,0.33]]));
   assert.equal(rectangleScore.recognized,false,'Ein Rechteck wird fälschlich als Herz erkannt');
   await examPage.evaluate(points=>window.__silmoTestCreateHeartSketch(points),roughHeart);
   const createdHeart=await examPage.evaluate(()=>window.__silmoHeartRecognitionSnapshot());
