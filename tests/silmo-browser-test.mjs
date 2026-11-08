@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v71/, 'Build-Metadaten zeigen nicht v71');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v72/, 'Build-Metadaten zeigen nicht v72');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -29,6 +29,22 @@ try {
   assert.equal(heartScore.recognized,true,'Eine grob gezeichnete Herzform wird nicht erkannt');
   const rectangleScore=await examPage.evaluate(()=>window.__silmoTestRecognizeHeart([[0,0],[0.33,0],[0.66,0],[1,0],[1,0.33],[1,0.66],[1,1],[0.66,1],[0.33,1],[0,1],[0,0.66],[0,0.33]]));
   assert.equal(rectangleScore.recognized,false,'Ein Rechteck wird fälschlich als Herz erkannt');
+  const noisyHeart=[];
+  for(let i=0;i<roughHeart.length;i++){
+    const a=roughHeart[i],b=roughHeart[(i+1)%roughHeart.length];
+    for(let step=0;step<4;step++){
+      const t=step/4,n=noisyHeart.length;
+      noisyHeart.push([a[0]*(1-t)+b[0]*t+0.012*Math.sin(n*1.7),a[1]*(1-t)+b[1]*t+0.012*Math.cos(n*1.3)]);
+    }
+  }
+  const noisyHeartScore=await examPage.evaluate(points=>window.__silmoTestRecognizeHeart(points),noisyHeart);
+  assert.equal(noisyHeartScore.recognized,true,'Eine unregelmässig gezeichnete Herzform wird nicht erkannt');
+  const invertedHeart=await examPage.evaluate(points=>window.__silmoTestRecognizeHeart(points.map(([x,y])=>[x,1-y])),roughHeart);
+  assert.equal(invertedHeart.recognized,true,'Ein auf dem Kopf gezeichnetes Herz wird nicht erkannt');
+  const xzHeart=await examPage.evaluate(points=>window.__silmoTestRecognizeHeart(points.map(([x,y])=>[x,0,y])),roughHeart);
+  assert.equal(xzHeart.recognized,true,'Ein Herz auf der XZ-Zeichenebene wird nicht erkannt');
+  const yzHeart=await examPage.evaluate(points=>window.__silmoTestRecognizeHeart(points.map(([x,y])=>[0,x,y])),roughHeart);
+  assert.equal(yzHeart.recognized,true,'Ein Herz auf der YZ-Zeichenebene wird nicht erkannt');
   await examPage.evaluate(points=>window.__silmoTestCreateHeartSketch(points),roughHeart);
   const createdHeart=await examPage.evaluate(()=>window.__silmoHeartRecognitionSnapshot());
   assert.equal(createdHeart.recognized,true,'Herzform wird nach der Umwandlung in einen 3D-Körper nicht mehr erkannt');

@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v71 – Herz erkennen und Lernkurs abschliessen</title>
+<title>SILMO 3D Studio AI – v72 – Herz-Erkennung verbessert</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v71 – Herz erkennen und Lernkurs abschliessen">
+<meta name="silmo-build" content="v72 – Herz-Erkennung verbessert">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -4076,21 +4076,26 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   // Erkennt eine grob herzförmige, geschlossene 2D-Kontur per Rastervergleich.
   // Das ist eine lokale Formprüfung: Die Zeichnung wird nicht hochgeladen und muss nicht perfekt sein.
   function classifyHeartOutline(rawPoints) {
+    // Unterstützt 2D-Konturen und 3D-Punkte auf XY-, XZ- oder YZ-Zeichenebenen.
     const points=(Array.isArray(rawPoints)?rawPoints:[])
-      .map(point=>Array.isArray(point)?[Number(point[0]),Number(point[1])]:[Number(point?.x),Number(point?.y)])
+      .map(point=>Array.isArray(point)
+        ?[Number(point[0]),Number(point[1]),Number(point[2]??0)]
+        :[Number(point?.x),Number(point?.y),Number(point?.z??0)])
       .filter(point=>point.every(Number.isFinite));
     const clean=[];
     for(const point of points){
       const last=clean[clean.length-1];
-      if(!last||Math.hypot(point[0]-last[0],point[1]-last[1])>1e-5)clean.push(point);
+      if(!last||Math.hypot(point[0]-last[0],point[1]-last[1],point[2]-last[2])>1e-5)clean.push(point);
     }
-    if(clean.length>2&&Math.hypot(clean[0][0]-clean[clean.length-1][0],clean[0][1]-clean[clean.length-1][1])<1e-5)clean.pop();
-    if(clean.length<8)return {recognized:false,score:0,pointCount:clean.length,reason:'Zeichne eine geschlossene Kontur mit mindestens acht Punkten.'};
-    const xs=clean.map(p=>p[0]),ys=clean.map(p=>p[1]);
+    if(clean.length>2&&Math.hypot(clean[0][0]-clean[clean.length-1][0],clean[0][1]-clean[clean.length-1][1],clean[0][2]-clean[clean.length-1][2])<1e-5)clean.pop();
+    if(clean.length<8)return {recognized:false,score:0,pointCount:clean.length,reason:'Zeichne eine zusammenhängende Herz-Umrandung mit mindestens acht Punkten.'};
+    const spans=[0,1,2].map(axis=>Math.max(...clean.map(p=>p[axis]))-Math.min(...clean.map(p=>p[axis])));
+    const pairs=[[0,1],[0,2],[1,2]].sort((a,b)=>spans[b[0]]*spans[b[1]]-spans[a[0]]*spans[a[1]]);
+    const axes=pairs[0],xs=clean.map(p=>p[axes[0]]),ys=clean.map(p=>p[axes[1]]);
     const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
     const width=maxX-minX,height=maxY-minY,ratio=width/Math.max(height,1e-9);
-    if(width<1e-5||height<1e-5||ratio<0.45||ratio>1.9)return {recognized:false,score:0,pointCount:clean.length,aspectRatio:ratio,reason:'Die Form braucht eine erkennbare Breite und Höhe.'};
-    const polygon=clean.map(p=>[(p[0]-minX)/width,(p[1]-minY)/height]);
+    if(width<1e-5||height<1e-5||ratio<0.35||ratio>2.5)return {recognized:false,score:0,pointCount:clean.length,aspectRatio:ratio,reason:'Die Form braucht eine erkennbare Breite und Höhe.'};
+    const polygon=clean.map(p=>[(p[axes[0]]-minX)/width,(p[axes[1]]-minY)/height]);
     const inside=(x,y,poly)=>{
       let hit=false;
       for(let i=0,j=poly.length-1;i<poly.length;j=i++){
@@ -4099,19 +4104,16 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       }
       return hit;
     };
-    const size=56;
+    const size=64;
     const mask=poly=>{
       const result=new Uint8Array(size*size);
       for(let y=0;y<size;y++)for(let x=0;x<size;x++)if(inside((x+.5)/size,(y+.5)/size,poly))result[y*size+x]=1;
       return result;
     };
-    const userMask=mask(polygon);
-    const template=[];
+    const userMask=mask(polygon),template=[];
     for(let i=0;i<180;i++){
       const t=i/180*Math.PI*2;
-      const x=16*Math.pow(Math.sin(t),3);
-      const y=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
-      template.push([x,y]);
+      template.push([16*Math.pow(Math.sin(t),3),13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t)]);
     }
     const tx=template.map(p=>p[0]),ty=template.map(p=>p[1]);
     const tMinX=Math.min(...tx),tMaxX=Math.max(...tx),tMinY=Math.min(...ty),tMaxY=Math.max(...ty);
@@ -4124,20 +4126,43 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     const normalScore=scoreFor(normalizedTemplate);
     const flippedScore=scoreFor(normalizedTemplate.map(p=>[p[0],1-p[1]]));
     const score=Math.max(normalScore,flippedScore);
-    return {recognized:score>=0.68,score:Number(score.toFixed(3)),pointCount:clean.length,aspectRatio:Number(ratio.toFixed(3)),reason:score>=0.68?'Die Kontur ähnelt ungefähr einer Herzform.':'Die Kontur ähnelt noch nicht deutlich genug einem Herz.'};
+    // Ein Herz hat oben eine mittige Einbuchtung mit zwei Bögen und läuft unten spitz zu.
+    // Diese Merkmale verhindern, dass ein Rechteck wegen ähnlicher Pixel-Fläche akzeptiert wird.
+    const hasHeartStructure=sourceMask=>{
+      let hasTwoLobes=false,maxWidth=0,bottomWidth=0;
+      for(let y=0;y<size;y++){
+        let runs=0,rowWidth=0,wasInside=false;
+        for(let x=0;x<size;x++){
+          const filled=sourceMask[y*size+x]===1;
+          if(filled&&!wasInside)runs++;
+          if(filled)rowWidth++;
+          wasInside=filled;
+        }
+        maxWidth=Math.max(maxWidth,rowWidth);
+        if(y>=Math.floor(size*.04)&&y<=Math.floor(size*.38)&&runs>=2&&rowWidth>=size*.12)hasTwoLobes=true;
+        if(y>=size-5)bottomWidth=Math.max(bottomWidth,rowWidth);
+      }
+      return hasTwoLobes&&maxWidth>0&&bottomWidth<maxWidth*.48;
+    };
+    const structureOK=hasHeartStructure(userMask)||hasHeartStructure(Uint8Array.from(userMask).map((_,i)=>userMask[(size-1-Math.floor(i/size))*size+(i%size)]));
+    const recognized=score>=0.38&&structureOK;
+    return {
+      recognized,score:Number(score.toFixed(3)),pointCount:clean.length,aspectRatio:Number(ratio.toFixed(3)),
+      reason:recognized?'Herzform ungefähr erkannt.':!structureOK?'Die Kontur braucht oben zwei Bögen mit einer Einbuchtung und unten eine Spitze.':'Die Kontur ähnelt noch nicht deutlich genug einem Herz.'
+    };
   }
   window.__silmoHeartRecognitionSnapshot=()=>{
-    const candidates=[];
+    // Die aktuelle Skizze hat Vorrang: Ein früheres Herz darf eine neue Zeichnung nicht bestehen lassen.
     if(sketchDraft?.type==='freeform2d'&&Array.isArray(sketchDraft.points)){
-      candidates.push({source:'aktuelle Freiform',result:classifyHeartOutline(sketchDraft.points.map(p=>[p.x,p.y]))});
+      return {...classifyHeartOutline(sketchDraft.points.map(p=>[p.x,p.y,p.z])),source:'aktuelle Freiform'};
     }
     for(let i=objects.length-1;i>=0;i--){
       const outline=objects[i]?.userData?.sketchOutline;
-      if(Array.isArray(outline)&&outline.length>=3)candidates.push({source:objects[i].userData.label||'3D-Freiform',result:classifyHeartOutline(outline)});
+      if(Array.isArray(outline)&&outline.length>=3){
+        return {...classifyHeartOutline(outline),source:objects[i].userData.label||'3D-Freiform'};
+      }
     }
-    candidates.sort((a,b)=>b.result.score-a.result.score);
-    const best=candidates[0];
-    return best?{...best.result,source:best.source}:{recognized:false,score:0,pointCount:0,source:'keine Freiform',reason:'Zeichne im Reiter „Zeichnen“ zuerst eine geschlossene Freiform.'};
+    return {recognized:false,score:0,pointCount:0,source:'keine Freiform',reason:'Zeichne im Reiter „Zeichnen“ zuerst eine geschlossene Freiform.'};
   };
   // Testzugang: nutzt denselben Freiform- und Extrusionsweg wie die normale Zeichenfunktion.
   window.__silmoTestRecognizeHeart=points=>classifyHeartOutline(points);
