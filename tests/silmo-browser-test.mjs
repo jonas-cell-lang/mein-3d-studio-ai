@@ -88,6 +88,7 @@ try {
   const dragEndBox = await page.locator('#tutorialCard').boundingBox();
   assert.ok(dragEndBox && dragEndBox.x > dragStartBox.x + 100, 'Lernfenster lässt sich nicht aus dem Drehbereich verschieben');
   assert.ok(dragEndBox.y >= 0 && dragEndBox.y + dragEndBox.height <= 1000, 'Verschobenes Lernfenster bleibt nicht vollständig sichtbar');
+  await page.locator('#tutorialCard').evaluate(el => { el.style.left=''; el.style.top=''; el.style.right=''; el.style.transform=''; });
   assert.equal(await page.locator('#tutorialExamPanel').isVisible(), false, 'Abschlusstest darf nicht bereits in der Lernphase sichtbar sein');
   assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Weiter muss bis zur erkannten Aufgabe gesperrt bleiben');
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(17)),true,'Freiform-Aufgabe kann für die gezielte Browserprüfung nicht geöffnet werden');
