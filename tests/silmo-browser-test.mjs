@@ -35,6 +35,7 @@ try {
   await examPage.evaluate(()=>window.__silmoTutorialEnterExamForTest());
   assert.match(await examPage.locator('#tutorialTitle').innerText(),/Zeichne selbst ein Herz/,'Abschlusstest erklärt die eigene Herzzeichnung nicht');
   assert.equal(await examPage.locator('#tutorialRecognizeHeart').isVisible(),true,'Schaltfläche zur Herz-Erkennung fehlt');
+  await examPage.locator('[data-tab="print"]').click();
   const examExport=examPage.waitForEvent('download');
   await examPage.locator('#exportModel').click();
   await examExport;
