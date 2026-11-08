@@ -3992,7 +3992,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     '<div id="tutorialExamPanel" hidden><div class="tutorial-exam-rule"><strong>Abschlusstest – ohne Anleitung</strong><p>Baue ein eigenes, dreidimensionales Herz, das für den 3D-Druck geeignet ist. SILMO zeigt dir jetzt keine Werkzeuge und keine Arbeitsschritte.</p></div>' +
     '<button id="tutorialExamHint" type="button">Mittleren Tipp anzeigen</button><p id="tutorialExamHintText" hidden></p>' +
     '<label class="tutorial-exam-confirm"><input id="tutorialHeartConfirm" type="checkbox"> Ich habe geprüft, dass mein eigenes Modell klar als Herz erkennbar ist.</label><div id="tutorialExamChecks"></div></div>' +
-    '<details id="tutorialQuickGuide"><summary>Werkzeugübersicht (während des Lernens)</summary><div id="tutorialToolGallery" aria-label="SILMO-Werkzeugübersicht"></div></details>' +
+    '<details id="tutorialQuickGuide"><summary>Alle Werkzeuge – Übersicht während des Lernens</summary><div id="tutorialToolGallery" aria-label="SILMO-Werkzeugübersicht"></div></details>' +
     '<pre id="tutorialDebug" aria-live="polite"></pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialNext" type="button" class="primary" disabled>Weiter</button><button id="tutorialSkip" type="button">Beenden</button></div>';
   document.body.append(shade, card);
   $('tutorialBuild').textContent = document.querySelector('meta[name="silmo-build"]')?.content || 'Build unbekannt';
@@ -4098,7 +4098,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     if(phase!=='learn'||card.hidden)return;
     let passed=false;try{passed=!!steps[index].check(baseline);}catch(error){console.error('SILMO Lernkontrolle:',error);}
     $('tutorialNext').disabled=!passed;
-    if(passed)feedback('Aufgabe erkannt: SILMO hat die erforderliche Änderung am Modell festgestellt. Klicke auf „Weiter“.',true);
+    if(passed)feedback('Erfolgskontrolle bestanden: SILMO hat die erforderliche Änderung am Modell festgestellt. Klicke auf „Weiter“.',true);
     updateDebug();
   }
   function open(){phase='learn';index=0;shade.hidden=false;card.hidden=false;renderStep();}
