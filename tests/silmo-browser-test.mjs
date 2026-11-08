@@ -64,10 +64,10 @@ try {
   assert.ok(ipadPropertiesBox, 'Eigenschaftenpanel fehlt auf dem iPad');
   assert.ok(await ipadPage.locator('#tutorialInstructionList li').count() >= 2, 'Schritt-für-Schritt-Anleitung fehlt auf dem iPad');
   assert.ok(Number(await ipadPage.locator('#tutorialInstructionList li').first().evaluate(el => getComputedStyle(el).fontSize.replace('px',''))) >= 14, 'Anleitungsschrift ist auf dem iPad zu klein');
-  assert.equal(await ipadPage.locator('#tutorialKeyboardGuide').isVisible(), false, 'Tastenkombinationen sollen als normale Aufgaben statt als separater Kasten erscheinen');
-  assert.equal(await ipadPage.locator('#tutorialCard > #tutorialKeyboardGuide').count(),1,'Tastenkombinationen stehen nicht am Anfang des Tutorials');
-  assert.match(await ipadPage.locator('#tutorialTitle').innerText(),/vorherigen Tutorial-Aufgabe/,'Erste iPad-Lernaufgabe ist keine Tastenkombination');
-  assert.equal(await ipadPage.locator('#tutorialKeyboardGuide .tutorial-key-combo').count(), 11, 'Einzelerklärungen der Tastenkombinationen fehlen auf dem iPad');
+  assert.equal(await ipadPage.locator('#tutorialKeyboardGuide').isVisible(), false, 'Tastenkombinations-Referenz soll im Tutorial eingeklappt bleiben');
+  assert.equal(await ipadPage.locator('#tutorialCard > #tutorialKeyboardGuide').count(),1,'Fünf Tastenkombinationen fehlen im Tutorial');
+  assert.match(await ipadPage.locator('#tutorialTitle').innerText(),/Objekte kopieren/,'Erste iPad-Lernaufgabe ist nicht Strg+C');
+  assert.equal(await ipadPage.locator('#tutorialKeyboardGuide .tutorial-key-combo').count(), 5, 'Es sollen genau fünf Tastenkombinationen erklärt werden');
   await ipadPage.locator('#tutorialCard').evaluate(el => { el.scrollTop = el.scrollHeight; });
   const ipadLastButtonBox = await ipadPage.locator('#tutorialSkip').boundingBox();
   assert.ok(ipadLastButtonBox && ipadLastButtonBox.y + ipadLastButtonBox.height <= 1180, 'Untere Tutorial-Schaltflächen sind auf dem iPad nicht erreichbar');
@@ -106,45 +106,27 @@ try {
   assert.equal(await page.locator('#tutorialRetry').isVisible(), true, 'Manuelle Wiederholungsprüfung fehlt');
   assert.equal(await page.locator('#tutorialKeyboard').isVisible(), false, 'Separate Tastaturhinweise sollen nicht neben den Lernaufgaben erscheinen');
   const keyboardGuide = page.locator('#tutorialKeyboardGuide');
-  assert.equal(await keyboardGuide.isVisible(), false, 'Separate Tastenkombinations-Übersicht soll ausgeblendet sein');
-  assert.equal(await page.locator('#tutorialCard > #tutorialKeyboardGuide').count(),1,'Tastenkombinationen stehen nicht vor der ersten Lernaufgabe');
-  assert.equal(await keyboardGuide.evaluate(el=>el.open),false,'Separate Tastenkombinations-Übersicht darf nicht geöffnet sein');
-  const shortcutCards = keyboardGuide.locator('.tutorial-key-combo');
-  assert.equal(await shortcutCards.count(), 11, 'Die alte Referenzliste der Tastenkombinationen fehlt');
-  assert.match(await page.locator('#tutorialStepLabel').innerText(),/AUFGABE 1 VON 32/,'Lernstrecke startet nicht mit elf Tastenkombinations-Aufgaben');
-  assert.match(await page.locator('#tutorialTitle').innerText(),/vorherigen Tutorial-Aufgabe/,'Erste Aufgabe ist keine Tastenkombination');
-  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(10)),true,'Letzte Tastenkombination ist nicht erreichbar');
-  assert.match(await page.locator('#tutorialTitle').innerText(),/grösseren Schritten bewegen/,'Elfte Tastenkombination fehlt');
-  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(11)),true,'Würfel-Aufgabe ist nicht direkt nach den Tastenkombinationen erreichbar');
-  assert.match(await page.locator('#tutorialTitle').innerText(),/Grundkörper erstellen/,'Würfel-Aufgabe folgt nicht direkt auf Tastenkombinationen');
-  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(0)),true,'Tutorial kann nicht zur ersten Tastenkombination zurückkehren');
-  assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Shortcut-Aufgabe darf vor dem Tastendruck nicht freigeschaltet sein');
-  await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',code:'ArrowLeft',altKey:true,shiftKey:true,bubbles:true,cancelable:true})));
-  await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 3000 });
-  assert.match(await page.locator('#tutorialFeedback').innerText(),/Erfolgskontrolle bestanden/,'Erste Tastenkombination wird nicht erkannt');
-  assert.match(await page.locator('#tutorialTitle').innerText(),/vorherigen Tutorial-Aufgabe/,'Tastenkombination springt während der Lernkontrolle unerwartet weg');
-  // Alle weiteren Shortcut-Lektionen müssen sowohl über Tastencode als auch
-  // über den sichtbaren Tastenwert erkannt werden (Windows und Mac).
+  assert.equal(await keyboardGuide.isVisible(), false, 'Tastenkombinations-Referenz soll eingeklappt bleiben');
+  assert.equal(await page.locator('#tutorialCard > #tutorialKeyboardGuide').count(),1,'Tastenkombinationen stehen nicht im Tutorial');
+  assert.equal(await keyboardGuide.evaluate(el=>el.open),false,'Referenzliste soll anfangs geschlossen sein');
+  assert.equal(await keyboardGuide.locator('.tutorial-key-combo').count(),5,'Es müssen genau fünf Tastenkombinationen erklärt werden');
+  assert.match(await page.locator('#tutorialStepLabel').innerText(),/AUFGABE 1 VON/,'Tutorial startet nicht mit den Tastenkombinationen');
+  assert.match(await page.locator('#tutorialTitle').innerText(),/Objekte kopieren/,'Erste Aufgabe ist nicht Strg+C');
   const shortcutCases = [
-    {step:1,key:'ArrowRight',code:'ArrowRight',altKey:true,shiftKey:true},
-    {step:2,key:'s',code:'KeyS',metaKey:true},
-    {step:3,key:'o',code:'KeyO',ctrlKey:true},
-    {step:4,key:'a',code:'KeyA',metaKey:true},
-    {step:5,key:'c',code:'KeyC',ctrlKey:true},
-    {step:6,key:'v',code:'KeyV',metaKey:true},
-    {step:7,key:'d',code:'KeyD',ctrlKey:true},
-    {step:8,key:'z',code:'KeyZ',metaKey:true},
-    {step:9,key:'y',code:'KeyY',ctrlKey:true},
-    {step:10,key:'ArrowUp',code:'ArrowUp',shiftKey:true}
+    {step:0,key:'c',code:'KeyC',ctrlKey:true},
+    {step:1,key:'v',code:'KeyV',ctrlKey:true},
+    {step:2,key:'a',code:'KeyA',ctrlKey:true},
+    {step:3,key:'x',code:'KeyX',ctrlKey:true},
+    {step:4,key:'z',code:'KeyZ',ctrlKey:true}
   ];
   for (const combo of shortcutCases) {
     assert.equal(await page.evaluate(step=>window.__silmoTutorialShowStepForTest(step),combo.step),true,'Shortcut-Aufgabe '+combo.step+' ist nicht erreichbar');
     await page.evaluate(combo=>window.dispatchEvent(new KeyboardEvent('keydown',{...combo,bubbles:true,cancelable:true})),combo);
     await page.waitForFunction(() => /Erfolgskontrolle bestanden/.test(document.querySelector('#tutorialFeedback')?.innerText||''),null,{timeout:3000});
-    assert.equal(await page.locator('#tutorialNext').isDisabled(),false,'Tastenkombination bei Aufgabe '+(combo.step+1)+' wurde nicht erkannt');
+    assert.equal(await page.locator('#tutorialNext').isDisabled(),false,'Tastenkombination '+combo.key.toUpperCase()+' wurde nicht erkannt');
   }
-  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(11)),true,'Würfel-Aufgabe ist nach dem Shortcut-Training nicht erreichbar');
-  assert.match(await page.locator('#tutorialTitle').innerText(),/Grundkörper erstellen/,'Würfel-Aufgabe folgt nicht auf das Shortcut-Training');
+  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(5)),true,'Würfel-Aufgabe ist nach den fünf Tastenkombinationen nicht erreichbar');
+  assert.match(await page.locator('#tutorialTitle').innerText(),/Grundkörper erstellen/,'Würfel-Aufgabe folgt nicht direkt auf die fünf Tastenkombinationen');
   assert.equal(await page.locator('#tutorialWordHelp').isVisible(),true,'Einfache Begriffserklärungen fehlen bei der Würfel-Aufgabe');
   assert.match(await page.locator('#tutorialTermList').textContent(),/Grundkörper|Objektliste/,'Grundbegriffe der Würfel-Aufgabe werden nicht einfach erklärt');
   assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Würfel-Aufgabe darf nicht ohne erstellten Körper freigeschaltet sein');
@@ -162,15 +144,13 @@ try {
   await page.locator('#addSphere').click();
   await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 5000 });
   await page.locator('#tutorialNext').click();
-  assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 14 VON/, 'Tutorial kann Aufgabe 2 nicht abschliessen');
+  assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 9 VON/, 'Tutorial kann die zweite CAD-Aufgabe nicht abschliessen');
   await page.locator('#objects .object-select').last().click();
   await page.locator('#duplicate').click();
   await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 5000 });
   await page.locator('#tutorialNext').click();
-  assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 15 VON/, 'Tutorial kann nicht bis zur Transformationsaufgabe navigieren');
+  assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 10 VON/, 'Tutorial kann nicht bis zur Transformationsaufgabe navigieren');
   assert.deepEqual(pageErrors, [], 'Beim Wechsel in die Verschiebeaufgabe entstehen Browserfehler');
-  await page.keyboard.press('Alt+Shift+ArrowLeft');
-  assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 14 VON/, 'Tastenkombination Alt+Shift+Pfeil links geht nicht zurück');
   await page.locator('#tutorialClose').click();
 
   assert.ok(canvasSize.width > 0 && canvasSize.height > 0, '3D canvas hat keine gültige Grösse');
