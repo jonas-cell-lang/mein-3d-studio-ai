@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v69/, 'Build-Metadaten zeigen nicht v69');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v70/, 'Build-Metadaten zeigen nicht v70');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -116,12 +116,32 @@ try {
   await page.locator('[data-tab="print"]').click();
   const bedWidthBefore=Number(await page.locator('#bedWidth').inputValue());
   const bedDepthBefore=Number(await page.locator('#bedDepth').inputValue());
-  await page.locator('#bedWidth').fill(String(Math.min(2000,bedWidthBefore+10)));
-  // Absichtlich NICHT auf „Druckbettgrösse übernehmen“ klicken: „Prüfen“ muss aktuelle Masse selbst anwenden.
+  const targetBedWidth=Math.min(2000,bedWidthBefore+37);
+  const targetBedDepth=Math.min(2000,bedDepthBefore+23);
+  await page.locator('#bedWidth').fill(String(targetBedWidth));
+  await page.locator('#bedDepth').fill(String(targetBedDepth));
+  // Beim Verlassen der Felder müssen die neuen Werte sofort in der echten 3D-Platte ankommen.
   await page.locator('[data-tab="measure"]').click();
+  await page.waitForFunction(({w,d})=>{
+    const s=window.__silmoBedSnapshot?.();
+    return s && s.widthMM===w && s.depthMM===d && s.outlineWidthMM===w && s.outlineDepthMM===d;
+  },{w:targetBedWidth,d:targetBedDepth},{timeout:5000});
+  const changedBed=await page.evaluate(()=>window.__silmoBedSnapshot());
+  assert.equal(changedBed.widthMM,targetBedWidth,'Druckbettbreite wurde intern nicht übernommen');
+  assert.equal(changedBed.depthMM,targetBedDepth,'Druckbetttiefe wurde intern nicht übernommen');
+  assert.equal(changedBed.outlineWidthMM,targetBedWidth,'Sichtbarer 3D-Rand hat nicht die eingegebene Breite');
+  assert.equal(changedBed.outlineDepthMM,targetBedDepth,'Sichtbarer 3D-Rand hat nicht die eingegebene Tiefe');
   await page.locator('#checkBed').click();
   await page.waitForFunction(()=>document.querySelector('#tutorialNext')?.disabled===false,null,{timeout:5000});
   assert.match(await page.locator('#tutorialFeedback').innerText(),/Erfolgskontrolle bestanden/,'Aufgabe 25 erkennt die Druckbettprüfung nicht');
+  // Ungültige Masse dürfen die letzte gültige Platte nicht unbemerkt überschreiben.
+  await page.locator('[data-tab="print"]').click();
+  await page.locator('#bedWidth').fill('2');
+  await page.locator('[data-tab="measure"]').click();
+  await page.locator('#checkBed').click();
+  assert.match(await page.locator('#status').innerText(),/Druckbett nicht übernommen/,'Ungültige Druckbettgrösse wird nicht klar abgewiesen');
+  const afterInvalidBed=await page.evaluate(()=>window.__silmoBedSnapshot());
+  assert.equal(afterInvalidBed.widthMM,targetBedWidth,'Ungültige Breite hat den letzten gültigen Druckbettzustand verändert');
   // Testzustand zurücksetzen: nachfolgende Geometrieprüfungen erwarten das Standardbett 200 × 200 mm.
   await page.locator('[data-tab="print"]').click();
   await page.locator('#bedWidth').fill(String(bedWidthBefore));
