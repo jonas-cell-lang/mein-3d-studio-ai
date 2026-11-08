@@ -2494,11 +2494,11 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     const files=Array.from(event.dataTransfer?.files||[]);
     if(files.length){files.forEach(importSTLFile);return;}
     const transfer=event.dataTransfer;
-    const uri=(transfer?.getData('text/uri-list')||'').split(/\\r?\\n/).find(line=>line&&!line.startsWith('#'));
+    const uri=(transfer?.getData('text/uri-list')||'').split(/\r?\n/).find(line=>line&&!line.startsWith('#'));
     const html=transfer?.getData('text/html')||'';
     const href=html.match(/href=["']([^"']+)["']/i)?.[1];
     const textUrl=(transfer?.getData('text/plain')||'').trim();
-    const url=uri||href||(/^https?:\\/\\//i.test(textUrl)?textUrl:'');
+    const url=uri||href||(/^https?:\/\//i.test(textUrl)?textUrl:'');
     if(url){importDroppedWebLink(url);return;}
     status.textContent='Kein Dateiinhalt oder Web-Link erkannt. Ziehe den Download-Link hierher oder nutze „Datei auswählen“.';
   });
