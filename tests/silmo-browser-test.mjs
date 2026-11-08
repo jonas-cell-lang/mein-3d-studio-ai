@@ -59,6 +59,9 @@ try {
   const canvasSize = await page.locator('#viewport canvas').evaluate(canvas => ({ width: canvas.width, height: canvas.height }));
   // Tutorial-Prüfung: Buildkennung und tatsächliche Objektanzahl kontrollieren.
   await page.locator('#tutorialLaunch').click();
+  assert.equal(await page.locator('#tutorialExamPanel').isVisible(), false, 'Abschlusstest darf nicht bereits in der Lernphase sichtbar sein');
+  assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Weiter muss bis zur erkannten Aufgabe gesperrt bleiben');
+  assert.match(await page.locator('#tutorialWhere').innerText(), /WO FINDEST DU ES/, 'Lernphase erklärt nicht, wo das Werkzeug liegt');
   const tutorialDebug = await page.locator('#tutorialDebug').innerText();
   const currentBuild = await page.locator('meta[name="silmo-build"]').getAttribute('content');
   assert.ok(currentBuild, 'Build-Metadaten fehlen');
@@ -77,7 +80,12 @@ try {
   const tutorialStartRows = await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click();
   assert.equal(await page.locator('#objects .object-row').count(), tutorialStartRows + 1, 'Tutorial-Testobjekt wurde nicht erstellt');
+  await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 5000 });
   assert.match(await page.locator('#tutorialFeedback').innerText(), /Erfolgskontrolle bestanden/, 'Tutorial erkennt das neu erstellte Objekt nicht');
+  assert.equal(await page.locator('#tutorialNext').isDisabled(), false, 'Weiter wird nach erkannter Aufgabe nicht freigeschaltet');
+  await page.locator('#tutorialNext').click();
+  assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 2 VON/, 'Tutorial geht nach erfolgreicher Kontrolle nicht zum nächsten Lernschritt');
+  assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Nächste Aufgabe muss wieder bis zur Erfolgskontrolle gesperrt sein');
   await page.locator('#tutorialClose').click();
 
   assert.ok(canvasSize.width > 0 && canvasSize.height > 0, '3D canvas hat keine gültige Grösse');
