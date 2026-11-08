@@ -102,15 +102,13 @@ try {
   assert.ok(tutorialBox && propertiesBox && tutorialBox.x + tutorialBox.width < propertiesBox.x, 'Tutorialfenster verdeckt weiterhin den Skalierungsbereich');
   assert.ok(await page.locator('#tutorialInstructionList li').count() >= 2, 'Anleitung ist nicht in einzelne Schritte aufgeteilt');
   assert.ok(Number(await page.locator('#tutorialInstructionList li').first().evaluate(el => getComputedStyle(el).fontSize.replace('px',''))) >= 14, 'Anleitungsschrift ist zu klein');
-  assert.equal(await page.locator('#tutorialWordHelp').isVisible(), true, 'Einfache Begriffserklärungen fehlen bei der ersten Aufgabe');
-  assert.match(await page.locator('#tutorialTermList').textContent(), /Grundkörper|Objektliste/, 'Grundbegriffe werden nicht einfach erklärt');
   assert.ok((await page.title()).includes(currentBuild), 'Seitentitel zeigt nicht den aktuellen Build');
   assert.equal(await page.locator('#tutorialRetry').isVisible(), true, 'Manuelle Wiederholungsprüfung fehlt');
   assert.equal(await page.locator('#tutorialKeyboard').isVisible(), false, 'Separate Tastaturhinweise sollen nicht neben den Lernaufgaben erscheinen');
   const keyboardGuide = page.locator('#tutorialKeyboardGuide');
-  assert.equal(await keyboardGuide.isVisible(), true, 'Einzeln erklärte Tastenkombinationen fehlen');
+  assert.equal(await keyboardGuide.isVisible(), false, 'Separate Tastenkombinations-Übersicht soll ausgeblendet sein');
   assert.equal(await page.locator('#tutorialCard > #tutorialKeyboardGuide').count(),1,'Tastenkombinationen stehen nicht vor der ersten Lernaufgabe');
-  assert.equal(await keyboardGuide.evaluate(el=>el.open),true,'Tastenkombinationen werden am Anfang nicht direkt angezeigt');
+  assert.equal(await keyboardGuide.evaluate(el=>el.open),false,'Separate Tastenkombinations-Übersicht darf nicht geöffnet sein');
   const shortcutCards = keyboardGuide.locator('.tutorial-key-combo');
   assert.equal(await shortcutCards.count(), 11, 'Die alte Referenzliste der Tastenkombinationen fehlt');
   assert.match(await page.locator('#tutorialStepLabel').innerText(),/AUFGABE 1 VON 32/,'Lernstrecke startet nicht mit elf Tastenkombinations-Aufgaben');
@@ -127,6 +125,8 @@ try {
   assert.match(await page.locator('#tutorialTitle').innerText(),/vorherigen Tutorial-Aufgabe/,'Tastenkombination springt während der Lernkontrolle unerwartet weg');
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(11)),true,'Würfel-Aufgabe ist nach dem Shortcut-Training nicht erreichbar');
   assert.match(await page.locator('#tutorialTitle').innerText(),/Grundkörper erstellen/,'Würfel-Aufgabe folgt nicht auf das Shortcut-Training');
+  assert.equal(await page.locator('#tutorialWordHelp').isVisible(),true,'Einfache Begriffserklärungen fehlen bei der Würfel-Aufgabe');
+  assert.match(await page.locator('#tutorialTermList').textContent(),/Grundkörper|Objektliste/,'Grundbegriffe der Würfel-Aufgabe werden nicht einfach erklärt');
   assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Würfel-Aufgabe darf nicht ohne erstellten Körper freigeschaltet sein');
   assert.equal(await page.locator('#tutorialRetry').isVisible(), true, 'Manuelle Wiederholungsprüfung fehlt');
   assert.equal(await page.locator('#tutorialKeyboard').isVisible(), true, 'Tastaturhinweise fehlen in der Lernphase');
