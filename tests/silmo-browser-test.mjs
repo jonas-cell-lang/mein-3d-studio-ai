@@ -64,7 +64,7 @@ try {
   assert.ok(ipadPropertiesBox, 'Eigenschaftenpanel fehlt auf dem iPad');
   assert.ok(await ipadPage.locator('#tutorialInstructionList li').count() >= 2, 'Schritt-für-Schritt-Anleitung fehlt auf dem iPad');
   assert.ok(Number(await ipadPage.locator('#tutorialInstructionList li').first().evaluate(el => getComputedStyle(el).fontSize.replace('px',''))) >= 14, 'Anleitungsschrift ist auf dem iPad zu klein');
-  assert.equal(await ipadPage.locator('#tutorialKeyboardGuide').isVisible(), true, 'Tastenkombinationen fehlen auf dem iPad');
+  assert.equal(await ipadPage.locator('#tutorialKeyboardGuide').isVisible(), false, 'Tastenkombinationen sollen als normale Aufgaben statt als separater Kasten erscheinen');
   assert.equal(await ipadPage.locator('#tutorialCard > #tutorialKeyboardGuide').count(),1,'Tastenkombinationen stehen nicht am Anfang des Tutorials');
   assert.match(await ipadPage.locator('#tutorialTitle').innerText(),/vorherigen Tutorial-Aufgabe/,'Erste iPad-Lernaufgabe ist keine Tastenkombination');
   assert.equal(await ipadPage.locator('#tutorialKeyboardGuide .tutorial-key-combo').count(), 11, 'Einzelerklärungen der Tastenkombinationen fehlen auf dem iPad');
@@ -112,14 +112,14 @@ try {
   assert.equal(await page.locator('#tutorialCard > #tutorialKeyboardGuide').count(),1,'Tastenkombinationen stehen nicht vor der ersten Lernaufgabe');
   assert.equal(await keyboardGuide.evaluate(el=>el.open),true,'Tastenkombinationen werden am Anfang nicht direkt angezeigt');
   const shortcutCards = keyboardGuide.locator('.tutorial-key-combo');
-  assert.equal(await shortcutCards.count(), 11, 'Nicht alle Tastenkombinationen haben eine eigene Erklärung');
-  for (let i = 0; i < await shortcutCards.count(); i++) {
-    assert.ok(await shortcutCards.nth(i).locator('ol li').count() >= 3, 'Tastenkombination ' + (i + 1) + ' hat keine einzelnen Erklärungsschritte');
-  }
-  if (!(await keyboardGuide.evaluate(el=>el.open))) await keyboardGuide.locator(':scope > summary').click();
-  await shortcutCards.first().locator('summary').click();
-  assert.equal(await shortcutCards.first().evaluate(el => el.open), true, 'Einzelne Tastenkombination lässt sich nicht aufklappen');
-  assert.match(await shortcutCards.first().innerText(), /Option|Alt|Umschalttaste|links/i, 'Tastenkombination wird nicht in einfacher Sprache erklärt');
+  assert.equal(await shortcutCards.count(), 11, 'Die alte Referenzliste der Tastenkombinationen fehlt');
+  assert.match(await page.locator('#tutorialStepLabel').innerText(),/AUFGABE 1 VON 32/,'Lernstrecke startet nicht mit elf Tastenkombinations-Aufgaben');
+  assert.match(await page.locator('#tutorialTitle').innerText(),/vorherigen Tutorial-Aufgabe/,'Erste Aufgabe ist keine Tastenkombination');
+  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(10)),true,'Letzte Tastenkombination ist nicht erreichbar');
+  assert.match(await page.locator('#tutorialTitle').innerText(),/grösseren Schritten bewegen/,'Elfte Tastenkombination fehlt');
+  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(11)),true,'Würfel-Aufgabe ist nicht direkt nach den Tastenkombinationen erreichbar');
+  assert.match(await page.locator('#tutorialTitle').innerText(),/Grundkörper erstellen/,'Würfel-Aufgabe folgt nicht direkt auf Tastenkombinationen');
+  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(0)),true,'Tutorial kann nicht zur ersten Tastenkombination zurückkehren');
   await page.locator('#tutorialRetry').click();
   assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Erneut prüfen darf eine unerledigte Aufgabe nicht freischalten');
   assert.equal(await page.locator('#tutorialRetry').isVisible(), true, 'Manuelle Wiederholungsprüfung fehlt');
