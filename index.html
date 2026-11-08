@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v61 – Tutorial-Anleitungen verbessert</title>
+<title>SILMO 3D Studio AI – v62 – Tutorial-Anleitungen verbessert</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v61 – Tutorial-Anleitungen verbessert">
+<meta name="silmo-build" content="v62 – Tutorial-Anleitungen verbessert">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -4023,8 +4023,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     '<details class="tutorial-key-combo"><summary>11. Objekt mit grösseren Schritten bewegen – Shift + Pfeiltaste</summary><ol><li>Wähle zuerst ein 3D-Objekt aus.</li><li>Halte die Umschalttaste (Shift, ⇧) gedrückt.</li><li>Drücke zusätzlich eine Pfeiltaste. Das Objekt bewegt sich zehnmal so weit wie bei einem normalen Pfeiltastendruck.</li><li>Lass beide Tasten los.</li></ol></details></details>' +
     '<div id="tutorialKeyboard" class="tutorial-where">Tastatur: Die Tastenkombinationen oben sind einzeln erklärt. Du kannst jede Erklärung aufklappen.</div><pre id="tutorialDebug" aria-live="polite"></pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialRetry" type="button">Erneut prüfen</button><button id="tutorialNext" type="button" class="primary" disabled>Weiter</button><button id="tutorialSkip" type="button">Beenden</button></div>';
   document.body.append(shade, card);
-  // Tastenkombinationen stehen vor der ersten Lernaufgabe, damit Einsteiger sie sofort finden.
-  card.insertBefore($('tutorialKeyboardGuide'), $('tutorialStepLabel'));
+  // Tastenkombinationen werden als normale Lernaufgaben unterrichtet, nicht als separate Übersicht vorangestellt.
   $('tutorialBuild').textContent = document.querySelector('meta[name="silmo-build"]')?.content || 'Build unbekannt';
 
   const toolCards = [
@@ -4086,7 +4085,20 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     ['STL exportiert','Das Modell wird als Datei gespeichert, die ein Slicer öffnen kann.']
   ];
   let phase = 'learn', index = 0, highlight = null, baseline = {}, exportObserved = false, savedObserved = false, renderingStep = false;
+  let observedShortcut = null;
   const steps = [
+    {title:"1. Zur vorherigen Tutorial-Aufgabe",glyph:'⌨',tab:'create',target:'viewport',where:"Tastenkombination: Alt/Option + Shift + Pfeil links. Die Tasten müssen gleichzeitig gedrückt werden.",text:"Lerne die Tastenkombination Alt/Option + Shift + Pfeil links. Lies die Schritte und probiere sie danach aus.",instructions:["Suche die Taste Alt (Windows) oder Option (⌥, Mac/iPad).","Halte Alt oder Option gedrückt.","Halte zusätzlich die Umschalttaste (Shift, ⇧) gedrückt.","Drücke einmal den Pfeil nach links (←).","Die vorherige Tutorial-Aufgabe wird angezeigt."],shortcutId:"alt-shift-left",begin:()=>{observedShortcut=null;return{};},check:()=>observedShortcut==="alt-shift-left"},
+    {title:"2. Zur nächsten Tutorial-Aufgabe",glyph:'⌨',tab:'create',target:'viewport',where:"Tastenkombination: Alt/Option + Shift + Pfeil rechts. Die Tasten müssen gleichzeitig gedrückt werden.",text:"Lerne die Tastenkombination Alt/Option + Shift + Pfeil rechts. Lies die Schritte und probiere sie danach aus.",instructions:["Suche die Taste Alt (Windows) oder Option (⌥, Mac/iPad).","Halte Alt oder Option gedrückt.","Halte zusätzlich die Umschalttaste (Shift, ⇧) gedrückt.","Drücke einmal den Pfeil nach rechts (→).","Die nächste freigeschaltete Tutorial-Aufgabe wird angezeigt."],shortcutId:"alt-shift-right",begin:()=>{observedShortcut=null;return{};},check:()=>observedShortcut==="alt-shift-right"},
+    {title:"3. Projekt speichern",glyph:'⌨',tab:'create',target:'viewport',where:"Tastenkombination: Strg/⌘ + S. Die Tasten müssen gleichzeitig gedrückt werden.",text:"Lerne die Tastenkombination Strg/⌘ + S. Lies die Schritte und probiere sie danach aus.",instructions:["Suche Strg (Windows) oder ⌘ Command (Mac/iPad).","Halte diese Taste gedrückt.","Drücke zusätzlich den Buchstaben S.","Lass beide Tasten los. SILMO startet das Speichern des Projekts."],shortcutId:"mod-s",begin:()=>{observedShortcut=null;return{};},check:()=>observedShortcut==="mod-s"},
+    {title:"4. Projekt öffnen",glyph:'⌨',tab:'create',target:'viewport',where:"Tastenkombination: Strg/⌘ + O. Die Tasten müssen gleichzeitig gedrückt werden.",text:"Lerne die Tastenkombination Strg/⌘ + O. Lies die Schritte und probiere sie danach aus.",instructions:["Suche Strg (Windows) oder ⌘ Command (Mac/iPad).","Halte diese Taste gedrückt.","Drücke zusätzlich den Buchstaben O.","Lass beide Tasten los. Wähle eine gespeicherte Projektdatei aus."],shortcutId:"mod-o",begin:()=>{observedShortcut=null;return{};},check:()=>observedShortcut==="mod-o"},
+    {title:"5. Alle 3D-Objekte auswählen",glyph:'⌨',tab:'create',target:'viewport',where:"Tastenkombination: Strg/⌘ + A. Die Tasten müssen gleichzeitig gedrückt werden.",text:"Lerne die Tastenkombination Strg/⌘ + A. Lies die Schritte und probiere sie danach aus.",instructions:["Klicke zuerst in die 3D-Ansicht, nicht in ein Texteingabefeld.","Halte Strg (Windows) oder ⌘ Command (Mac/iPad) gedrückt.","Drücke zusätzlich den Buchstaben A.","Lass beide Tasten los. Alle 3D-Objekte werden ausgewählt."],shortcutId:"mod-a",begin:()=>{observedShortcut=null;return{};},check:()=>observedShortcut==="mod-a"},
+    {title:"6. Objekte kopieren",glyph:'⌨',tab:'create',target:'viewport',where:"Tastenkombination: Strg/⌘ + C. Die Tasten müssen gleichzeitig gedrückt werden.",text:"Lerne die Tastenkombination Strg/⌘ + C. Lies die Schritte und probiere sie danach aus.",instructions:["Wähle zuerst ein oder mehrere 3D-Objekte aus.","Halte Strg (Windows) oder ⌘ Command (Mac/iPad) gedrückt.","Drücke zusätzlich den Buchstaben C.","Lass beide Tasten los. SILMO merkt sich die ausgewählten Objekte zum Kopieren."],shortcutId:"mod-c",begin:()=>{observedShortcut=null;return{};},check:()=>observedShortcut==="mod-c"},
+    {title:"7. Objekte einfügen",glyph:'⌨',tab:'create',target:'viewport',where:"Tastenkombination: Strg/⌘ + V. Die Tasten müssen gleichzeitig gedrückt werden.",text:"Lerne die Tastenkombination Strg/⌘ + V. Lies die Schritte und probiere sie danach aus.",instructions:["Kopiere zuerst ein Objekt mit Strg/⌘ + C.","Halte Strg (Windows) oder ⌘ Command (Mac/iPad) gedrückt.","Drücke zusätzlich den Buchstaben V.","Lass beide Tasten los. Die Kopie wird eingefügt."],shortcutId:"mod-v",begin:()=>{observedShortcut=null;return{};},check:()=>observedShortcut==="mod-v"},
+    {title:"8. Objekt duplizieren",glyph:'⌨',tab:'create',target:'viewport',where:"Tastenkombination: Strg/⌘ + D. Die Tasten müssen gleichzeitig gedrückt werden.",text:"Lerne die Tastenkombination Strg/⌘ + D. Lies die Schritte und probiere sie danach aus.",instructions:["Wähle zuerst ein oder mehrere 3D-Objekte aus.","Halte Strg (Windows) oder ⌘ Command (Mac/iPad) gedrückt.","Drücke zusätzlich den Buchstaben D.","Lass beide Tasten los. SILMO erstellt eine Kopie des Objekts."],shortcutId:"mod-d",begin:()=>{observedShortcut=null;return{};},check:()=>observedShortcut==="mod-d"},
+    {title:"9. Änderung rückgängig machen",glyph:'⌨',tab:'create',target:'viewport',where:"Tastenkombination: Strg/⌘ + Z. Die Tasten müssen gleichzeitig gedrückt werden.",text:"Lerne die Tastenkombination Strg/⌘ + Z. Lies die Schritte und probiere sie danach aus.",instructions:["Führe zuerst eine kleine Änderung am Modell aus.","Halte Strg (Windows) oder ⌘ Command (Mac/iPad) gedrückt.","Drücke zusätzlich den Buchstaben Z.","Lass beide Tasten los. Die letzte Änderung wird rückgängig gemacht."],shortcutId:"mod-z",begin:()=>{observedShortcut=null;return{};},check:()=>observedShortcut==="mod-z"},
+    {title:"10. Änderung wiederholen",glyph:'⌨',tab:'create',target:'viewport',where:"Tastenkombination: Strg/⌘ + Y. Die Tasten müssen gleichzeitig gedrückt werden.",text:"Lerne die Tastenkombination Strg/⌘ + Y. Lies die Schritte und probiere sie danach aus.",instructions:["Mache zuerst eine Änderung rückgängig.","Halte Strg (Windows) oder ⌘ Command (Mac/iPad) gedrückt.","Drücke zusätzlich den Buchstaben Y.","Lass beide Tasten los. Die rückgängig gemachte Änderung wird wiederhergestellt."],shortcutId:"mod-y",begin:()=>{observedShortcut=null;return{};},check:()=>observedShortcut==="mod-y"},
+    {title:"11. Objekt mit grösseren Schritten bewegen",glyph:'⌨',tab:'create',target:'viewport',where:"Tastenkombination: Shift + Pfeiltaste. Die Tasten müssen gleichzeitig gedrückt werden.",text:"Lerne die Tastenkombination Shift + Pfeiltaste. Lies die Schritte und probiere sie danach aus.",instructions:["Wähle zuerst ein 3D-Objekt aus.","Halte die Umschalttaste (Shift, ⇧) gedrückt.","Drücke zusätzlich eine Pfeiltaste.","Lass beide Tasten los. Das Objekt bewegt sich in grösseren Schritten."],shortcutId:"shift-arrow",begin:()=>{observedShortcut=null;return{};},check:()=>observedShortcut==="shift-arrow"},
+
     {title:'1. Grundkörper erstellen',glyph:'◧',tab:'create',target:'addCube',where:'Links im Bereich „Erstellen“ findest du die Grundkörper. Klicke auf „＋ Würfel“. Danach erscheint der neue Körper in der Objektliste.',text:'Erstelle einen zusätzlichen Würfel. Ein Grundkörper ist der Startpunkt vieler CAD-Konstruktionen.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count},
     {title:'2. Weitere Grundkörper',glyph:'●',tab:'create',target:'addSphere',where:'Im selben Bereich „Erstellen“ findest du Kugel, Zylinder, Kegel, Sechskant-Prisma und Ring.',text:'Erstelle zusätzlich eine Kugel. Schau dir danach auch die anderen Grundkörper an. Die Aufgabe zählt, wenn die Kugel wirklich in der Objektliste erscheint.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count},
     {title:'3. Objekt auswählen und duplizieren',glyph:'▢',tab:'create',target:'duplicate',where:'Wähle zuerst ein Objekt in der Objektliste oder direkt auf der 3D-Fläche. Danach findest du „Duplizieren“ im Bereich „Erstellen“.',text:'Wähle einen Körper aus und dupliziere ihn. Die Objektliste muss danach ein zusätzliches Objekt enthalten.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count},
@@ -4109,6 +4121,8 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     {title:'20. Druckbett einstellen und prüfen',glyph:'▣',tab:'print',target:'applyBedSize',where:'Im Reiter „3D-Druck“ kannst du die Druckbettbreite und -tiefe einstellen. Mit „Druckbettgrösse übernehmen“ wird die Einstellung angewendet. „Druckbett prüfen“ kontrolliert die Lage der Modelle.',text:'Ändere die Druckbettgrösse auf einen gültigen Wert und übernimm sie. Starte danach die Druckbettprüfung.',begin:()=>({bed:($('bedWidth')?.value||'')+'x'+($('bedDepth')?.value||'')}),check:b=>(($('bedWidth')?.value||'')+'x'+($('bedDepth')?.value||''))!==b.bed&&/Druckbettprüfung/.test($('status')?.textContent||'')},
     {title:'21. Projekt speichern und STL exportieren',glyph:'⬇',tab:'print',target:'saveProjectButton',where:'Im Reiter „3D-Druck“ findest du „Projekt speichern“, „Projekt öffnen“ und „STL exportieren“. Ein Projekt speichert den Arbeitsstand; STL exportiert die Geometrie für den Slicer.',text:'Speichere dein Projekt und exportiere danach ein Modell als STL. SILMO wartet auf die Erfolgsmeldungen beider Vorgänge.',begin:()=>({saved:savedObserved,exported:exportObserved}),check:b=>savedObserved&&!b.saved&&exportObserved&&!b.exported}
   ];
+  // Renumber the original CAD lessons after the eleven keyboard lessons.
+  steps.forEach((step,i)=>{if(i>=11)step.title=step.title.replace(/^\d+\./,(i+1)+'.');});
 
   function objectCount(){return $('objects')?.querySelectorAll('.object-row').length||0;}
   function positions(){try{return window.__silmoTutorialAllPositions?.()||[];}catch(_){return [];}}
@@ -4164,7 +4178,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     });
     $('tutorialWordHelp').hidden=relevantTerms.length===0;
     $('tutorialWordHelp').open=false;
-    $('tutorialExamPanel').hidden=true;$('tutorialQuickGuide').hidden=false;$('tutorialBack').hidden=false;$('tutorialRetry').hidden=false;$('tutorialKeyboard').hidden=false;$('tutorialKeyboardGuide').hidden=false;$('tutorialKeyboardGuide').open=index===0;
+    $('tutorialExamPanel').hidden=true;$('tutorialQuickGuide').hidden=false;$('tutorialBack').hidden=false;$('tutorialRetry').hidden=false;$('tutorialKeyboard').hidden=true;$('tutorialKeyboardGuide').hidden=true;$('tutorialKeyboardGuide').open=false;
     $('tutorialBack').disabled=index===0;$('tutorialNext').textContent='Weiter';$('tutorialNext').disabled=true;
     updateProgress();if(step.target)revealTarget(step.target);else clearHighlight();
     renderingStep=false;
@@ -4264,6 +4278,22 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   document.addEventListener('pointerup',()=>{if(!card.hidden)verifyStep();},true);
   function monitor(){if(!card.hidden){verifyStep();updateDebug();}requestAnimationFrame(monitor);}
   requestAnimationFrame(monitor);
+  // Jede Tastenkombination wird als eigene Lernaufgabe geprüft.
+  window.addEventListener('keydown',event=>{
+    if(phase!=='learn'||card.hidden)return;
+    const id=steps[index]?.shortcutId;if(!id)return;
+    const key=String(event.key||'').toLowerCase();
+    const mod=event.ctrlKey||event.metaKey;
+    let matched=false;
+    if(id==='alt-shift-left')matched=event.altKey&&event.shiftKey&&key==='arrowleft';
+    else if(id==='alt-shift-right')matched=event.altKey&&event.shiftKey&&key==='arrowright';
+    else if(id==='shift-arrow')matched=event.shiftKey&&['arrowleft','arrowright','arrowup','arrowdown'].includes(key);
+    else if(id.startsWith('mod-'))matched=mod&&key===id.slice(4);
+    if(!matched)return;
+    observedShortcut=id;
+    if(id==='alt-shift-left'||id==='alt-shift-right'){event.preventDefault();event.stopImmediatePropagation();}
+    verifyStep();
+  },true);
   // Tutorial navigation via external keyboard; capture before CAD arrow-key shortcuts.
   window.addEventListener('keydown',event=>{
     if(card.hidden)return;
