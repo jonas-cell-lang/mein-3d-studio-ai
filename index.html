@@ -110,7 +110,11 @@ input:focus{outline:1px solid var(--cyan)}
 #tutorialVisual{display:flex;align-items:center;justify-content:center;gap:18px;min-height:104px;margin:12px 0;border:1px solid #345778;border-radius:12px;background:radial-gradient(circle at 50% 40%,#244d70,#0a1a2c 72%);overflow:hidden}
 #tutorialVisualGlyph{font-size:62px;line-height:1;color:#7edcff;text-shadow:0 0 20px #42b9ff80}
 #tutorialVisualCaption{font-size:15px;font-weight:750;color:#e8f5ff;max-width:180px}
-#tutorialWhere{margin:12px 0;padding:12px 14px;border-left:4px solid #64c8ff;border-radius:8px;background:#10243a;color:#e7f3ff;font-size:14px;line-height:1.55}\n#tutorialInstructions{margin:12px 0;padding:13px 15px;border:1px solid #3a5e82;border-radius:11px;background:#0b1b2d}
+#tutorialWhere{margin:12px 0;padding:12px 14px;border-left:4px solid #64c8ff;border-radius:8px;background:#10243a;color:#e7f3ff;font-size:14px;line-height:1.55}\n#tutorialWordHelp{margin:12px 0;padding:11px 12px;border:1px solid #324d6b;border-radius:9px;background:#0b192a;color:#d5e4f8;font-size:14px}
+#tutorialWordHelp summary{cursor:pointer;color:#9edcff;font-weight:700;min-height:34px;display:flex;align-items:center}
+#tutorialTermList p{margin:9px 0;padding-top:8px;border-top:1px solid #263d57;font-size:14px;line-height:1.5}
+#tutorialTermList strong{color:#8cddff}
+#tutorialInstructions{margin:12px 0;padding:13px 15px;border:1px solid #3a5e82;border-radius:11px;background:#0b1b2d}
 #tutorialInstructions h3{margin:0 0 8px;color:#9edcff;font-size:16px}
 #tutorialInstructionList{margin:0;padding-left:25px}
 #tutorialInstructionList li{padding:4px 0 4px 3px;color:#f0f6ff;font-size:14px;line-height:1.5}
@@ -3992,7 +3996,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     '<div style="font-size:10px;color:#ffcf70;margin-bottom:6px">SILMO LERNKURS · <span id="tutorialBuild"></span></div>' +
     '<div id="tutorialStepLabel"></div><div id="tutorialVisual" aria-label="Bildliche Darstellung des Lernschritts"><span id="tutorialVisualGlyph" aria-hidden="true">◧</span><span id="tutorialVisualCaption">Werkzeug</span></div>' +
     '<h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div>' +
-    '<div id="tutorialWhere" class="tutorial-where"></div><section id="tutorialInstructions" aria-label="Schritt-für-Schritt-Anleitung"><h3>So gehst du vor</h3><ol id="tutorialInstructionList"></ol></section><div id="tutorialFeedback" aria-live="polite"></div>' +
+    '<div id="tutorialWhere" class="tutorial-where"></div><section id="tutorialInstructions" aria-label="Schritt-für-Schritt-Anleitung"><h3>So gehst du vor</h3><ol id="tutorialInstructionList"></ol></section><details id="tutorialWordHelp"><summary>Fachbegriffe einfach erklärt</summary><div id="tutorialTermList"></div></details><div id="tutorialFeedback" aria-live="polite"></div>' +
     '<div id="tutorialExamPanel" hidden><div class="tutorial-exam-rule"><strong>Abschlusstest – ohne Anleitung</strong><p>Baue ein eigenes, dreidimensionales Herz, das für den 3D-Druck geeignet ist. SILMO zeigt dir jetzt keine Werkzeuge und keine Arbeitsschritte.</p></div>' +
     '<button id="tutorialExamHint" type="button">Mittleren Tipp anzeigen</button><p id="tutorialExamHintText" hidden></p>' +
     '<label class="tutorial-exam-confirm"><input id="tutorialHeartConfirm" type="checkbox"> Ich habe geprüft, dass mein eigenes Modell klar als Herz erkennbar ist.</label><div id="tutorialExamChecks"></div></div>' +
@@ -4020,6 +4024,25 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     '<button type="button" class="tutorial-tool-card" data-tool-tab="' + tab + '" data-target="' + target + '"><span class="tutorial-tool-icon" aria-hidden="true">' + glyph + '</span><span>' + label + '</span></button>'
   ).join('');
 
+  const beginnerDefinitions = [
+    ['Grundkörper','Eine einfache 3D-Startform, zum Beispiel ein Würfel, eine Kugel oder ein Zylinder.'],
+    ['Objektliste','Die Liste mit allen Teilen, die du in deinem Modell erstellt hast.'],
+    ['Duplizieren','Eine Kopie erstellen. Das ursprüngliche Teil bleibt erhalten.'],
+    ['Position','Der Ort, an dem ein Teil im 3D-Raum steht. X, Y und Z beschreiben die drei Richtungen.'],
+    ['Rotation','Das Fachwort für das Drehen eines Teils.'],
+    ['Skalierung','Ein Teil grösser oder kleiner machen, ohne es neu zu zeichnen.'],
+    ['Millimeter','Eine Längeneinheit. 10 Millimeter sind 1 Zentimeter.'],
+    ['Mehrfachauswahl','Mehr als ein Teil gleichzeitig auswählen.'],
+    ['Gruppieren','Mehrere Teile zu einer gemeinsamen Gruppe zusammenfassen.'],
+    ['Ausrichten','Teile so verschieben, dass sie zum Beispiel auf einer Linie oder mittig stehen.'],
+    ['Spiegeln','Ein Teil wie in einem Spiegel auf die andere Seite drehen.'],
+    ['Skizze','Eine flache 2D-Zeichnung, aus der du später einen 3D-Körper machen kannst.'],
+    ['Extrudieren','Einer flachen Zeichnung Höhe geben, damit ein 3D-Körper entsteht.'],
+    ['Kontur','Die Aussenlinie oder Umrandung einer gezeichneten Form.'],
+    ['Rasterfang','Der Mauszeiger springt auf feste Punkte eines Gitters. Das hilft beim genauen Zeichnen.'],
+    ['STL','Ein Dateiformat, das viele 3D-Druckprogramme für Modelle verwenden.'],
+    ['Druckbett','Die Fläche des 3D-Druckers, auf der das Modell gedruckt wird.']
+  ];
   let phase = 'learn', index = 0, highlight = null, baseline = {}, exportObserved = false, savedObserved = false, renderingStep = false;
   const steps = [
     {title:'1. Grundkörper erstellen',glyph:'◧',tab:'create',target:'addCube',where:'Links im Bereich „Erstellen“ findest du die Grundkörper. Klicke auf „＋ Würfel“. Danach erscheint der neue Körper in der Objektliste.',text:'Erstelle einen zusätzlichen Würfel. Ein Grundkörper ist der Startpunkt vieler CAD-Konstruktionen.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count},
@@ -4086,6 +4109,19 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       instructionList.append(item);
     });
     $('tutorialInstructions').hidden=false;
+    const termList=$('tutorialTermList');
+    termList.replaceChildren();
+    const taskWords=[step.title,step.text,step.where].join(' ').toLocaleLowerCase('de-CH');
+    const relevantTerms=beginnerDefinitions.filter(([term])=>taskWords.includes(term.toLocaleLowerCase('de-CH')));
+    relevantTerms.forEach(([term,explanation])=>{
+      const paragraph=document.createElement('p');
+      const label=document.createElement('strong');
+      label.textContent=term+': ';
+      paragraph.append(label,document.createTextNode(explanation));
+      termList.append(paragraph);
+    });
+    $('tutorialWordHelp').hidden=relevantTerms.length===0;
+    $('tutorialWordHelp').open=false;
     $('tutorialExamPanel').hidden=true;$('tutorialQuickGuide').hidden=false;$('tutorialBack').hidden=false;$('tutorialRetry').hidden=false;$('tutorialKeyboard').hidden=false;
     $('tutorialBack').disabled=index===0;$('tutorialNext').textContent='Weiter';$('tutorialNext').disabled=true;
     updateProgress();if(step.target)revealTarget(step.target);else clearHighlight();
@@ -4099,6 +4135,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     $('tutorialText').textContent='Konstruiere ohne Anleitung ein eigenes dreidimensionales Herz. Es soll als Herz erkennbar und für den 3D-Druck vorbereitet sein. Du entscheidest selbst, welche Werkzeuge und Konstruktionswege du verwendest.';
     $('tutorialWhere').textContent='Es werden keine Werkzeuge markiert und keine Arbeitsschritte erklärt. Du kannst den Test selbstständig bearbeiten.';
     $('tutorialInstructions').hidden=true;
+    $('tutorialWordHelp').hidden=true;
     $('tutorialExamPanel').hidden=false;$('tutorialQuickGuide').hidden=true;$('tutorialBack').hidden=true;$('tutorialRetry').hidden=true;$('tutorialKeyboard').hidden=true;
     $('tutorialNext').textContent='Abschlusstest prüfen';$('tutorialNext').disabled=false;
     $('tutorialExamHintText').hidden=true;$('tutorialExamHint').disabled=false;$('tutorialHeartConfirm').checked=false;
