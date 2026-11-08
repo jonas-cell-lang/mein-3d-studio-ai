@@ -117,7 +117,7 @@ try {
   const bedWidthBefore=Number(await page.locator('#bedWidth').inputValue());
   const bedDepthBefore=Number(await page.locator('#bedDepth').inputValue());
   await page.locator('#bedWidth').fill(String(Math.min(2000,bedWidthBefore+10)));
-  await page.locator('#applyBedSize').click();
+  // Absichtlich NICHT auf „Druckbettgrösse übernehmen“ klicken: „Prüfen“ muss aktuelle Masse selbst anwenden.
   await page.locator('[data-tab="measure"]').click();
   await page.locator('#checkBed').click();
   await page.waitForFunction(()=>document.querySelector('#tutorialNext')?.disabled===false,null,{timeout:5000});
@@ -147,6 +147,17 @@ try {
   });
   await page.waitForFunction(()=>Number(window.__silmoImportRevision||0)>0,null,{timeout:5000});
   assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeImport+1,'STL-Drop importiert kein zusätzliches Modell oder hat bestehende Modelle ersetzt');
+  // Ein vom Download-Button gezogener Web-Link liefert oft keinen File-Eintrag, sondern text/uri-list.
+  // Simuliere eine vom Browser erlaubte CORS-Antwort und prüfe, dass SILMO den Link direkt lädt.
+  await page.route('https://example.com/test-from-web.stl',route=>route.fulfill({status:200,contentType:'model/stl',body:'solid web\\nfacet normal 0 0 1\\nouter loop\\nvertex 0 0 0\\nvertex 12 0 0\\nvertex 0 12 0\\nendloop\\nendfacet\\nendsolid web'}));
+  await page.locator('#stlDropZone').evaluate(zone=>{
+    const transfer=new DataTransfer();
+    transfer.setData('text/uri-list','https://example.com/test-from-web.stl');
+    zone.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+    zone.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+  });
+  await page.waitForFunction(()=>Number(window.__silmoImportRevision||0)>1,null,{timeout:5000});
+  assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeImport+2,'STL-Weblink wurde nicht als zusätzliches Modell importiert');
   await page.waitForFunction(()=>document.querySelector('#tutorialNext')?.disabled===false,null,{timeout:5000});
   assert.match(await page.locator('#tutorialFeedback').innerText(),/Erfolgskontrolle bestanden/,'Aufgabe 26 erkennt Speichern, Export und STL-Import nicht');
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(0)),true,'Tutorial kann nach dem Aufgabe-13-Test nicht zur ersten Aufgabe zurückkehren');
