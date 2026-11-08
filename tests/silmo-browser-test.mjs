@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v60/, 'Build-Metadaten zeigen nicht v60');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v61/, 'Build-Metadaten zeigen nicht v61');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -65,6 +65,8 @@ try {
   assert.ok(await ipadPage.locator('#tutorialInstructionList li').count() >= 2, 'Schritt-für-Schritt-Anleitung fehlt auf dem iPad');
   assert.ok(Number(await ipadPage.locator('#tutorialInstructionList li').first().evaluate(el => getComputedStyle(el).fontSize.replace('px',''))) >= 14, 'Anleitungsschrift ist auf dem iPad zu klein');
   assert.equal(await ipadPage.locator('#tutorialKeyboardGuide').isVisible(), true, 'Tastenkombinationen fehlen auf dem iPad');
+  assert.equal(await ipadPage.locator('#tutorialCard > #tutorialKeyboardGuide').count(),1,'Tastenkombinationen stehen nicht am Anfang des Tutorials');
+  assert.equal(await ipadPage.locator('#tutorialKeyboardGuide').evaluate(el=>el.open),true,'Tastenkombinationen sind bei der ersten Aufgabe nicht geöffnet');
   assert.equal(await ipadPage.locator('#tutorialKeyboardGuide .tutorial-key-combo').count(), 11, 'Einzelerklärungen der Tastenkombinationen fehlen auf dem iPad');
   await ipadPage.locator('#tutorialCard').evaluate(el => { el.scrollTop = el.scrollHeight; });
   const ipadLastButtonBox = await ipadPage.locator('#tutorialSkip').boundingBox();
@@ -76,6 +78,12 @@ try {
   await page.locator('#tutorialLaunch').click();
   assert.equal(await page.locator('#tutorialExamPanel').isVisible(), false, 'Abschlusstest darf nicht bereits in der Lernphase sichtbar sein');
   assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Weiter muss bis zur erkannten Aufgabe gesperrt bleiben');
+  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(12)),true,'Aufgabe 13 kann für die gezielte Browserprüfung nicht geöffnet werden');
+  assert.equal(await page.locator('#tutorialInstructionList li').count(),9,'Aufgabe 13 enthält nicht alle neun einzelnen Handlungsschritte');
+  assert.match(await page.locator('#tutorialInstructionList').innerText(),/linke Maustaste.*Finger.*Apple Pencil/s,'Aufgabe 13 erklärt die Bedienung auf Computer und iPad nicht');
+  assert.match(await page.locator('#tutorialInstructionList').innerText(),/schliesst die Umrandung automatisch/i,'Aufgabe 13 erklärt das automatische Schliessen nicht');
+  assert.match(await page.locator('#tutorialInstructionList').innerText(),/Skizze als 3D-Körper erstellen/,'Aufgabe 13 erklärt nicht, wie die Freiform zu einem 3D-Körper wird');
+  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(0)),true,'Tutorial kann nach dem Aufgabe-13-Test nicht zur ersten Aufgabe zurückkehren');
   assert.match(await page.locator('#tutorialWhere').innerText(), /WO FINDEST DU ES/, 'Lernphase erklärt nicht, wo das Werkzeug liegt');
   const tutorialDebug = await page.locator('#tutorialDebug').innerText();
   const currentBuild = await page.locator('meta[name="silmo-build"]').getAttribute('content');
@@ -101,6 +109,8 @@ try {
   assert.equal(await page.locator('#tutorialKeyboard').isVisible(), true, 'Tastaturhinweise fehlen in der Lernphase');
   const keyboardGuide = page.locator('#tutorialKeyboardGuide');
   assert.equal(await keyboardGuide.isVisible(), true, 'Einzeln erklärte Tastenkombinationen fehlen');
+  assert.equal(await page.locator('#tutorialCard > #tutorialKeyboardGuide').count(),1,'Tastenkombinationen stehen nicht vor der ersten Lernaufgabe');
+  assert.equal(await keyboardGuide.evaluate(el=>el.open),true,'Tastenkombinationen werden am Anfang nicht direkt angezeigt');
   const shortcutCards = keyboardGuide.locator('.tutorial-key-combo');
   assert.equal(await shortcutCards.count(), 11, 'Nicht alle Tastenkombinationen haben eine eigene Erklärung');
   for (let i = 0; i < await shortcutCards.count(); i++) {
