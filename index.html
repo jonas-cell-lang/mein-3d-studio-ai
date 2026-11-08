@@ -4074,7 +4074,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     $('tutorialVisualGlyph').textContent=step.glyph;$('tutorialVisualCaption').textContent=step.title;
     $('tutorialTitle').textContent=step.title;$('tutorialText').textContent=step.text;
     $('tutorialWhere').textContent='WO FINDEST DU ES? '+step.where;
-    $('tutorialExamPanel').hidden=true;$('tutorialQuickGuide').hidden=false;$('tutorialBack').hidden=false;
+    $('tutorialExamPanel').hidden=true;$('tutorialQuickGuide').hidden=false;$('tutorialBack').hidden=false;$('tutorialRetry').hidden=false;$('tutorialKeyboard').hidden=false;
     $('tutorialBack').disabled=index===0;$('tutorialNext').textContent='Weiter';$('tutorialNext').disabled=true;
     updateProgress();if(step.target)revealTarget(step.target);else clearHighlight();
     renderingStep=false;
@@ -4086,7 +4086,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     $('tutorialTitle').textContent='Baue ein eigenes 3D-Herz';
     $('tutorialText').textContent='Konstruiere ohne Anleitung ein eigenes dreidimensionales Herz. Es soll als Herz erkennbar und für den 3D-Druck vorbereitet sein. Du entscheidest selbst, welche Werkzeuge und Konstruktionswege du verwendest.';
     $('tutorialWhere').textContent='Es werden keine Werkzeuge markiert und keine Arbeitsschritte erklärt. Du kannst den Test selbstständig bearbeiten.';
-    $('tutorialExamPanel').hidden=false;$('tutorialQuickGuide').hidden=true;$('tutorialBack').hidden=true;
+    $('tutorialExamPanel').hidden=false;$('tutorialQuickGuide').hidden=true;$('tutorialBack').hidden=true;$('tutorialRetry').hidden=true;$('tutorialKeyboard').hidden=true;
     $('tutorialNext').textContent='Abschlusstest prüfen';$('tutorialNext').disabled=false;
     $('tutorialExamHintText').hidden=true;$('tutorialExamHint').disabled=false;$('tutorialHeartConfirm').checked=false;
     $('tutorialExamChecks').textContent='Noch nicht geprüft.';
