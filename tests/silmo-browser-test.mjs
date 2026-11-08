@@ -129,7 +129,7 @@ try {
   assert.match(await page.locator('#tutorialTermList').textContent(),/Grundkörper|Objektliste/,'Grundbegriffe der Würfel-Aufgabe werden nicht einfach erklärt');
   assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Würfel-Aufgabe darf nicht ohne erstellten Körper freigeschaltet sein');
   assert.equal(await page.locator('#tutorialRetry').isVisible(), true, 'Manuelle Wiederholungsprüfung fehlt');
-  assert.equal(await page.locator('#tutorialKeyboard').isVisible(), true, 'Tastaturhinweise fehlen in der Lernphase');
+  assert.equal(await page.locator('#tutorialKeyboard').isVisible(), false, 'Separate Tastaturhinweise sollen in der Lernphase ausgeblendet sein');
   const tutorialStartRows = await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click();
   assert.equal(await page.locator('#objects .object-row').count(), tutorialStartRows + 1, 'Tutorial-Testobjekt wurde nicht erstellt');
