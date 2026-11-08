@@ -4041,8 +4041,27 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     ['Kontur','Die Aussenlinie oder Umrandung einer gezeichneten Form.'],
     ['Rasterfang','Der Mauszeiger springt auf feste Punkte eines Gitters. Das hilft beim genauen Zeichnen.'],
     ['STL','Ein Dateiformat, das viele 3D-Druckprogramme für Modelle verwenden.'],
-    ['Druckbett','Die Fläche des 3D-Druckers, auf der das Modell gedruckt wird.']
-  ];
+    ['Druckbett','Die Fläche des 3D-Druckers, auf der das Modell gedruckt wird.'],
+    ['CAD','Ein Computerprogramm, mit dem du genaue technische Zeichnungen und 3D-Modelle bauen kannst.'],
+    ['2D','Flach wie ein Blatt Papier: Es gibt Breite und Höhe, aber keine Tiefe.'],
+    ['3D','Ein Körper mit Breite, Höhe und Tiefe. Du kannst ihn von verschiedenen Seiten ansehen.'],
+    ['Achse','Eine gedachte Richtung oder Linie, an der du etwas ausrichten oder drehen kannst.'],
+    ['Drehring','Der farbige Ring am ausgewählten Teil. Ziehe daran, um das Teil zu drehen.'],
+    ['Freiform','Eine Form, die du selbst mit mehreren Punkten zeichnest.'],
+    ['Rasterweite','Der Abstand zwischen zwei Linien oder Punkten im Zeichengitter.'],
+    ['Kante','Die Linie, an der zwei Flächen eines Körpers zusammentreffen.'],
+    ['Fase','Eine schräge, abgeschnittene Kante.'],
+    ['parallel','Zwei Linien verlaufen nebeneinander und treffen sich nicht.'],
+    ['senkrecht','Zwei Linien treffen sich im rechten Winkel, also bei 90 Grad.'],
+    ['tangential','Zwei Formen oder Linien berühren sich weich an einer Stelle.'],
+    ['konzentrisch','Zwei Kreise haben denselben Mittelpunkt.'],
+    ['Profil','Die Form oder Umrandung, die du für einen Körper verwendest.'],
+    ['Loft','SILMO verbindet mehrere gezeichnete Formen zu einem neuen Körper.'],
+    ['Sweep','SILMO zieht eine Form entlang einer gezeichneten Linie oder Kurve.'],
+    ['Pfad','Eine Linie oder Kurve, an der eine Form entlanggeführt wird.'],
+    ['Boolesche Operation','Ein Rechenschritt mit Körpern: Du kannst sie verbinden oder einen Körper aus einem anderen herausschneiden.'],
+    ['Slicer','Ein Programm, das dein 3D-Modell für einen 3D-Drucker vorbereitet.'],
+    ['STL exportiert','Das Modell wird als Datei gespeichert, die ein Slicer öffnen kann.']
   let phase = 'learn', index = 0, highlight = null, baseline = {}, exportObserved = false, savedObserved = false, renderingStep = false;
   const steps = [
     {title:'1. Grundkörper erstellen',glyph:'◧',tab:'create',target:'addCube',where:'Links im Bereich „Erstellen“ findest du die Grundkörper. Klicke auf „＋ Würfel“. Danach erscheint der neue Körper in der Objektliste.',text:'Erstelle einen zusätzlichen Würfel. Ein Grundkörper ist der Startpunkt vieler CAD-Konstruktionen.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count},
