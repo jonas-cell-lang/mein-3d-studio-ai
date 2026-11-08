@@ -4124,7 +4124,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     const normalScore=scoreFor(normalizedTemplate);
     const flippedScore=scoreFor(normalizedTemplate.map(p=>[p[0],1-p[1]]));
     const score=Math.max(normalScore,flippedScore);
-    return {recognized:score>=0.43,score:Number(score.toFixed(3)),pointCount:clean.length,aspectRatio:Number(ratio.toFixed(3)),reason:score>=0.43?'Die Kontur ähnelt ungefähr einer Herzform.':'Die Kontur ähnelt noch nicht deutlich genug einem Herz.'};
+    return {recognized:score>=0.68,score:Number(score.toFixed(3)),pointCount:clean.length,aspectRatio:Number(ratio.toFixed(3)),reason:score>=0.68?'Die Kontur ähnelt ungefähr einer Herzform.':'Die Kontur ähnelt noch nicht deutlich genug einem Herz.'};
   }
   window.__silmoHeartRecognitionSnapshot=()=>{
     const candidates=[];
