@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v67 – Einfachere Überspring-Taste</title>
+<title>SILMO 3D Studio AI – v68 – Tutorial 25/26 und STL-Ablage</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v67 – Einfachere Überspring-Taste">
+<meta name="silmo-build" content="v68 – Tutorial 25/26 und STL-Ablage">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -16,6 +16,13 @@
 :root{color-scheme:dark;--bg:#080f1d;--panel:#101a2b;--panel2:#142238;--line:#263953;--muted:#9db0ca;--text:#edf4ff;--blue:#3986f6;--cyan:#53d8e8;--green:#8ee5b1}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,Segoe UI,Arial,sans-serif}
+#stlDropZone{margin:10px 0;padding:22px 14px;border:2px dashed #4b82c5;border-radius:14px;background:linear-gradient(135deg,#10233b,#102b3b);text-align:center;color:var(--text);transition:border-color .15s,background .15s}
+#stlDropZone strong{display:block;font-size:15px;margin-bottom:5px}
+#stlDropZone p{margin:5px 0 12px;color:var(--muted);font-size:12px}
+#stlDropZone.drag-over{border-color:var(--cyan);background:#164052;box-shadow:0 0 0 3px #53d8e822}
+#stlDropZone button{max-width:240px;margin:0 auto}
+#stlDropZone:focus-within{outline:2px solid var(--cyan);outline-offset:3px}
+
 header{height:66px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 22px;background:linear-gradient(100deg,#101d32,#142742);border-bottom:1px solid var(--line)}
 .header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .header-actions button{font-size:12px;padding:7px 10px}
@@ -806,6 +813,13 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
 
   heading(paneMap.print.left,'3D-Druck');
   ['importModel','exportModel','saveProjectButton','openProjectButton','fileInput','projectFileInput'].forEach(id=>put(paneMap.print.left,id));
+  const stlDropZone=document.createElement('div');
+  stlDropZone.id='stlDropZone';
+  stlDropZone.setAttribute('role','region');
+  stlDropZone.setAttribute('aria-label','STL-Modelle importieren');
+  stlDropZone.innerHTML='<strong>⬇ STL-Datei hier hineinziehen</strong><p>Ziehe eine oder mehrere STL-Dateien aus deinen Downloads hierher – oder wähle sie direkt aus.</p><button type="button" class="wide" id="stlChooseFile">Datei auswählen …</button>';
+  paneMap.print.left.appendChild(stlDropZone);
+
   heading(paneMap.print.left,'Druckbettgrösse (mm)');
   ['bedWidth','bedDepth','applyBedSize'].forEach(id=>put(paneMap.print.left,id));
   paneMap.print.left.appendChild(bedNote);
@@ -1501,6 +1515,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1500);
       status.textContent = 'Vollständiges Projekt gespeichert';
+      window.__silmoSavedRevision=(window.__silmoSavedRevision||0)+1;
     } catch (error) {
       console.error(error);
       status.textContent = 'Projekt konnte nicht gespeichert werden.';
@@ -2389,58 +2404,86 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     status.textContent = 'Objekt dupliziert';
   };
 
-  $('importModel').onclick = () => {
+  function importSTLFile(file) {
+    if (!file) return;
     if (typeof THREE.STLLoader === 'undefined') {
-      status.textContent = 'STL-Import konnte nicht geladen werden. Internet prüfen.';
+      status.textContent = 'STL-Import konnte nicht geladen werden. Bitte Internetverbindung prüfen.';
       return;
     }
-    $('fileInput').click();
-  };
-
-  $('fileInput').addEventListener('change', event => {
-    const file = event.target.files && event.target.files[0];
-    if (!file) return;
-    if (file.size > 50 * 1024 * 1024) { status.textContent = 'STL-Datei ist zu gross (maximal 50 MB).'; $('fileInput').value = ''; return; }
+    if (!/\.stl$/i.test(file.name || '') && file.type !== 'model/stl' && file.type !== 'application/sla') {
+      status.textContent = 'Bitte eine STL-Datei auswählen oder in die Ablage ziehen.';
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      status.textContent = 'STL-Datei ist zu gross (maximal 50 MB).';
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
+      let geometry=null;
       try {
         const loader = new THREE.STLLoader();
-        const geometry = loader.parse(reader.result);
+        geometry = loader.parse(reader.result);
         geometry.computeVertexNormals();
         geometry.computeBoundingBox();
-        const dimensions = new THREE.Vector3();
-        geometry.boundingBox.getSize(dimensions);
-        // Imported STL dimensions are treated as millimetres and scaled into app units.
+        if (!geometry.boundingBox || geometry.boundingBox.isEmpty()) throw new Error('Die STL-Datei enthält keine gültige Geometrie.');
+        // STL-Dateien werden als Millimeter eingelesen und in die App-Einheiten umgerechnet.
         geometry.scale(1 / MM_PER_UNIT, 1 / MM_PER_UNIT, 1 / MM_PER_UNIT);
         geometry.computeBoundingBox();
-        const material = new THREE.MeshStandardMaterial({
-          color: 0x4b91ed, roughness: 0.5, metalness: 0.05
-        });
+        const material = new THREE.MeshStandardMaterial({color:0x4b91ed,roughness:0.5,metalness:0.05});
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.geometry.computeBoundingBox();
         const size = new THREE.Vector3();
-        mesh.geometry.boundingBox.getSize(size);
-        mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
-        mesh.userData.percent = { x: 100, y: 100, z: 100 };
-        mesh.userData.label = file.name.replace(/\.stl$/i, '') || 'STL-Modell';
-        // Centre imported geometry so dragging and position fields are intuitive.
-        mesh.geometry.translate(
-          -(mesh.geometry.boundingBox.min.x + mesh.geometry.boundingBox.max.x) / 2,
-          -(mesh.geometry.boundingBox.min.y + mesh.geometry.boundingBox.max.y) / 2,
-          -mesh.geometry.boundingBox.min.z
+        geometry.boundingBox.getSize(size);
+        mesh.userData.baseDimensions = {x:size.x,y:size.y,z:size.z};
+        mesh.userData.percent = {x:100,y:100,z:100};
+        mesh.userData.label = file.name.replace(/\.stl$/i,'') || 'STL-Modell';
+        // Modell auf der Arbeitsplatte zentrieren, ohne vorhandene Objekte zu verändern.
+        geometry.translate(
+          -(geometry.boundingBox.min.x+geometry.boundingBox.max.x)/2,
+          -(geometry.boundingBox.min.y+geometry.boundingBox.max.y)/2,
+          -geometry.boundingBox.min.z
         );
-        mesh.position.set(0, 0, 0);
-        scene.add(mesh);
-        objects.push(mesh);
-        selectObject(mesh);
-        status.textContent = 'STL-Modell importiert (Einheit: mm)';
+        mesh.position.set(0,0,0);
+        scene.add(mesh);objects.push(mesh);selectObject(mesh);
+        window.__silmoImportRevision=(window.__silmoImportRevision||0)+1;
+        status.textContent='STL-Modell importiert: '+mesh.userData.label+' (mm). Vorhandene Modelle bleiben erhalten.';
       } catch (error) {
+        if (geometry && !objects.some(obj=>obj.geometry===geometry)) geometry.dispose();
         console.error(error);
-        status.textContent = 'STL-Datei konnte nicht gelesen werden.';
+        status.textContent='STL-Datei konnte nicht gelesen werden: '+(error.message||'Datei prüfen.');
       }
-      $('fileInput').value = '';
     };
+    reader.onerror=()=>{status.textContent='STL-Datei konnte nicht gelesen werden.';};
     reader.readAsArrayBuffer(file);
+  }
+  $('importModel').onclick=()=> $('fileInput').click();
+  $('stlChooseFile').onclick=()=> $('fileInput').click();
+  $('fileInput').addEventListener('change',event=>{
+    Array.from(event.target.files||[]).forEach(importSTLFile);
+    event.target.value='';
+  });
+  const stlDropZone=$('stlDropZone');
+  ['dragenter','dragover'].forEach(type=>stlDropZone.addEventListener(type,event=>{
+    event.preventDefault();event.stopPropagation();
+    if(event.dataTransfer)event.dataTransfer.dropEffect='copy';
+    stlDropZone.classList.add('drag-over');
+  }));
+  ['dragleave','dragend'].forEach(type=>stlDropZone.addEventListener(type,event=>{
+    event.preventDefault();event.stopPropagation();
+    if(!stlDropZone.contains(event.relatedTarget))stlDropZone.classList.remove('drag-over');
+  }));
+  stlDropZone.addEventListener('drop',event=>{
+    event.preventDefault();event.stopPropagation();stlDropZone.classList.remove('drag-over');
+    const files=Array.from(event.dataTransfer?.files||[]);
+    if(!files.length){status.textContent='Keine Datei erkannt. Ziehe eine STL-Datei aus dem Downloads-Ordner hierher.';return;}
+    files.forEach(importSTLFile);
+  });
+  // Verhindert, dass eine ausserhalb der Ablage fallengelassene Datei den Browser ersetzt.
+  window.addEventListener('dragover',event=>{
+    if(Array.from(event.dataTransfer?.items||[]).some(item=>item.kind==='file'))event.preventDefault();
+  });
+  window.addEventListener('drop',event=>{
+    if(Array.from(event.dataTransfer?.files||[]).length)event.preventDefault();
   });
 
   $('exportModel').onclick = () => {
@@ -2491,6 +2534,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1500);
       status.textContent = 'STL exportiert: alle Modelle in Millimetern';
+      window.__silmoExportRevision=(window.__silmoExportRevision||0)+1;
     } catch (error) {
       console.error(error);
       status.textContent = 'STL-Export fehlgeschlagen.';
@@ -3721,7 +3765,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
 
   // Neues Werkzeug 1: Druckbettprüfung anhand der tatsächlichen Welt-Bounding-Boxen.
   $('checkBed').addEventListener('click', () => {
-    if (!objects.length) { status.textContent = 'Keine Modelle vorhanden, die geprüft werden können.'; return; }
+    if (!objects.length) { status.textContent = 'Druckbettprüfung: keine Modelle vorhanden. Erstelle oder importiere zuerst ein Modell.'; return; }
     const halfW = bedWidthMM / (2 * MM_PER_UNIT), halfD = bedDepthMM / (2 * MM_PER_UNIT);
     const issues = [];
     objects.forEach((obj, index) => {
@@ -4120,8 +4164,8 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     {title:'17. CAD-Beziehungen und Bedingungen',glyph:'∥',tab:'draw',target:'applySketchRelation',where:'Unter „Professionelle CAD-Bearbeitung“ findest du die CAD-Beziehungen. Dazu gehören parallel, senkrecht, tangential und konzentrisch.',text:'Wähle geeignete Skizzenelemente, stelle eine passende Beziehung ein und wende sie an. SILMO prüft die Erfolgsmeldung der CAD-Funktion.',begin:()=>({status:$('status')?.textContent||''}),check:b=>{const t=$('status')?.textContent||'';return t!==b.status&&(/parallel ausgerichtet|senkrecht ausgerichtet|tangential verbunden|konzentrisch ausgerichtet/.test(t));}},
     {title:'18. Loft, Sweep und Pfadlänge',glyph:'∿',tab:'draw',target:'createLoft',where:'Öffne rechts im Reiter „Zeichnen“ den Abschnitt „Professionelle CAD-Bearbeitung“. Scrolle dort bis „Komplexe Formoperationen“. Die beiden Schaltflächen heissen „Loft zwischen Profilen“ und „Profil entlang Pfad“.',text:'Diese Aufgabe ist etwas schwieriger. Wichtig: Für Loft brauchst du genau zwei geschlossene Skizzenprofile. Für Sweep brauchst du genau ein geschlossenes Profil UND eine gespeicherte 2D-/3D-Linie oder Kurve als Pfad. Normale Würfel oder Kugeln reichen nicht. Du darfst zuerst nur Loft ausprobieren; Sweep ist eine zweite Möglichkeit.',instructions:['Öffne links den Reiter „Zeichnen“. Beende zuerst einen eventuell noch aktiven Zeichenmodus mit „Zeichenmodus beenden“.','Öffne rechts den Abschnitt „Professionelle CAD-Bearbeitung“. Scrolle bis ganz nach unten zum Bereich „Komplexe Formoperationen“.','Für LOFT: Du brauchst genau zwei geschlossene Skizzenprofile. Das sind zwei Körper, die aus geschlossenen Skizzen erstellt wurden. Ein Rechteck, ein Kreis oder eine Ellipse eignen sich. Wenn du noch keine zwei hast, wähle links „Rechteck“, klicke „Zeichnen starten“, ziehe eine geschlossene Rechteck-Kontur und klicke „Als 3D-Körper erstellen“. Wiederhole das mit einer zweiten Form, zum Beispiel einem kleineren Kreis oder Rechteck.','Wähle die zwei Profil-Körper in der Objektliste aus. Am Computer: Klicke das erste Objekt an und halte beim zweiten Klick Strg (Windows) oder ⌘ Command (Mac) gedrückt. Auf dem iPad: Aktiviere zuerst „Mehrfachauswahl“ im Reiter „Bearbeiten“ und tippe beide Profil-Körper an. Es müssen genau zwei ausgewählt sein.','Klicke rechts auf „Loft zwischen Profilen“. Wenn es funktioniert, erscheint ein neuer Körper und links steht „Loft erstellt: zwei Skizzenprofile wurden zu einem Körper verbunden.“','Wenn eine Fehlermeldung erscheint: Wähle nicht einen normalen Würfel oder eine Kugel. Beide ausgewählten Körper müssen eine gespeicherte geschlossene Skizzenkontur besitzen. Prüfe auch, dass wirklich genau zwei Profile markiert sind.','Für SWEEP (freiwillig): Erstelle zuerst ein geschlossenes Profil, zum Beispiel ein Rechteck. Erstelle danach im Reiter „Zeichnen“ eine 2D-Linie oder Kurve und wandle sie – falls nötig – in einen 3D-Körper/Pfad um, sodass sie als Linien-/Kurvenpfad gespeichert ist.','Wähle für Sweep zuerst das Profil und danach den Pfad aus. Bei Mehrfachauswahl muss die Reihenfolge stimmen: zuerst Profil, danach Pfad. Klicke auf „Profil entlang Pfad“.','Die Meldung „Sweep braucht ein geschlossenes Profil und eine gespeicherte Linien-/Kurvenbahn“ bedeutet: Das erste Objekt ist kein geeignetes geschlossenes Profil oder das zweite Objekt enthält keinen gespeicherten Pfad. Du kannst dann zurückgehen und nur Loft fertigstellen.','Du kannst diese Aufgabe mit „Aufgabe überspringen“ oder ⇧ Shift + → jederzeit auslassen. Wenn du weiter üben möchtest, probiere es beliebig oft; „Erneut prüfen“ kontrolliert den Erfolg nochmals.'],begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count&&/Loft erstellt|Sweep erstellt/.test($('status')?.textContent||'')},
     {title:'19. Verbinden und Abziehen',glyph:'⊕',tab:'create',target:'booleanUnion',where:'Im Bereich „Erstellen“ findest du „Formen verbinden“ und „Löcher / Form abziehen“. Wähle dafür die benötigten Körper aus.',text:'Verbinde zwei sich berührende oder überlappende Körper. Danach kannst du mit einem weiteren Körper eine Form abziehen. SILMO erkennt eine erfolgreiche Boolesche Operation.',begin:()=>({status:$('status')?.textContent||''}),check:b=>{const t=$('status')?.textContent||'';return t!==b.status&&(/verbunden|abgezogen|Boolesche/.test(t));}},
-    {title:'20. Druckbett einstellen und prüfen',glyph:'▣',tab:'print',target:'applyBedSize',where:'Im Reiter „3D-Druck“ kannst du die Druckbettbreite und -tiefe einstellen. Mit „Druckbettgrösse übernehmen“ wird die Einstellung angewendet. „Druckbett prüfen“ kontrolliert die Lage der Modelle.',text:'Ändere die Druckbettgrösse auf einen gültigen Wert und übernimm sie. Starte danach die Druckbettprüfung.',begin:()=>({bed:($('bedWidth')?.value||'')+'x'+($('bedDepth')?.value||'')}),check:b=>(($('bedWidth')?.value||'')+'x'+($('bedDepth')?.value||''))!==b.bed&&/Druckbettprüfung/.test($('status')?.textContent||'')},
-    {title:'21. Projekt speichern und STL exportieren',glyph:'⬇',tab:'print',target:'saveProjectButton',where:'Im Reiter „3D-Druck“ findest du „Projekt speichern“, „Projekt öffnen“ und „STL exportieren“. Ein Projekt speichert den Arbeitsstand; STL exportiert die Geometrie für den Slicer.',text:'Speichere dein Projekt und exportiere danach ein Modell als STL. SILMO wartet auf die Erfolgsmeldungen beider Vorgänge.',begin:()=>({saved:savedObserved,exported:exportObserved}),check:b=>savedObserved&&!b.saved&&exportObserved&&!b.exported}
+    {title:'20. Druckbett einstellen und prüfen',glyph:'▣',tab:'print',target:'applyBedSize',where:'Die Druckbettgrösse stellst du im Reiter „3D-Druck“ ein. Die Prüfung selbst liegt im Reiter „Messen & Prüfen“.',text:'Stelle zuerst die passende Druckbettgrösse ein. Wechsle danach zu „Messen & Prüfen“ und starte dort „Druckbett prüfen“.',instructions:['Öffne links den Reiter „3D-Druck“.','Suche die Felder „Breite X (mm)“ und „Tiefe Y (mm)“. Sie stehen unter „Druckbettgrösse (mm)“.','Gib eine gültige Grösse ein. Zum Ausprobieren kannst du zum Beispiel 180 mm Breite und 180 mm Tiefe verwenden. Falls dein Drucker ein anderes Druckbett hat, nimm dessen echte Masse.','Klicke auf „Druckbettgrösse übernehmen“. Die 3D-Druckplatte sollte sich sichtbar anpassen.','Wichtig: Die Prüfschaltfläche liegt nicht im Reiter „3D-Druck“. Klicke links auf „Messen & Prüfen“.','Suche dort im linken Bereich die Schaltfläche „Druckbett prüfen“ und klicke sie.','Unter der Schaltfläche erscheint eine Meldung „Druckbettprüfung …“. Wenn ein Modell ausserhalb der Platte liegt, kannst du es auswählen und „Auf Arbeitsplatte stellen“ verwenden.','Wenn noch keine Modelle vorhanden sind, meldet SILMO das ausdrücklich. Erstelle zuerst einen Würfel oder importiere ein STL-Modell und starte die Prüfung nochmals.'],begin:()=>({bed:($('bedWidth')?.value||'')+'x'+($('bedDepth')?.value||'')}),check:b=>(($('bedWidth')?.value||'')+'x'+($('bedDepth')?.value||''))!==b.bed&&/Druckbettprüfung/.test($('status')?.textContent||'')},
+    {title:'21. Projekt speichern, STL exportieren und importieren',glyph:'⬇',tab:'print',target:'saveProjectButton',where:'Im Reiter „3D-Druck“ findest du „Projekt speichern“, „STL exportieren“ und die neue STL-Ablage zum Hineinziehen von Dateien.',text:'Speichere dein Projekt, exportiere eine STL-Datei und importiere sie danach wieder über die Ablagefläche. So lernst du den ganzen Weg vom Projekt bis zum erneut geöffneten 3D-Modell.',instructions:['Öffne links den Reiter „3D-Druck“.','Klicke auf „Projekt speichern“. SILMO lädt eine Datei namens „silmo-projekt.json“ herunter. Diese Datei enthält dein bearbeitbares SILMO-Projekt.','Klicke auf „STL exportieren“. SILMO lädt zusätzlich „silmo-3d-modell.stl“ herunter. Diese STL-Datei enthält die 3D-Geometrie für einen Slicer.','Suche im 3D-Druck-Reiter die grosse Fläche „STL-Datei hier hineinziehen“.','Öffne im Finder deinen Ordner „Downloads“. Ziehe die heruntergeladene Datei „silmo-3d-modell.stl“ mit der Maus auf die Ablagefläche und lasse sie dort los. Du musst die Datei nicht zuerst doppelklicken oder öffnen.','Wenn du nicht ziehen kannst, klicke auf „Datei auswählen …“ und wähle die STL-Datei im Downloads-Ordner aus.','Nach dem Import erscheint das Modell zusätzlich in der Objektliste. Deine bisherigen Formen werden nicht ersetzt oder gelöscht.','Hinweis: Die JSON-Projektdatei öffnest du mit „Projekt öffnen“. In die STL-Ablage gehören nur STL-Dateien.'],begin:()=>({saved:window.__silmoSavedRevision||0,exported:window.__silmoExportRevision||0,imported:window.__silmoImportRevision||0}),check:b=>(window.__silmoSavedRevision||0)>b.saved&&(window.__silmoExportRevision||0)>b.exported&&(window.__silmoImportRevision||0)>b.imported}
   ];
   // Renumber the original CAD lessons after the eleven keyboard lessons.
   steps.forEach((step,i)=>{if(i>=11)step.title=step.title.replace(/^\d+\./,(i+1)+'.');});
