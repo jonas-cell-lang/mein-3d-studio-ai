@@ -139,7 +139,7 @@ try {
   assert.match(await page.locator('#tutorialFeedback').innerText(), /Erfolgskontrolle bestanden/, 'Tutorial erkennt das neu erstellte Objekt nicht');
   assert.equal(await page.locator('#tutorialNext').isDisabled(), false, 'Weiter wird nach erkannter Aufgabe nicht freigeschaltet');
   await page.locator('#tutorialNext').click();
-  assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 13 VON/, 'Tutorial geht nach erfolgreicher Kontrolle nicht zum nächsten Lernschritt');
+  assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 7 VON/, 'Tutorial geht nach erfolgreicher Kontrolle nicht zum nächsten Lernschritt');
   assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Nächste Aufgabe muss wieder bis zur Erfolgskontrolle gesperrt sein');
   await page.locator('#addSphere').click();
   await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 5000 });
