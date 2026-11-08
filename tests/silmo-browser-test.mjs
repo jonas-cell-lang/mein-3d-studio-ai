@@ -106,7 +106,7 @@ try {
   assert.match(await page.locator('#tutorialTermList').textContent(), /Grundkörper|Objektliste/, 'Grundbegriffe werden nicht einfach erklärt');
   assert.ok((await page.title()).includes(currentBuild), 'Seitentitel zeigt nicht den aktuellen Build');
   assert.equal(await page.locator('#tutorialRetry').isVisible(), true, 'Manuelle Wiederholungsprüfung fehlt');
-  assert.equal(await page.locator('#tutorialKeyboard').isVisible(), true, 'Tastaturhinweise fehlen in der Lernphase');
+  assert.equal(await page.locator('#tutorialKeyboard').isVisible(), false, 'Separate Tastaturhinweise sollen nicht neben den Lernaufgaben erscheinen');
   const keyboardGuide = page.locator('#tutorialKeyboardGuide');
   assert.equal(await keyboardGuide.isVisible(), true, 'Einzeln erklärte Tastenkombinationen fehlen');
   assert.equal(await page.locator('#tutorialCard > #tutorialKeyboardGuide').count(),1,'Tastenkombinationen stehen nicht vor der ersten Lernaufgabe');
