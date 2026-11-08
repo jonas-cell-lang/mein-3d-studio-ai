@@ -114,12 +114,17 @@ try {
   assert.equal(await page.locator('#tutorialInstructionList li').count(),8,'Aufgabe 25 enthält nicht acht konkrete Schritte');
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/Messen & Prüfen/,'Aufgabe 25 nennt den richtigen Reiter für die Druckbettprüfung nicht');
   const bedWidthBefore=Number(await page.locator('#bedWidth').inputValue());
+  const bedDepthBefore=Number(await page.locator('#bedDepth').inputValue());
   await page.locator('#bedWidth').fill(String(Math.min(2000,bedWidthBefore+10)));
   await page.locator('#applyBedSize').click();
   await page.locator('[data-tab="measure"]').click();
   await page.locator('#checkBed').click();
   await page.waitForFunction(()=>document.querySelector('#tutorialNext')?.disabled===false,null,{timeout:5000});
   assert.match(await page.locator('#tutorialFeedback').innerText(),/Erfolgskontrolle bestanden/,'Aufgabe 25 erkennt die Druckbettprüfung nicht');
+  // Testzustand zurücksetzen: nachfolgende Geometrieprüfungen erwarten das Standardbett 200 × 200 mm.
+  await page.locator('#bedWidth').fill(String(bedWidthBefore));
+  await page.locator('#bedDepth').fill(String(bedDepthBefore));
+  await page.locator('#applyBedSize').click();
   // Aufgabe 26: Projekt sichern, STL exportieren und eine STL direkt in die neue Ablage ziehen.
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(25)),true,'Aufgabe 26 kann nicht geöffnet werden');
   assert.equal(await page.locator('#stlDropZone').count(),1,'STL-Ablagefläche fehlt');
