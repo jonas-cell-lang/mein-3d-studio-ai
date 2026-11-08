@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v60 – Tutorial-Prüfung verbessert</title>
+<title>SILMO 3D Studio AI – v61 – Tutorial-Anleitungen verbessert</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v60 – Tutorial-Prüfung verbessert">
+<meta name="silmo-build" content="v61 – Tutorial-Anleitungen verbessert">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -4023,6 +4023,8 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     '<details class="tutorial-key-combo"><summary>11. Objekt mit grösseren Schritten bewegen – Shift + Pfeiltaste</summary><ol><li>Wähle zuerst ein 3D-Objekt aus.</li><li>Halte die Umschalttaste (Shift, ⇧) gedrückt.</li><li>Drücke zusätzlich eine Pfeiltaste. Das Objekt bewegt sich zehnmal so weit wie bei einem normalen Pfeiltastendruck.</li><li>Lass beide Tasten los.</li></ol></details></details>' +
     '<div id="tutorialKeyboard" class="tutorial-where">Tastatur: Die Tastenkombinationen oben sind einzeln erklärt. Du kannst jede Erklärung aufklappen.</div><pre id="tutorialDebug" aria-live="polite"></pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialRetry" type="button">Erneut prüfen</button><button id="tutorialNext" type="button" class="primary" disabled>Weiter</button><button id="tutorialSkip" type="button">Beenden</button></div>';
   document.body.append(shade, card);
+  // Tastenkombinationen stehen vor der ersten Lernaufgabe, damit Einsteiger sie sofort finden.
+  card.insertBefore($('tutorialKeyboardGuide'), $('tutorialStepLabel'));
   $('tutorialBuild').textContent = document.querySelector('meta[name="silmo-build"]')?.content || 'Build unbekannt';
 
   const toolCards = [
@@ -4097,7 +4099,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     {title:'10. Ausrichten und Spiegeln',glyph:'⇥',tab:'edit',target:'alignSelected',where:'Die Werkzeuge „Ausrichten“, Achse und Bezugspunkt liegen im Reiter „Bearbeiten“. „Spiegeln“ findest du ebenfalls dort.',text:'Wähle mindestens zwei Objekte aus und richte sie über eine Achse aus. Probiere danach das Spiegeln aus. SILMO erkennt eine echte Änderung an den Objekttransformationen.',begin:()=>({transforms:transforms()}),check:b=>transformChanged(b.transforms)},
     {title:'11. 2D-Skizze zeichnen und extrudieren',glyph:'▭',tab:'draw',target:'sketchTool',where:'Öffne „Zeichnen“. Wähle im Feld „Skizzenwerkzeug“ ein Rechteck. Klicke auf „Zeichnen starten“, ziehe die Kontur auf der Druckplatte und klicke anschliessend auf „Skizze als 3D-Körper erstellen“.',text:'Zeichne ein Rechteck und verwandle es in einen 3D-Körper. Du kannst vor dem Erstellen Breite, Tiefe und Höhe einstellen.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count&&sketchSnapshot()?.type==='rectangle'},
     {title:'12. Kreis, Ellipse und Dreieck',glyph:'◯',tab:'draw',target:'sketchTool',where:'Alle 2D-Grundformen findest du im Feld „Skizzenwerkzeug“. Bei einer Ellipse kannst du Breite und Tiefe getrennt einstellen.',text:'Wähle eine Ellipse oder ein Dreieck, zeichne die Kontur und erstelle daraus einen 3D-Körper. SILMO kontrolliert den Typ der zuletzt erzeugten Skizze.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count&&['ellipse','triangle'].includes(sketchSnapshot()?.type)},
-    {title:'13. Freiform und Kurven',glyph:'〰',tab:'draw',target:'sketchTool',where:'Im Feld „Skizzenwerkzeug“ findest du Freiform, 2D-Linie, 2D-Kurve und 3D-Linie. Bei Linien und Kurven kannst du den Durchmesser einstellen.',text:'Zeichne eine eigene geschlossene Freiform mit mehreren Punkten und erstelle daraus einen 3D-Körper. Achte darauf, dass die Kontur geschlossen ist.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count&&sketchSnapshot()?.type==='freeform2d'&&Number(sketchSnapshot()?.points)>=3},
+    {title:'13. Freiform zeichnen und 3D-Körper erstellen',glyph:'〰',tab:'draw',target:'sketchTool',where:'Öffne links den Reiter „Zeichnen“. Das Auswahlfeld heisst „Skizzenwerkzeug“. Wähle dort „2D-Freiform“. Direkt darunter findest du „Zeichnen starten“.',text:'Du zeichnest eine eigene Form, indem du die Zeichenfläche mit gedrückter Maustaste oder mit dem Finger/Apple Pencil entlangfährst. SILMO schliesst die Linie beim Loslassen automatisch. Danach machst du daraus einen 3D-Körper.',instructions:['Klicke links auf den Reiter „Zeichnen“.','Öffne das Auswahlfeld „Skizzenwerkzeug“ und wähle „2D-Freiform“.','Klicke auf „Zeichnen starten“. Die Zeichenfläche wird zum Zeichenbereich.','Suche auf dem Raster eine freie Stelle. Setze dort den Mauszeiger auf.','Computer: Halte die linke Maustaste gedrückt. iPad: Berühre die Fläche mit dem Finger oder Apple Pencil und halte den Kontakt.','Fahre in einer zusammenhängenden Bewegung über das Raster und zeichne eine einfache Form mit mindestens drei verschiedenen Ecken. Lass die Maustaste oder den Finger erst los, wenn du fertig bist.','Lass los. SILMO schliesst die Umrandung automatisch. Du musst den Anfang nicht exakt treffen. Unter dem Zeichenbereich sollte „Freiform bereit“ mit mindestens 3 Konturpunkten stehen.','Klicke auf „Skizze als 3D-Körper erstellen“. Jetzt sollte deine flache Zeichnung als 3D-Teil in der Objektliste erscheinen.','Falls „mindestens drei unterschiedliche Punkte“ erscheint: Klicke auf „Zeichenmodus beenden“, starte erneut und zeichne eine grössere Form mit mehreren Ecken.'],begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count&&sketchSnapshot()?.type==='freeform2d'&&Number(sketchSnapshot()?.points)>=3},
     {title:'14. Raster und Rasterfang',glyph:'▦',tab:'draw',target:'sketchSnapEnabled',where:'Unter den Skizzeneinstellungen findest du „Rasterfang“ und die Rasterweite in Millimetern.',text:'Aktiviere den Rasterfang und stelle eine Rasterweite ein. Zeichne danach eine neue Skizze, deren Kontur am eingestellten Raster liegt.',begin:()=>({snap:$('sketchSnapEnabled')?.checked,grid:$('sketchGridMM')?.value||''}),check:b=>$('sketchSnapEnabled')?.checked===true&&($('sketchGridMM')?.value||'')!==''&&($('sketchGridMM')?.value||'')!==b.grid},
     {title:'15. Skizzenmasse und Konturpunkte',glyph:'⌗',tab:'draw',target:'loadSketchDimensions',where:'Öffne rechts im Zeichenbereich „Professionelle CAD-Bearbeitung“. Dort findest du „Exakte Masse und Position“, „Konturpunkte“ und die zugehörigen Laden-/Übernehmen-Schaltflächen.',text:'Wähle einen selbst erstellten Skizzenkörper aus. Lade seine Skizzenmasse und Konturpunkte. Ändere einen Konturpunkt oder eine Abmessung und übernimm die Änderung.',begin:()=>({status:$('status')?.textContent||''}),check:b=>{const t=$('status')?.textContent||'';return t!==b.status&&(/Konturpunkt .* geändert|Skizzenmasse aktualisiert/.test(t));}},
     {title:'16. Kanten abrunden und fasen',glyph:'◒',tab:'draw',target:'applyEdgeFillet',where:'Im rechten Zeichen-Eigenschaftenbereich unter „Professionelle CAD-Bearbeitung“ findest du die Kantenbearbeitung. Wähle einen extrudierten Skizzenkörper und einen kleinen Wert.',text:'Runde eine geeignete Kante ab oder erstelle eine Fase. Die Funktion arbeitet an Kanten extrudierter Skizzenprofile.',begin:()=>({status:$('status')?.textContent||''}),check:b=>{const t=$('status')?.textContent||'';return t!==b.status&&(/Kanten abgerundet|Kanten abgefast/.test(t));}},
@@ -4143,7 +4145,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     $('tutorialWhere').textContent='WO FINDEST DU ES? '+step.where;
     const instructionList=$('tutorialInstructionList');
     instructionList.replaceChildren();
-    String(step.where).split(/(?<=[.!?])\s+/).filter(Boolean).forEach((instruction,stepNumber)=>{
+    (Array.isArray(step.instructions)&&step.instructions.length?step.instructions:String(step.where).split(/(?<=[.!?])\s+/).filter(Boolean)).forEach((instruction,stepNumber)=>{
       const item=document.createElement('li');
       item.textContent=instruction;
       instructionList.append(item);
@@ -4162,12 +4164,13 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     });
     $('tutorialWordHelp').hidden=relevantTerms.length===0;
     $('tutorialWordHelp').open=false;
-    $('tutorialExamPanel').hidden=true;$('tutorialQuickGuide').hidden=false;$('tutorialBack').hidden=false;$('tutorialRetry').hidden=false;$('tutorialKeyboard').hidden=false;$('tutorialKeyboardGuide').hidden=false;$('tutorialKeyboardGuide').open=false;
+    $('tutorialExamPanel').hidden=true;$('tutorialQuickGuide').hidden=false;$('tutorialBack').hidden=false;$('tutorialRetry').hidden=false;$('tutorialKeyboard').hidden=false;$('tutorialKeyboardGuide').hidden=false;$('tutorialKeyboardGuide').open=index===0;
     $('tutorialBack').disabled=index===0;$('tutorialNext').textContent='Weiter';$('tutorialNext').disabled=true;
     updateProgress();if(step.target)revealTarget(step.target);else clearHighlight();
     renderingStep=false;
     feedback('Führe die Aufgabe aus. Du kannst es beliebig oft versuchen. SILMO prüft automatisch; „Erneut prüfen“ startet eine zusätzliche Kontrolle.',false);updateDebug();
   }
+  window.__silmoTutorialShowStepForTest = n => { if (phase !== 'learn' || !Number.isInteger(n) || n < 0 || n >= steps.length) return false; index=n; renderStep(); return true; };
   function renderExam(){
     clearHighlight();$('tutorialStepLabel').textContent='ABSCHLUSSTEST · SELBSTSTÄNDIG';
     $('tutorialVisualGlyph').textContent='♥';$('tutorialVisualCaption').textContent='Deine eigene Konstruktion';
