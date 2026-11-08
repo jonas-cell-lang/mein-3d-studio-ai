@@ -4122,7 +4122,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     {title:'21. Projekt speichern und STL exportieren',glyph:'⬇',tab:'print',target:'saveProjectButton',where:'Im Reiter „3D-Druck“ findest du „Projekt speichern“, „Projekt öffnen“ und „STL exportieren“. Ein Projekt speichert den Arbeitsstand; STL exportiert die Geometrie für den Slicer.',text:'Speichere dein Projekt und exportiere danach ein Modell als STL. SILMO wartet auf die Erfolgsmeldungen beider Vorgänge.',begin:()=>({saved:savedObserved,exported:exportObserved}),check:b=>savedObserved&&!b.saved&&exportObserved&&!b.exported}
   ];
   // Renumber the original CAD lessons after the eleven keyboard lessons.
-  steps.forEach((step,i)=>{if(i>=11)step.title=step.title.replace(/^\\d+\\./,(i+1)+'.');});
+  steps.forEach((step,i)=>{if(i>=11)step.title=step.title.replace(/^\d+\./,(i+1)+'.');});
 
   function objectCount(){return $('objects')?.querySelectorAll('.object-row').length||0;}
   function positions(){try{return window.__silmoTutorialAllPositions?.()||[];}catch(_){return [];}}
