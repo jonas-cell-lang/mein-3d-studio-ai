@@ -4062,6 +4062,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     ['Boolesche Operation','Ein Rechenschritt mit Körpern: Du kannst sie verbinden oder einen Körper aus einem anderen herausschneiden.'],
     ['Slicer','Ein Programm, das dein 3D-Modell für einen 3D-Drucker vorbereitet.'],
     ['STL exportiert','Das Modell wird als Datei gespeichert, die ein Slicer öffnen kann.']
+  ];
   let phase = 'learn', index = 0, highlight = null, baseline = {}, exportObserved = false, savedObserved = false, renderingStep = false;
   const steps = [
     {title:'1. Grundkörper erstellen',glyph:'◧',tab:'create',target:'addCube',where:'Links im Bereich „Erstellen“ findest du die Grundkörper. Klicke auf „＋ Würfel“. Danach erscheint der neue Körper in der Objektliste.',text:'Erstelle einen zusätzlichen Würfel. Ein Grundkörper ist der Startpunkt vieler CAD-Konstruktionen.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count},
