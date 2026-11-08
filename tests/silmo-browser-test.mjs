@@ -101,7 +101,7 @@ try {
   assert.equal(await page.locator('#tutorialInstructionList li').count(),10,'Aufgabe 23 hat keine zehn konkreten Handlungsschritte');
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/genau zwei geschlossene Skizzenprofile/,'Loft erklärt die zwei benötigten Profile nicht');
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/zuerst das Profil und danach den Pfad/,'Sweep erklärt die Auswahlreihenfolge nicht');
-  assert.match(await page.locator('#tutorialInstructionList').innerText(),/⇧ Shift \\+ →/,'Aufgabe 23 erklärt die Tastenkombination zum Überspringen nicht');
+  assert.ok((await page.locator('#tutorialInstructionList').innerText()).includes('⇧ Shift + →'),'Aufgabe 23 erklärt die Tastenkombination zum Überspringen nicht');
   assert.equal(await page.locator('#tutorialSkipStep').isVisible(),true,'Schaltfläche zum Überspringen der aktuellen Aufgabe fehlt');
   await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',code:'ArrowRight',shiftKey:true,bubbles:true,cancelable:true})));
   assert.match(await page.locator('#tutorialStepLabel').innerText(),/AUFGABE 24 VON 26/,'Shift+Pfeil rechts überspringt Aufgabe 23 nicht');
