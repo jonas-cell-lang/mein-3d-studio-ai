@@ -43,7 +43,7 @@ try {
   await macPage.close();
 
   // iPad mit externer Tastatur: Option+Leertaste.
-  const ipadPage = await browser.newPage();
+  const ipadPage = await browser.newPage({ viewport: { width: 820, height: 1180 }, deviceScaleFactor: 2, hasTouch: true });
   await ipadPage.addInitScript(() => {
     Object.defineProperty(navigator, 'platform', { configurable: true, get: () => 'MacIntel' });
     Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, get: () => 5 });
@@ -54,6 +54,19 @@ try {
     key: ' ', code: 'Space', altKey: true, bubbles: true, cancelable: true
   })));
   assert.equal(await ipadPage.locator('#silmoDiagPanel').isVisible(), true, 'Option+Leertaste öffnet das Prüftool auf dem iPad nicht');
+  await ipadPage.evaluate(() => window.SILMO_DIAG.close());
+  await ipadPage.locator('#tutorialLaunch').click();
+  const ipadTutorialBox = await ipadPage.locator('#tutorialCard').boundingBox();
+  const ipadPropertiesBox = await ipadPage.locator('[aria-label="Eigenschaften des ausgewählten Modells"]').boundingBox();
+  assert.ok(ipadTutorialBox && ipadTutorialBox.width >= 380, 'Tutorial ist auf dem iPad nicht breit genug lesbar');
+  assert.ok(ipadTutorialBox && ipadTutorialBox.x >= 170 && ipadTutorialBox.x + ipadTutorialBox.width < 590, 'Tutorial überdeckt auf dem iPad die Eigenschaften');
+  assert.ok(ipadTutorialBox && ipadTutorialBox.y >= 0 && ipadTutorialBox.y + ipadTutorialBox.height <= 1180, 'Tutorial liegt ausserhalb des iPad-Bildschirms');
+  assert.ok(ipadPropertiesBox, 'Eigenschaftenpanel fehlt auf dem iPad');
+  assert.ok(await ipadPage.locator('#tutorialInstructionList li').count() >= 2, 'Schritt-für-Schritt-Anleitung fehlt auf dem iPad');
+  assert.ok(Number(await ipadPage.locator('#tutorialInstructionList li').first().evaluate(el => getComputedStyle(el).fontSize.replace('px',''))) >= 14, 'Anleitungsschrift ist auf dem iPad zu klein');
+  await ipadPage.locator('#tutorialCard').evaluate(el => { el.scrollTop = el.scrollHeight; });
+  const ipadLastButtonBox = await ipadPage.locator('#tutorialSkip').boundingBox();
+  assert.ok(ipadLastButtonBox && ipadLastButtonBox.y + ipadLastButtonBox.height <= 1180, 'Untere Tutorial-Schaltflächen sind auf dem iPad nicht erreichbar');
   await ipadPage.close();
 
   const canvasSize = await page.locator('#viewport canvas').evaluate(canvas => ({ width: canvas.width, height: canvas.height }));
@@ -75,7 +88,10 @@ try {
   assert.match(await page.locator('#tutorialToolGallery').textContent(), /2D-Linie.*2D-Kurve.*Freiform/s, 'Neue Zeichenwerkzeuge fehlen in der visuellen Übersicht');
   const tutorialBox = await page.locator('#tutorialCard').boundingBox();
   const propertiesBox = await page.locator('[aria-label="Eigenschaften des ausgewählten Modells"]').boundingBox();
+  assert.ok(tutorialBox && tutorialBox.width >= 430, 'Tutorialfenster ist auf dem Desktop zu schmal');
   assert.ok(tutorialBox && propertiesBox && tutorialBox.x + tutorialBox.width < propertiesBox.x, 'Tutorialfenster verdeckt weiterhin den Skalierungsbereich');
+  assert.ok(await page.locator('#tutorialInstructionList li').count() >= 2, 'Anleitung ist nicht in einzelne Schritte aufgeteilt');
+  assert.ok(Number(await page.locator('#tutorialInstructionList li').first().evaluate(el => getComputedStyle(el).fontSize.replace('px',''))) >= 14, 'Anleitungsschrift ist zu klein');
   assert.ok((await page.title()).includes(currentBuild), 'Seitentitel zeigt nicht den aktuellen Build');
   assert.equal(await page.locator('#tutorialRetry').isVisible(), true, 'Manuelle Wiederholungsprüfung fehlt');
   assert.equal(await page.locator('#tutorialKeyboard').isVisible(), true, 'Tastaturhinweise fehlen in der Lernphase');
