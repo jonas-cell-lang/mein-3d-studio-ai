@@ -3942,6 +3942,15 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       targetDistance * Math.exp(Math.max(-2, Math.min(2, e.deltaY * 0.001)))));
   }, {passive:false});
 
+  // Read-only model audit used by the independent tutorial assessment.
+  window.__silmoTutorialModelAudit = () => objects.map(obj => {
+    try {
+      const box = new THREE.Box3().setFromObject(obj);
+      const size = new THREE.Vector3(); box.getSize(size);
+      const attribute = obj.geometry && obj.geometry.attributes && obj.geometry.attributes.position;
+      return { uuid: obj.uuid, width: size.x * MM_PER_UNIT, depth: size.y * MM_PER_UNIT, height: size.z * MM_PER_UNIT, vertexCount: attribute ? attribute.count : 0, label: obj.userData && obj.userData.label ? obj.userData.label : 'Objekt' };
+    } catch (_) { return { uuid: obj.uuid, width: 0, depth: 0, height: 0, vertexCount: 0, label: 'Objekt' }; }
+  });
   createObject('Würfel');
   // Startwürfel steht auf der Platte; die Ansicht zeigt das ganze Standardbett.
   targetDistance = Math.max(9, Math.max(bedWidthMM, bedDepthMM) / MM_PER_UNIT * 0.85);
@@ -3967,189 +3976,187 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
 </script>
 
 <script>
-// Interaktives Tutorial mit sichtbarer Schaltflächen-Markierung und zustandsbasierter Erfolgskontrolle.
+// SILMO Lernkurs: geführte Lernphase mit echter Erfolgskontrolle und eigenständigem Abschlusstest.
 (() => {
   const $ = id => document.getElementById(id);
   const launch = $('tutorialLaunch');
   if (!launch) return;
-  const shade = document.createElement('div'); shade.id='tutorialShade'; shade.hidden=true;
-  const card = document.createElement('section'); card.id='tutorialCard'; card.hidden=true;
-  card.setAttribute('role','dialog'); card.setAttribute('aria-modal','false'); card.setAttribute('aria-label','SILMO Tutorial');
-  card.innerHTML = '<button id="tutorialClose" type="button" aria-label="Tutorial schliessen">✕</button><div style="font-size:10px;color:#ffcf70;margin-bottom:6px">LERNMODUS · <span id="tutorialBuild"></span></div><div id="tutorialStepLabel" style="color:#80c7ff;font-size:11px;font-weight:700;letter-spacing:.08em"></div><div id="tutorialVisual" aria-label="Bildliche Darstellung des aktuellen Lernschritts"><span id="tutorialVisualGlyph" aria-hidden="true">◧</span><span id="tutorialVisualCaption">Werkzeug</span></div><h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div><details id="tutorialQuickGuide" open><summary>Alle Werkzeuge – visuelle Übersicht</summary><div id="tutorialToolGallery" aria-label="Alle SILMO-Werkzeuge"></div></details><div id="tutorialFeedback" aria-live="polite"></div><pre id="tutorialDebug" aria-live="polite">Diagnose wird gestartet …</pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialNext" type="button" class="primary">Prüfen</button><button id="tutorialSkip" type="button">Beenden</button></div>';
-  document.body.append(shade,card);
+  const shade = document.createElement('div'); shade.id = 'tutorialShade'; shade.hidden = true;
+  const card = document.createElement('section'); card.id = 'tutorialCard'; card.hidden = true;
+  card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'false'); card.setAttribute('aria-label', 'SILMO Lernkurs');
+  card.innerHTML = '<button id="tutorialClose" type="button" aria-label="Tutorial schliessen">✕</button>' +
+    '<div style="font-size:10px;color:#ffcf70;margin-bottom:6px">SILMO LERNKURS · <span id="tutorialBuild"></span></div>' +
+    '<div id="tutorialStepLabel"></div><div id="tutorialVisual" aria-label="Bildliche Darstellung des Lernschritts"><span id="tutorialVisualGlyph" aria-hidden="true">◧</span><span id="tutorialVisualCaption">Werkzeug</span></div>' +
+    '<h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div>' +
+    '<div id="tutorialWhere" class="tutorial-where"></div><div id="tutorialFeedback" aria-live="polite"></div>' +
+    '<div id="tutorialExamPanel" hidden><div class="tutorial-exam-rule"><strong>Abschlusstest – ohne Anleitung</strong><p>Baue ein eigenes, dreidimensionales Herz, das für den 3D-Druck geeignet ist. SILMO zeigt dir jetzt keine Werkzeuge und keine Arbeitsschritte.</p></div>' +
+    '<button id="tutorialExamHint" type="button">Mittleren Tipp anzeigen</button><p id="tutorialExamHintText" hidden></p>' +
+    '<label class="tutorial-exam-confirm"><input id="tutorialHeartConfirm" type="checkbox"> Ich habe geprüft, dass mein eigenes Modell klar als Herz erkennbar ist.</label><div id="tutorialExamChecks"></div></div>' +
+    '<details id="tutorialQuickGuide"><summary>Werkzeugübersicht (während des Lernens)</summary><div id="tutorialToolGallery" aria-label="SILMO-Werkzeugübersicht"></div></details>' +
+    '<pre id="tutorialDebug" aria-live="polite"></pre><div class="tutorial-actions"><button id="tutorialBack" type="button">Zurück</button><button id="tutorialNext" type="button" class="primary" disabled>Weiter</button><button id="tutorialSkip" type="button">Beenden</button></div>';
+  document.body.append(shade, card);
   $('tutorialBuild').textContent = document.querySelector('meta[name="silmo-build"]')?.content || 'Build unbekannt';
+
   const toolCards = [
     ['◧','Würfel','create','addCube'],['●','Kugel','create','addSphere'],['⬭','Zylinder','create','addCylinder'],
+    ['△','Kegel','create','addCone'],['⬡','Sechskant-Prisma','create','addHexPrism'],['◎','Ring / Torus','create','addTorus'],
     ['▢','Duplizieren','create','duplicate'],['⊕','Verbinden','create','booleanUnion'],['⊖','Abziehen','create','booleanSubtract'],
-    ['↔','Verschieben','edit','gizmoModeToggle'],['⟳','Drehen','edit','gizmoModeToggle'],['⇥','Ausrichten','edit','alignSelected'],
+    ['↔','Verschieben','edit','positionFields'],['⟳','Drehen','edit','gizmoModeToggle'],['⇥','Ausrichten','edit','alignSelected'],
     ['▤','Verteilen','edit','alignSelected'],['▧','Gruppieren','edit','createObjectGroup'],['◐','Spiegeln','edit','mirror'],
     ['↔','Masse in mm','measure','sizeFields'],['％','Skalierung','measure','percentFields'],['◉','Farbe','measure','color'],
-    ['▭','Rechteck','draw','sketchTool'],['▢','Rechteck mit Rundungen','draw','sketchTool'],['◯','Kreis / Ellipse','draw','sketchTool'],['△','Dreieck','draw','sketchTool'],
-    ['／','2D-Linie','draw','sketchTool'],['〰','2D-Kurve','draw','sketchTool'],['✎','Freiform','draw','sketchTool'],
-    ['⌁','3D-Linie','draw','sketchTool'],['▦','Rasterfang','draw','sketchSnapEnabled'],
-    ['⬇','STL exportieren','print','exportModel'],['▣','Druckbett','print','dropToBed'],['✓','Druckprüfung','expert','checkBed'],
-    ['💾','Projekt sichern','print','saveProjectButton'],['📂','Projekt öffnen','print','openProjectButton']
+    ['▭','Rechteck','draw','sketchTool'],['▢','Abgerundetes Rechteck','draw','sketchTool'],['◯','Kreis / Ellipse','draw','sketchTool'],
+    ['△','Dreieck','draw','sketchTool'],['／','2D-Linie','draw','sketchTool'],['〰','2D-Kurve','draw','sketchTool'],
+    ['✎','Freiform','draw','sketchTool'],['⌁','3D-Linie','draw','sketchTool'],['▦','Rasterfang','draw','sketchSnapEnabled'],
+    ['⌗','Skizzenmasse','draw','loadSketchDimensions'],['✥','Konturpunkte','draw','loadSketchPoints'],
+    ['◒','Abrunden / Fase','draw','applyEdgeFillet'],['∿','Loft / Sweep','draw','createLoft'],
+    ['⬇','STL exportieren','print','exportModel'],['▣','Druckbett','print','applyBedSize'],
+    ['✓','Druckprüfung','print','checkBed'],['💾','Projekt sichern','print','saveProjectButton'],['📂','Projekt öffnen','print','openProjectButton']
   ];
-  $('tutorialToolGallery').innerHTML = toolCards.map(([icon,label,tab,target]) =>
-    '<button type="button" class="tutorial-tool-card" data-tool-tab="'+tab+'" data-target="'+target+'"><span class="tutorial-tool-icon" aria-hidden="true">'+icon+'</span><span>'+label+'</span></button>'
+  $('tutorialToolGallery').innerHTML = toolCards.map(([glyph,label,tab,target]) =>
+    '<button type="button" class="tutorial-tool-card" data-tool-tab="' + tab + '" data-target="' + target + '"><span class="tutorial-tool-icon" aria-hidden="true">' + glyph + '</span><span>' + label + '</span></button>'
   ).join('');
+
+  let phase = 'learn', index = 0, highlight = null, baseline = {}, exportObserved = false, savedObserved = false;
   const steps = [
-    {title:'Würfel erstellen',text:'Erstelle mit „＋ Würfel“ ein zusätzliches Objekt. Die Aufgabe ist bestanden, wenn tatsächlich ein weiteres Objekt in der Objektliste erscheint.',target:'addCube',tab:'create',check:()=>objectCount()>tutorialStartCount,initialise:()=>{tutorialStartCount=objectCount();feedback('Klicke auf die markierte Schaltfläche.');}},
-    {title:'Objekt bewegen',text:'Wähle ein Objekt aus und verschiebe es mit den Pfeilen am Modell oder ändere X, Y oder Z in den Positionsfeldern. Die Position muss sich wirklich ändern.',target:'positionFields',tab:'edit',check:()=>{positionChanged=hasSelectedObjectMoved();return positionChanged;},initialise:()=>{positionChanged=false;positionAdvanceQueued=false;ensureTutorialObjectSelected();positionStart=positionSnapshot();positionStartMap=allPositionSnapshot();if(positionStartMap.length){feedback('Bewege ein Objekt mit den 3D-Pfeilen oder ändere X, Y oder Z. Der Schritt wechselt nach erkannter Bewegung automatisch weiter.');}else{feedback('Es ist noch kein 3D-Objekt vorhanden. Gehe zurück und erstelle zuerst einen Würfel.');}}},
-    {title:'Grösse verändern',text:'Öffne „Messen & Prüfen“ und ändere Breite, Tiefe oder Höhe in Millimetern. SILMO prüft, ob sich die tatsächliche Eingabe verändert hat.',target:'sizeFields',tab:'measure',check:()=>sizeChanged,initialise:()=>{sizeChanged=false;sizeStart=sizeSnapshot();feedback('Ändere eine Objektmasse und bestätige den Wert.');}},
-    {title:'Druckbett einstellen',text:'Stelle Breite oder Tiefe auf einen anderen gültigen Wert zwischen 5 und 2000 mm und klicke auf „Druckbettgrösse übernehmen“.',target:'applyBedSize',tab:'print',check:()=>bedApplied,initialise:()=>{bedApplied=false;bedStart=bedSnapshot();feedback('Ändere Breite oder Tiefe und übernimm die neue Grösse.');}},
-    {title:'STL exportieren',text:'Öffne den Reiter „3D-Druck“ und exportiere das Modell als STL. Die Aufgabe gilt nur als bestanden, wenn SILMO den Export erfolgreich meldet.',target:'exportModel',tab:'print',check:()=>exportSucceeded,initialise:()=>{exportSucceeded=false;feedback('Starte den STL-Export.');}},
-    {title:'Geschafft!',text:'Du hast alle Tutorial-Aufgaben abgeschlossen. Du kannst das Tutorial später jederzeit erneut starten.',target:null,tab:'create',check:()=>true,initialise:()=>{feedback('Alle Lernschritte wurden erfolgreich abgeschlossen.',true);}}
+    {title:'1. Grundkörper erstellen',glyph:'◧',tab:'create',target:'addCube',where:'Links im Bereich „Erstellen“ findest du die Grundkörper. Klicke auf „＋ Würfel“. Danach erscheint der neue Körper in der Objektliste.',text:'Erstelle einen zusätzlichen Würfel. Ein Grundkörper ist der Startpunkt vieler CAD-Konstruktionen.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count},
+    {title:'2. Weitere Grundkörper',glyph:'●',tab:'create',target:'addSphere',where:'Im selben Bereich „Erstellen“ findest du Kugel, Zylinder, Kegel, Sechskant-Prisma und Ring.',text:'Erstelle zusätzlich eine Kugel. Schau dir danach auch die anderen Grundkörper an. Die Aufgabe zählt, wenn die Kugel wirklich in der Objektliste erscheint.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count},
+    {title:'3. Objekt auswählen und duplizieren',glyph:'▢',tab:'create',target:'duplicate',where:'Wähle zuerst ein Objekt in der Objektliste oder direkt auf der 3D-Fläche. Danach findest du „Duplizieren“ im Bereich „Erstellen“.',text:'Wähle einen Körper aus und dupliziere ihn. Die Objektliste muss danach ein zusätzliches Objekt enthalten.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count},
+    {title:'4. Objekte verschieben',glyph:'↔',tab:'edit',target:'positionFields',where:'Wähle ein Objekt. Die Positionsfelder findest du im Reiter „Bearbeiten“. Alternativ ziehst du die Pfeile direkt am Modell.',text:'Verschiebe ein Objekt sichtbar an eine andere Position. Du kannst die Pfeile benutzen oder einen anderen X-, Y- oder Z-Wert eingeben.',begin:()=>({positions:positions()}),check:b=>positionChanged(b.positions)},
+    {title:'5. Objekte drehen',glyph:'⟳',tab:'edit',target:'gizmoModeToggle',where:'Im Reiter „Bearbeiten“ wechselst du mit der Schaltfläche am 3D-Manipulator zwischen Verschieben und Drehen. Ziehe danach einen Drehring.',text:'Schalte auf Drehen um und drehe ein ausgewähltes Objekt. Die tatsächliche Rotation muss sich verändern.',begin:()=>({transforms:transforms()}),check:b=>rotationChanged(b.transforms)},
+    {title:'6. Exakte Masse in Millimetern',glyph:'↔',tab:'measure',target:'sizeFields',where:'Öffne „Messen & Prüfen“. Im Abschnitt „Exakte Objektmasse“ findest du die Felder für Breite, Tiefe und Höhe.',text:'Ändere mindestens eine Objektabmessung in Millimetern und bestätige den Wert. SILMO vergleicht die Werte vor und nach deiner Änderung.',begin:()=>({size:fieldValues('sizeFields')}),check:b=>fieldValues('sizeFields')!==b.size},
+    {title:'7. Skalierung in Prozent',glyph:'％',tab:'measure',target:'percentFields',where:'Direkt unter den Objektmassen findest du „Skalierung (%)“. Die Kettenschaltfläche bestimmt, ob alle Achsen gemeinsam skaliert werden.',text:'Verändere die Skalierung eines Objekts über die Prozentfelder. Mindestens ein tatsächlicher Skalierungswert muss sich ändern.',begin:()=>({transforms:transforms()}),check:b=>scaleChanged(b.transforms)},
+    {title:'8. Objektfarbe',glyph:'◉',tab:'measure',target:'color',where:'Im Bereich „Messen & Prüfen“ befindet sich die Farbauswahl „Objektfarbe“.',text:'Wähle ein Objekt aus und ändere seine Farbe. SILMO prüft, ob die Farbauswahl tatsächlich verändert wurde.',begin:()=>({color:$('color')?.value||''}),check:b=>($('color')?.value||'')!==b.color},
+    {title:'9. Mehrfachauswahl und Gruppieren',glyph:'▧',tab:'edit',target:'multiSelectToggle',where:'Im Reiter „Bearbeiten“ findest du „Mehrfachauswahl“ und die Schaltfläche „Gruppieren“. Wähle mindestens zwei Objekte aus.',text:'Aktiviere die Mehrfachauswahl, wähle mindestens zwei Objekte und gruppiere sie. In der Objektliste werden Gruppenmitglieder gekennzeichnet.',begin:()=>({groups:groupCount()}),check:b=>groupCount()>b.groups},
+    {title:'10. Ausrichten und Spiegeln',glyph:'⇥',tab:'edit',target:'alignSelected',where:'Die Werkzeuge „Ausrichten“, Achse und Bezugspunkt liegen im Reiter „Bearbeiten“. „Spiegeln“ findest du ebenfalls dort.',text:'Wähle mindestens zwei Objekte aus und richte sie über eine Achse aus. Probiere danach das Spiegeln aus. SILMO erkennt eine echte Änderung an den Objekttransformationen.',begin:()=>({transforms:transforms()}),check:b=>transformChanged(b.transforms)},
+    {title:'11. 2D-Skizze zeichnen und extrudieren',glyph:'▭',tab:'draw',target:'sketchTool',where:'Öffne „Zeichnen“. Wähle im Feld „Skizzenwerkzeug“ ein Rechteck. Klicke auf „Zeichnen starten“, ziehe die Kontur auf der Druckplatte und klicke anschliessend auf „Skizze als 3D-Körper erstellen“.',text:'Zeichne ein Rechteck und verwandle es in einen 3D-Körper. Du kannst vor dem Erstellen Breite, Tiefe und Höhe einstellen.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count&&sketchSnapshot()?.type==='rectangle'},
+    {title:'12. Kreis, Ellipse und Dreieck',glyph:'◯',tab:'draw',target:'sketchTool',where:'Alle 2D-Grundformen findest du im Feld „Skizzenwerkzeug“. Bei einer Ellipse kannst du Breite und Tiefe getrennt einstellen.',text:'Wähle eine Ellipse oder ein Dreieck, zeichne die Kontur und erstelle daraus einen 3D-Körper. SILMO kontrolliert den Typ der zuletzt erzeugten Skizze.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count&&['ellipse','triangle'].includes(sketchSnapshot()?.type)},
+    {title:'13. Freiform und Kurven',glyph:'〰',tab:'draw',target:'sketchTool',where:'Im Feld „Skizzenwerkzeug“ findest du Freiform, 2D-Linie, 2D-Kurve und 3D-Linie. Bei Linien und Kurven kannst du den Durchmesser einstellen.',text:'Zeichne eine eigene geschlossene Freiform mit mehreren Punkten und erstelle daraus einen 3D-Körper. Achte darauf, dass die Kontur geschlossen ist.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count&&sketchSnapshot()?.type==='freeform2d'&&Number(sketchSnapshot()?.points)>=3},
+    {title:'14. Raster und Rasterfang',glyph:'▦',tab:'draw',target:'sketchSnapEnabled',where:'Unter den Skizzeneinstellungen findest du „Rasterfang“ und die Rasterweite in Millimetern.',text:'Aktiviere den Rasterfang und stelle eine Rasterweite ein. Zeichne danach eine neue Skizze, deren Kontur am eingestellten Raster liegt.',begin:()=>({snap:$('sketchSnapEnabled')?.checked,grid:$('sketchGridMM')?.value||''}),check:b=>$('sketchSnapEnabled')?.checked===true&&($('sketchGridMM')?.value||'')!==''&&($('sketchGridMM')?.value||'')!==b.grid},
+    {title:'15. Skizzenmasse und Konturpunkte',glyph:'⌗',tab:'draw',target:'loadSketchDimensions',where:'Öffne rechts im Zeichenbereich „Professionelle CAD-Bearbeitung“. Dort findest du „Exakte Masse und Position“, „Konturpunkte“ und die zugehörigen Laden-/Übernehmen-Schaltflächen.',text:'Wähle einen selbst erstellten Skizzenkörper aus. Lade seine Skizzenmasse und Konturpunkte. Ändere einen Konturpunkt oder eine Abmessung und übernimm die Änderung.',begin:()=>({status:$('status')?.textContent||''}),check:b=>{const t=$('status')?.textContent||'';return t!==b.status&&(/Konturpunkt .* geändert|Skizzenmasse aktualisiert/.test(t));}},
+    {title:'16. Kanten abrunden und fasen',glyph:'◒',tab:'draw',target:'applyEdgeFillet',where:'Im rechten Zeichen-Eigenschaftenbereich unter „Professionelle CAD-Bearbeitung“ findest du die Kantenbearbeitung. Wähle einen extrudierten Skizzenkörper und einen kleinen Wert.',text:'Runde eine geeignete Kante ab oder erstelle eine Fase. Die Funktion arbeitet an Kanten extrudierter Skizzenprofile.',begin:()=>({status:$('status')?.textContent||''}),check:b=>{const t=$('status')?.textContent||'';return t!==b.status&&(/Kanten abgerundet|Kanten abgefast/.test(t));}},
+    {title:'17. CAD-Beziehungen und Bedingungen',glyph:'∥',tab:'draw',target:'applySketchRelation',where:'Unter „Professionelle CAD-Bearbeitung“ findest du die CAD-Beziehungen. Dazu gehören parallel, senkrecht, tangential und konzentrisch.',text:'Wähle geeignete Skizzenelemente, stelle eine passende Beziehung ein und wende sie an. SILMO prüft die Erfolgsmeldung der CAD-Funktion.',begin:()=>({status:$('status')?.textContent||''}),check:b=>{const t=$('status')?.textContent||'';return t!==b.status&&(/parallel ausgerichtet|senkrecht ausgerichtet|tangential verbunden|konzentrisch ausgerichtet/.test(t));}},
+    {title:'18. Loft, Sweep und Pfadlänge',glyph:'∿',tab:'draw',target:'createLoft',where:'Im selben Bereich findest du „Loft“, „Sweep“ und die Werkzeuge zur Pfadlänge. Loft verbindet zwei Profile; Sweep führt ein Profil entlang einer Kurve.',text:'Erstelle mit passenden Skizzenprofilen einen Loft- oder Sweep-Körper. Wenn du noch nicht genug Skizzen hast, kannst du die Profile zuerst mit den Zeichenwerkzeugen erstellen.',begin:()=>({count:objectCount()}),check:b=>objectCount()>b.count&&/Loft erstellt|Sweep erstellt/.test($('status')?.textContent||'')},
+    {title:'19. Verbinden und Abziehen',glyph:'⊕',tab:'create',target:'booleanUnion',where:'Im Bereich „Erstellen“ findest du „Formen verbinden“ und „Löcher / Form abziehen“. Wähle dafür die benötigten Körper aus.',text:'Verbinde zwei sich berührende oder überlappende Körper. Danach kannst du mit einem weiteren Körper eine Form abziehen. SILMO erkennt eine erfolgreiche Boolesche Operation.',begin:()=>({status:$('status')?.textContent||''}),check:b=>{const t=$('status')?.textContent||'';return t!==b.status&&(/verbunden|abgezogen|Boolesche/.test(t));}},
+    {title:'20. Druckbett einstellen und prüfen',glyph:'▣',tab:'print',target:'applyBedSize',where:'Im Reiter „3D-Druck“ kannst du die Druckbettbreite und -tiefe einstellen. Mit „Druckbettgrösse übernehmen“ wird die Einstellung angewendet. „Druckbett prüfen“ kontrolliert die Lage der Modelle.',text:'Ändere die Druckbettgrösse auf einen gültigen Wert und übernimm sie. Starte danach die Druckbettprüfung.',begin:()=>({bed:($('bedWidth')?.value||'')+'x'+($('bedDepth')?.value||'')}),check:b=>(($('bedWidth')?.value||'')+'x'+($('bedDepth')?.value||''))!==b.bed&&/Druckbettprüfung/.test($('status')?.textContent||'')},
+    {title:'21. Projekt speichern und STL exportieren',glyph:'⬇',tab:'print',target:'saveProjectButton',where:'Im Reiter „3D-Druck“ findest du „Projekt speichern“, „Projekt öffnen“ und „STL exportieren“. Ein Projekt speichert den Arbeitsstand; STL exportiert die Geometrie für den Slicer.',text:'Speichere dein Projekt und exportiere danach ein Modell als STL. SILMO wartet auf die Erfolgsmeldungen beider Vorgänge.',begin:()=>({saved:savedObserved,exported:exportObserved}),check:b=>savedObserved&&!b.saved&&exportObserved&&!b.exported}
   ];
-  let index=0, highlight=null, tutorialStartCount=0, positionStart='', positionStartMap=null, sizeStart='', bedStart='', positionChanged=false, sizeChanged=false, bedApplied=false, exportSucceeded=false, positionAdvanceQueued=false;
-  let diagnosticEventCount=0, diagnosticLastEvent='Noch kein Positionssignal empfangen', diagnosticLastError='keiner';
-  function updateTutorialDebug(){
-    const el=$('tutorialDebug'); if(!el)return;
-    let selectedText='nicht verfügbar', currentList='nicht verfügbar', moved='nicht geprüft';
-    try { const p=window.__silmoTutorialPositionSnapshot?.(); if(p) selectedText=`${p.uuid.slice(0,8)} x=${p.x.toFixed(4)} y=${p.y.toFixed(4)} z=${p.z.toFixed(4)}`; } catch(e){diagnosticLastError='Snapshot: '+String(e);}
-    try { const now=allPositionSnapshot(); currentList=String(now.length)+' Objekt(e)'; moved=Array.isArray(positionStartMap)?String(hasSelectedObjectMoved()):'keine Startwerte'; } catch(e){diagnosticLastError='Positionsvergleich: '+String(e);}
-    const base=Array.isArray(positionStartMap)?positionStartMap.map(p=>`${p.uuid.slice(0,8)}(${p.x.toFixed(3)},${p.y.toFixed(3)},${p.z.toFixed(3)})`).join(' | ')||'leer':'nicht gesetzt';
-    const buildInfo=document.querySelector('meta[name="silmo-build"]')?.content||'Build unbekannt';
-     el.textContent=`Build: ${buildInfo}\nTutorial-Schritt intern: ${index+1} (Objekt bewegen = 2)\nKarte sichtbar: ${!card.hidden} | Position geändert: ${positionChanged} | Wechsel vorgemerkt: ${positionAdvanceQueued}\nObjekte aktuell: ${currentList} | Vergleich erkennt Bewegung: ${moved}\nAusgewählt: ${selectedText}\nStartpositionen: ${base}\nPositionssignale: ${diagnosticEventCount} | letztes Signal: ${diagnosticLastEvent}\nLetzter Diagnosefehler: ${diagnosticLastError}`;
-  }
-  function objectCount(){const el=$('objects');return el?el.querySelectorAll('.object-row').length:0;}
-  function fieldSnapshot(id){const el=$(id);return el?[...el.querySelectorAll('input,select')].map(n=>n.value).join('|'):'';}
-  function positionSnapshot(){const p=window.__silmoTutorialPositionSnapshot?.();return p&&typeof p.uuid==='string'&&[p.x,p.y,p.z].every(Number.isFinite)?JSON.stringify({uuid:p.uuid,x:p.x,y:p.y,z:p.z}):'';}
-  function allPositionSnapshot(){const list=window.__silmoTutorialAllPositions?.();return Array.isArray(list)?list.filter(p=>p&&typeof p.uuid==='string'&&[p.x,p.y,p.z].every(Number.isFinite)):[];}
-  function ensureTutorialObjectSelected(){
-    const current=window.__silmoTutorialPositionSnapshot?.();
-    if(current)return true;
-    const first=$('objects')?.querySelector('button');
-    if(first)first.click();
-    return !!window.__silmoTutorialPositionSnapshot?.();
-  }
-  function hasSelectedObjectMoved(){
-    if(!Array.isArray(positionStartMap))return false;
-    const now=allPositionSnapshot();
-    // Compare every object that existed when the step began, independent of current selection.
-    for(const before of positionStartMap){
-      const after=now.find(p=>p.uuid===before.uuid);
-      if(after&&(Math.abs(after.x-before.x)>1e-5||Math.abs(after.y-before.y)>1e-5||Math.abs(after.z-before.z)>1e-5))return true;
-    }
-    // Also recognise objects created after the baseline, including a newly selected cube.
-    const initialIds=new Set(positionStartMap.map(p=>p.uuid));
-    for(const after of now){
-      if(!initialIds.has(after.uuid)){
-        const selectedNow=window.__silmoTutorialPositionSnapshot?.();
-        if(selectedNow?.uuid===after.uuid)return true;
-      }
-    }
-    // If the app's list snapshot is unavailable, fall back to the selected-object snapshot.
-    const selectedNow=window.__silmoTutorialPositionSnapshot?.();
-    if(selectedNow&&positionStart){
-      try{
-        const before=JSON.parse(positionStart);
-        if(before.uuid===selectedNow.uuid && (Math.abs(selectedNow.x-before.x)>1e-5||Math.abs(selectedNow.y-before.y)>1e-5||Math.abs(selectedNow.z-before.z)>1e-5))return true;
-      }catch(_){}
-    }
-    return false;
-  }
-  function sizeSnapshot(){return fieldSnapshot('sizeFields');}
-  function bedSnapshot(){return ($('bedWidth')?.value||'')+'x'+($('bedDepth')?.value||'');}
-  function feedback(text,success=false){const f=$('tutorialFeedback');f.textContent=text;f.classList.toggle('success',success);}
+
+  function objectCount(){return $('objects')?.querySelectorAll('.object-row').length||0;}
+  function positions(){try{return window.__silmoTutorialAllPositions?.()||[];}catch(_){return [];}}
+  function transforms(){try{return window.__silmoTutorialAllTransforms?.()||[];}catch(_){return [];}}
+  function sketchSnapshot(){try{return window.__silmoSketchSnapshot?.()||null;}catch(_){return null;}}
+  function fieldValues(id){const el=$(id);return el?[...el.querySelectorAll('input,select')].map(x=>x.value).join('|'):'';}
+  function positionChanged(before){const now=positions();return before.some(p=>{const n=now.find(x=>x.uuid===p.uuid);return n&&(Math.abs(n.x-p.x)>1e-5||Math.abs(n.y-p.y)>1e-5||Math.abs(n.z-p.z)>1e-5);});}
+  function rotationChanged(before){const now=transforms();return before.some(p=>{const n=now.find(x=>x.uuid===p.uuid);return n&&['qx','qy','qz','qw'].some(k=>Math.abs((n[k]||0)-(p[k]||0))>0.01);});}
+  function scaleChanged(before){const now=transforms();return before.some(p=>{const n=now.find(x=>x.uuid===p.uuid);return n&&['sx','sy','sz'].some(k=>Math.abs((n[k]||1)-(p[k]||1))>0.01);});}
+  function transformChanged(before){const now=transforms();return before.some(p=>{const n=now.find(x=>x.uuid===p.uuid);return n&&['x','y','z','sx','sy','sz','qx','qy','qz','qw'].some(k=>Math.abs((n[k]||0)-(p[k]||0))>0.01);});}
+  function groupCount(){return $('objects')?.querySelectorAll('.object-edit').length||0;}
+  function feedback(message,success){const el=$('tutorialFeedback');el.textContent=message;el.classList.toggle('success',!!success);}
   function clearHighlight(){if(highlight)highlight.classList.remove('tutorial-highlight');highlight=null;}
-  function selectTutorialTab(tab){const b=document.querySelector('[data-tab="'+tab+'"]');if(b&&!b.hidden)b.click();}
-  function render(){clearHighlight();const step=steps[index];selectTutorialTab(step.tab);$('tutorialStepLabel').textContent='TUTORIAL · SCHRITT '+(index+1)+' VON '+steps.length;$('tutorialVisualGlyph').textContent=['◧','↗','↔','▦','⬇','✓'][index]||'◧';$('tutorialVisualCaption').textContent=step.title;$('tutorialTitle').textContent=step.title;$('tutorialText').textContent=step.text;$('tutorialProgress').querySelector('span').style.width=((index+1)/steps.length*100)+'%';$('tutorialBack').disabled=index===0;$('tutorialNext').textContent=index===steps.length-1?'Fertig':'Prüfen';$('tutorialNext').disabled=false;
-    if(step.target){highlight=$(step.target);if(highlight){highlight.classList.add('tutorial-highlight');highlight.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});}}
-    step.initialise();
-    updateTutorialDebug();
+  function selectTab(tab){const button=document.querySelector('[data-tab="' + tab + '"]');if(button&&!button.hidden)button.click();}
+  function revealTarget(id){
+    if(!id)return;
+    const target=$(id);if(!target)return;
+    let parent=target.parentElement;
+    while(parent&&parent!==document.body){if(parent.tagName==='DETAILS')parent.open=true;parent=parent.parentElement;}
+    clearHighlight();highlight=target;target.classList.add('tutorial-highlight');
+    target.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});
   }
-  function open(){index=0;shade.hidden=false;card.hidden=false;render();}
+  function updateProgress(){$('tutorialProgress').querySelector('span').style.width=(phase==='exam'?100:((index+1)/steps.length*100))+'%';}
+  function renderStep(){
+    const step=steps[index];selectTab(step.tab);
+    $('tutorialStepLabel').textContent='LERNPHASE · AUFGABE '+(index+1)+' VON '+steps.length;
+    $('tutorialVisualGlyph').textContent=step.glyph;$('tutorialVisualCaption').textContent=step.title;
+    $('tutorialTitle').textContent=step.title;$('tutorialText').textContent=step.text;
+    $('tutorialWhere').textContent='WO FINDEST DU ES? '+step.where;
+    $('tutorialExamPanel').hidden=true;$('tutorialQuickGuide').hidden=false;$('tutorialBack').hidden=false;
+    $('tutorialBack').disabled=index===0;$('tutorialNext').textContent='Weiter';$('tutorialNext').disabled=true;
+    updateProgress();baseline=step.begin();if(step.target)revealTarget(step.target);else clearHighlight();
+    feedback('Führe die Aufgabe aus. SILMO prüft das Ergebnis automatisch.',false);updateDebug();
+  }
+  function renderExam(){
+    clearHighlight();$('tutorialStepLabel').textContent='ABSCHLUSSTEST · SELBSTSTÄNDIG';
+    $('tutorialVisualGlyph').textContent='♥';$('tutorialVisualCaption').textContent='Deine eigene Konstruktion';
+    $('tutorialTitle').textContent='Baue ein eigenes 3D-Herz';
+    $('tutorialText').textContent='Konstruiere ohne Anleitung ein eigenes dreidimensionales Herz. Es soll als Herz erkennbar und für den 3D-Druck vorbereitet sein. Du entscheidest selbst, welche Werkzeuge und Konstruktionswege du verwendest.';
+    $('tutorialWhere').textContent='Es werden keine Werkzeuge markiert und keine Arbeitsschritte erklärt. Du kannst den Test selbstständig bearbeiten.';
+    $('tutorialExamPanel').hidden=false;$('tutorialQuickGuide').hidden=true;$('tutorialBack').hidden=true;
+    $('tutorialNext').textContent='Abschlusstest prüfen';$('tutorialNext').disabled=false;
+    $('tutorialExamHintText').hidden=true;$('tutorialExamHint').disabled=false;$('tutorialHeartConfirm').checked=false;
+    $('tutorialExamChecks').textContent='Noch nicht geprüft.';
+    baseline={model:window.__silmoTutorialModelAudit?.()||[]};
+    feedback('Der Abschlusstest beginnt. SILMO gibt während der Konstruktion keine Hinweise.',false);
+    updateProgress();updateDebug();
+  }
+  function updateDebug(){
+    const el=$('tutorialDebug');if(!el)return;
+    el.textContent='Build: '+(document.querySelector('meta[name="silmo-build"]')?.content||'unbekannt')+
+      '\nPhase: '+phase+'\nAufgabe: '+(phase==='learn'?(index+1)+' / '+steps.length:'Abschlusstest')+
+      '\nObjekte: '+objectCount()+'\nLetzter Status: '+($('status')?.textContent||'').slice(0,160);
+  }
+  function verifyStep(){
+    if(phase!=='learn'||card.hidden)return;
+    let passed=false;try{passed=!!steps[index].check(baseline);}catch(error){console.error('SILMO Lernkontrolle:',error);}
+    $('tutorialNext').disabled=!passed;
+    if(passed)feedback('Aufgabe erkannt: SILMO hat die erforderliche Änderung am Modell festgestellt. Klicke auf „Weiter“.',true);
+    updateDebug();
+  }
+  function open(){phase='learn';index=0;shade.hidden=false;card.hidden=false;renderStep();}
   function close(){clearHighlight();shade.hidden=true;card.hidden=true;}
+  function next(){
+    if(phase==='learn'){
+      verifyStep();if($('tutorialNext').disabled)return;
+      if(index<steps.length-1){index++;renderStep();return;}
+      phase='exam';renderExam();return;
+    }
+    runExam();
+  }
+  function runExam(){
+    const audit=window.__silmoTutorialModelAudit?.()||[];
+    const valid=audit.filter(x=>x&&x.vertexCount>=20&&x.width>0&&x.depth>0&&x.height>0&&[x.width,x.depth,x.height].every(Number.isFinite));
+    const hasExport=exportObserved||/STL exportiert/i.test($('status')?.textContent||'');
+    const confirmed=$('tutorialHeartConfirm').checked;
+    const checks=[
+      {label:'Mindestens ein echter 3D-Körper mit ausreichend Geometrie',ok:valid.length>0},
+      {label:'Modell besitzt messbare Abmessungen',ok:valid.some(x=>x.width>=2&&x.depth>=2&&x.height>=2)},
+      {label:'Herzform wurde vom Lernenden visuell bestätigt',ok:confirmed},
+      {label:'STL-Export erfolgreich durchgeführt',ok:hasExport}
+    ];
+    $('tutorialExamChecks').innerHTML=checks.map(x=>'<div class="tutorial-exam-result '+(x.ok?'ok':'pending')+'">'+(x.ok?'✓ ':'○ ')+x.label+'</div>').join('');
+    const count=checks.filter(x=>x.ok).length;
+    if(count===checks.length){
+      feedback('Abschlusstest bestanden. Die technischen Prüfungen sind erfüllt und du hast die Herzform selbst bestätigt.',true);
+      $('tutorialNext').textContent='Kurs abschliessen';
+    }else{
+      feedback('Noch nicht bestanden: Erfülle die offenen Kriterien. Die Form selbst muss klar als Herz erkennbar sein.',false);
+      $('tutorialNext').textContent='Erneut prüfen';
+    }
+    $('tutorialNext').disabled=false;updateDebug();
+  }
+
   $('tutorialToolGallery').addEventListener('click',event=>{
-    const tool=event.target.closest('.tutorial-tool-card');if(!tool)return;
-    selectTutorialTab(tool.dataset.toolTab);clearHighlight();
-    const target=tool.dataset.target&&$(tool.dataset.target);
-    if(target){highlight=target;highlight.classList.add('tutorial-highlight');target.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});}
-    feedback('Werkzeug geöffnet: '+tool.textContent.trim()+'. Die gelbe Markierung zeigt dir den Ort.');
+    const button=event.target.closest('.tutorial-tool-card');if(!button||phase!=='learn')return;
+    selectTab(button.dataset.toolTab);revealTarget(button.dataset.target);
+    feedback('Hier findest du „'+button.textContent.trim()+'“. Kehre danach zur Aufgabe zurück.',false);
   });
   launch.addEventListener('click',open);$('tutorialClose').addEventListener('click',close);$('tutorialSkip').addEventListener('click',close);
-  $('tutorialBack').addEventListener('click',()=>{if(index>0){index--;render();}});
-  $('tutorialNext').addEventListener('click',()=>{const step=steps[index];if(!step.check()){feedback('Noch nicht bestanden. Führe die Aufgabe aus; danach prüft SILMO erneut.',false);return;}if(index<steps.length-1){index++;render();}else close();});
-  $('addCube').addEventListener('click',()=>{if(index===0&&objectCount()>tutorialStartCount)feedback('Erfolgskontrolle bestanden: Ein neues Objekt ist in der Objektliste vorhanden.',true);});
-  function completePositionStep(){
-    if(index!==1||card.hidden||positionChanged)return;
-    positionChanged=true;
-    feedback('Erfolg erkannt: Eine Objektposition hat sich geändert. Nächster Schritt …',true);
-    if(!positionAdvanceQueued){
-      positionAdvanceQueued=true;
-      setTimeout(()=>{
-        if(index===1&&!card.hidden&&positionChanged){index=2;render();}
-        else if(index===1&&!card.hidden){positionAdvanceQueued=false;}
-      },450);
-    }
-  }
-  function verifyPositionStep(){
-    // Selbstheilung: Falls Schritt 2 aktiv ist, aber aus irgendeinem Grund kein
-    // Ausgangswert gesetzt wurde, erfasse ihn jetzt einmalig. Danach wird jede
-    // weitere echte Positionsänderung normal erkannt.
-    if(index===1&&!card.hidden&&!Array.isArray(positionStartMap)){
-      try{
-        ensureTutorialObjectSelected();
-        positionStart=positionSnapshot();
-        positionStartMap=allPositionSnapshot();
-        diagnosticLastError='Hinweis: fehlende Startposition während Schritt 2 automatisch neu erfasst';
-        updateTutorialDebug();
-      }catch(error){
-        diagnosticLastError='Startposition konnte nicht erfasst werden: '+String(error);
-      }
-    }
-    if(index===1&&!card.hidden&&!positionChanged&&hasSelectedObjectMoved()) completePositionStep();
-  }
-  const schedulePositionVerification = () => {
-    // The app updates the selected mesh in its own input/change handler.
-    // Run after that handler, not during the capture phase before the coordinates change.
-    queueMicrotask(() => {
-      try { verifyPositionStep(); } catch (error) { console.error('SILMO tutorial position check:', error); }
-    });
-    requestAnimationFrame(() => {
-      try { verifyPositionStep(); } catch (error) { console.error('SILMO tutorial position check:', error); }
-    });
-  };
-  document.addEventListener('input',e=>{
-    schedulePositionVerification();
-    if(index===2&&e.target.closest('#sizeFields')&&sizeSnapshot()!==sizeStart)sizeChanged=true;
+  $('tutorialBack').addEventListener('click',()=>{if(phase==='learn'&&index>0){index--;renderStep();}});
+  $('tutorialNext').addEventListener('click',next);
+  $('tutorialExamHint').addEventListener('click',()=>{
+    $('tutorialExamHintText').hidden=false;
+    $('tutorialExamHintText').textContent='Mittlerer Tipp: Überlege, wie du eine symmetrische obere Rundung und eine nach unten zulaufende Spitze konstruieren kannst. Du kannst eigene Skizzen, Grundkörper und Boolesche Werkzeuge kombinieren. Die konkrete Form und Bedienung findest du selbst heraus.';
+    $('tutorialExamHint').disabled=true;
   });
-  document.addEventListener('change',e=>{
-    schedulePositionVerification();
-    if(index===2&&e.target.closest('#sizeFields')&&sizeSnapshot()!==sizeStart)sizeChanged=true;
-  });
-  // Poll the actual Three.js coordinates while step 2 is active. This also catches gizmo drags,
-  // pointer events captured by the renderer, and position changes without DOM input events.
-  function monitorTutorialPosition(){
-    // A transient exception must never permanently stop the tutorial's movement monitor.
-    try { verifyPositionStep(); updateTutorialDebug(); }
-    catch (error) { diagnosticLastError=String(error); console.error('SILMO tutorial position monitor:', error); updateTutorialDebug(); }
-    finally { requestAnimationFrame(monitorTutorialPosition); }
-  }
-  requestAnimationFrame(monitorTutorialPosition);
-  document.addEventListener('pointerup',schedulePositionVerification,true);
-  document.addEventListener('keyup',schedulePositionVerification,true);
-  window.addEventListener('silmo-position-changed',event=>{
-    diagnosticEventCount++;
-    try { const p=event.detail; diagnosticLastEvent=p&&typeof p.uuid==='string'?`${p.uuid.slice(0,8)} x=${p.x} y=${p.y} z=${p.z}`:'Signal ohne gültige Koordinaten'; } catch(e) { diagnosticLastEvent='Signal konnte nicht gelesen werden'; }
-    // The 3D movement tools report the coordinates after applying the move. Compare
-    // this event payload with the tutorial's baseline immediately, then keep polling
-    // as a fallback in case a browser drops or delays a frame.
-    try {
-      const p=event.detail;
-      if(index===1&&!card.hidden&&!positionChanged&&p&&typeof p.uuid==='string'&&[p.x,p.y,p.z].every(Number.isFinite)){
-        const before=Array.isArray(positionStartMap)?positionStartMap.find(item=>item.uuid===p.uuid):null;
-        if(before&&(Math.abs(p.x-before.x)>1e-5||Math.abs(p.y-before.y)>1e-5||Math.abs(p.z-before.z)>1e-5)) completePositionStep();
-        else verifyPositionStep();
-      }
-    } catch(error) { diagnosticLastError=String(error); console.error('SILMO tutorial position event:',error); }
-    updateTutorialDebug();
-    schedulePositionVerification();
-  });
-  $('applyBedSize').addEventListener('click',()=>{if(index===3&&bedSnapshot()!==bedStart&&($('status')?.textContent||'').includes('Druckbett eingestellt')){bedApplied=true;feedback('Erfolgskontrolle bestanden: SILMO hat die neue Druckbettgrösse übernommen.',true);}});
-  $('exportModel').addEventListener('click',()=>{if(index===4){setTimeout(()=>{const t=$('status')?.textContent||'';if(t.toLowerCase().includes('exportiert')){exportSucceeded=true;feedback('Erfolgskontrolle bestanden: SILMO meldet einen erfolgreichen STL-Export.',true);}else feedback('Der Export ist noch nicht als erfolgreich bestätigt. Prüfe die Statusmeldung.',false);},250);}});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!card.hidden)close();});
+  $('tutorialHeartConfirm').addEventListener('change',()=>{if(phase==='exam')feedback('Deine visuelle Bestätigung wurde übernommen. Prüfe jetzt den Abschlusstest.',false);});
+  $('exportModel').addEventListener('click',()=>{setTimeout(()=>{if(/STL exportiert/i.test($('status')?.textContent||''))exportObserved=true;},300);});
+  $('saveProjectButton').addEventListener('click',()=>{setTimeout(()=>{if(/gespeichert|Projekt gespeichert/i.test($('status')?.textContent||''))savedObserved=true;},250);});
+  document.addEventListener('click',()=>{if(!card.hidden)verifyStep();},true);
+  document.addEventListener('input',()=>{if(!card.hidden)verifyStep();},true);
+  document.addEventListener('change',()=>{if(!card.hidden)verifyStep();},true);
+  document.addEventListener('pointerup',()=>{if(!card.hidden)verifyStep();},true);
+  function monitor(){if(!card.hidden){verifyStep();updateDebug();}requestAnimationFrame(monitor);}
+  requestAnimationFrame(monitor);
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!card.hidden)close();});
 })();
 </script>
 
