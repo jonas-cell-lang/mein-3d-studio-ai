@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v66/, 'Build-Metadaten zeigen nicht v66');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v67/, 'Build-Metadaten zeigen nicht v66');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -103,8 +103,8 @@ try {
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/zuerst das Profil und danach den Pfad/,'Sweep erklärt die Auswahlreihenfolge nicht');
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/⌥\/Alt \+ ⇧ \+ →/,'Aufgabe 23 erklärt die Tastenkombination zum Überspringen nicht');
   assert.equal(await page.locator('#tutorialSkipStep').isVisible(),true,'Schaltfläche zum Überspringen der aktuellen Aufgabe fehlt');
-  await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',code:'ArrowRight',altKey:true,shiftKey:true,bubbles:true,cancelable:true})));
-  assert.match(await page.locator('#tutorialStepLabel').innerText(),/AUFGABE 24 VON 26/,'Option/Alt+Shift+Pfeil rechts überspringt Aufgabe 23 nicht');
+  await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',code:'ArrowRight',shiftKey:true,bubbles:true,cancelable:true})));
+  assert.match(await page.locator('#tutorialStepLabel').innerText(),/AUFGABE 24 VON 26/,'Shift+Pfeil rechts überspringt Aufgabe 23 nicht');
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(22)),true,'Aufgabe 23 kann nach Tastenkürzel nicht erneut geöffnet werden');
   await page.locator('#tutorialSkipStep').click();
   assert.match(await page.locator('#tutorialStepLabel').innerText(),/AUFGABE 24 VON 26/,'Schaltfläche überspringt Aufgabe 23 nicht');
