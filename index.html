@@ -103,33 +103,37 @@ input:focus{outline:1px solid var(--cyan)}
 .tutorial-highlight{position:relative!important;z-index:10020!important;outline:3px solid #ffd54a!important;outline-offset:3px!important;box-shadow:0 0 0 7px #ffd54a38,0 0 22px #ffd54a!important;animation:tutorialPulse 1.5s ease-in-out infinite}
 @keyframes tutorialPulse{50%{box-shadow:0 0 0 10px #ffd54a20,0 0 28px #ffd54a}}
 #tutorialShade{position:fixed;inset:0;z-index:10000;background:#02081766;pointer-events:none}
-#tutorialCard{position:fixed;z-index:10030;left:50%;right:auto;top:86px;transform:translateX(-50%);width:min(330px,calc(100vw - 32px));max-height:calc(100dvh - 110px);overflow:auto;padding:16px;border:1px solid #3986f6;border-radius:15px;background:linear-gradient(145deg,#122742,#081525);box-shadow:0 18px 60px #0009;color:#edf4ff}
+#tutorialCard{position:fixed;z-index:10030;left:max(185px,calc((100vw - 440px)/2));right:auto;top:24px;transform:none;width:min(440px,calc(100vw - 430px));max-height:calc(100dvh - 48px);overflow:auto;overscroll-behavior:contain;padding:20px;border:1px solid #3986f6;border-radius:15px;background:linear-gradient(145deg,#122742,#081525);box-shadow:0 18px 60px #0009;color:#edf4ff;scrollbar-gutter:stable}
 #tutorialCard[hidden],#tutorialShade[hidden]{display:none}
-#tutorialCard h2{margin:0 0 8px;color:#80c7ff;font-size:17px;letter-spacing:0;text-transform:none}
-#tutorialCard p{margin:6px 0;color:#d5e4f8;font-size:12px}
-#tutorialVisual{display:flex;align-items:center;justify-content:center;gap:14px;min-height:86px;margin:8px 0 10px;border:1px solid #345778;border-radius:12px;background:radial-gradient(circle at 50% 40%,#244d70,#0a1a2c 72%);overflow:hidden}
-#tutorialVisualGlyph{font-size:54px;line-height:1;color:#7edcff;text-shadow:0 0 20px #42b9ff80}
-#tutorialVisualCaption{font-size:12px;font-weight:750;color:#e8f5ff;max-width:110px}
-#tutorialToolGallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
-.tutorial-tool-card{display:flex;min-width:0;min-height:66px;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 3px;border:1px solid #2d4967;border-radius:9px;background:#10243a;color:#eaf5ff;font-size:10px;line-height:1.15;touch-action:manipulation}
+#tutorialCard h2{margin:0 0 10px;color:#80c7ff;font-size:22px;line-height:1.25;letter-spacing:0;text-transform:none}
+#tutorialCard p{margin:8px 0;color:#e0ebf8;font-size:15px;line-height:1.55}
+#tutorialVisual{display:flex;align-items:center;justify-content:center;gap:18px;min-height:104px;margin:12px 0;border:1px solid #345778;border-radius:12px;background:radial-gradient(circle at 50% 40%,#244d70,#0a1a2c 72%);overflow:hidden}
+#tutorialVisualGlyph{font-size:62px;line-height:1;color:#7edcff;text-shadow:0 0 20px #42b9ff80}
+#tutorialVisualCaption{font-size:15px;font-weight:750;color:#e8f5ff;max-width:180px}
+#tutorialInstructions{margin:12px 0;padding:13px 15px;border:1px solid #3a5e82;border-radius:11px;background:#0b1b2d}
+#tutorialInstructions h3{margin:0 0 8px;color:#9edcff;font-size:16px}
+#tutorialInstructionList{margin:0;padding-left:25px}
+#tutorialInstructionList li{padding:4px 0 4px 3px;color:#f0f6ff;font-size:14px;line-height:1.5}
+#tutorialInstructionList li::marker{color:#7edcff;font-weight:800}
+#tutorialToolGallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.tutorial-tool-card{display:flex;min-width:0;min-height:76px;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 5px;border:1px solid #2d4967;border-radius:9px;background:#10243a;color:#eaf5ff;font-size:12px;line-height:1.25;touch-action:manipulation}
 .tutorial-tool-card:active,.tutorial-tool-card:focus-visible{border-color:#64d8ff;background:#17405d;outline:2px solid #64d8ff}
-.tutorial-tool-icon{font-size:25px;line-height:1.05;color:#8cddff}
-#tutorialQuickGuide{max-height:230px;overflow:auto}
+.tutorial-tool-icon{font-size:28px;line-height:1.05;color:#8cddff}
+#tutorialQuickGuide{max-height:260px;overflow:auto}
 #tutorialDebug{position:absolute!important;width:1px;height:1px;max-height:1px;padding:0;margin:0;border:0;overflow:hidden;clip-path:inset(50%);opacity:0;pointer-events:none}
-#tutorialQuickGuide{margin:10px 0;padding:9px 10px;border:1px solid #324d6b;border-radius:9px;background:#0b192a;color:#d5e4f8;font-size:12px}
-#tutorialQuickGuide summary{cursor:pointer;color:#9edcff;font-weight:700}
+#tutorialQuickGuide{margin:12px 0;padding:11px 12px;border:1px solid #324d6b;border-radius:9px;background:#0b192a;color:#d5e4f8;font-size:14px}
+#tutorialQuickGuide summary{cursor:pointer;color:#9edcff;font-weight:700;min-height:30px;display:flex;align-items:center}
 #tutorialQuickGuide ul{margin:9px 0 2px;padding-left:18px}
-#tutorialQuickGuide li{margin:7px 0;line-height:1.45}
+#tutorialQuickGuide li{margin:7px 0;line-height:1.5}
 #tutorialQuickGuide strong{color:#fff}
-#tutorialProgress{height:5px;background:#263953;border-radius:8px;overflow:hidden;margin:12px 0}
+#tutorialProgress{height:7px;background:#263953;border-radius:8px;overflow:hidden;margin:14px 0}
 #tutorialProgress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#3986f6,#53d8e8);transition:width .2s}
-#tutorialFeedback{padding:9px;border-radius:9px;background:#0b1b2d;border:1px solid #314965;font-size:12px;margin:10px 0;color:#c5d8ee}
-#tutorialFeedback.success{border-color:#38d6a3;color:#8ee5b1}
+#tutorialFeedback{padding:12px;border-radius:9px;background:#0b1b2d;border:1px solid #314965;font-size:14px;line-height:1.5;margin:12px 0;color:#d8e7f8}
+#tutorialFeedback.success{border-color:#38d6a3;color:#a6f0c2}
 #tutorialDebug{margin:8px 0 0;padding:8px;border:1px dashed #6583a7;border-radius:8px;background:#07111f;color:#c5d8ee;font:10px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:125px;overflow:auto}
-.tutorial-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.tutorial-actions button{flex:1}
-#tutorialClose{float:right;padding:4px 8px}
-@media(max-width:820px){#tutorialCard{left:50%;right:auto;top:auto;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(300px,calc(100vw - 32px));max-height:52dvh;overflow:auto;padding:13px}.tutorial-actions button{min-height:42px;touch-action:manipulation}}
-@media(max-width:680px){#tutorialCard{left:50%;right:auto;width:min(300px,calc(100vw - 24px));max-height:42dvh;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%)}.header-actions button{min-height:36px}.tutorial-highlight{outline-width:3px;outline-offset:2px}}
+.tutorial-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;padding-top:10px;position:sticky;bottom:-20px;background:linear-gradient(180deg,#081525e8,#081525 35%);z-index:2}
+.tutorial-actions button{flex:1;min-height:46px;font-size:14px;touch-action:manipulation}
+#tutorialClose{float:right;padding:7px 10px;min-height:38px;min-width:38px}
 
 
 /* SILMO Prüftool – Fehlerbanner und Tastenkürzel */
@@ -3988,7 +3992,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     '<div style="font-size:10px;color:#ffcf70;margin-bottom:6px">SILMO LERNKURS · <span id="tutorialBuild"></span></div>' +
     '<div id="tutorialStepLabel"></div><div id="tutorialVisual" aria-label="Bildliche Darstellung des Lernschritts"><span id="tutorialVisualGlyph" aria-hidden="true">◧</span><span id="tutorialVisualCaption">Werkzeug</span></div>' +
     '<h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div>' +
-    '<div id="tutorialWhere" class="tutorial-where"></div><div id="tutorialFeedback" aria-live="polite"></div>' +
+    '<div id="tutorialWhere" class="tutorial-where"></div><section id="tutorialInstructions" aria-label="Schritt-für-Schritt-Anleitung"><h3>So gehst du vor</h3><ol id="tutorialInstructionList"></ol></section><div id="tutorialFeedback" aria-live="polite"></div>' +
     '<div id="tutorialExamPanel" hidden><div class="tutorial-exam-rule"><strong>Abschlusstest – ohne Anleitung</strong><p>Baue ein eigenes, dreidimensionales Herz, das für den 3D-Druck geeignet ist. SILMO zeigt dir jetzt keine Werkzeuge und keine Arbeitsschritte.</p></div>' +
     '<button id="tutorialExamHint" type="button">Mittleren Tipp anzeigen</button><p id="tutorialExamHintText" hidden></p>' +
     '<label class="tutorial-exam-confirm"><input id="tutorialHeartConfirm" type="checkbox"> Ich habe geprüft, dass mein eigenes Modell klar als Herz erkennbar ist.</label><div id="tutorialExamChecks"></div></div>' +
@@ -4074,6 +4078,14 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     $('tutorialVisualGlyph').textContent=step.glyph;$('tutorialVisualCaption').textContent=step.title;
     $('tutorialTitle').textContent=step.title;$('tutorialText').textContent=step.text;
     $('tutorialWhere').textContent='WO FINDEST DU ES? '+step.where;
+    const instructionList=$('tutorialInstructionList');
+    instructionList.replaceChildren();
+    String(step.where).split(/(?<=[.!?])\\s+/).filter(Boolean).forEach((instruction,stepNumber)=>{
+      const item=document.createElement('li');
+      item.textContent=instruction;
+      instructionList.append(item);
+    });
+    $('tutorialInstructions').hidden=false;
     $('tutorialExamPanel').hidden=true;$('tutorialQuickGuide').hidden=false;$('tutorialBack').hidden=false;$('tutorialRetry').hidden=false;$('tutorialKeyboard').hidden=false;
     $('tutorialBack').disabled=index===0;$('tutorialNext').textContent='Weiter';$('tutorialNext').disabled=true;
     updateProgress();if(step.target)revealTarget(step.target);else clearHighlight();
@@ -4086,6 +4098,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     $('tutorialTitle').textContent='Baue ein eigenes 3D-Herz';
     $('tutorialText').textContent='Konstruiere ohne Anleitung ein eigenes dreidimensionales Herz. Es soll als Herz erkennbar und für den 3D-Druck vorbereitet sein. Du entscheidest selbst, welche Werkzeuge und Konstruktionswege du verwendest.';
     $('tutorialWhere').textContent='Es werden keine Werkzeuge markiert und keine Arbeitsschritte erklärt. Du kannst den Test selbstständig bearbeiten.';
+    $('tutorialInstructions').hidden=true;
     $('tutorialExamPanel').hidden=false;$('tutorialQuickGuide').hidden=true;$('tutorialBack').hidden=true;$('tutorialRetry').hidden=true;$('tutorialKeyboard').hidden=true;
     $('tutorialNext').textContent='Abschlusstest prüfen';$('tutorialNext').disabled=false;
     $('tutorialExamHintText').hidden=true;$('tutorialExamHint').disabled=false;$('tutorialHeartConfirm').checked=false;
