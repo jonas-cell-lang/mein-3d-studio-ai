@@ -78,7 +78,7 @@ try {
   await page.locator('#tutorialLaunch').click();
   assert.equal(await page.locator('#tutorialExamPanel').isVisible(), false, 'Abschlusstest darf nicht bereits in der Lernphase sichtbar sein');
   assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Weiter muss bis zur erkannten Aufgabe gesperrt bleiben');
-  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(12)),true,'Aufgabe 13 kann für die gezielte Browserprüfung nicht geöffnet werden');
+  assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(23)),true,'Aufgabe 13 kann für die gezielte Browserprüfung nicht geöffnet werden');
   assert.equal(await page.locator('#tutorialInstructionList li').count(),9,'Aufgabe 13 enthält nicht alle neun einzelnen Handlungsschritte');
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/linke Maustaste.*Finger.*Apple Pencil/s,'Aufgabe 13 erklärt die Bedienung auf Computer und iPad nicht');
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/schliesst die Umrandung automatisch/i,'Aufgabe 13 erklärt das automatische Schliessen nicht');
