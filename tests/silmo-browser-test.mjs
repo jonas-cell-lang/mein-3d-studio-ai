@@ -106,7 +106,7 @@ try {
   for (let i = 0; i < await shortcutCards.count(); i++) {
     assert.ok(await shortcutCards.nth(i).locator('ol li').count() >= 3, 'Tastenkombination ' + (i + 1) + ' hat keine einzelnen Erklärungsschritte');
   }
-  await keyboardGuide.locator('summary').click();
+  await keyboardGuide.locator(':scope > summary').click();
   await shortcutCards.first().locator('summary').click();
   assert.equal(await shortcutCards.first().evaluate(el => el.open), true, 'Einzelne Tastenkombination lässt sich nicht aufklappen');
   assert.match(await shortcutCards.first().innerText(), /Option|Alt|Umschalttaste|links/i, 'Tastenkombination wird nicht in einfacher Sprache erklärt');
