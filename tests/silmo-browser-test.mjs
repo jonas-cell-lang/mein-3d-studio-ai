@@ -144,12 +144,12 @@ try {
   await page.locator('#addSphere').click();
   await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 5000 });
   await page.locator('#tutorialNext').click();
-  assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 9 VON/, 'Tutorial kann die zweite CAD-Aufgabe nicht abschliessen');
+  assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 8 VON/, 'Tutorial kann die zweite CAD-Aufgabe nicht abschliessen');
   await page.locator('#objects .object-select').last().click();
   await page.locator('#duplicate').click();
   await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 5000 });
   await page.locator('#tutorialNext').click();
-  assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 10 VON/, 'Tutorial kann nicht bis zur Transformationsaufgabe navigieren');
+  assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 9 VON/, 'Tutorial kann nicht bis zur Transformationsaufgabe navigieren');
   assert.deepEqual(pageErrors, [], 'Beim Wechsel in die Verschiebeaufgabe entstehen Browserfehler');
   await page.locator('#tutorialClose').click();
 
