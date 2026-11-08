@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v62/, 'Build-Metadaten zeigen nicht v62');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v65/, 'Build-Metadaten zeigen nicht v65');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -76,6 +76,19 @@ try {
   const canvasSize = await page.locator('#viewport canvas').evaluate(canvas => ({ width: canvas.width, height: canvas.height }));
   // Tutorial-Prüfung: Buildkennung und tatsächliche Objektanzahl kontrollieren.
   await page.locator('#tutorialLaunch').click();
+  // Das Lernfenster kann aus dem Bereich des 3D-Modells gezogen werden.
+  const dragHandle = page.locator('#tutorialDragHandle');
+  const dragStartBox = await page.locator('#tutorialCard').boundingBox();
+  const handleBox = await dragHandle.boundingBox();
+  assert.ok(dragStartBox && handleBox, 'Verschiebegriff des Lernfensters fehlt');
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(1300, 48, { steps: 8 });
+  await page.mouse.up();
+  const dragEndBox = await page.locator('#tutorialCard').boundingBox();
+  assert.ok(dragEndBox && dragEndBox.x > dragStartBox.x + 100, 'Lernfenster lässt sich nicht aus dem Drehbereich verschieben');
+  assert.ok(dragEndBox.y >= 0 && dragEndBox.y + dragEndBox.height <= 1000, 'Verschobenes Lernfenster bleibt nicht vollständig sichtbar');
+  await page.locator('#tutorialCard').evaluate(el => { el.style.left=''; el.style.top=''; el.style.right=''; el.style.transform=''; });
   assert.equal(await page.locator('#tutorialExamPanel').isVisible(), false, 'Abschlusstest darf nicht bereits in der Lernphase sichtbar sein');
   assert.equal(await page.locator('#tutorialNext').isDisabled(), true, 'Weiter muss bis zur erkannten Aufgabe gesperrt bleiben');
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(17)),true,'Freiform-Aufgabe kann für die gezielte Browserprüfung nicht geöffnet werden');

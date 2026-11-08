@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v62 – Tutorial-Anleitungen verbessert</title>
+<title>SILMO 3D Studio AI – v65 – Lernfenster verschiebbar</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v62 – Tutorial-Anleitungen verbessert">
+<meta name="silmo-build" content="v65 – Lernfenster verschiebbar">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -104,6 +104,8 @@ input:focus{outline:1px solid var(--cyan)}
 @keyframes tutorialPulse{50%{box-shadow:0 0 0 10px #ffd54a20,0 0 28px #ffd54a}}
 #tutorialShade{position:fixed;inset:0;z-index:10000;background:#02081766;pointer-events:none}
 #tutorialCard{position:fixed;z-index:10030;left:max(185px,calc((100vw - 440px)/2));right:auto;top:24px;transform:none;width:min(440px,calc(100vw - 430px));max-height:calc(100dvh - 48px);overflow:auto;overscroll-behavior:contain;padding:20px;border:1px solid #3986f6;border-radius:15px;background:linear-gradient(145deg,#122742,#081525);box-shadow:0 18px 60px #0009;color:#edf4ff;scrollbar-gutter:stable}
+#tutorialDragHandle{display:flex;align-items:center;gap:8px;min-height:34px;margin:-8px 34px 10px 0;padding:7px 9px;border:1px solid #365575;border-radius:8px;background:#0b1b2d;color:#a9dfff;font-size:12px;font-weight:750;cursor:grab;touch-action:none;user-select:none}
+#tutorialDragHandle:active{cursor:grabbing}
 #tutorialCard[hidden],#tutorialShade[hidden]{display:none}
 #tutorialCard h2{margin:0 0 10px;color:#80c7ff;font-size:22px;line-height:1.25;letter-spacing:0;text-transform:none}
 #tutorialCard p{margin:8px 0;color:#e0ebf8;font-size:15px;line-height:1.55}
@@ -4013,7 +4015,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   const shade = document.createElement('div'); shade.id = 'tutorialShade'; shade.hidden = true;
   const card = document.createElement('section'); card.id = 'tutorialCard'; card.hidden = true;
   card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'false'); card.setAttribute('aria-label', 'SILMO Lernkurs');
-  card.innerHTML = '<button id="tutorialClose" type="button" aria-label="Tutorial schliessen">✕</button>' +
+  card.innerHTML = '<div id="tutorialDragHandle" title="Hier ziehen, um das Lernfenster zu verschieben">⠿ Lernfenster verschieben – hier ziehen</div>' + '<button id="tutorialClose" type="button" aria-label="Tutorial schliessen">✕</button>' +
     '<div style="font-size:10px;color:#ffcf70;margin-bottom:6px">SILMO LERNKURS · <span id="tutorialBuild"></span></div>' +
     '<div id="tutorialStepLabel"></div><div id="tutorialVisual" aria-label="Bildliche Darstellung des Lernschritts"><span id="tutorialVisualGlyph" aria-hidden="true">◧</span><span id="tutorialVisualCaption">Werkzeug</span></div>' +
     '<h2 id="tutorialTitle"></h2><p id="tutorialText"></p><div id="tutorialProgress"><span></span></div>' +
@@ -4259,6 +4261,37 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     const button=event.target.closest('.tutorial-tool-card');if(!button||phase!=='learn')return;
     selectTab(button.dataset.toolTab);revealTarget(button.dataset.target);
     feedback('Hier findest du „'+button.textContent.trim()+'“. Kehre danach zur Aufgabe zurück.',false);
+  });
+  // Das Lernfenster lässt sich am Griff aus dem Drehbereich ziehen – auch per Touch auf dem iPad.
+  const dragHandle = $('tutorialDragHandle');
+  let dragState = null;
+  dragHandle.addEventListener('pointerdown', event => {
+    if (event.button !== 0 && event.pointerType === 'mouse') return;
+    const rect = card.getBoundingClientRect();
+    dragState = { pointerId:event.pointerId, offsetX:event.clientX-rect.left, offsetY:event.clientY-rect.top };
+    card.style.left = rect.left + 'px';
+    card.style.top = rect.top + 'px';
+    card.style.right = 'auto';
+    card.style.transform = 'none';
+    dragHandle.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  });
+  dragHandle.addEventListener('pointermove', event => {
+    if (!dragState || event.pointerId !== dragState.pointerId) return;
+    const margin = 8;
+    const maxLeft = Math.max(margin, window.innerWidth - card.offsetWidth - margin);
+    const maxTop = Math.max(margin, window.innerHeight - card.offsetHeight - margin);
+    card.style.left = Math.max(margin, Math.min(maxLeft, event.clientX-dragState.offsetX)) + 'px';
+    card.style.top = Math.max(margin, Math.min(maxTop, event.clientY-dragState.offsetY)) + 'px';
+  });
+  const stopDragging = event => { if (dragState && event.pointerId === dragState.pointerId) dragState = null; };
+  dragHandle.addEventListener('pointerup', stopDragging);
+  dragHandle.addEventListener('pointercancel', stopDragging);
+  window.addEventListener('resize', () => {
+    if (card.hidden || !card.style.left) return;
+    const margin=8, rect=card.getBoundingClientRect();
+    card.style.left=Math.max(margin,Math.min(window.innerWidth-card.offsetWidth-margin,rect.left))+'px';
+    card.style.top=Math.max(margin,Math.min(window.innerHeight-70,rect.top))+'px';
   });
   launch.addEventListener('click',open);$('tutorialClose').addEventListener('click',close);$('tutorialSkip').addEventListener('click',close);
   $('tutorialBack').addEventListener('click',()=>{if(phase==='learn'&&index>0){index--;renderStep();}});
