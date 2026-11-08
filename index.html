@@ -4278,20 +4278,29 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   document.addEventListener('pointerup',()=>{if(!card.hidden)verifyStep();},true);
   function monitor(){if(!card.hidden){verifyStep();updateDebug();}requestAnimationFrame(monitor);}
   requestAnimationFrame(monitor);
-  // Jede Tastenkombination wird als eigene Lernaufgabe geprüft.
+  // Tastenkürzel zuverlässig über key UND code erkennen (Safari/macOS liefert
+  // je nach Tastaturbelegung unterschiedliche key-Werte).
   window.addEventListener('keydown',event=>{
     if(phase!=='learn'||card.hidden)return;
     const id=steps[index]?.shortcutId;if(!id)return;
     const key=String(event.key||'').toLowerCase();
+    const code=String(event.code||'').toLowerCase();
+    const normalized=key.startsWith('arrow')?key:(code.startsWith('arrow')?code:key);
     const mod=event.ctrlKey||event.metaKey;
     let matched=false;
-    if(id==='alt-shift-left')matched=event.altKey&&event.shiftKey&&key==='arrowleft';
-    else if(id==='alt-shift-right')matched=event.altKey&&event.shiftKey&&key==='arrowright';
-    else if(id==='shift-arrow')matched=event.shiftKey&&['arrowleft','arrowright','arrowup','arrowdown'].includes(key);
-    else if(id.startsWith('mod-'))matched=mod&&key===id.slice(4);
+    if(id==='alt-shift-left')matched=event.altKey&&event.shiftKey&&normalized==='arrowleft';
+    else if(id==='alt-shift-right')matched=event.altKey&&event.shiftKey&&normalized==='arrowright';
+    else if(id==='shift-arrow')matched=event.shiftKey&&['arrowleft','arrowright','arrowup','arrowdown'].includes(normalized);
+    else if(id.startsWith('mod-')){
+      const wanted=id.slice(4);
+      matched=mod&&(key===wanted||code==='key'+wanted);
+    }
     if(!matched)return;
     observedShortcut=id;
-    if(id==='alt-shift-left'||id==='alt-shift-right'){event.preventDefault();event.stopImmediatePropagation();}
+    // Verhindert z. B. den Browser-Dialog bei Cmd+S, ohne die eigentliche
+    // SILMO-Funktion auf document-Ebene zu blockieren.
+    event.preventDefault();
+    if(id==='alt-shift-left'||id==='alt-shift-right')event.stopImmediatePropagation();
     verifyStep();
   },true);
   // Tutorial navigation via external keyboard; capture before CAD arrow-key shortcuts.
