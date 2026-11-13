@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v73 – Image Studio Phase 1</title>
+<title>SILMO 3D Studio AI – v74 – Easy Sketch View</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v73 – Image Studio Phase 1">
+<meta name="silmo-build" content="v74 – Easy Sketch View">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -3518,6 +3518,11 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     sketchDrawing = false;
     if (gizmoMode === 'rotate') { gizmoMode = 'move'; activeRotationAxis = null; setRotationGuideAxis(null); updateMoveGizmo(); }
     sketchMode = true;
+    // Zeichenhilfe v74: automatisch in eine ruhige Draufsicht wechseln.
+    // So liegt die XY-Zeichenebene flach vor dem Benutzer und lässt sich
+    // mit Maus, Touch oder Apple Pencil wesentlich leichter treffen.
+    targetRX = Math.PI / 2 - 0.035;
+    targetRY = 0;
     updateGizmoModeButton();
     rotationAngleLabel.hidden = true;
     updateSketchPlaneFromUI();
