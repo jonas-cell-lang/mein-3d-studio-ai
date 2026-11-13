@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v76 – Straight Sketch</title>
+<title>SILMO 3D Studio AI – v77 – Smooth Sketch</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v76 – Straight Sketch">
+<meta name="silmo-build" content="v77 – Smooth Sketch">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -655,6 +655,12 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   const sketchSnapLabel=document.createElement('label'); sketchSnapLabel.htmlFor='sketchSnapEnabled'; sketchSnapLabel.textContent='Rasterfang aktivieren';
   const sketchSnapEnabled=document.createElement('input'); sketchSnapEnabled.id='sketchSnapEnabled'; sketchSnapEnabled.type='checkbox'; sketchSnapEnabled.checked=false;
   sketchSnapWrap.append(sketchSnapLabel,sketchSnapEnabled); paneMap.draw.left.appendChild(sketchSnapWrap);
+  const sketchSmoothWrap=document.createElement('div'); sketchSmoothWrap.className='field';
+  const sketchSmoothLabel=document.createElement('label'); sketchSmoothLabel.htmlFor='sketchSmoothEnabled'; sketchSmoothLabel.textContent='Freihand-Linien beruhigen';
+  const sketchSmoothEnabled=document.createElement('input'); sketchSmoothEnabled.id='sketchSmoothEnabled'; sketchSmoothEnabled.type='checkbox'; sketchSmoothEnabled.checked=true;
+  sketchSmoothWrap.append(sketchSmoothLabel,sketchSmoothEnabled);
+  const sketchSmoothNote=document.createElement('p'); sketchSmoothNote.className='note'; sketchSmoothNote.textContent='Entfernt kleine Zitterschwankungen (ca. 0,5 mm), erhält aber erkennbare Ecken. Gilt beim Beenden der 2D-Freihandzeichnung.';
+  sketchSmoothWrap.appendChild(sketchSmoothNote); paneMap.draw.left.appendChild(sketchSmoothWrap);
   const sketchGridWrap=document.createElement('div'); sketchGridWrap.className='field';
   const sketchGridLabel=document.createElement('label'); sketchGridLabel.htmlFor='sketchGridMM'; sketchGridLabel.textContent='Rasterweite (mm)';
   const sketchGridMM=document.createElement('input'); sketchGridMM.id='sketchGridMM'; sketchGridMM.type='number'; sketchGridMM.min='0.1'; sketchGridMM.max='100'; sketchGridMM.step='0.1'; sketchGridMM.value='10';
@@ -2794,6 +2800,31 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     point.y = previous.y + Math.sin(fixedAngle) * distance;
     return clampSketchPoint(point, sketchDrawingMarginMM());
   }
+  function simplifySketchPolyline(points, toleranceMM = 0.5) {
+    if (!Array.isArray(points) || points.length < 3) return (points || []).map(point => point.clone());
+    const tolerance = Math.max(0.001, toleranceMM / MM_PER_UNIT);
+    const toleranceSq = tolerance * tolerance;
+    const keep = new Uint8Array(points.length);
+    keep[0] = 1; keep[points.length - 1] = 1;
+    const stack = [[0, points.length - 1]];
+    while (stack.length) {
+      const [first, last] = stack.pop();
+      const a = points[first], b = points[last];
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const lengthSq = dx * dx + dy * dy;
+      let maxDistanceSq = toleranceSq, splitIndex = -1;
+      for (let i = first + 1; i < last; i++) {
+        const p = points[i];
+        const t = lengthSq > 1e-12 ? Math.max(0, Math.min(1, ((p.x-a.x)*dx + (p.y-a.y)*dy) / lengthSq)) : 0;
+        const px = a.x + t * dx, py = a.y + t * dy;
+        const ex = p.x - px, ey = p.y - py;
+        const distanceSq = ex * ex + ey * ey;
+        if (distanceSq > maxDistanceSq) { maxDistanceSq = distanceSq; splitIndex = i; }
+      }
+      if (splitIndex !== -1) { keep[splitIndex] = 1; stack.push([first, splitIndex], [splitIndex, last]); }
+    }
+    return points.filter((point, index) => keep[index]).map(point => point.clone());
+  }
   function snapSketchPoint(point) {
     if (document.getElementById('sketchSnapEnabled')?.checked) {
       const stepMM = Number(document.getElementById('sketchGridMM')?.value);
@@ -2991,11 +3022,15 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       if (points.length >= 3) {
         const distinct = points.filter((point, index) => index === 0 || point.distanceTo(points[index - 1]) > 0.005);
         if (distinct.length >= 3) {
-          sketchDraft = { type: 'freeform2d', points: distinct };
+          const cleaned = document.getElementById('sketchSmoothEnabled')?.checked
+            ? simplifySketchPolyline(distinct, 0.5)
+            : distinct.map(point => point.clone());
+          const finalPoints = cleaned.length >= 3 ? cleaned : distinct.map(point => point.clone());
+          sketchDraft = { type: 'freeform2d', points: finalPoints };
           updateSketchPreview();
           document.getElementById('createSketchSolid').disabled = false;
           document.getElementById('cancelSketch').disabled = false;
-          document.getElementById('sketchStatus').textContent = 'Freiform bereit: ' + distinct.length + ' Konturpunkte. Die Kontur wird beim Extrudieren geschlossen.';
+          document.getElementById('sketchStatus').textContent = 'Freiform bereit: ' + finalPoints.length + ' Konturpunkte' + (cleaned.length < distinct.length ? ' (beruhigt)' : '') + '. Die Kontur wird beim Extrudieren geschlossen.';
         } else sketchDraft = null;
       } else {
         sketchDraft = null;
@@ -4366,6 +4401,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   };
   // Testzugang: nutzt denselben Freiform- und Extrusionsweg wie die normale Zeichenfunktion.
   window.__silmoTestRecognizeHeart=points=>classifyHeartOutline(points);
+  window.__silmoTestSimplifySketchPolyline=points=>simplifySketchPolyline(points.map(point=>new THREE.Vector3(Number(point[0]),Number(point[1]),0)),0.5).map(point=>[point.x,point.y]);
   window.__silmoTestCreateHeartSketch=points=>{
     document.getElementById('sketchTool').value='freeform2d';
     sketchDraft={type:'freeform2d',points:points.map(p=>new THREE.Vector3(Number(p[0]),Number(p[1]),0))};
