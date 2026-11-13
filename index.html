@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v74 – Easy Sketch View</title>
+<title>SILMO 3D Studio AI – v75 – Click-to-Draw</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v74 – Easy Sketch View">
+<meta name="silmo-build" content="v75 – Click-to-Draw">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -729,6 +729,18 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     toolPalette.appendChild(button);
   });
   paneMap.draw.left.insertBefore(toolPalette,sketchToolWrap);
+
+  // Einfacher Punktmodus: Konturen durch einzelne Klicks statt durch freihändiges Ziehen zeichnen.
+  const clickContourPanel=document.createElement('div');clickContourPanel.className='cad-group-body';clickContourPanel.id='clickContourPanel';
+  clickContourPanel.style.cssText='margin:10px 0;padding:12px;border:1px solid #365575;border-radius:12px;background:#10243a';
+  const clickContourTitle=document.createElement('strong');clickContourTitle.textContent='Einfach zeichnen – Punkt für Punkt';
+  const clickContourHelp=document.createElement('p');clickContourHelp.className='note';clickContourHelp.textContent='Aktiviere den Punktmodus und setze die Ecken deiner Form mit einzelnen Klicks. Du musst die Maus nicht gedrückt halten.';
+  const clickContourToggle=document.createElement('button');clickContourToggle.type='button';clickContourToggle.id='clickContourToggle';clickContourToggle.className='wide';clickContourToggle.textContent='＋ Punktmodus einschalten';clickContourToggle.setAttribute('aria-pressed','false');
+  const clickContourUndo=document.createElement('button');clickContourUndo.type='button';clickContourUndo.id='clickContourUndo';clickContourUndo.className='wide';clickContourUndo.textContent='↶ Letzten Punkt entfernen';clickContourUndo.disabled=true;
+  const clickContourFinish=document.createElement('button');clickContourFinish.type='button';clickContourFinish.id='clickContourFinish';clickContourFinish.className='wide primary';clickContourFinish.textContent='✓ Kontur abschliessen';clickContourFinish.disabled=true;
+  clickContourPanel.append(clickContourTitle,clickContourHelp,clickContourToggle,clickContourUndo,clickContourFinish);
+  paneMap.draw.left.insertBefore(clickContourPanel,startSketchButton);
+
   const createGroup=(parent,title,open=false)=>{
     const details=document.createElement('details');details.className='cad-group';details.open=open;
     const summary=document.createElement('summary');summary.textContent=title;
@@ -2740,6 +2752,8 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   const sketchStart = new THREE.Vector3();
   let sketchDrawing = false, sketchPointerId = null;
   let sketchDraft = null, sketchPreview = null;
+  let clickContourMode = false;
+  let clickContourPoints = [];
 
   function clearSketchPreview() {
     if (sketchPreview) {
@@ -2885,6 +2899,50 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       document.getElementById('sketchStatus').textContent = error.message;
     }
   }
+  document.getElementById('clickContourToggle').addEventListener('click', () => {
+    if (!sketchMode) {
+      document.getElementById('sketchStatus').textContent = 'Bitte zuerst „Zeichnen starten“ wählen.';
+      return;
+    }
+    const enabled = !clickContourMode;
+    clickContourMode = enabled;
+    clickContourPoints = [];
+    sketchDraft = null;
+    clearSketchPreview();
+    document.getElementById('clickContourToggle').setAttribute('aria-pressed',String(enabled));
+    document.getElementById('clickContourToggle').textContent = enabled ? '■ Punktmodus ausschalten' : '＋ Punktmodus einschalten';
+    document.getElementById('clickContourUndo').disabled = true;
+    document.getElementById('clickContourFinish').disabled = true;
+    document.getElementById('sketchTool').value = 'freeform2d';
+    document.getElementById('sketchTool').dispatchEvent(new Event('change',{bubbles:true}));
+    document.getElementById('sketchStatus').textContent = enabled
+      ? 'Punktmodus aktiv: Klicke nacheinander auf mindestens drei Ecken. Ein Klick nahe beim Startpunkt schliesst die Kontur.'
+      : 'Punktmodus ausgeschaltet. Du kannst wieder wie gewohnt ziehen.';
+  });
+  document.getElementById('clickContourUndo').addEventListener('click', () => {
+    if (!clickContourPoints.length) return;
+    clickContourPoints.pop();
+    document.getElementById('clickContourUndo').disabled = clickContourPoints.length === 0;
+    document.getElementById('clickContourFinish').disabled = clickContourPoints.length < 3;
+    if (clickContourPoints.length >= 3) {
+      sketchDraft = {type:'freeform2d',points:clickContourPoints.map(p=>p.clone())};
+      updateSketchPreview();
+    } else { sketchDraft = null; clearSketchPreview(); }
+    document.getElementById('sketchStatus').textContent = clickContourPoints.length + ' Konturpunkte vorhanden.';
+  });
+  document.getElementById('clickContourFinish').addEventListener('click', () => {
+    if (clickContourPoints.length < 3) return;
+    sketchDraft = {type:'freeform2d',points:clickContourPoints.map(p=>p.clone())};
+    updateSketchPreview();
+    document.getElementById('createSketchSolid').disabled = false;
+    document.getElementById('cancelSketch').disabled = false;
+    document.getElementById('clickContourFinish').disabled = true;
+    document.getElementById('sketchStatus').textContent = 'Kontur fertig: '+clickContourPoints.length+' Punkte. Du kannst sie jetzt als 3D-Körper erstellen oder weiter bearbeiten.';
+    clickContourMode = false;
+    document.getElementById('clickContourToggle').setAttribute('aria-pressed','false');
+    document.getElementById('clickContourToggle').textContent = '＋ Neue Punktkontur zeichnen';
+  });
+
   function finishSketchPointer(e) {
     if (!sketchDrawing || (e && e.pointerId !== sketchPointerId)) return false;
     if (e) setPointerRay(e);
@@ -3516,6 +3574,11 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     clearSketchPreview();
     sketchDraft = null;
     sketchDrawing = false;
+    clickContourPoints = []; clickContourMode = false;
+    document.getElementById('clickContourToggle').setAttribute('aria-pressed','false');
+    document.getElementById('clickContourToggle').textContent = '＋ Punktmodus einschalten';
+    document.getElementById('clickContourUndo').disabled = true;
+    document.getElementById('clickContourFinish').disabled = true;
     if (gizmoMode === 'rotate') { gizmoMode = 'move'; activeRotationAxis = null; setRotationGuideAxis(null); updateMoveGizmo(); }
     sketchMode = true;
     // Zeichenhilfe v74: automatisch in eine ruhige Draufsicht wechseln.
@@ -3655,6 +3718,26 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   }
 
   canvas.addEventListener('pointerdown', e => {
+    if (sketchMode && clickContourMode) {
+      if (e.cancelable) e.preventDefault();
+      e.stopPropagation();
+      setPointerRay(e);
+      if (!raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) return;
+      const point = snapSketchPoint(sketchPoint.clone());
+      if (clickContourPoints.length && clickContourPoints[0].distanceTo(point) < 0.025 && clickContourPoints.length >= 3) {
+        document.getElementById('clickContourFinish').click();
+        return;
+      }
+      if (!clickContourPoints.length || clickContourPoints[clickContourPoints.length-1].distanceTo(point) > 0.01) clickContourPoints.push(point);
+      document.getElementById('clickContourUndo').disabled = clickContourPoints.length === 0;
+      document.getElementById('clickContourFinish').disabled = clickContourPoints.length < 3;
+      document.getElementById('sketchStatus').textContent = clickContourPoints.length + ' Konturpunkte gesetzt. Klicke weitere Ecken oder schliesse die Kontur ab.';
+      if (clickContourPoints.length >= 3) {
+        sketchDraft = { type:'freeform2d', points:clickContourPoints.map(p=>p.clone()) };
+        updateSketchPreview();
+      }
+      return;
+    }
     if (sketchMode) {
       if (e.cancelable) e.preventDefault();
       e.stopPropagation();
