@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v76/, 'Build-Metadaten zeigen nicht v75');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v77/, 'Build-Metadaten zeigen nicht v77');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -325,6 +325,11 @@ try {
   await page.locator('#clickContourToggle').click();
   assert.equal(await page.locator('#clickContourToggle').getAttribute('aria-pressed'),'true','Punktmodus lässt sich nicht einschalten');
   assert.equal(await page.locator('#clickContourStraight').isChecked(),true,'Gerade Linien sollten standardmässig aktiviert sein');
+  assert.equal(await page.locator('#sketchSmoothEnabled').isChecked(),true,'Freihand-Beruhigung sollte standardmässig aktiviert sein');
+  const simplifiedSketch=await page.evaluate(()=>window.__silmoTestSimplifySketchPolyline([[0,0],[0.05,0.01],[0.1,-0.01],[0.15,0.01],[0.2,0],[0.2,0.2],[0,0.2]]));
+  assert.ok(simplifiedSketch.length<7,'Kleine Zitterschwankungen werden nicht reduziert');
+  assert.ok(simplifiedSketch.some(p=>Math.abs(p[0]-0.2)<1e-6&&Math.abs(p[1])<1e-6),'Echte Ecke am Ende der waagrechten Kante ging verloren');
+  assert.ok(simplifiedSketch.some(p=>Math.abs(p[0]-0.2)<1e-6&&Math.abs(p[1]-0.2)<1e-6),'Echte obere Ecke ging verloren');
   const contourA=await page.evaluate(()=>window.__silmoSketchPointForTest(-0.55,-0.45));
   const contourB=await page.evaluate(()=>window.__silmoSketchPointForTest(0.55,-0.45));
   const contourC=await page.evaluate(()=>window.__silmoSketchPointForTest(0,0.55));
