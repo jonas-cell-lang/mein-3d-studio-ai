@@ -9,6 +9,7 @@ on:
       - development/v32-object-lock
       - development/v33-object-groups-mirror
       - development/v34-individual-group-edit
+      - development/v73-image-studio
   pull_request:
     branches:
       - main
