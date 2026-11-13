@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v75 – Click-to-Draw</title>
+<title>SILMO 3D Studio AI – v76 – Straight Sketch</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v75 – Click-to-Draw">
+<meta name="silmo-build" content="v76 – Straight Sketch">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -738,7 +738,11 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   const clickContourToggle=document.createElement('button');clickContourToggle.type='button';clickContourToggle.id='clickContourToggle';clickContourToggle.className='wide';clickContourToggle.textContent='＋ Punktmodus einschalten';clickContourToggle.setAttribute('aria-pressed','false');
   const clickContourUndo=document.createElement('button');clickContourUndo.type='button';clickContourUndo.id='clickContourUndo';clickContourUndo.className='wide';clickContourUndo.textContent='↶ Letzten Punkt entfernen';clickContourUndo.disabled=true;
   const clickContourFinish=document.createElement('button');clickContourFinish.type='button';clickContourFinish.id='clickContourFinish';clickContourFinish.className='wide primary';clickContourFinish.textContent='✓ Kontur abschliessen';clickContourFinish.disabled=true;
-  clickContourPanel.append(clickContourTitle,clickContourHelp,clickContourToggle,clickContourUndo,clickContourFinish);
+  const clickContourStraightLabel=document.createElement('label');clickContourStraightLabel.style.cssText='display:flex;align-items:center;gap:8px;margin:8px 0;color:#dcecff';
+  const clickContourStraight=document.createElement('input');clickContourStraight.type='checkbox';clickContourStraight.id='clickContourStraight';clickContourStraight.checked=true;
+  clickContourStraightLabel.append(clickContourStraight,document.createTextNode('Linien begradigen (45°-Raster)'));
+  const clickContourStraightHelp=document.createElement('small');clickContourStraightHelp.textContent='Neue Kanten werden waagrecht, senkrecht oder diagonal ausgerichtet.';
+  clickContourPanel.append(clickContourTitle,clickContourHelp,clickContourStraightLabel,clickContourStraightHelp,clickContourToggle,clickContourUndo,clickContourFinish);
   paneMap.draw.left.insertBefore(clickContourPanel,startSketchButton);
 
   const createGroup=(parent,title,open=false)=>{
@@ -2777,6 +2781,19 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       ? Math.max(0, Number(document.getElementById('sketchDiameterMM')?.value || 0) / 2)
       : 0;
   }
+  function straightenContourPoint(point) {
+    if (!document.getElementById('clickContourStraight')?.checked || clickContourPoints.length === 0) return point;
+    const previous = clickContourPoints[clickContourPoints.length - 1];
+    const dx = point.x - previous.x, dy = point.y - previous.y;
+    const distance = Math.hypot(dx,dy);
+    if (distance < 0.0001) return point;
+    const step = Math.PI / 4;
+    const angle = Math.atan2(dy,dx);
+    const fixedAngle = Math.round(angle / step) * step;
+    point.x = previous.x + Math.cos(fixedAngle) * distance;
+    point.y = previous.y + Math.sin(fixedAngle) * distance;
+    return clampSketchPoint(point, sketchDrawingMarginMM());
+  }
   function snapSketchPoint(point) {
     if (document.getElementById('sketchSnapEnabled')?.checked) {
       const stepMM = Number(document.getElementById('sketchGridMM')?.value);
@@ -3723,7 +3740,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       e.stopPropagation();
       setPointerRay(e);
       if (!raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) return;
-      const point = snapSketchPoint(sketchPoint.clone());
+      const point = straightenContourPoint(snapSketchPoint(sketchPoint.clone()));
       if (clickContourPoints.length && clickContourPoints[0].distanceTo(point) < 0.025 && clickContourPoints.length >= 3) {
         document.getElementById('clickContourFinish').click();
         return;
