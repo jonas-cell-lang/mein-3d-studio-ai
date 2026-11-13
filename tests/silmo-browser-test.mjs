@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v72/, 'Build-Metadaten zeigen nicht v72');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v73/, 'Build-Metadaten zeigen nicht v73');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -736,6 +736,28 @@ try {
   assert.ok(proCadTest.loftVertices>0&&proCadTest.sweepVertices>0,'Loft/Sweep erzeugt keine Geometrie');
   const relationTest=await page.evaluate(()=>window.__silmoTestRunSketchRelations());
   for (const key of ['parallelOK','perpendicularOK','tangentOK','concentricOK','lengthOK','distanceOK']) assert.equal(relationTest[key],true,'Skizzenbedingung/Bemaßung '+key+' funktioniert nicht');
+
+
+  // SILMO Image Studio Phase 1: separater Arbeitsbereich, Import, Rotation,
+  // persistente Vorlagendaten und Übergabe an die bestehende CAD-Freiform.
+  assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),false,'Image Studio ist beim Start unerwartet geöffnet');
+  await page.locator('#imageStudioLaunch').click();
+  assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),true,'Image Studio lässt sich nicht öffnen');
+  const tinyPng='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=';
+  await page.evaluate(async data => {
+    await window.__silmoImageStudioImport({version:1,fileName:'test.png',dataUrl:data,widthMM:20,rotation:0,contours:[]});
+  },tinyPng);
+  assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).loaded,true,'Bildvorlage konnte nicht geladen werden');
+  assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).widthMM,20,'Bildbreite wird nicht gespeichert');
+  await page.locator('#imageStudioRotate').click();
+  assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).rotation,90,'Bildrotation funktioniert nicht');
+  const imageState=await page.evaluate(()=>window.__silmoImageStudioExport());
+  assert.equal(imageState.fileName,'test.png','Bilddatei-Metadaten werden nicht exportiert');
+  assert.ok(imageState.dataUrl.startsWith('data:image/png;base64,'),'Bilddaten werden nicht in Projektstruktur eingebettet');
+  const imageBridgeResult=await page.evaluate(()=>window.__silmoImageStudioCreateFromPoints([[-10,-10],[10,-10],[10,10],[-10,10]],5));
+  assert.equal(imageBridgeResult.ok,true,'Bildkontur wird nicht in einen vorhandenen CAD-Körper übertragen: '+(imageBridgeResult.message||''));
+  assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),false,'Image Studio schliesst nach erfolgreicher CAD-Übertragung nicht');
+  assert.ok((await page.locator('#objects .object-row').count())>0,'CAD-Übergabe hat kein Objekt erstellt');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
   console.log('BESTANDEN: 3D-Start, CAD-Zeichenarbeitsplatz, Werkzeugpalette, exakte Skizzenposition, Skizzenbearbeitung, Konturpunkt-Editor, Kantenbearbeitung, Loft, Sweep, Parallel/Senkrecht, Tangential/Konzentrisch, Pfadlänge und Objektabstand, Zeichnen, allgemeine CAD-Konstruktion, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
