@@ -3486,7 +3486,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   // Öffentliche, eng begrenzte Brücke: Image Studio übergibt eine geprüfte 2D-Kontur
   // an die vorhandene Freiform-Skizze. Es entsteht keine zweite Extrusions-Engine.
   window.__silmoImageStudioCreateFromPoints = (points, heightMM) => {
-    if (!Array.isArray(points) || points.length < 3 || points.length > 220 ||
+    if (!Array.isArray(points) || points.length < 3 || points.length > 5000 ||
         !points.every(point => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite)) ||
         !Number.isFinite(heightMM) || heightMM < 0.1 || heightMM > 2000) {
       return { ok:false, message:'Kontur oder Extrusionshöhe ist ungültig.' };
@@ -4901,7 +4901,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       throw new Error('Ungültige Image-Studio-Daten in der Projektdatei.');
     }
     await setImage(saved.dataUrl,typeof saved.fileName==='string'?saved.fileName.slice(0,180):'Bildvorlage');
-    state.widthMM=saved.widthMM;state.rotation=saved.rotation;
+    state.widthMM=saved.widthMM;state.rotation=saved.rotation;$('imageStudioWidthMM').value=String(state.widthMM);
     state.contours=saved.contours.filter(contour=>Array.isArray(contour)&&contour.length>=3&&contour.length<=5000&&contour.every(point=>Array.isArray(point)&&point.length===2&&point.every(Number.isFinite)&&point[0]>=0&&point[1]>=0&&point[0]<=image.naturalWidth&&point[1]<=image.naturalHeight)).map(contour=>contour.map(point=>[point[0],point[1]]));
     $('imageStudioWidthMM').value=String(state.widthMM);updateDimensions();scheduleRender();return true;
   };
