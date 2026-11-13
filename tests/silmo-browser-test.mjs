@@ -745,7 +745,7 @@ try {
   assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),true,'Image Studio lässt sich nicht öffnen');
   const tinyPng='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=';
   await page.evaluate(async data => {
-    await window.__silmoImageStudioImport({version:1,fileName:'test.png',dataUrl:data,widthMM:20,rotation:0,contours:[]});
+    await window.__silmoImageStudioImport({version:1,fileName:'test.png',dataUrl:data,widthMM:20,rotation:0,contours:[[[0,0],[1,0],[1,1],[0,1]]]});
   },tinyPng);
   assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).loaded,true,'Bildvorlage konnte nicht geladen werden');
   assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).widthMM,20,'Bildbreite wird nicht gespeichert');
@@ -754,8 +754,8 @@ try {
   const imageState=await page.evaluate(()=>window.__silmoImageStudioExport());
   assert.equal(imageState.fileName,'test.png','Bilddatei-Metadaten werden nicht exportiert');
   assert.ok(imageState.dataUrl.startsWith('data:image/png;base64,'),'Bilddaten werden nicht in Projektstruktur eingebettet');
-  const imageBridgeResult=await page.evaluate(()=>window.__silmoImageStudioCreateFromPoints([[-10,-10],[10,-10],[10,10],[-10,10]],5));
-  assert.equal(imageBridgeResult.ok,true,'Bildkontur wird nicht in einen vorhandenen CAD-Körper übertragen: '+(imageBridgeResult.message||''));
+  await page.locator('#imageStudioCreate3D').click();
+  assert.match(await page.locator('#imageStudioStatus').innerText(),/3D-Körper erstellt/,'Bildkontur wird nicht in einen vorhandenen CAD-Körper übertragen');
   assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),false,'Image Studio schliesst nach erfolgreicher CAD-Übertragung nicht');
   assert.ok((await page.locator('#objects .object-row').count())>0,'CAD-Übergabe hat kein Objekt erstellt');
 
