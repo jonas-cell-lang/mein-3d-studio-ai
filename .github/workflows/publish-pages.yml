@@ -1,0 +1,123 @@
+name: Publish SILMO website
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "index.html"
+      - "manifest.webmanifest"
+      - "silmo-icon.svg"
+      - "icon-512.png"
+      - ".github/workflows/publish-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate inline JavaScript
+        shell: bash
+        run: |
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class ScriptExtractor(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.scripts = []
+                  self.current = None
+
+              def handle_starttag(self, tag, attrs):
+                  if tag.lower() == "script":
+                      attrs = dict(attrs)
+                      kind = attrs.get("type", "text/javascript").lower()
+                      if "src" not in attrs and kind in ("text/javascript", "application/javascript", "module"):
+                          self.current = []
+
+              def handle_data(self, data):
+                  if self.current is not None:
+                      self.current.append(data)
+
+              def handle_endtag(self, tag):
+                  if tag.lower() == "script" and self.current is not None:
+                      self.scripts.append("".join(self.current))
+                      self.current = None
+
+          html = Path("index.html").read_text(encoding="utf-8")
+          parser = ScriptExtractor()
+          parser.feed(html)
+          if not parser.scripts:
+              raise SystemExit("No inline JavaScript blocks found.")
+          for i, source in enumerate(parser.scripts, 1):
+              Path(f"/tmp/silmo-inline-{i}.js").write_text(source, encoding="utf-8")
+          print(f"Found {len(parser.scripts)} inline JavaScript blocks.")
+          PY
+          for file in /tmp/silmo-inline-*.js; do
+            echo "Checking $file"
+            node --check "$file"
+          done
+
+      - name: Validate static app files
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(Path("manifest.webmanifest").read_text(encoding="utf-8"))
+          assert manifest.get("name") == "SILMO 3D Studio AI"
+          for asset in ("index.html", "manifest.webmanifest", "silmo-icon.svg", "icon-512.png"):
+              path = Path(asset)
+              if not path.is_file() or path.stat().st_size == 0:
+                  raise SystemExit(f"Missing or empty app file: {asset}")
+          html = Path("index.html").read_text(encoding="utf-8")
+          for required in ("imageStudioWorkspace", "imageStudioLaunch", "imageStudioCreate3D"):
+              if required not in html:
+                  raise SystemExit(f"Required Image Studio feature missing: {required}")
+          print("Static app files, manifest and Image Studio entry points validated.")
+          PY
+
+      - name: Prepare GitHub Pages site
+        run: |
+          mkdir -p _site
+          cp index.html manifest.webmanifest silmo-icon.svg icon-512.png _site/
+          touch _site/.nojekyll
+
+      - name: Upload website artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: validate-and-build
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Publish website
+        id: deployment
+        uses: actions/deploy-pages@v4
