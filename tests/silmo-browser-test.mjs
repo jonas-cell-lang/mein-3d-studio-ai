@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v73/, 'Build-Metadaten zeigen nicht v73');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v75/, 'Build-Metadaten zeigen nicht v75');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -318,6 +318,22 @@ try {
   assert.equal(cameraAfterSketch.gizmoMode, 'move', 'Drehringe wurden im Zeichenmodus nicht deaktiviert');
   assert.equal(cameraAfterSketch.rotationInputHidden, true, 'Direkte Winkeleingabe ist im Zeichenmodus noch sichtbar');
   assert.equal(await page.locator('#createSketchSolid').isEnabled(), true, 'Rechtsklick-Zeichnung wurde nicht als Skizze vorbereitet');
+  await page.locator('#createSketchSolid').click();
+
+  // Punkt-für-Punkt-Zeichnen: kein gedrückter Mausknopf nötig.
+  await page.locator('#startSketch').click();
+  await page.locator('#clickContourToggle').click();
+  assert.equal(await page.locator('#clickContourToggle').getAttribute('aria-pressed'),'true','Punktmodus lässt sich nicht einschalten');
+  const contourA=await page.evaluate(()=>window.__silmoSketchPointForTest(-0.55,-0.45));
+  const contourB=await page.evaluate(()=>window.__silmoSketchPointForTest(0.55,-0.45));
+  const contourC=await page.evaluate(()=>window.__silmoSketchPointForTest(0,0.55));
+  for(const point of [contourA,contourB,contourC]) await page.mouse.click(point.x,point.y);
+  assert.equal(await page.locator('#clickContourFinish').isEnabled(),true,'Konturabschluss wird ab drei Punkten nicht aktiviert');
+  await page.locator('#clickContourUndo').click();
+  assert.equal(await page.locator('#clickContourFinish').isEnabled(),false,'Letzten Punkt entfernen aktualisiert die Mindestpunktzahl nicht');
+  await page.mouse.click(contourC.x,contourC.y);
+  await page.locator('#clickContourFinish').click();
+  assert.equal(await page.locator('#createSketchSolid').isEnabled(),true,'Abgeschlossene Punktkontur ist nicht als 3D-Körper bereit');
   await page.locator('#createSketchSolid').click();
 
   // 2D-Skizze: Rechteck auf der XY-Ebene zeichnen und mit exakten Massen extrudieren.
