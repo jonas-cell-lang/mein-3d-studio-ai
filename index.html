@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v72 – Herz-Erkennung verbessert</title>
+<title>SILMO 3D Studio AI – v73 – Image Studio Phase 1</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v72 – Herz-Erkennung verbessert">
+<meta name="silmo-build" content="v73 – Image Studio Phase 1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -234,6 +234,33 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
 .cad-pro-divider{height:1px;background:#263c54;margin:11px 0}
 #pane-draw-right .cad-pro-group button{width:100%}
 @media(max-width:680px){.cad-pro-actions{grid-template-columns:1fr}.cad-pro-grid{grid-template-columns:1fr 1fr}}
+
+
+/* SILMO Image Studio – eigenständiger 2D-Bildarbeitsbereich */
+#imageStudioWorkspace{position:fixed;inset:0;z-index:15000;display:flex;flex-direction:column;background:#080f1d;color:#edf4ff}
+#imageStudioWorkspace[hidden]{display:none!important}
+#imageStudioWorkspace .isw-header{height:66px;min-height:66px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 20px;border-bottom:1px solid #263953;background:linear-gradient(100deg,#101d32,#142742)}
+#imageStudioWorkspace .isw-title{font-size:17px;font-weight:800}
+#imageStudioWorkspace .isw-subtitle{font-size:11px;color:#9db0ca}
+#imageStudioWorkspace .isw-layout{display:grid;grid-template-columns:280px minmax(0,1fr);min-height:0;flex:1}
+#imageStudioWorkspace .isw-tools{padding:16px;overflow:auto;background:#101a2b;border-right:1px solid #263953}
+#imageStudioWorkspace .isw-tools h2{margin:8px 0 12px;color:#a9bdd7;font-size:11px;letter-spacing:1px}
+#imageStudioWorkspace .isw-field{margin:13px 0}
+#imageStudioWorkspace .isw-field label{display:block;margin-bottom:5px;color:#b2c4dc;font-size:11px}
+#imageStudioWorkspace input{width:100%;padding:9px 10px;border:1px solid #2b405a;border-radius:8px;background:#0b1422;color:white;font:inherit}
+#imageStudioWorkspace .isw-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:40px;margin:7px 0;padding:8px 10px;text-align:center}
+#imageStudioWorkspace .isw-btn[aria-pressed="true"]{background:#17434a;border-color:#53d8e8;color:#a8f4ff}
+#imageStudioWorkspace .isw-primary{background:linear-gradient(135deg,#2869d9,#277fce);border-color:#438fe9}
+#imageStudioWorkspace .isw-note{font-size:11px;line-height:1.55;color:#9db0ca}
+#imageStudioWorkspace .isw-status{margin-top:14px;padding:10px;border:1px solid #23473f;border-radius:8px;background:#102b28;color:#a6f0c2;font-size:12px;line-height:1.45}
+#imageStudioWorkspace .isw-canvas-wrap{position:relative;min-width:0;min-height:0;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#182b43,#0d1728 62%,#08111e)}
+#imageStudioCanvas{position:relative;inset:auto;display:block;width:100%;height:100%;touch-action:none;cursor:grab;outline:none}
+#imageStudioCanvas.isw-drawing{cursor:crosshair}
+#imageStudioEmpty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:#9db0ca;font-size:14px;pointer-events:none}
+#imageStudioEmpty[hidden]{display:none}
+#imageStudioWorkspace .isw-top-hint{position:absolute;top:14px;left:14px;max-width:calc(100% - 28px);padding:8px 11px;border:1px solid #32465d;border-radius:9px;background:#0b1422d9;color:#d5e5fa;font-size:11px;pointer-events:none}
+@media(max-width:700px){#imageStudioWorkspace .isw-header{height:auto;min-height:58px;padding:8px 10px}#imageStudioWorkspace .isw-layout{grid-template-columns:180px minmax(0,1fr)}#imageStudioWorkspace .isw-tools{padding:10px}#imageStudioWorkspace .isw-title{font-size:14px}#imageStudioWorkspace .isw-subtitle{font-size:10px}#imageStudioWorkspace .isw-btn{font-size:11px;padding:7px 5px}}
+@media(max-width:460px){#imageStudioWorkspace .isw-layout{grid-template-columns:145px minmax(0,1fr)}#imageStudioWorkspace .isw-tools{padding:8px}}
 
 </style>
 </head>
@@ -464,7 +491,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     <div class="brand-mark">⬡</div>
     <div><h1>SILMO 3D Studio AI</h1><div class="subtitle">Einfach bauen. Präzise modellieren.</div></div>
   </div>
-  <div class="header-actions"><button id="tutorialLaunch" type="button">✦ Tutorial</button><button id="modeToggle" type="button" aria-pressed="false" title="Zwischen Anfänger- und Expertenmodus wechseln">Anfängermodus</button><button id="expandToggle" type="button" aria-pressed="false">3D maximieren</button><div class="top-status"><span class="status-dot"></span><span>3D-Arbeitsplatz bereit</span></div></div>
+  <div class="header-actions"><button id="imageStudioLaunch" type="button">▧ Image Studio</button><button id="tutorialLaunch" type="button">✦ Tutorial</button><button id="modeToggle" type="button" aria-pressed="false" title="Zwischen Anfänger- und Expertenmodus wechseln">Anfängermodus</button><button id="expandToggle" type="button" aria-pressed="false">3D maximieren</button><div class="top-status"><span class="status-dot"></span><span>3D-Arbeitsplatz bereit</span></div></div>
 </header>
 <nav class="tool-tabs" role="tablist" aria-label="Werkzeugbereiche">
   <button class="tool-tab" type="button" role="tab" data-tab="create" aria-selected="true">Erstellen</button>
@@ -527,6 +554,42 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     <div class="field"><label for="color">Objektfarbe</label><input id="color" type="color" value="#4b91ed"></div>
   </aside>
 </main>
+
+<section id="imageStudioWorkspace" hidden aria-label="SILMO Image Studio">
+  <div class="isw-header">
+    <div><div class="isw-title">▧ SILMO Image Studio</div><div class="isw-subtitle">Bild als Vorlage laden · Kontur manuell nachzeichnen · in CAD übertragen</div></div>
+    <button id="imageStudioBack" type="button">← Zurück zu SILMO CAD</button>
+  </div>
+  <div class="isw-layout">
+    <aside class="isw-tools">
+      <h2>1 · BILDVORLAGE</h2>
+      <div class="isw-field"><label for="imageStudioFileInput">Bilddatei (PNG, JPG oder WebP)</label><input id="imageStudioFileInput" type="file" accept="image/png,image/jpeg,image/webp"></div>
+      <p class="isw-note">Maximal 8 MB und 40 Megapixel. Das Bild bleibt eine separate 2D-Vorlage und wird nicht direkt als 3D-Objekt eingefügt.</p>
+      <div class="panel-rule"></div>
+      <h2>2 · GRÖSSE UND ANSICHT</h2>
+      <div class="isw-field"><label for="imageStudioWidthMM">Bildbreite in mm</label><input id="imageStudioWidthMM" type="number" min="5" max="2000" step="1" value="100"></div>
+      <div class="isw-field"><label>Bildhöhe (automatisch, mm)</label><div id="imageStudioHeightMM" class="note">–</div></div>
+      <button id="imageStudioRotate" class="isw-btn" type="button">↻ 90° drehen</button>
+      <button id="imageStudioFit" class="isw-btn" type="button">◎ Ansicht einpassen</button>
+      <div class="panel-rule"></div>
+      <h2>3 · KONTUR ZEICHNEN</h2>
+      <button id="imageStudioDrawToggle" class="isw-btn" type="button" aria-pressed="false">✎ Kontur zeichnen: AUS</button>
+      <p class="isw-note">Aktiviere den Zeichenmodus und ziehe mit der Maus oder dem Finger eine geschlossene Aussenkontur. Ohne Zeichenmodus kannst du die Ansicht verschieben. Mit dem Mausrad zoomst du.</p>
+      <button id="imageStudioUndo" class="isw-btn" type="button">↶ Letzte Kontur rückgängig</button>
+      <button id="imageStudioClear" class="isw-btn" type="button">⌫ Konturen löschen</button>
+      <div class="isw-field"><label for="imageStudioExtrusionMM">Extrusionshöhe für CAD (mm)</label><input id="imageStudioExtrusionMM" type="number" min="0.1" max="2000" step="0.1" value="5"></div>
+      <button id="imageStudioCreate3D" class="isw-btn isw-primary" type="button">⬡ Kontur in 3D-Körper umwandeln</button>
+      <div id="imageStudioStatus" class="isw-status" role="status">Lade zuerst ein Bild. Die Kontur wird anschliessend manuell gezeichnet.</div>
+      <p class="isw-note">Phase 1 enthält die manuelle Bild-zu-CAD-Übertragung. Automatische KI-Konturerkennung folgt als separate Entwicklungsphase.</p>
+    </aside>
+    <div class="isw-canvas-wrap">
+      <canvas id="imageStudioCanvas" aria-label="Bildvorlage und Zeichenfläche"></canvas>
+      <div id="imageStudioEmpty">Noch kein Bild geladen.<br>Wähle links eine PNG-, JPG- oder WebP-Datei aus.</div>
+      <div class="isw-top-hint">Mausrad: Zoom · Ziehen: Ansicht verschieben · Zeichenmodus: Kontur zeichnen</div>
+    </div>
+  </div>
+</section>
+
 <script>
 // Werkzeugnavigation: vorhandene Elemente werden verschoben, ihre IDs und Handler bleiben erhalten.
 (() => {
@@ -1491,7 +1554,8 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     try {
       const project = {
         app: 'SILMO 3D Studio AI',
-        version: 2,
+        version: 3,
+        imageStudio: window.__silmoImageStudioExport ? window.__silmoImageStudioExport() : null,
         bedWidthMM,
         bedDepthMM,
         uniform,
@@ -1609,6 +1673,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
         updateObjects();
         showProperties();
         updateMoveGizmo();
+        if (window.__silmoImageStudioImport) window.__silmoImageStudioImport(project.imageStudio || null).catch(error => console.warn('Image Studio konnte nicht geladen werden:', error));
         status.textContent = 'Projekt geöffnet (' + objects.length + ' Objekt(e))';
       } catch (error) {
         newObjects.forEach(obj => {
@@ -3417,6 +3482,36 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       status.textContent = 'Skizze konnte nicht erstellt werden: ' + (error.message || 'Eingaben prüfen.');
     }
   }
+
+  // Öffentliche, eng begrenzte Brücke: Image Studio übergibt eine geprüfte 2D-Kontur
+  // an die vorhandene Freiform-Skizze. Es entsteht keine zweite Extrusions-Engine.
+  window.__silmoImageStudioCreateFromPoints = (points, heightMM) => {
+    if (!Array.isArray(points) || points.length < 3 || points.length > 220 ||
+        !points.every(point => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite)) ||
+        !Number.isFinite(heightMM) || heightMM < 0.1 || heightMM > 2000) {
+      return { ok:false, message:'Kontur oder Extrusionshöhe ist ungültig.' };
+    }
+    const before = objects.length;
+    document.querySelector('[data-tab="draw"]')?.click();
+    const tool = $('sketchTool');
+    if (!tool) return { ok:false, message:'Der vorhandene CAD-Zeichenbereich wurde nicht gefunden.' };
+    tool.value = 'freeform2d';
+    updateSketchToolFields();
+    $('sketchConstraint').value = 'none';
+    $('sketchHeightMM').value = String(heightMM);
+    $('sketchPositionXMM').value = '';
+    $('sketchPositionYMM').value = '';
+    sketchDraft = {
+      centerX:0,
+      centerY:0,
+      points:points.map(point => new THREE.Vector3(point[0] / MM_PER_UNIT, point[1] / MM_PER_UNIT, 0))
+    };
+    createSketchSolid();
+    return objects.length > before
+      ? { ok:true, label:objects[objects.length-1]?.userData?.label || 'Freiform-Skizze' }
+      : { ok:false, message:status.textContent || 'Die Kontur konnte nicht in CAD umgewandelt werden.' };
+  };
+
   document.getElementById('startSketch').addEventListener('click', () => {
     clearSketchPreview();
     sketchDraft = null;
@@ -4582,6 +4677,235 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       if(phase==='learn')skipCurrentStep();
     }
   },true);
+})();
+</script>
+
+
+<script>
+/* SILMO Image Studio Phase 1 – isolierter 2D-Arbeitsbereich */
+(() => {
+  const $ = id => document.getElementById(id);
+  const workspace = $('imageStudioWorkspace');
+  const canvas = $('imageStudioCanvas');
+  if (!workspace || !canvas) return;
+  const ctx = canvas.getContext('2d');
+  const state = { dataUrl:'', fileName:'', widthMM:100, rotation:0, contours:[] };
+  let image = null;
+  let zoom = 1;
+  let panX = 0, panY = 0;
+  let drawMode = false;
+  let drawing = false;
+  let currentContour = [];
+  let panStart = null;
+  let renderFrame = 0;
+
+  function status(message) { $('imageStudioStatus').textContent = message; }
+  function rotatedSize() {
+    if (!image) return { width:0, height:0 };
+    return state.rotation % 180 ? { width:image.naturalHeight, height:image.naturalWidth } : { width:image.naturalWidth, height:image.naturalHeight };
+  }
+  function physicalHeight() {
+    const size = rotatedSize();
+    return size.width ? state.widthMM * size.height / size.width : 0;
+  }
+  function fitScale(width, height) {
+    const size = rotatedSize();
+    return size.width && size.height ? Math.min(width / size.width, height / size.height) * 0.86 : 1;
+  }
+  function imageScale(width, height) { return fitScale(width, height) * zoom; }
+  function applyImageTransform(context, width, height, scale) {
+    context.translate(width / 2 + panX, height / 2 + panY);
+    context.scale(scale, scale);
+    context.rotate(state.rotation * Math.PI / 180);
+    context.translate(-image.naturalWidth / 2, -image.naturalHeight / 2);
+  }
+  function render() {
+    if (workspace.hidden) return;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    const pixelWidth = Math.round(rect.width * dpr), pixelHeight = Math.round(rect.height * dpr);
+    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) { canvas.width = pixelWidth; canvas.height = pixelHeight; }
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,rect.width,rect.height);
+    if (!image) { $('imageStudioEmpty').hidden = false; return; }
+    $('imageStudioEmpty').hidden = true;
+    const scale = imageScale(rect.width, rect.height);
+    ctx.save();
+    applyImageTransform(ctx,rect.width,rect.height,scale);
+    ctx.drawImage(image,0,0);
+    const drawContour = points => {
+      if (!points || !points.length) return;
+      ctx.beginPath(); ctx.moveTo(points[0][0],points[0][1]);
+      for (let i=1;i<points.length;i++) ctx.lineTo(points[i][0],points[i][1]);
+      if (points.length >= 3) ctx.closePath();
+      ctx.lineWidth = 2 / scale;
+      ctx.strokeStyle = '#53d8e8';
+      ctx.fillStyle = '#53d8e822';
+      if (points.length >= 3) ctx.fill();
+      ctx.stroke();
+      for (const point of points) {
+        ctx.beginPath(); ctx.arc(point[0],point[1],3.5/scale,0,Math.PI*2);
+        ctx.fillStyle = '#ffe58a'; ctx.fill();
+      }
+    };
+    state.contours.forEach(drawContour);
+    drawContour(currentContour);
+    ctx.restore();
+  }
+  function scheduleRender() {
+    if (renderFrame) return;
+    renderFrame = requestAnimationFrame(() => { renderFrame = 0; render(); });
+  }
+  function updateDimensions() {
+    const h = physicalHeight();
+    $('imageStudioHeightMM').textContent = h ? h.toFixed(1) + ' mm' : '–';
+  }
+  function imagePoint(clientX,clientY) {
+    if (!image) return null;
+    const rect = canvas.getBoundingClientRect();
+    const scale = imageScale(rect.width,rect.height);
+    const lx = (clientX - rect.left - rect.width/2 - panX) / scale;
+    const ly = (clientY - rect.top - rect.height/2 - panY) / scale;
+    const angle = -state.rotation * Math.PI / 180;
+    const c = Math.cos(angle), sn = Math.sin(angle);
+    const x = c*lx - sn*ly + image.naturalWidth/2;
+    const y = sn*lx + c*ly + image.naturalHeight/2;
+    return [Math.max(0,Math.min(image.naturalWidth,x)),Math.max(0,Math.min(image.naturalHeight,y))];
+  }
+  function polygonArea(points) {
+    let area=0;
+    for(let i=0;i<points.length;i++){const a=points[i],b=points[(i+1)%points.length];area+=a[0]*b[1]-b[0]*a[1];}
+    return Math.abs(area)/2;
+  }
+  function setImage(dataUrl,fileName) {
+    return new Promise((resolve,reject) => {
+      const next = new Image();
+      next.onload = () => {
+        if (!next.naturalWidth || !next.naturalHeight || next.naturalWidth*next.naturalHeight > 40000000) { reject(new Error('Das Bild ist ungültig oder grösser als 40 Megapixel.')); return; }
+        image = next; state.dataUrl = dataUrl; state.fileName = fileName || 'Bildvorlage';
+        state.contours = []; state.rotation = 0; zoom = 1; panX = 0; panY = 0;
+        $('imageStudioWidthMM').value = String(state.widthMM);
+        updateDimensions(); scheduleRender();
+        resolve();
+      };
+      next.onerror = () => reject(new Error('Die Bilddatei konnte nicht geöffnet werden.'));
+      next.src = dataUrl;
+    });
+  }
+  function readDataUrl(file) {
+    return new Promise((resolve,reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Die Bilddatei konnte nicht gelesen werden.'));
+      reader.readAsDataURL(file);
+    });
+  }
+  function openWorkspace() { workspace.hidden = false; updateDimensions(); scheduleRender(); }
+  function closeWorkspace() { workspace.hidden = true; }
+  $('imageStudioLaunch').addEventListener('click',openWorkspace);
+  $('imageStudioBack').addEventListener('click',closeWorkspace);
+  $('imageStudioFileInput').addEventListener('change',async event => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+      if (!['image/png','image/jpeg','image/webp'].includes(file.type)) throw new Error('Bitte eine PNG-, JPG- oder WebP-Datei auswählen.');
+      if (file.size > 8*1024*1024) throw new Error('Die Bilddatei darf maximal 8 MB gross sein.');
+      const dataUrl = await readDataUrl(file);
+      await setImage(dataUrl,file.name);
+      status('Bild geladen: '+file.name+' ('+image.naturalWidth+' × '+image.naturalHeight+' px).');
+    } catch(error) { status(error.message || 'Bild konnte nicht geladen werden.'); }
+    event.target.value = '';
+  });
+  $('imageStudioWidthMM').addEventListener('change',() => {
+    const value = Number($('imageStudioWidthMM').value);
+    if (!Number.isFinite(value) || value < 5 || value > 2000) { $('imageStudioWidthMM').value=String(state.widthMM); status('Die Bildbreite muss zwischen 5 und 2000 mm liegen.'); return; }
+    state.widthMM=value; updateDimensions(); status('Bildgrösse aktualisiert.'); scheduleRender();
+  });
+  $('imageStudioRotate').addEventListener('click',() => {
+    if (!image) { status('Lade zuerst ein Bild.'); return; }
+    state.rotation=(state.rotation+90)%360; updateDimensions(); scheduleRender(); status('Bildansicht um 90° gedreht.');
+  });
+  $('imageStudioFit').addEventListener('click',() => { zoom=1;panX=0;panY=0;scheduleRender();status('Ansicht eingepasst.'); });
+  $('imageStudioDrawToggle').addEventListener('click',() => {
+    drawMode=!drawMode; $('imageStudioDrawToggle').setAttribute('aria-pressed',String(drawMode));
+    $('imageStudioDrawToggle').textContent=drawMode?'✎ Kontur zeichnen: EIN':'✎ Kontur zeichnen: AUS';
+    canvas.classList.toggle('isw-drawing',drawMode);
+    status(drawMode?'Zeichenmodus aktiv: Ziehe eine geschlossene Aussenkontur.':'Zeichenmodus aus: Ziehen verschiebt die Ansicht.');
+  });
+  $('imageStudioUndo').addEventListener('click',() => { if(currentContour.length){currentContour=[];drawing=false;}else state.contours.pop();scheduleRender();status('Letzte Kontur entfernt.'); });
+  $('imageStudioClear').addEventListener('click',() => { state.contours=[];currentContour=[];drawing=false;scheduleRender();status('Alle Konturen gelöscht.'); });
+  canvas.addEventListener('pointerdown',event => {
+    if (!image) return;
+    canvas.setPointerCapture(event.pointerId);
+    if (drawMode) { drawing=true;currentContour=[imagePoint(event.clientX,event.clientY)]; }
+    else { panStart={x:event.clientX,y:event.clientY,panX,panY};canvas.style.cursor='grabbing'; }
+    event.preventDefault();scheduleRender();
+  });
+  canvas.addEventListener('pointermove',event => {
+    if (drawing && drawMode) {
+      const point=imagePoint(event.clientX,event.clientY),last=currentContour[currentContour.length-1];
+      if(point&&(!last||Math.hypot(point[0]-last[0],point[1]-last[1])>Math.max(1,2/imageScale(canvas.clientWidth,canvas.clientHeight)))) currentContour.push(point);
+      scheduleRender();
+    } else if(panStart) {
+      panX=panStart.panX+event.clientX-panStart.x;panY=panStart.panY+event.clientY-panStart.y;scheduleRender();
+    }
+  });
+  const endPointer = () => {
+    if(drawing&&drawMode){
+      drawing=false;
+      if(currentContour.length>=3&&polygonArea(currentContour)>0.5){state.contours.push(currentContour.slice(0,5000));status('Kontur gespeichert ('+currentContour.length+' Punkte).');}
+      else status('Die Kontur braucht mindestens drei Punkte und eine Fläche.');
+      currentContour=[];
+    }
+    panStart=null;canvas.style.cursor=drawMode?'crosshair':'grab';scheduleRender();
+  };
+  canvas.addEventListener('pointerup',endPointer);
+  canvas.addEventListener('pointercancel',endPointer);
+  canvas.addEventListener('wheel',event => {
+    if(!image)return;event.preventDefault();
+    zoom=Math.max(0.25,Math.min(8,zoom*(event.deltaY<0?1.12:1/1.12)));scheduleRender();
+  },{passive:false});
+  $('imageStudioCreate3D').addEventListener('click',() => {
+    if(!image){status('Lade zuerst ein Bild.');return;}
+    const contour=state.contours[state.contours.length-1];
+    if(!contour||contour.length<3){status('Zeichne zuerst eine geschlossene Kontur.');return;}
+    const widthMM=Number($('imageStudioWidthMM').value),heightMM=physicalHeight(),extrusionMM=Number($('imageStudioExtrusionMM').value);
+    if(!Number.isFinite(widthMM)||widthMM<5||widthMM>2000||!Number.isFinite(extrusionMM)||extrusionMM<0.1||extrusionMM>2000){status('Bitte gültige Masse eingeben.');return;}
+    const rotated=rotatedSize(),rotation=((state.rotation%360)+360)%360;
+    const points=contour.map(([x,y])=>{
+      let u=x,v=y;
+      if(rotation===90){u=image.naturalHeight-y;v=x;}
+      else if(rotation===180){u=image.naturalWidth-x;v=image.naturalHeight-y;}
+      else if(rotation===270){u=y;v=image.naturalWidth-x;}
+      return [u/rotated.width*widthMM-widthMM/2,heightMM/2-v/rotated.height*heightMM];
+    }).filter(point=>point.every(Number.isFinite));
+    if(points.length<3||polygonArea(points)<0.01){status('Die Kontur ist zu klein oder ungültig.');return;}
+    const result=window.__silmoImageStudioCreateFromPoints?.(points,extrusionMM);
+    if(result?.ok){status('3D-Körper erstellt: '+result.label+'. Du kannst ihn jetzt im normalen SILMO-CAD weiterbearbeiten.');closeWorkspace();}
+    else status(result?.message||'Die Kontur konnte nicht an den CAD-Arbeitsbereich übergeben werden.');
+  });
+  window.addEventListener('resize',scheduleRender);
+  window.addEventListener('keydown',event => { if(!workspace.hidden&&event.key==='Escape'){event.preventDefault();closeWorkspace();} },true);
+
+  window.__silmoImageStudioExport = () => state.dataUrl ? {
+    version:1,fileName:state.fileName,dataUrl:state.dataUrl,widthMM:state.widthMM,rotation:state.rotation,
+    contours:state.contours.map(contour=>contour.map(point=>[point[0],point[1]]))
+  } : null;
+  window.__silmoImageStudioImport = async saved => {
+    if(!saved){image=null;state.dataUrl='';state.fileName='';state.contours=[];state.rotation=0;zoom=1;panX=0;panY=0;updateDimensions();scheduleRender();return true;}
+    if(saved.version!==1||typeof saved.dataUrl!=='string'||saved.dataUrl.length>12000000||
+       !/^data:image\/(png|jpeg|webp);base64,/i.test(saved.dataUrl)||
+       !Number.isFinite(saved.widthMM)||saved.widthMM<5||saved.widthMM>2000||
+       ![0,90,180,270].includes(saved.rotation)||!Array.isArray(saved.contours)||saved.contours.length>20) {
+      throw new Error('Ungültige Image-Studio-Daten in der Projektdatei.');
+    }
+    await setImage(saved.dataUrl,typeof saved.fileName==='string'?saved.fileName.slice(0,180):'Bildvorlage');
+    state.widthMM=saved.widthMM;state.rotation=saved.rotation;
+    state.contours=saved.contours.filter(contour=>Array.isArray(contour)&&contour.length>=3&&contour.length<=5000&&contour.every(point=>Array.isArray(point)&&point.length===2&&point.every(Number.isFinite)&&point[0]>=0&&point[1]>=0&&point[0]<=image.naturalWidth&&point[1]<=image.naturalHeight)).map(contour=>contour.map(point=>[point[0],point[1]]));
+    $('imageStudioWidthMM').value=String(state.widthMM);updateDimensions();scheduleRender();return true;
+  };
+  window.__silmoImageStudioSnapshot = () => ({loaded:!!image,fileName:state.fileName,widthMM:state.widthMM,rotation:state.rotation,contourCount:state.contours.length,pointCount:state.contours.reduce((sum,item)=>sum+item.length,0)});
 })();
 </script>
 
