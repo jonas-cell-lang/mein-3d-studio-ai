@@ -8,6 +8,9 @@ async function showCreateSubtab(index) {
   await page.locator('[data-tab="create"]').click();
   await page.locator('#pane-create-left > .inner-tab-nav button').nth(index).click();
 }
+async function showDrawRightSubtab(index) {
+  await page.locator('#pane-draw-right > .inner-tab-nav button').nth(index).click();
+}
 page.on('pageerror', error => pageErrors.push(error.message));
 page.on('console', message => {
   if (message.type() === 'error') pageErrors.push('console: ' + message.text());
@@ -848,8 +851,10 @@ try {
   assert.equal(await page.locator('#sketchTool').isVisible(),true,'Freie Zeichenwerkzeuge sind nicht erreichbar');
   assert.equal(await page.locator('#cadSketchToolPalette button').count(),9,'Die CAD-Werkzeugpalette ist unvollständig');
   assert.equal(await page.locator('#pane-draw-right').isVisible(),true,'Das rechte CAD-Eigenschaftenpanel fehlt');
+  await showDrawRightSubtab(1); // Masse und Position
   assert.equal(await page.locator('#sketchPositionXMM').isVisible(),true,'Exakte X-Position der Skizze fehlt');
   assert.equal(await page.locator('#sketchPositionYMM').isVisible(),true,'Exakte Y-Position der Skizze fehlt');
+  await showDrawRightSubtab(4); // Profi-CAD
   const professionalCadDetails=page.locator('#pane-draw-right details').filter({hasText:'Professionelle CAD-Bearbeitung'});
   if (!(await professionalCadDetails.evaluate(el=>el.open))) await professionalCadDetails.locator('summary').click();
   for (const id of ['sketchConstraint','editSketchWidthMM','editSketchDepthMM','editSketchHeightMM','loadSketchDimensions','applySketchDimensions','sketchPointIndex','sketchPointXMM','sketchPointYMM','loadSketchPoints','applySketchPoint','edgeTreatmentMM','applyEdgeFillet','applyEdgeChamfer','createLoft','createSweep','cadRelationSelect','applySketchRelation','editPathLengthMM','loadPathLength','applyPathLength','objectDistanceAxis','objectDistanceMM','applyObjectDistance']) {
@@ -857,6 +862,7 @@ try {
   }
   assert.match(await page.locator('#pane-draw-right').innerText(),/Exakte Masse und Position/,'Skizzenparameter sind nicht übersichtlich gruppiert');
   assert.ok((await page.locator('#sketchTool option').allTextContents()).some(x=>/Freiform/.test(x)),'Freiform-Zeichenwerkzeug fehlt');
+  await showDrawRightSubtab(3); // Wand und Kontur
   await page.locator('#pane-draw-right details').filter({hasText:'Wand und Kontur bearbeiten'}).locator('summary').click();
   assert.equal(await page.locator('#createContourFrame').isVisible(),true,'Allgemeines Kontur-Rahmenwerkzeug fehlt');
   assert.equal(await page.locator('#wallThicknessMM').inputValue(),'1.4','Standard-Wandstärke fehlt');
