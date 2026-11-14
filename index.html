@@ -966,11 +966,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   const sweepButton=document.createElement('button');sweepButton.type='button';sweepButton.id='createSweep';sweepButton.textContent='〰 Profil entlang Pfad';
   formActions.append(loftButton,sweepButton);proGroup.appendChild(formActions);
   const formNote=document.createElement('p');formNote.className='cad-pro-note';formNote.textContent='Loft: Wähle zwei geschlossene Skizzenprofile. Sweep: Wähle zuerst ein geschlossenes Profil und danach eine gezeichnete 2D-/3D-Linie oder Kurve als Pfad.';proGroup.appendChild(formNote);
-  heading(paneMap.draw.left,'Werkzeuge');
-  paneMap.draw.left.appendChild(sketchLockNote);
+  // Start-/Abschlussaktionen gehören direkt zum Skizzieren und bleiben dort sichtbar.
   const actionWrap=document.createElement('div');actionWrap.className='cad-draw-actions';actionWrap.append(startSketchButton,createSketchButton,cancelSketchButton);
-  paneMap.draw.left.appendChild(actionWrap);
-  paneMap.draw.left.appendChild(sketchStatus);
+  paneMap.draw.left.insertBefore(sketchLockNote,contourToolsHeading);
+  paneMap.draw.left.insertBefore(actionWrap,contourToolsHeading);
+  paneMap.draw.left.insertBefore(sketchStatus,contourToolsHeading);
   // Die Werkzeugauswahl und Parameter liegen nun bewusst rechts; links bleibt die Werkzeugpalette.
   [sketchToolWrap,sketchSnapWrap,sketchGridWrap,sketchPlaneWrap,sketchDiameterWrap,sketchWidthWrap,cornerRadiusWrap,sketchDepthWrap,sketchHeightWrap,wallThicknessWrap,frameHeightWrap,contourFrameButton,subtractSelectedButton,contourHelp].forEach(node=>{if(node.parentElement===paneMap.draw.left)node.remove();});
   const syncPalette=()=>toolPalette.querySelectorAll('[data-sketch-tool]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.sketchTool===sketchTool.value)));
