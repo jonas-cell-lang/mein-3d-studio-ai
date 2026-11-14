@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v86/, 'Build-Metadaten zeigen nicht v82');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v87/, 'Build-Metadaten zeigen nicht v82');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -80,6 +80,36 @@ try {
   assert.ok(paleGhostContours.length>=4,'Schwach kontrastierter Geist auf hellem Hintergrund: '+paleGhostContours.length+' Konturen erkannt, Flächen='+JSON.stringify(paleGhostContours.map(points=>Math.abs(points.reduce((sum,p,i)=>{const q=points[(i+1)%points.length];return sum+p[0]*q[1]-q[0]*p[1];},0)/2)).sort((a,b)=>b-a)));
   const paleGhostAreas=paleGhostContours.map(points=>Math.abs(points.reduce((sum,p,i)=>{const q=points[(i+1)%points.length];return sum+p[0]*q[1]-q[0]*p[1];},0)/2)).sort((a,b)=>b-a);
   assert.ok(paleGhostAreas[0]>paleGhostAreas[1]*2,'Aussenkontur des hellen Geistes wird nicht von den Details getrennt');
+
+  // v87: hohe Empfindlichkeit muss die gleiche schwierige Form verarbeiten,
+  // ohne dass die adaptive Erkennung bei Extremwerten abstürzt.
+  const highSensitivityGhost=await page.evaluate(async()=>{
+    const c=document.createElement('canvas');c.width=320;c.height=260;
+    const x=c.getContext('2d');const bg=x.createLinearGradient(0,0,320,260);
+    bg.addColorStop(0,'#dedede');bg.addColorStop(1,'#c9c9c9');x.fillStyle=bg;x.fillRect(0,0,320,260);
+    x.fillStyle='#eeeeee';x.beginPath();x.moveTo(160,34);x.bezierCurveTo(205,34,238,70,238,116);
+    x.bezierCurveTo(238,148,254,166,278,184);x.lineTo(258,211);x.lineTo(232,194);
+    x.lineTo(210,226);x.lineTo(184,201);x.lineTo(160,235);x.lineTo(136,201);
+    x.lineTo(110,226);x.lineTo(88,194);x.lineTo(62,211);x.lineTo(42,184);
+    x.bezierCurveTo(66,166,82,148,82,116);x.bezierCurveTo(82,70,115,34,160,34);x.closePath();x.fill();
+    x.fillStyle='#555555';x.beginPath();x.ellipse(137,116,5,10,0,0,Math.PI*2);x.fill();
+    x.beginPath();x.ellipse(184,116,5,10,0,0,Math.PI*2);x.fill();
+    x.beginPath();x.ellipse(160,160,12,18,0,0,Math.PI*2);x.fill();
+    return await window.__silmoImageStudioAutoTraceAllTest(c.toDataURL('image/png'),100);
+  });
+  assert.ok(highSensitivityGhost.length>=4,'v87: hohe Empfindlichkeit verliert die blassen Geistdetails');
+
+  // v87: Transparenz wird anhand des gesamten Bildrandes erkannt, nicht nur
+  // anhand der beiden oberen Eckpixel.
+  const asymmetricTransparent=await page.evaluate(async()=>{
+    const c=document.createElement('canvas');c.width=160;c.height=120;const x=c.getContext('2d');
+    x.clearRect(0,0,160,120);x.fillStyle='#e34b27';x.beginPath();x.ellipse(80,60,35,28,0,0,Math.PI*2);x.fill();
+    x.fillStyle='#111111';x.fillRect(0,0,2,2);x.fillRect(158,0,2,2);
+    return await window.__silmoImageStudioAutoTraceAllTest(c.toDataURL('image/png'));
+  });
+  assert.ok(asymmetricTransparent.length>=1,'v87: transparenter Hintergrund mit einzelnen opaken Randpixeln wird nicht erkannt');
+  const transparentLargest=asymmetricTransparent.map(points=>Math.abs(points.reduce((sum,p,i)=>{const q=points[(i+1)%points.length];return sum+p[0]*q[1]-q[0]*p[1];},0)/2)).sort((a,b)=>b-a);
+  assert.ok(transparentLargest[0]>2500,'v87: Hauptmotiv auf transparentem Hintergrund wird nicht als grösste Kontur erkannt');
 
   const printGeometryChecks=await page.evaluate(()=>{
     const outer=[[0,0],[40,0],[40,30],[0,30]];
