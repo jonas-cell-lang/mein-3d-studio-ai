@@ -63,7 +63,7 @@ try {
     const x=c.getContext('2d');
     const bg=x.createLinearGradient(0,0,320,260);bg.addColorStop(0,'#dedede');bg.addColorStop(1,'#c9c9c9');
     x.fillStyle=bg;x.fillRect(0,0,320,260);
-    x.fillStyle='rgba(90,90,90,0.12)';x.beginPath();x.ellipse(160,188,104,24,0,0,Math.PI*2);x.fill();
+    x.fillStyle='rgba(90,90,90,0.12)';x.beginPath();x.ellipse(160,248,92,7,0,0,Math.PI*2);x.fill();
     x.fillStyle='#eeeeee';x.beginPath();
     x.moveTo(160,34);x.bezierCurveTo(205,34,238,70,238,116);
     x.bezierCurveTo(238,148,254,166,278,184);
