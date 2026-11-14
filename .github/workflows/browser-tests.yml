@@ -6,6 +6,7 @@ on:
       - main
   push:
     branches:
+      - main
       - fix/v35-selection-tools
       - fix/v38-diagnostics-shortcuts-grouping
   workflow_dispatch:
