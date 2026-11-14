@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v89 – Nested CAD Tool Tabs</title>
+<title>SILMO 3D Studio AI – v90 – Focused CAD Subtabs</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v89 – Nested CAD Tool Tabs">
+<meta name="silmo-build" content="v90 – Focused CAD Subtabs">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -379,6 +379,13 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 #imageStudioWorkspace .inner-tab-nav button{background:#17283b;border-color:#304965}
 #imageStudioWorkspace .inner-tab-nav button[aria-current="location"]{background:#17435a;border-color:#53d8e8;color:#dffaff;box-shadow:inset 0 -2px #53d8e8}
 @media(max-width:760px){.inner-tab-nav{top:-10px;margin:-10px -8px 10px}.inner-tab-nav button{min-height:34px;padding:6px 8px}}
+
+
+/* v90 – Unterreiter zeigen nur den aktiven Werkzeugbereich */
+.inner-tab-panel[hidden],.inner-tab-nav [hidden]{display:none!important}
+.inner-tab-panel{min-width:0}
+.inner-tab-nav button[aria-selected="true"]{background:#29465a;border-color:#69b9db;color:#f0f7fb;box-shadow:inset 0 -2px #69b9db}
+#imageStudioWorkspace .inner-tab-nav button[aria-selected="true"]{background:#17435a;border-color:#53d8e8;color:#dffaff;box-shadow:inset 0 -2px #53d8e8}
 
 </style>
 </head>
@@ -1057,37 +1064,76 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   paneMap.expert.right.appendChild(sizeNote);
 
 
-  // v89: Unterreiter springen direkt zu den Werkzeuggruppen, ohne Funktionen
-  // aus dem DOM zu entfernen oder bestehende Bedienabläufe zu verändern.
-  function addSectionJumpTabs(container, targets, ariaLabel) {
+  // v90: Echte Unterreiter – sichtbar bleibt ausschliesslich der aktive Bereich.
+  function addSectionTabs(container, targets, ariaLabel, groupHeadings=false) {
     if (!container || !targets.length || container.querySelector(':scope > .inner-tab-nav')) return;
     const nav=document.createElement('nav'); nav.className='inner-tab-nav';
     nav.setAttribute('aria-label',ariaLabel); nav.setAttribute('role','tablist');
     const buttons=[];
     targets.forEach((item,index)=>{
       if(!item.target)return;
-      item.target.classList.add('inner-tab-target');
       const button=document.createElement('button'); button.type='button';
+      button.id='inner-tab-'+Math.random().toString(36).slice(2,10);
       button.setAttribute('role','tab'); button.textContent=item.label;
-      button.setAttribute('aria-current',index===0?'location':'false');
-      button.addEventListener('click',()=>{
-        item.target.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
-        buttons.forEach(b=>b.setAttribute('aria-current',b===button?'location':'false'));
-      });
+      button.setAttribute('aria-selected',String(index===0));
+      button.tabIndex=index===0?0:-1;
       buttons.push(button); nav.appendChild(button);
     });
-    if(buttons.length>1)container.insertBefore(nav,container.firstChild);
+    const panels=[];
+    if(groupHeadings){
+      const headings=targets.map(item=>item.target);
+      const first=headings[0];
+      container.insertBefore(nav,first);
+      headings.forEach((heading,index)=>{
+        const panel=document.createElement('section'); panel.className='inner-tab-panel';
+        panel.id='inner-panel-'+buttons[index].id;
+        panel.setAttribute('role','tabpanel'); panel.setAttribute('aria-labelledby',buttons[index].id);
+        panel.hidden=index!==0;
+        const nextHeading=headings[index+1]||null;
+        let node=heading;
+        while(node&&node!==nextHeading){
+          const next=node.nextSibling;
+          panel.appendChild(node);
+          node=next;
+        }
+        if(nextHeading)container.insertBefore(panel,nextHeading);
+        else container.appendChild(panel);
+        panels.push(panel);
+      });
+    } else {
+      const first=targets[0].target;
+      container.insertBefore(nav,first);
+      targets.forEach((item,index)=>{
+        item.target.hidden=index!==0;
+        item.target.classList.add('inner-tab-panel');
+        item.target.setAttribute('role','tabpanel');
+        item.target.id=item.target.id||'inner-panel-'+buttons[index].id;
+        item.target.setAttribute('aria-labelledby',buttons[index].id);
+        panels.push(item.target);
+      });
+    }
+    buttons.forEach((button,index)=>{
+      button.setAttribute('aria-controls',panels[index].id);
+      button.addEventListener('click',()=>{
+        buttons.forEach((b,i)=>{
+          const active=i===index;
+          b.setAttribute('aria-selected',String(active));
+          b.tabIndex=active?0:-1;
+          panels[i].hidden=!active;
+        });
+      });
+    });
   }
   const directHeadings=(pane)=>[...pane.querySelectorAll(':scope > h2')];
   const createHeadings=directHeadings(paneMap.create.left);
-  addSectionJumpTabs(paneMap.create.left,createHeadings.map((h,i)=>({label:['Grundformen','Kombinieren','Objektliste'][i]||h.textContent,target:h})),'Unterbereiche Erstellen');
+  addSectionTabs(paneMap.create.left,createHeadings.map((h,i)=>({label:['Grundformen','Kombinieren','Objektliste'][i]||h.textContent,target:h})),'Unterbereiche Erstellen',true);
   const drawHeadings=directHeadings(paneMap.draw.left);
-  addSectionJumpTabs(paneMap.draw.left,drawHeadings.map((h,i)=>({label:['Skizzieren','Kontur','Aktionen'][i]||h.textContent,target:h})),'Unterbereiche Zeichnen');
+  addSectionTabs(paneMap.draw.left,drawHeadings.map((h,i)=>({label:['Skizzieren','Kontur','Aktionen'][i]||h.textContent,target:h})),'Unterbereiche Zeichnen',true);
   const drawRightGroups=[...paneMap.draw.right.querySelectorAll(':scope > details')];
-  addSectionJumpTabs(paneMap.draw.right,drawRightGroups.map((d,i)=>({label:['Werkzeug','Masse','Raster','Kontur','Profi'][i]||d.querySelector('summary')?.textContent||'Optionen',target:d})),'Unterbereiche Zeichen-Eigenschaften');
+  addSectionTabs(paneMap.draw.right,drawRightGroups.map((d,i)=>({label:['Werkzeug','Masse','Raster','Kontur','Profi'][i]||d.querySelector('summary')?.textContent||'Optionen',target:d})),'Unterbereiche Zeichen-Eigenschaften');
   const imageTools=document.querySelector('#imageStudioWorkspace .isw-tools');
   const imageHeadings=imageTools?[...imageTools.querySelectorAll(':scope > h2')]:[];
-  addSectionJumpTabs(imageTools,imageHeadings.map((h,i)=>({label:['Vorlage','Erkennung','Kontur & 3D'][i]||h.textContent,target:h})),'Unterbereiche Bilderkennung');
+  addSectionTabs(imageTools,imageHeadings.map((h,i)=>({label:['Vorlage','Erkennung','Kontur & 3D'][i]||h.textContent,target:h})),'Unterbereiche Bilderkennung',true);
 
   // Den Schalter außerhalb der Reiter lassen, damit er immer erreichbar bleibt.
   const expertToggle = nodes.get('expertCenterToggle');
