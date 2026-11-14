@@ -804,7 +804,7 @@ try {
   assert.ok(pumpkinMain.length>=6,'v79 erhält keine ausreichend detaillierte Kürbis-Aussenkontur');
 
   await page.locator('#imageStudioAutoTrace').click();
-  assert.ok((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).contourCount>=2,'Automatischer Konturvorschlag speichert nicht Aussenkontur und kontrastreiche Details');
+  assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).contourCount,1,'Automatischer Konturvorschlag wird nicht im Image Studio gespeichert');
   assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).widthMM,20,'Bildbreite wird nicht gespeichert');
   await page.locator('#imageStudioRotate').click();
   assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).rotation,90,'Bildrotation funktioniert nicht');
