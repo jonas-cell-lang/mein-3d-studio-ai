@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v84 – Robust Complex Motif Detection</title>
+<title>SILMO 3D Studio AI – v85 – Adaptive Complex Motif Detection</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v84 – Robust Complex Motif Detection">
+<meta name="silmo-build" content="v85 – Adaptive Complex Motif Detection">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -5189,7 +5189,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     for(let i=0;i<w*h;i++)if(foregroundMask[i]&&Math.abs(luminance[i]-medianLuminance)>=detailThreshold)detailMask[i]=1;
 
     const extractMaskContours=(mask,minArea,maxContours)=>{
-      const seen=new Uint8Array(w*h),componentsFound=[];
+      const seen=new Uint8Array(w*h),found=[];
       const work=new Int32Array(w*h);
       for(let seed=0;seed<w*h;seed++){
         if(!mask[seed]||seen[seed])continue;
@@ -5205,16 +5205,10 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
             seen[ni]=1;work[tail++]=ni;
           }
         }
-        if(tail>=minArea)componentsFound.push({area:tail,minX,minY,maxX,maxY,indices:Array.from(work.subarray(0,tail))});
-      }
-      // Erst die groessten zusammenhaengenden Bereiche verfolgen. Dadurch
-      // erzeugen Bildrauschen und winzige Fragmente nicht tausende Vollbildmasken.
-      componentsFound.sort((a,b)=>b.area-a.area);
-      const found=[];
-      for(const component of componentsFound.slice(0,maxContours)){
+        if(tail<minArea)continue;
         const componentMask=new Uint8Array(w*h);
-        for(const index of component.indices)componentMask[index]=1;
-        found.push(...traceMask(componentMask,component.minX,component.minY,component.maxX,component.maxY));
+        for(let i=0;i<tail;i++)componentMask[work[i]]=1;
+        found.push(...traceMask(componentMask,minX,minY,maxX,maxY));
       }
       found.sort((a,b)=>b.area-a.area);
       return found.slice(0,maxContours);
