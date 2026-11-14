@@ -4950,7 +4950,8 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     const stride=Math.max(1,Math.ceil(hull.length/240));
     return hull.filter((p,i)=>i%stride===0).map(([x,y])=>[x/scale,y/scale]);
   }
-\n  function setImage(dataUrl,fileName) {
+
+  function setImage(dataUrl,fileName) {
     return new Promise((resolve,reject) => {
       const next = new Image();
       next.onload = () => {
