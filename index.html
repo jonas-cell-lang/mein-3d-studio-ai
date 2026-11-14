@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v79 – Detail Contour Assist</title>
+<title>SILMO 3D Studio AI – v80 – Adaptive Motif & Detail Detection</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v79 – Detail Contour Assist">
+<meta name="silmo-build" content="v80 – Adaptive Motif & Detail Detection">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -5027,30 +5027,78 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       return result;
     };
 
-    const loops=[],outerComponents=components.filter(c=>!c.touchesBorder&&c.pixels.length>=minComponentPixels&&c.touchesBackground);
-    if(outerComponents.length){
-      const outerMask=new Uint8Array(w*h);let minX=w,minY=h,maxX=0,maxY=0;
-      for(const component of outerComponents)for(const index of component.pixels){
-        outerMask[index]=1;const x=index%w,y=Math.floor(index/w);
-        minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);
-      }
-      loops.push(...traceMask(outerMask,minX,minY,maxX,maxY));
-    }
-    for(const component of components){
-      if(component.touchesBorder||component.touchesBackground||component.pixels.length<minComponentPixels)continue;
-      const mask=new Uint8Array(w*h);
-      for(const index of component.pixels)mask[index]=1;
-      loops.push(...traceMask(mask,component.minX,component.minY,component.maxX,component.maxY));
-    }
-    // Bei transparenten PNGs existiert keine Hintergrundfläche, die den
-    // Aussenrand definiert. In diesem Fall werden alle grösseren Regionen erfasst.
-    if(!loops.length&&transparent){
-      for(const component of components){
-        if(component.pixels.length<minComponentPixels)continue;
-        const mask=new Uint8Array(w*h);for(const index of component.pixels)mask[index]=1;
-        loops.push(...traceMask(mask,component.minX,component.minY,component.maxX,component.maxY));
+    // v80: Hintergrund unabhängig von Motivfarben bestimmen.
+    // Die Randpixel liefern ein robustes Hintergrund-Farbmodell; so werden
+    // Farbverläufe im Motiv nicht mehr durch transitive RGB-Nachbarschaften
+    // zu einer einzigen riesigen Region verkettet.
+    const borderSamples=[];
+    const sampleStep=Math.max(1,Math.floor(Math.max(w,h)/180));
+    for(let x=0;x<w;x+=sampleStep){
+      for(const y of [0,h-1]){
+        const i=(y*w+x)*4;if(pixels[i+3]>24)borderSamples.push([pixels[i],pixels[i+1],pixels[i+2]]);
       }
     }
+    for(let y=0;y<h;y+=sampleStep){
+      for(const x of [0,w-1]){
+        const i=(y*w+x)*4;if(pixels[i+3]>24)borderSamples.push([pixels[i],pixels[i+1],pixels[i+2]]);
+      }
+    }
+    const medianChannel=channel=>{
+      const values=borderSamples.map(c=>c[channel]).sort((a,b)=>a-b);
+      return values.length?values[Math.floor(values.length/2)]:255;
+    };
+    const backgroundColor=[medianChannel(0),medianChannel(1),medianChannel(2)];
+    const borderSpread=borderSamples.length?borderSamples.map(c=>Math.hypot(c[0]-backgroundColor[0],c[1]-backgroundColor[1],c[2]-backgroundColor[2])).sort((a,b)=>a-b)[Math.floor(borderSamples.length*0.75)]:0;
+    const backgroundThreshold=Math.max(28,Math.min(72,borderSpread*3+18));
+    const foregroundMask=new Uint8Array(w*h);
+    const luminance=new Float32Array(w*h);
+    let luminanceValues=[];
+    for(let i=0;i<w*h;i++){
+      const p=i*4;
+      const alpha=pixels[p+3];
+      const lum=0.2126*pixels[p]+0.7152*pixels[p+1]+0.0722*pixels[p+2];
+      luminance[i]=lum;
+      const isForeground=transparent?alpha>24:(alpha>24&&Math.hypot(pixels[p]-backgroundColor[0],pixels[p+1]-backgroundColor[1],pixels[p+2]-backgroundColor[2])>backgroundThreshold);
+      if(isForeground){foregroundMask[i]=1;luminanceValues.push(lum);}
+    }
+    if(!luminanceValues.length)throw new Error('Kein Motiv vor dem Bildhintergrund gefunden. Bitte ein Bild mit klar erkennbarem Motiv verwenden.');
+    luminanceValues.sort((a,b)=>a-b);
+    const medianLuminance=luminanceValues[Math.floor(luminanceValues.length/2)];
+    const detailThreshold=Math.max(48,medianLuminance*0.48);
+    const detailMask=new Uint8Array(w*h);
+    for(let i=0;i<w*h;i++)if(foregroundMask[i]&&Math.abs(luminance[i]-medianLuminance)>=detailThreshold)detailMask[i]=1;
+
+    const extractMaskContours=(mask,minArea,maxContours)=>{
+      const seen=new Uint8Array(w*h),found=[];
+      const work=new Int32Array(w*h);
+      for(let seed=0;seed<w*h;seed++){
+        if(!mask[seed]||seen[seed])continue;
+        let head=0,tail=0,minX=w,minY=h,maxX=0,maxY=0;
+        work[tail++]=seed;seen[seed]=1;
+        while(head<tail){
+          const index=work[head++],x=index%w,y=Math.floor(index/w);
+          minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);
+          const neighbors=[index-1,index+1,index-w,index+w];
+          for(const ni of neighbors){
+            if(ni<0||ni>=w*h||seen[ni]||!mask[ni])continue;
+            if(Math.abs((ni%w)-x)+Math.abs(Math.floor(ni/w)-y)!==1)continue;
+            seen[ni]=1;work[tail++]=ni;
+          }
+        }
+        if(tail<minArea)continue;
+        const componentMask=new Uint8Array(w*h);
+        for(let i=0;i<tail;i++)componentMask[work[i]]=1;
+        found.push(...traceMask(componentMask,minX,minY,maxX,maxY));
+      }
+      found.sort((a,b)=>b.area-a.area);
+      return found.slice(0,maxContours);
+    };
+
+    const minComponentPixels=Math.max(8,Math.floor(w*h*0.00012));
+    const outerContours=extractMaskContours(foregroundMask,minComponentPixels,8);
+    const detailContours=extractMaskContours(detailMask,minComponentPixels,19);
+    const loops=detailContours.concat(outerContours).sort((a,b)=>a.area-b.area);
+    if(!outerContours.length)throw new Error('Die Aussenkontur des Motivs konnte nicht erkannt werden. Bitte Hintergrund und Motiv möglichst klar abgrenzen.');
     if(!loops.length)throw new Error('Aus dem Bild konnte keine geschlossene Kontur erstellt werden.');
     loops.sort((a,b)=>a.area-b.area);
     return loops.slice(-20).map(loop=>loop.points);
