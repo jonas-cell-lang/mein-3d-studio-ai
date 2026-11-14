@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v89/, 'Build-Metadaten zeigen nicht v82');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v90/, 'Build-Metadaten zeigen nicht v82');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -822,7 +822,9 @@ try {
   const createSubtabs=page.locator('#pane-create-left > .inner-tab-nav button');
   assert.equal(await createSubtabs.count(),3,'v89: Unterreiter Erstellen fehlen');
   await createSubtabs.nth(1).click();
-  assert.equal(await createSubtabs.nth(1).getAttribute('aria-current'),'location','v89: Unterreiter Kombinieren wird nicht aktiviert');
+  assert.equal(await createSubtabs.nth(1).getAttribute('aria-selected'),'true','v90: Unterreiter Kombinieren wird nicht aktiviert');
+  assert.equal(await page.locator('#pane-create-left .inner-tab-panel').nth(0).isVisible(),false,'v90: Grundformen bleibt trotz anderem Unterreiter sichtbar');
+  assert.equal(await page.locator('#pane-create-left .inner-tab-panel').nth(1).isVisible(),true,'v90: aktiver Bereich Kombinieren ist nicht sichtbar');
   await createSubtabs.nth(0).click();
   for (const id of ['addCone','addHexPrism','addTorus']) assert.equal(await page.locator('#'+id).count(),1,`Allgemeines CAD-Grundwerkzeug ${id} fehlt`);
   const primitiveStart = await page.locator('#objects .object-row').count();
@@ -832,7 +834,9 @@ try {
   const drawSubtabs=page.locator('#pane-draw-left > .inner-tab-nav button');
   assert.equal(await drawSubtabs.count(),3,'v89: Unterreiter Zeichnen fehlen');
   await drawSubtabs.nth(1).click();
-  assert.equal(await drawSubtabs.nth(1).getAttribute('aria-current'),'location','v89: Kontur-Unterreiter wird nicht aktiviert');
+  assert.equal(await drawSubtabs.nth(1).getAttribute('aria-selected'),'true','v90: Kontur-Unterreiter wird nicht aktiviert');
+  assert.equal(await page.locator('#pane-draw-left .inner-tab-panel').nth(0).isVisible(),false,'v90: Skizzieren bleibt trotz anderem Unterreiter sichtbar');
+  assert.equal(await page.locator('#pane-draw-left .inner-tab-panel').nth(1).isVisible(),true,'v90: aktiver Kontur-Bereich ist nicht sichtbar');
   assert.equal(await page.locator('#sketchTool').isVisible(),true,'Freie Zeichenwerkzeuge sind nicht erreichbar');
   assert.equal(await page.locator('#cadSketchToolPalette button').count(),9,'Die CAD-Werkzeugpalette ist unvollständig');
   assert.equal(await page.locator('#pane-draw-right').isVisible(),true,'Das rechte CAD-Eigenschaftenpanel fehlt');
@@ -893,7 +897,9 @@ try {
   const imageSubtabs=page.locator('#imageStudioWorkspace .isw-tools > .inner-tab-nav button');
   assert.equal(await imageSubtabs.count(),3,'v89: Unterreiter Bilderkennung fehlen');
   await imageSubtabs.nth(1).click();
-  assert.equal(await imageSubtabs.nth(1).getAttribute('aria-current'),'location','v89: Bilderkennungs-Unterreiter wird nicht aktiviert');
+  assert.equal(await imageSubtabs.nth(1).getAttribute('aria-selected'),'true','v90: Bilderkennungs-Unterreiter wird nicht aktiviert');
+  assert.equal(await page.locator('#imageStudioWorkspace .isw-tools .inner-tab-panel').nth(0).isVisible(),false,'v90: Vorlage bleibt trotz anderem Unterreiter sichtbar');
+  assert.equal(await page.locator('#imageStudioWorkspace .isw-tools .inner-tab-panel').nth(1).isVisible(),true,'v90: aktiver Erkennungs-Bereich ist nicht sichtbar');
   assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),true,'Image Studio lässt sich nicht öffnen');
   assert.equal(await page.locator('#imageStudioSensitivity').inputValue(),'55','v87: Standard-Empfindlichkeit fehlt');
   await page.locator('#imageStudioSensitivity').evaluate(el=>{el.value='80';el.dispatchEvent(new Event('input',{bubbles:true}));});
