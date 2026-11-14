@@ -778,6 +778,16 @@ try {
     await window.__silmoImageStudioImport({version:1,fileName:'test.png',dataUrl:data,widthMM:20,rotation:0,contours:[[[0,0],[1,0],[1,1],[0,1]]]});
   },tinyPng);
   assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).loaded,true,'Bildvorlage konnte nicht geladen werden');
+  const autoOutlineData=await page.evaluate(()=>{
+    const c=document.createElement('canvas');c.width=100;c.height=80;const x=c.getContext('2d');
+    x.fillStyle='#ffffff';x.fillRect(0,0,100,80);x.fillStyle='#202020';x.fillRect(25,15,50,50);
+    return c.toDataURL('image/png');
+  });
+  const autoOutline=await page.evaluate(data=>window.__silmoImageStudioAutoTraceTest(data),autoOutlineData);
+  assert.ok(autoOutline.length>=4&&autoOutline.length<=240,'Automatische Konturhilfe liefert keine kompakte Aussenkontur');
+  assert.ok(autoOutline.some(p=>Math.abs(p[0]-25)<3&&Math.abs(p[1]-15)<3),'Automatische Konturhilfe erkennt die Motivkante nicht');
+  await page.locator('#imageStudioAutoTrace').click();
+  assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).contourCount,1,'Automatischer Konturvorschlag wird nicht im Image Studio gespeichert');
   assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).widthMM,20,'Bildbreite wird nicht gespeichert');
   await page.locator('#imageStudioRotate').click();
   assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).rotation,90,'Bildrotation funktioniert nicht');
