@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v81/, 'Build-Metadaten zeigen nicht v81');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v82/, 'Build-Metadaten zeigen nicht v82');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -32,6 +32,23 @@ try {
   assert.ok(motifContours.length>=3,'Image Studio erkennt nicht Aussenkontur und beide kleinen Innenformen');
   const sortedMotifAreas=motifContours.map(points=>Math.abs(points.reduce((sum,p,i)=>{const q=points[(i+1)%points.length];return sum+p[0]*q[1]-q[0]*p[1];},0)/2)).sort((a,b)=>b-a);
   assert.ok(sortedMotifAreas.length>=3&&sortedMotifAreas[0]>sortedMotifAreas[1]*3,'Aussenkontur und Innenformen werden nicht als getrennte Grössen erkannt');
+
+  const printGeometryChecks=await page.evaluate(()=>{
+    const outer=[[0,0],[40,0],[40,30],[0,30]];
+    const safeHole=[[10,10],[15,10],[15,15],[10,15]];
+    const edgeHole=[[0.2,10],[4,10],[4,14],[0.2,14]];
+    const overlapHole=[[14,10],[19,10],[19,15],[14,15]];
+    const valid=window.__silmoImageStudioValidateForPrintTest(outer,[safeHole]);
+    const edge=window.__silmoImageStudioValidateForPrintTest(outer,[edgeHole]);
+    const overlap=window.__silmoImageStudioValidateForPrintTest(outer,[safeHole,overlapHole]);
+    const crossed=window.__silmoImageStudioValidateForPrintTest([[0,0],[40,30],[0,30],[40,0]],[safeHole]);
+    return {valid:valid.holes.length,edge:edge.holes.length,overlap:overlap.holes.length,crossed:crossed.ok};
+  });
+  assert.equal(printGeometryChecks.valid,1,'Eine ausreichend grosse und korrekt platzierte Aussparung wird nicht übernommen');
+  assert.equal(printGeometryChecks.edge,0,'Eine zu nahe an der Aussenkante liegende Aussparung wird nicht ausgeschlossen');
+  assert.equal(printGeometryChecks.overlap,1,'Überlappende Innenlöcher werden nicht zuverlässig gefiltert');
+  assert.equal(printGeometryChecks.crossed,false,'Eine selbstschneidende Aussenkontur wird nicht zurückgewiesen');
+
 
 
   // Eigenständige Prüfung der ungefähren Herz-Erkennung und des Kursabschlusses.
