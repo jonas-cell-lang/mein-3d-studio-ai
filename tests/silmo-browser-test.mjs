@@ -19,6 +19,20 @@ try {
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Rasterfang/, 'Visuelle Übersicht zeigt keinen Rasterfang');
   await page.waitForTimeout(1500);
+  // Image Studio: generisches Motiv mit zwei echten Innenaussparungen.
+  // Prüft, dass kleine Details nicht durch die Mindestfläche abgeschnitten werden.
+  const motifContours=await page.evaluate(async()=>{
+    const c=document.createElement('canvas');c.width=240;c.height=180;
+    const x=c.getContext('2d');x.fillStyle='#ffffff';x.fillRect(0,0,240,180);
+    x.fillStyle='#e34b27';x.beginPath();x.ellipse(120,90,76,62,0,0,Math.PI*2);x.fill();
+    x.fillStyle='#111111';x.beginPath();x.arc(92,76,9,0,Math.PI*2);x.fill();
+    x.beginPath();x.arc(148,76,9,0,Math.PI*2);x.fill();
+    return await window.__silmoImageStudioAutoTraceAllTest(c.toDataURL('image/png'));
+  });
+  assert.ok(motifContours.length>=3,'Image Studio erkennt nicht Aussenkontur und beide kleinen Innenformen');
+  const sortedMotifAreas=motifContours.map(points=>Math.abs(points.reduce((sum,p,i)=>{const q=points[(i+1)%points.length];return sum+p[0]*q[1]-q[0]*p[1];},0)/2)).sort((a,b)=>b-a);
+  assert.ok(sortedMotifAreas.length>=3&&sortedMotifAreas[0]>sortedMotifAreas[1]*3,'Aussenkontur und Innenformen werden nicht als getrennte Grössen erkannt');
+
 
   // Eigenständige Prüfung der ungefähren Herz-Erkennung und des Kursabschlusses.
   const examPage=await browser.newPage({viewport:{width:1440,height:1000}});
