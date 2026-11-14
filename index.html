@@ -574,7 +574,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       <div class="panel-rule"></div>
       <h2>3 · KONTUR ZEICHNEN</h2>
       <button id="imageStudioAutoTrace" class="isw-btn" type="button">✧ Kontur automatisch vorschlagen</button>
-      <p class="isw-note">Erstellt aus einem kontrastreichen Bild eine vereinfachte Aussenkontur. Das Ergebnis ist ein Vorschlag und kann manuell korrigiert werden.</p>
+      <p class="isw-note">Erkennt kontrastreiche Aussenformen und getrennte Details wie Stiel, Augen und Mund. Das Ergebnis ist ein Vorschlag und kann manuell korrigiert werden.</p>
       <button id="imageStudioDrawToggle" class="isw-btn" type="button" aria-pressed="false">✎ Kontur zeichnen: AUS</button>
       <p class="isw-note">Aktiviere den Zeichenmodus und ziehe mit der Maus oder dem Finger eine geschlossene Aussenkontur. Ohne Zeichenmodus kannst du die Ansicht verschieben. Mit dem Mausrad zoomst du.</p>
       <button id="imageStudioUndo" class="isw-btn" type="button">↶ Letzte Kontur rückgängig</button>
@@ -4928,85 +4928,132 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     const sample=document.createElement('canvas');sample.width=w;sample.height=h;
     const sampleCtx=sample.getContext('2d',{willReadFrequently:true});sampleCtx.drawImage(sourceImage,0,0,w,h);
     const pixels=sampleCtx.getImageData(0,0,w,h).data;
-    const corners=[[0,0],[w-1,0],[0,h-1],[w-1,h-1]];
-    const bg=[0,0,0,0];corners.forEach(([x,y])=>{const i=(y*w+x)*4;for(let k=0;k<4;k++)bg[k]+=pixels[i+k]/4;});
-    const transparent=bg[3]<245;
-    const mask=new Uint8Array(w*h);let count=0,minX=w,minY=h,maxX=0,maxY=0;
+    const transparent=pixels[3]<24&&pixels[(w-1)*4+3]<24;
+    const labels=new Int32Array(w*h),components=[],queue=new Int32Array(w*h),similarity=42;
+    for(let i=0;i<w*h;i++)if(pixels[i*4+3]<=24)labels[i]=-1;
     for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
-      const i=(y*w+x)*4,a=pixels[i+3];
-      const diff=Math.hypot(pixels[i]-bg[0],pixels[i+1]-bg[1],pixels[i+2]-bg[2]);
-      if(transparent?a>24:(a>24&&diff>48)){mask[y*w+x]=1;count++;minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);}
-    }
-    if(count<12||maxX-minX<3||maxY-minY<3)throw new Error('Kein ausreichend kontrastreiches Motiv gefunden. Verwende ein Bild mit ruhigem Hintergrund oder zeichne die Kontur manuell.');
-
-    // Pixelkanten statt konvexer Hülle: Einbuchtungen und getrennte Details bleiben erhalten.
-    const edges=[],outgoing=new Map();
-    const addEdge=(ax,ay,bx,by)=>{
-      const index=edges.length,key=ax+','+ay;
-      edges.push({ax,ay,bx,by,used:false});
-      if(!outgoing.has(key))outgoing.set(key,[]);
-      outgoing.get(key).push(index);
-    };
-    for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){
-      if(!mask[y*w+x])continue;
-      if(!mask[(y-1)*w+x])addEdge(x,y,x+1,y);
-      if(!mask[y*w+x+1])addEdge(x+1,y,x+1,y+1);
-      if(!mask[(y+1)*w+x])addEdge(x+1,y+1,x,y+1);
-      if(!mask[y*w+x-1])addEdge(x,y+1,x,y);
-    }
-    const direction=e=>e.bx>e.ax?0:e.by>e.ay?1:e.bx<e.ax?2:3;
-    const turnPriority=[1,0,3,2],loops=[];
-    for(let seed=0;seed<edges.length;seed++){
-      if(edges[seed].used)continue;
-      const first=edges[seed],points=[[first.ax,first.ay]];
-      let current=seed,guard=0;
-      while(current!==undefined&&!edges[current].used&&guard++<=edges.length){
-        const edge=edges[current];edge.used=true;points.push([edge.bx,edge.by]);
-        if(edge.bx===first.ax&&edge.by===first.ay)break;
-        const candidates=(outgoing.get(edge.bx+','+edge.by)||[]).filter(i=>!edges[i].used);
-        if(!candidates.length){current=undefined;break;}
-        const incoming=direction(edge);
-        candidates.sort((ia,ib)=>{
-          const ta=(direction(edges[ia])-incoming+4)%4,tb=(direction(edges[ib])-incoming+4)%4;
-          return turnPriority.indexOf(ta)-turnPriority.indexOf(tb);
-        });
-        current=candidates[0];
-      }
-      if(points.length<5||points[0][0]!==points[points.length-1][0]||points[0][1]!==points[points.length-1][1])continue;
-      points.pop();
-      const compact=points.filter((p,i)=>{
-        const prev=points[(i+points.length-1)%points.length],next=points[(i+1)%points.length];
-        return (p[0]-prev[0])*(next[1]-p[1])!==(p[1]-prev[1])*(next[0]-p[0]);
-      });
-      if(compact.length<3)continue;
-      const area=polygonArea(compact);
-      if(area<6)continue;
-      const anchor=compact[0],farthest=compact.reduce((best,p,i)=>{
-        const d=Math.hypot(p[0]-anchor[0],p[1]-anchor[1]);return d>best.d?{i,d}:best;
-      },{i:0,d:0}).i;
-      const open=compact.slice(farthest).concat(compact.slice(0,farthest+1));
-      const simplify=(pts,epsilon)=>{
-        if(pts.length<=2)return pts;
-        let max=epsilon,index=-1;
-        const a=pts[0],b=pts[pts.length-1],dx=b[0]-a[0],dy=b[1]-a[1],den=dx*dx+dy*dy||1;
-        for(let i=1;i<pts.length-1;i++){
-          const p=pts[i],u=((p[0]-a[0])*dx+(p[1]-a[1])*dy)/den;
-          const d=Math.hypot(p[0]-(a[0]+u*dx),p[1]-(a[1]+u*dy));
-          if(d>max){max=d;index=i;}
+      const startIndex=y*w+x;
+      if(labels[startIndex]!==0)continue;
+      const id=components.length+1,component={id,pixels:[],touchesBorder:false,touchesBackground:false,minX:x,minY:y,maxX:x,maxY:y};
+      let head=0,tail=0;queue[tail++]=startIndex;labels[startIndex]=id;
+      while(head<tail){
+        const index=queue[head++],px=index%w,py=Math.floor(index/w),pi=index*4;
+        component.pixels.push(index);
+        component.minX=Math.min(component.minX,px);component.maxX=Math.max(component.maxX,px);
+        component.minY=Math.min(component.minY,py);component.maxY=Math.max(component.maxY,py);
+        if(px<=1||py<=1||px>=w-2||py>=h-2)component.touchesBorder=true;
+        const neighbors=[index-1,index+1,index-w,index+w];
+        for(const ni of neighbors){
+          if(ni<0||ni>=w*h||labels[ni]!==0)continue;
+          const ni4=ni*4,dr=pixels[pi]-pixels[ni4],dg=pixels[pi+1]-pixels[ni4+1],db=pixels[pi+2]-pixels[ni4+2];
+          if(dr*dr+dg*dg+db*db<=similarity*similarity){labels[ni]=id;queue[tail++]=ni;}
         }
-        if(index<0)return [a,b];
-        const left=simplify(pts.slice(0,index+1),epsilon),right=simplify(pts.slice(index),epsilon);
-        return left.slice(0,-1).concat(right);
+      }
+      components.push(component);
+    }
+    const minComponentPixels=Math.max(8,Math.floor(w*h*0.00012));
+    const backgroundIds=new Set(components.filter(c=>c.touchesBorder).map(c=>c.id));
+    for(const component of components){
+      if(component.touchesBorder)continue;
+      if(transparent){component.touchesBackground=false;continue;}
+      for(const index of component.pixels){
+        const x=index%w,y=Math.floor(index/w);
+        if([index-1,index+1,index-w,index+w].some(ni=>ni>=0&&ni<w*h&&backgroundIds.has(labels[ni]))){component.touchesBackground=true;break;}
+      }
+    }
+
+    const traceMask=(mask,minX,minY,maxX,maxY)=>{
+      const edges=[],outgoing=new Map();
+      const addEdge=(ax,ay,bx,by)=>{
+        const index=edges.length,key=ax+','+ay;
+        edges.push({ax,ay,bx,by,used:false});
+        if(!outgoing.has(key))outgoing.set(key,[]);
+        outgoing.get(key).push(index);
       };
-      let reduced=simplify(open,1.1).slice(0,-1);
-      if(reduced.length>240){const step=Math.ceil(reduced.length/240);reduced=reduced.filter((p,i)=>i%step===0);}
-      if(reduced.length>=3)loops.push({area,points:reduced.map(([x,y])=>[x/scale,y/scale])});
+      for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){
+        if(!mask[y*w+x])continue;
+        if(!mask[(y-1)*w+x])addEdge(x,y,x+1,y);
+        if(!mask[y*w+x+1])addEdge(x+1,y,x+1,y+1);
+        if(!mask[(y+1)*w+x])addEdge(x+1,y+1,x,y+1);
+        if(!mask[y*w+x-1])addEdge(x,y+1,x,y);
+      }
+      const direction=e=>e.bx>e.ax?0:e.by>e.ay?1:e.bx<e.ax?2:3;
+      const turnPriority=[1,0,3,2],result=[];
+      for(let seed=0;seed<edges.length;seed++){
+        if(edges[seed].used)continue;
+        const first=edges[seed],points=[[first.ax,first.ay]];
+        let current=seed,guard=0;
+        while(current!==undefined&&!edges[current].used&&guard++<=edges.length){
+          const edge=edges[current];edge.used=true;points.push([edge.bx,edge.by]);
+          if(edge.bx===first.ax&&edge.by===first.ay)break;
+          const candidates=(outgoing.get(edge.bx+','+edge.by)||[]).filter(i=>!edges[i].used);
+          if(!candidates.length){current=undefined;break;}
+          const incoming=direction(edge);
+          candidates.sort((ia,ib)=>{
+            const ta=(direction(edges[ia])-incoming+4)%4,tb=(direction(edges[ib])-incoming+4)%4;
+            return turnPriority.indexOf(ta)-turnPriority.indexOf(tb);
+          });
+          current=candidates[0];
+        }
+        if(points.length<5||points[0][0]!==points[points.length-1][0]||points[0][1]!==points[points.length-1][1])continue;
+        points.pop();
+        const compact=points.filter((p,i)=>{
+          const prev=points[(i+points.length-1)%points.length],next=points[(i+1)%points.length];
+          return (p[0]-prev[0])*(next[1]-p[1])!==(p[1]-prev[1])*(next[0]-p[0]);
+        });
+        if(compact.length<3)continue;
+        const area=polygonArea(compact);if(area<6)continue;
+        const anchor=compact[0],farthest=compact.reduce((best,p,i)=>{
+          const d=Math.hypot(p[0]-anchor[0],p[1]-anchor[1]);return d>best.d?{i,d}:best;
+        },{i:0,d:0}).i;
+        const open=compact.slice(farthest).concat(compact.slice(0,farthest+1));
+        const simplify=(pts,epsilon)=>{
+          if(pts.length<=2)return pts;
+          let max=epsilon,index=-1;
+          const a=pts[0],b=pts[pts.length-1],dx=b[0]-a[0],dy=b[1]-a[1],den=dx*dx+dy*dy||1;
+          for(let i=1;i<pts.length-1;i++){
+            const p=pts[i],u=((p[0]-a[0])*dx+(p[1]-a[1])*dy)/den;
+            const d=Math.hypot(p[0]-(a[0]+u*dx),p[1]-(a[1]+u*dy));
+            if(d>max){max=d;index=i;}
+          }
+          if(index<0)return [a,b];
+          const left=simplify(pts.slice(0,index+1),epsilon),right=simplify(pts.slice(index),epsilon);
+          return left.slice(0,-1).concat(right);
+        };
+        let reduced=simplify(open,1.1).slice(0,-1);
+        if(reduced.length>240){const step=Math.ceil(reduced.length/240);reduced=reduced.filter((p,i)=>i%step===0);}
+        if(reduced.length>=3)result.push({area,points:reduced.map(([x,y])=>[x/scale,y/scale])});
+      }
+      return result;
+    };
+
+    const loops=[],outerComponents=components.filter(c=>!c.touchesBorder&&c.pixels.length>=minComponentPixels&&c.touchesBackground);
+    if(outerComponents.length){
+      const outerMask=new Uint8Array(w*h);let minX=w,minY=h,maxX=0,maxY=0;
+      for(const component of outerComponents)for(const index of component.pixels){
+        outerMask[index]=1;const x=index%w,y=Math.floor(index/w);
+        minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);
+      }
+      loops.push(...traceMask(outerMask,minX,minY,maxX,maxY));
+    }
+    for(const component of components){
+      if(component.touchesBorder||component.touchesBackground||component.pixels.length<minComponentPixels)continue;
+      const mask=new Uint8Array(w*h);
+      for(const index of component.pixels)mask[index]=1;
+      loops.push(...traceMask(mask,component.minX,component.minY,component.maxX,component.maxY));
+    }
+    // Bei transparenten PNGs existiert keine Hintergrundfläche, die den
+    // Aussenrand definiert. In diesem Fall werden alle grösseren Regionen erfasst.
+    if(!loops.length&&transparent){
+      for(const component of components){
+        if(component.pixels.length<minComponentPixels)continue;
+        const mask=new Uint8Array(w*h);for(const index of component.pixels)mask[index]=1;
+        loops.push(...traceMask(mask,component.minX,component.minY,component.maxX,component.maxY));
+      }
     }
     if(!loops.length)throw new Error('Aus dem Bild konnte keine geschlossene Kontur erstellt werden.');
-    // Die grösste Aussenkontur liegt zuletzt, damit der bisherige 3D-Button
-    // weiterhin den Hauptumriss extrudiert. Kleinere Komponenten bleiben sichtbar.
     loops.sort((a,b)=>a.area-b.area);
-    return loops.map(loop=>loop.points);
+    return loops.slice(-20).map(loop=>loop.points);
   }
   function autoTraceContour(sourceImage) {
     const contours=autoTraceContours(sourceImage);
