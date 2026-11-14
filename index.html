@@ -4976,7 +4976,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       }
       components.push(component);
     }
-    const minComponentPixels=Math.max(8,Math.floor(w*h*0.00012));
+    const minComponentPixels=Math.max(4,Math.floor(w*h*0.000025));
     const backgroundIds=new Set(components.filter(c=>c.touchesBorder).map(c=>c.id));
     for(const component of components){
       if(component.touchesBorder)continue;
@@ -5120,12 +5120,12 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     };
 
     const outerContours=extractMaskContours(foregroundMask,minComponentPixels,8);
-    const detailContours=extractMaskContours(detailMask,minComponentPixels,19);
+    const detailContours=extractMaskContours(detailMask,minComponentPixels,40);
     const loops=detailContours.concat(outerContours).sort((a,b)=>a.area-b.area);
     if(!outerContours.length)throw new Error('Die Aussenkontur des Motivs konnte nicht erkannt werden. Bitte Hintergrund und Motiv möglichst klar abgrenzen.');
     if(!loops.length)throw new Error('Aus dem Bild konnte keine geschlossene Kontur erstellt werden.');
     loops.sort((a,b)=>a.area-b.area);
-    return loops.slice(-20).map(loop=>loop.points);
+    return loops.slice(-48).map(loop=>loop.points);
   }
   function autoTraceContour(sourceImage) {
     const contours=autoTraceContours(sourceImage);
@@ -5277,7 +5277,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     if(saved.version!==1||typeof saved.dataUrl!=='string'||saved.dataUrl.length>12000000||
        !/^data:image\/(png|jpeg|webp);base64,/i.test(saved.dataUrl)||
        !Number.isFinite(saved.widthMM)||saved.widthMM<5||saved.widthMM>2000||
-       ![0,90,180,270].includes(saved.rotation)||!Array.isArray(saved.contours)||saved.contours.length>20) {
+       ![0,90,180,270].includes(saved.rotation)||!Array.isArray(saved.contours)||saved.contours.length>48) {
       throw new Error('Ungültige Image-Studio-Daten in der Projektdatei.');
     }
     await setImage(saved.dataUrl,typeof saved.fileName==='string'?saved.fileName.slice(0,180):'Bildvorlage');
