@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v77 – Smooth Sketch</title>
+<title>SILMO 3D Studio AI – v78 – Auto Outline Assist</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v77 – Smooth Sketch">
+<meta name="silmo-build" content="v78 – Auto Outline Assist">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -265,7 +265,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v57 – Skizzenbedingungen und Bemaßung -->
+<!-- SILMO BUILD: v78 – Auto Outline Assist -->
 <script id="silmoDeveloperDiagnostics">
 (function(){
   'use strict';
@@ -573,6 +573,8 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       <button id="imageStudioFit" class="isw-btn" type="button">◎ Ansicht einpassen</button>
       <div class="panel-rule"></div>
       <h2>3 · KONTUR ZEICHNEN</h2>
+      <button id="imageStudioAutoTrace" class="isw-btn" type="button">✧ Kontur automatisch vorschlagen</button>
+      <p class="isw-note">Erstellt aus einem kontrastreichen Bild eine vereinfachte Aussenkontur. Das Ergebnis ist ein Vorschlag und kann manuell korrigiert werden.</p>
       <button id="imageStudioDrawToggle" class="isw-btn" type="button" aria-pressed="false">✎ Kontur zeichnen: AUS</button>
       <p class="isw-note">Aktiviere den Zeichenmodus und ziehe mit der Maus oder dem Finger eine geschlossene Aussenkontur. Ohne Zeichenmodus kannst du die Ansicht verschieben. Mit dem Mausrad zoomst du.</p>
       <button id="imageStudioUndo" class="isw-btn" type="button">↶ Letzte Kontur rückgängig</button>
@@ -580,7 +582,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       <div class="isw-field"><label for="imageStudioExtrusionMM">Extrusionshöhe für CAD (mm)</label><input id="imageStudioExtrusionMM" type="number" min="0.1" max="2000" step="0.1" value="5"></div>
       <button id="imageStudioCreate3D" class="isw-btn isw-primary" type="button">⬡ Kontur in 3D-Körper umwandeln</button>
       <div id="imageStudioStatus" class="isw-status" role="status">Lade zuerst ein Bild. Die Kontur wird anschliessend manuell gezeichnet.</div>
-      <p class="isw-note">Phase 1 enthält die manuelle Bild-zu-CAD-Übertragung. Automatische KI-Konturerkennung folgt als separate Entwicklungsphase.</p>
+      <p class="isw-note">Die automatische Konturhilfe arbeitet lokal im Browser mit Bildkontrast. Sie ist keine KI-Erkennung und ersetzt keine manuelle Kontrolle.</p>
     </aside>
     <div class="isw-canvas-wrap">
       <canvas id="imageStudioCanvas" aria-label="Bildvorlage und Zeichenfläche"></canvas>
@@ -4919,7 +4921,36 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     for(let i=0;i<points.length;i++){const a=points[i],b=points[(i+1)%points.length];area+=a[0]*b[1]-b[0]*a[1];}
     return Math.abs(area)/2;
   }
-  function setImage(dataUrl,fileName) {
+
+  function autoTraceContour(sourceImage) {
+    const maxSide=320,scale=Math.min(1,maxSide/Math.max(sourceImage.naturalWidth,sourceImage.naturalHeight));
+    const w=Math.max(1,Math.round(sourceImage.naturalWidth*scale)),h=Math.max(1,Math.round(sourceImage.naturalHeight*scale));
+    const sample=document.createElement('canvas');sample.width=w;sample.height=h;
+    const sampleCtx=sample.getContext('2d',{willReadFrequently:true});sampleCtx.drawImage(sourceImage,0,0,w,h);
+    const pixels=sampleCtx.getImageData(0,0,w,h).data;
+    const corners=[[0,0],[w-1,0],[0,h-1],[w-1,h-1]];
+    const bg=[0,0,0,0];corners.forEach(([x,y])=>{const i=(y*w+x)*4;for(let k=0;k<4;k++)bg[k]+=pixels[i+k]/4;});
+    const transparent=bg[3]<245;
+    const mask=new Uint8Array(w*h);let count=0,minX=w,minY=h,maxX=0,maxY=0;
+    for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
+      const i=(y*w+x)*4,a=pixels[i+3];
+      const diff=Math.hypot(pixels[i]-bg[0],pixels[i+1]-bg[1],pixels[i+2]-bg[2]);
+      if(transparent?a>24:(a>24&&diff>48)){mask[y*w+x]=1;count++;minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);}
+    }
+    if(count<12||maxX-minX<3||maxY-minY<3)throw new Error('Kein ausreichend kontrastreiches Motiv gefunden. Verwende ein Bild mit ruhigem Hintergrund oder zeichne die Kontur manuell.');
+    const boundary=[];
+    for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++)if(mask[y*w+x]&&(!mask[y*w+x-1]||!mask[y*w+x+1]||!mask[(y-1)*w+x]||!mask[(y+1)*w+x]))boundary.push([x,y]);
+    const sorted=boundary.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+    const cross=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+    const lower=[],upper=[];
+    for(const p of sorted){while(lower.length>=2&&cross(lower[lower.length-2],lower[lower.length-1],p)<=0)lower.pop();lower.push(p);}
+    for(let i=sorted.length-1;i>=0;i--){const p=sorted[i];while(upper.length>=2&&cross(upper[upper.length-2],upper[upper.length-1],p)<=0)upper.pop();upper.push(p);}
+    const hull=lower.slice(0,-1).concat(upper.slice(0,-1));
+    if(hull.length<3)throw new Error('Aus dem Bild konnte keine geschlossene Kontur erstellt werden.');
+    const stride=Math.max(1,Math.ceil(hull.length/240));
+    return hull.filter((p,i)=>i%stride===0).map(([x,y])=>[x/scale,y/scale]);
+  }
+\n  function setImage(dataUrl,fileName) {
     return new Promise((resolve,reject) => {
       const next = new Image();
       next.onload = () => {
@@ -4968,6 +4999,19 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     state.rotation=(state.rotation+90)%360; updateDimensions(); scheduleRender(); status('Bildansicht um 90° gedreht.');
   });
   $('imageStudioFit').addEventListener('click',() => { zoom=1;panX=0;panY=0;scheduleRender();status('Ansicht eingepasst.'); });
+  $('imageStudioAutoTrace').addEventListener('click',() => {
+    if(!image){status('Lade zuerst ein Bild.');return;}
+    try{
+      const contour=autoTraceContour(image);
+      state.contours=[contour];
+      drawMode=false;$('imageStudioDrawToggle').setAttribute('aria-pressed','false');
+      $('imageStudioDrawToggle').textContent='✎ Kontur zeichnen: AUS';canvas.classList.remove('isw-drawing');
+      scheduleRender();status('Konturvorschlag erstellt ('+contour.length+' Punkte). Bitte prüfen und bei Bedarf manuell korrigieren.');
+    }catch(error){status(error.message||'Kontur konnte nicht vorgeschlagen werden.');}
+  });
+  window.__silmoImageStudioAutoTraceTest = dataUrl => new Promise((resolve,reject)=>{
+    const probe=new Image();probe.onload=()=>{try{resolve(autoTraceContour(probe));}catch(e){reject(e);}};probe.onerror=()=>reject(new Error('Testbild konnte nicht geladen werden.'));probe.src=dataUrl;
+  });
   $('imageStudioDrawToggle').addEventListener('click',() => {
     drawMode=!drawMode; $('imageStudioDrawToggle').setAttribute('aria-pressed',String(drawMode));
     $('imageStudioDrawToggle').textContent=drawMode?'✎ Kontur zeichnen: EIN':'✎ Kontur zeichnen: AUS';
