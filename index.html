@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v87 – Adjustable Photo Recognition</title>
+<title>SILMO 3D Studio AI – v88 – Professional CAD Workspace</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
@@ -262,6 +262,113 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
 @media(max-width:700px){#imageStudioWorkspace .isw-header{height:auto;min-height:58px;padding:8px 10px}#imageStudioWorkspace .isw-layout{grid-template-columns:180px minmax(0,1fr)}#imageStudioWorkspace .isw-tools{padding:10px}#imageStudioWorkspace .isw-title{font-size:14px}#imageStudioWorkspace .isw-subtitle{font-size:10px}#imageStudioWorkspace .isw-btn{font-size:11px;padding:7px 5px}}
 @media(max-width:460px){#imageStudioWorkspace .isw-layout{grid-template-columns:145px minmax(0,1fr)}#imageStudioWorkspace .isw-tools{padding:8px}}
 
+
+/* v88 – Professional CAD workspace hierarchy */
+:root{
+  --bg:#11151b;--panel:#1b2028;--panel2:#232a34;--line:#343d49;
+  --muted:#9ba8b8;--text:#e5eaf0;--blue:#3985d6;--cyan:#58b8d4;
+  --green:#82c99a;
+}
+body{background:#11151b;color:#e5eaf0;font-family:Inter,"Segoe UI",Arial,sans-serif}
+header{
+  height:54px;padding:0 16px;background:#202630;border-bottom:1px solid #3a4552;
+  box-shadow:0 2px 8px #0004
+}
+.brand{gap:10px}.brand-mark{width:30px;height:30px;border-radius:6px;box-shadow:none;font-size:18px}
+h1{font-size:15px;letter-spacing:.15px}.subtitle{font-size:10px;color:#a8b3c1}
+.header-actions{gap:6px}.header-actions button{border-radius:5px;padding:6px 9px;font-size:11px}
+.top-status{font-size:11px;color:#a8cdb4}
+.tool-tabs{
+  min-height:42px;padding:5px 12px;gap:3px;background:#171c23;border-bottom:1px solid #3a4552;
+  box-shadow:0 2px 5px #0003
+}
+.tool-tab{
+  min-width:92px;flex:0 0 auto;padding:8px 14px;border:1px solid transparent;border-radius:4px 4px 0 0;
+  background:transparent;color:#aeb9c7;font-size:11px;font-weight:600
+}
+.tool-tab:hover{background:#252e39;border-color:#3a4655}
+.tool-tab[aria-selected="true"]{
+  color:#f0f4f8;background:#293544;border-color:#48586b;
+  border-bottom:2px solid #63b5db;box-shadow:none
+}
+main{
+  grid-template-columns:252px minmax(320px,1fr) 292px;
+  height:calc(100vh - 96px);min-height:500px;background:#11151b
+}
+aside{padding:13px 12px;background:#1b2028;scrollbar-color:#46515e #1b2028;scrollbar-width:thin}
+aside:first-child{border-right:1px solid #3a4552}
+aside:last-child{border-left:1px solid #3a4552}
+.left-panel,.right-panel{border-color:#3a4552}
+h2{
+  margin:9px 0 10px;padding-bottom:7px;border-bottom:1px solid #343e4b;
+  color:#b7c4d2;font-size:10px;letter-spacing:.9px;font-weight:750
+}
+.section{margin-bottom:17px}
+.tab-pane{padding-bottom:12px}
+.tab-pane.active-pane{animation:cadPaneIn .12s ease-out}
+@keyframes cadPaneIn{from{opacity:.75}to{opacity:1}}
+button{
+  border:1px solid #465362;background:#293340;color:#e3eaf2;border-radius:5px;
+  transition:background .12s,border-color .12s
+}
+button:hover{background:#354354;border-color:#69819a}
+button:active{transform:none}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #6ebbdc;outline-offset:1px}
+.wide{min-height:34px;margin:4px 0;padding:7px 9px;gap:8px;font-size:11px}
+.wide .btn-icon{border-radius:4px;background:#344455;color:#c4d7e8}
+.primary{background:#245d87;border-color:#3d86b6;color:#fff}
+.primary:hover{background:#2c719f}
+.active{background:#244c66!important;border-color:#69b9db!important;box-shadow:inset 2px 0 #69b9db!important}
+.panel-rule{background:#36414d;margin:13px 0}
+.note{color:#9eacbb;font-size:10px;line-height:1.5}
+label{font-size:10px;color:#b6c2cf}
+input,select{
+  padding:7px 8px;background:#121820;color:#e5ebf2;border:1px solid #3c4856;border-radius:4px;font-size:11px
+}
+input[type=color]{height:34px}
+.field{margin:9px 0}
+#objects .object-row{gap:4px;margin:3px 0}
+#objects button{font-size:11px;border-radius:4px}
+#objects .object-select{background:#252e39;border-color:#3a4654}
+#objects .object-select:hover{background:#304050}
+#objects .object-lock,#objects .object-edit{flex-basis:34px;min-width:34px;background:#202a35;border-radius:4px}
+.object-empty{color:#8795a5;font-size:11px}
+#status{
+  margin-top:12px;padding:8px 9px;border-radius:4px;background:#182b27;
+  border:1px solid #34574b;color:#a9d9b7;font-size:10px
+}
+#viewport{
+  background-color:#151b23;
+  background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px),radial-gradient(ellipse at 50% 44%,#202b38 0%,#151b23 66%);
+  background-size:24px 24px,24px 24px,auto;
+}
+.viewport-label{
+  top:12px;left:12px;padding:6px 9px;border-radius:4px;background:#171e28e8;
+  border-color:#3d4a58;color:#c4d0dc;font-size:10px
+}
+#hint{left:12px;bottom:12px;padding:8px 10px;border-radius:4px;background:#171e28e8;border-color:#3d4a58;font-size:10px}
+#gizmoModeToggle{top:12px;right:54px;border-radius:4px;background:#263747;border-color:#52748e}
+#expandViewport{top:12px;right:10px;border-radius:4px}
+#rotationAngleLabel{border-radius:4px}
+body.viewport-expanded main{height:calc(100vh - 96px)}
+@media(max-width:1050px){
+  main{grid-template-columns:220px minmax(280px,1fr) 255px}
+}
+@media(max-width:760px){
+  header{padding:8px 10px}
+  main{grid-template-columns:160px minmax(0,1fr);height:auto;min-height:0}
+  aside{padding:10px 8px}
+  .tool-tab{min-width:82px;padding:8px 10px}
+  .right-panel{grid-column:1/-1;border-left:0!important;border-top:1px solid #3a4552}
+}
+@media(max-width:480px){
+  main{grid-template-columns:1fr}
+  .left-panel{grid-column:1}
+  #viewport{grid-column:1;grid-row:2;height:55vh;min-height:320px}
+  .right-panel{grid-column:1;grid-row:3}
+  .header-actions button{font-size:10px;padding:5px 6px}
+}
+@media(prefers-reduced-motion:reduce){.tab-pane.active-pane{animation:none}}
 </style>
 </head>
 <body>
