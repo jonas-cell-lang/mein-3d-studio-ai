@@ -37,9 +37,9 @@ try {
   const ghostContours=await page.evaluate(async()=>{
     const c=document.createElement('canvas');c.width=320;c.height=260;
     const x=c.getContext('2d');
-    const g=x.createLinearGradient(0,0,320,260);g.addColorStop(0,'#f5f5f5');g.addColorStop(1,'#dedede');
+    const g=x.createLinearGradient(0,0,320,260);g.addColorStop(0,'#45546a');g.addColorStop(1,'#75849a');
     x.fillStyle=g;x.fillRect(0,0,320,260);
-    x.fillStyle='#222b45';x.beginPath();
+    x.fillStyle='#f0f2f5';x.beginPath();
     x.moveTo(160,28);x.bezierCurveTo(205,28,236,66,236,112);
     x.bezierCurveTo(236,144,252,166,278,180);
     x.lineTo(258,207);x.lineTo(232,190);x.lineTo(210,222);
@@ -47,8 +47,6 @@ try {
     x.lineTo(110,222);x.lineTo(88,190);x.lineTo(62,207);
     x.lineTo(42,180);x.bezierCurveTo(68,166,84,144,84,112);
     x.bezierCurveTo(84,66,115,28,160,28);x.closePath();x.fill();
-    x.fillStyle='#f8f8f8';x.beginPath();x.ellipse(137,112,13,19,-0.12,0,Math.PI*2);x.fill();
-    x.beginPath();x.ellipse(184,112,13,19,0.12,0,Math.PI*2);x.fill();
     x.fillStyle='#080b12';x.beginPath();x.ellipse(137,112,5,10,0,0,Math.PI*2);x.fill();
     x.beginPath();x.ellipse(184,112,5,10,0,0,Math.PI*2);x.fill();
     x.beginPath();x.ellipse(160,157,13,19,0,0,Math.PI*2);x.fill();
