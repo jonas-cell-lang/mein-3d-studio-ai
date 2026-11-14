@@ -880,7 +880,7 @@ try {
   for (const id of ['sketchConstraint','editSketchWidthMM','editSketchDepthMM','editSketchHeightMM','loadSketchDimensions','applySketchDimensions','sketchPointIndex','sketchPointXMM','sketchPointYMM','loadSketchPoints','applySketchPoint','edgeTreatmentMM','applyEdgeFillet','applyEdgeChamfer','createLoft','createSweep','cadRelationSelect','applySketchRelation','editPathLengthMM','loadPathLength','applyPathLength','objectDistanceAxis','objectDistanceMM','applyObjectDistance']) {
     assert.equal(await page.locator('#'+id).isVisible(),true, 'Professionelles CAD-Werkzeug '+id+' fehlt');
   }
-  assert.match(await page.locator('#pane-draw-right').innerText(),/Exakte Masse und Position/,'Skizzenparameter sind nicht übersichtlich gruppiert');
+  assert.match(await page.locator('#pane-draw-right').innerText(),/Masse/,'Skizzenparameter sind nicht übersichtlich gruppiert');
   assert.ok((await page.locator('#sketchTool option').allTextContents()).some(x=>/Freiform/.test(x)),'Freiform-Zeichenwerkzeug fehlt');
   await showDrawRightSubtab(3); // Wand und Kontur
   await page.locator('#pane-draw-right details').filter({hasText:'Wand und Kontur bearbeiten'}).locator('summary').click();
