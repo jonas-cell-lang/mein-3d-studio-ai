@@ -33,6 +33,31 @@ try {
   const sortedMotifAreas=motifContours.map(points=>Math.abs(points.reduce((sum,p,i)=>{const q=points[(i+1)%points.length];return sum+p[0]*q[1]-q[0]*p[1];},0)/2)).sort((a,b)=>b-a);
   assert.ok(sortedMotifAreas.length>=3&&sortedMotifAreas[0]>sortedMotifAreas[1]*3,'Aussenkontur und Innenformen werden nicht als getrennte Grössen erkannt');
 
+  // Komplexe Geist-Silhouette mit mehreren Einbuchtungen, Kurven und Details.
+  const ghostContours=await page.evaluate(async()=>{
+    const c=document.createElement('canvas');c.width=320;c.height=260;
+    const x=c.getContext('2d');
+    const g=x.createLinearGradient(0,0,320,260);g.addColorStop(0,'#f5f5f5');g.addColorStop(1,'#dedede');
+    x.fillStyle=g;x.fillRect(0,0,320,260);
+    x.fillStyle='#222b45';x.beginPath();
+    x.moveTo(160,28);x.bezierCurveTo(205,28,236,66,236,112);
+    x.bezierCurveTo(236,144,252,166,278,180);
+    x.lineTo(258,207);x.lineTo(232,190);x.lineTo(210,222);
+    x.lineTo(184,197);x.lineTo(160,232);x.lineTo(136,197);
+    x.lineTo(110,222);x.lineTo(88,190);x.lineTo(62,207);
+    x.lineTo(42,180);x.bezierCurveTo(68,166,84,144,84,112);
+    x.bezierCurveTo(84,66,115,28,160,28);x.closePath();x.fill();
+    x.fillStyle='#f8f8f8';x.beginPath();x.ellipse(137,112,13,19,-0.12,0,Math.PI*2);x.fill();
+    x.beginPath();x.ellipse(184,112,13,19,0.12,0,Math.PI*2);x.fill();
+    x.fillStyle='#080b12';x.beginPath();x.ellipse(137,112,5,10,0,0,Math.PI*2);x.fill();
+    x.beginPath();x.ellipse(184,112,5,10,0,0,Math.PI*2);x.fill();
+    x.beginPath();x.ellipse(160,157,13,19,0,0,Math.PI*2);x.fill();
+    return await window.__silmoImageStudioAutoTraceAllTest(c.toDataURL('image/png'));
+  });
+  assert.ok(ghostContours.length>=4,'Komplexes Geistmotiv verliert Aussenkontur oder mehrere Innenbereiche');
+  const ghostAreas=ghostContours.map(points=>Math.abs(points.reduce((sum,p,i)=>{const q=points[(i+1)%points.length];return sum+p[0]*q[1]-q[0]*p[1];},0)/2)).sort((a,b)=>b-a);
+  assert.ok(ghostAreas[0]>ghostAreas[1]*2,'Geist-Aussenkontur wird nicht klar von Details getrennt');
+
   const printGeometryChecks=await page.evaluate(()=>{
     const outer=[[0,0],[40,0],[40,30],[0,30]];
     const safeHole=[[10,10],[15,10],[15,15],[10,15]];
