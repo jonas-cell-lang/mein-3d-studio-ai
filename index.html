@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v81 – Real Cutout Geometry</title>
+<title>SILMO 3D Studio AI – v82 – Print-Safe Cutouts</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v81 – Real Cutout Geometry">
+<meta name="silmo-build" content="v82 – Print-Safe Cutouts">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -4947,6 +4947,50 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     return inside;
   }
 
+  function segmentDistance(a,b,c,d) {
+    const orient=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);
+    const on=(p,q,r)=>Math.min(p[0],q[0])-1e-8<=r[0]&&r[0]<=Math.max(p[0],q[0])+1e-8&&Math.min(p[1],q[1])-1e-8<=r[1]&&r[1]<=Math.max(p[1],q[1])+1e-8;
+    const o1=orient(a,b,c),o2=orient(a,b,d),o3=orient(c,d,a),o4=orient(c,d,b);
+    if((o1*o2<0&&o3*o4<0)||(Math.abs(o1)<1e-8&&on(a,b,c))||(Math.abs(o2)<1e-8&&on(a,b,d))||(Math.abs(o3)<1e-8&&on(c,d,a))||(Math.abs(o4)<1e-8&&on(c,d,b)))return 0;
+    const pointDistance=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]);
+    const pointSegment=(p,x,y)=>{const dx=y[0]-x[0],dy=y[1]-x[1],t=Math.max(0,Math.min(1,((p[0]-x[0])*dx+(p[1]-x[1])*dy)/(dx*dx+dy*dy||1)));return Math.hypot(p[0]-x[0]-t*dx,p[1]-x[1]-t*dy);};
+    return Math.min(pointSegment(a,c,d),pointSegment(b,c,d),pointSegment(c,a,b),pointSegment(d,a,b),pointDistance(a,c),pointDistance(a,d),pointDistance(b,c),pointDistance(b,d));
+  }
+  function polygonIsSimple(poly) {
+    if(!Array.isArray(poly)||poly.length<3||polygonArea(poly)<0.01)return false;
+    const n=poly.length;
+    for(let i=0;i<n;i++){
+      const a=poly[i],b=poly[(i+1)%n];
+      if(Math.hypot(a[0]-b[0],a[1]-b[1])<1e-5)return false;
+      for(let j=i+1;j<n;j++){
+        if(j===i||j===(i+1)%n||i===(j+1)%n)continue;
+        if(segmentDistance(a,b,poly[j],poly[(j+1)%n])<1e-7)return false;
+      }
+    }
+    return true;
+  }
+  function minimumPolygonGap(a,b) {
+    let gap=Infinity;
+    for(let i=0;i<a.length;i++)for(let j=0;j<b.length;j++){
+      gap=Math.min(gap,segmentDistance(a[i],a[(i+1)%a.length],b[j],b[(j+1)%b.length]));
+      if(gap===0)return 0;
+    }
+    return gap;
+  }
+  function validatePrintableContours(outer,candidates,minWallMM=0.8) {
+    const accepted=[],rejected=[];
+    if(!polygonIsSimple(outer))return {ok:false,holes:[],rejected:candidates.length,reason:'Die Aussenkontur ist nicht eindeutig geschlossen oder schneidet sich selbst.'};
+    for(const hole of candidates){
+      if(!polygonIsSimple(hole)){rejected.push('ungültige Kontur');continue;}
+      const samples=hole.flatMap((p,i)=>{const q=hole[(i+1)%hole.length];return [p,[(p[0]+q[0])/2,(p[1]+q[1])/2]];});
+      if(!samples.every(p=>pointInPolygon(p,outer))){rejected.push('ausserhalb der Aussenkontur');continue;}
+      if(minimumPolygonGap(outer,hole)<minWallMM-1e-6){rejected.push('Wand zur Aussenkante zu dünn');continue;}
+      if(accepted.some(other=>minimumPolygonGap(other,hole)<minWallMM-1e-6||pointInPolygon(hole[0],other)||pointInPolygon(other[0],hole))){rejected.push('Innenlöcher überlappen oder liegen zu nahe');continue;}
+      accepted.push(hole);
+    }
+    return {ok:true,holes:accepted,rejected:rejected.length,reasons:rejected,minWallMM};
+  }
+
   function autoTraceContours(sourceImage) {
     const maxSide=480,scale=Math.min(1,maxSide/Math.max(sourceImage.naturalWidth,sourceImage.naturalHeight));
     const w=Math.max(1,Math.round(sourceImage.naturalWidth*scale)),h=Math.max(1,Math.round(sourceImage.naturalHeight*scale));
@@ -5194,6 +5238,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
   window.__silmoImageStudioAutoTraceTest = dataUrl => new Promise((resolve,reject)=>{
     const probe=new Image();probe.onload=()=>{try{resolve(autoTraceContour(probe));}catch(e){reject(e);}};probe.onerror=()=>reject(new Error('Testbild konnte nicht geladen werden.'));probe.src=dataUrl;
   });
+  window.__silmoImageStudioValidateForPrintTest = (outer,holes,minWallMM=0.8) => validatePrintableContours(outer,holes,minWallMM);
   window.__silmoImageStudioAutoTraceAllTest = dataUrl => new Promise((resolve,reject)=>{
     const probe=new Image();probe.onload=()=>{try{resolve(autoTraceContours(probe));}catch(e){reject(e);}};probe.onerror=()=>reject(new Error('Testbild konnte nicht geladen werden.'));probe.src=dataUrl;
   });
@@ -5253,17 +5298,24 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     if(!mapped.length){status('Es wurde keine gültige geschlossene Kontur gefunden.');return;}
     let outerIndex=0;
     for(let i=1;i<mapped.length;i++)if(polygonArea(mapped[i])>polygonArea(mapped[outerIndex]))outerIndex=i;
-    const points=mapped[outerIndex],holes=[];
+    const points=mapped[outerIndex],candidates=[];
     for(let i=0;i<mapped.length;i++){
       if(i===outerIndex)continue;
       const candidate=mapped[i],area=polygonArea(candidate);
       if(area<0.01||area>=polygonArea(points)*0.8)continue;
-      const samples=candidate.filter((_,index)=>index%Math.max(1,Math.floor(candidate.length/24))===0);
-      if(samples.length&&samples.every(point=>pointInPolygon(point,points)))holes.push(candidate);
+      candidates.push(candidate);
     }
+    // Druckbarkeit: keine selbstschneidenden Konturen und mindestens 0,8 mm
+    // Material zwischen Aussparungen sowie zwischen Loch und Aussenkante.
+    const printCheck=validatePrintableContours(points,candidates,0.8);
+    if(!printCheck.ok){status(printCheck.reason+' Bitte Kontur manuell korrigieren.');return;}
+    const holes=printCheck.holes;
     const result=window.__silmoImageStudioCreateFromPoints?.(points,extrusionMM,holes);
-    if(result?.ok){status('3D-Körper erstellt: '+result.label+' – '+holes.length+' erkannte Innenlöcher als echte Aussparungen übernommen.');closeWorkspace();}
-    else status(result?.message||'Die Kontur konnte nicht an den CAD-Arbeitsbereich übergeben werden.');
+    if(result?.ok){
+      const warning=printCheck.rejected?' '+printCheck.rejected+' zu kleine/zu nahe Innenkonturen wurden zum Schutz der Druckbarkeit ausgelassen.':'';
+      status('3D-Körper erstellt: '+result.label+' – '+holes.length+' druckbare Aussparungen übernommen.'+warning);
+      closeWorkspace();
+    } else status(result?.message||'Die Kontur konnte nicht an den CAD-Arbeitsbereich übergeben werden.');
   });
   window.addEventListener('resize',scheduleRender);
   window.addEventListener('keydown',event => { if(!workspace.hidden&&event.key==='Escape'){event.preventDefault();closeWorkspace();} },true);
