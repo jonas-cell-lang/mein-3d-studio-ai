@@ -5162,7 +5162,7 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       const variance=distanceWeight*foregroundWeight*(meanBackground-meanForeground)*(meanBackground-meanForeground);
       if(variance>distanceVariance){distanceVariance=variance;otsuDistance=i;}
     }
-    const adaptiveBackgroundThreshold=Math.max(8,Math.min(backgroundThreshold,Math.floor(otsuDistance*0.62)));
+    const adaptiveBackgroundThreshold=Math.max(8,Math.min(24,backgroundThreshold,Math.floor(otsuDistance*0.35)));
     for(let i=0;i<w*h;i++){
       if(pixels[i*4+3]<=24)continue;
       if(transparent)continue;
