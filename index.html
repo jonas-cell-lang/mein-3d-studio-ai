@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v86 – Adaptive Low-Contrast Motif Detection</title>
+<title>SILMO 3D Studio AI – v87 – Adjustable Photo Recognition</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v86 – Adaptive Low-Contrast Motif Detection">
+<meta name="silmo-build" content="v87 – Adjustable Photo Recognition">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -573,8 +573,10 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       <button id="imageStudioFit" class="isw-btn" type="button">◎ Ansicht einpassen</button>
       <div class="panel-rule"></div>
       <h2>3 · KONTUR ZEICHNEN</h2>
+      <div class="isw-field"><label for="imageStudioSensitivity">Motivempfindlichkeit: <span id="imageStudioSensitivityValue">55 %</span></label><input id="imageStudioSensitivity" type="range" min="0" max="100" step="1" value="55"></div>
+      <p class="isw-note">Höhere Empfindlichkeit hilft bei blassen Motiven und schwachem Kontrast. Niedrigere Werte reduzieren störende Hintergrunddetails. Nach jeder Änderung die Kontur erneut vorschlagen lassen.</p>
       <button id="imageStudioAutoTrace" class="isw-btn" type="button">✧ Kontur automatisch vorschlagen</button>
-      <p class="isw-note">Erkennt kontrastreiche Aussenformen und getrennte Details wie Stiel, Augen und Mund. Das Ergebnis ist ein Vorschlag und kann manuell korrigiert werden.</p>
+      <p class="isw-note">Erkennt Aussenformen und getrennte Details. Prüfe das Ergebnis und korrigiere es bei Bedarf manuell.</p>
       <button id="imageStudioDrawToggle" class="isw-btn" type="button" aria-pressed="false">✎ Kontur zeichnen: AUS</button>
       <p class="isw-note">Aktiviere den Zeichenmodus und ziehe mit der Maus oder dem Finger eine geschlossene Aussenkontur. Ohne Zeichenmodus kannst du die Ansicht verschieben. Mit dem Mausrad zoomst du.</p>
       <button id="imageStudioUndo" class="isw-btn" type="button">↶ Letzte Kontur rückgängig</button>
@@ -4991,13 +4993,22 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     return {ok:true,holes:accepted,rejected:rejected.length,reasons:rejected,minWallMM};
   }
 
-  function autoTraceContours(sourceImage) {
+  function autoTraceContours(sourceImage,sensitivity=55) {
     const maxSide=480,scale=Math.min(1,maxSide/Math.max(sourceImage.naturalWidth,sourceImage.naturalHeight));
     const w=Math.max(1,Math.round(sourceImage.naturalWidth*scale)),h=Math.max(1,Math.round(sourceImage.naturalHeight*scale));
     const sample=document.createElement('canvas');sample.width=w;sample.height=h;
     const sampleCtx=sample.getContext('2d',{willReadFrequently:true});sampleCtx.drawImage(sourceImage,0,0,w,h);
     const pixels=sampleCtx.getImageData(0,0,w,h).data;
-    const transparent=pixels[3]<24&&pixels[(w-1)*4+3]<24;
+    let transparentBorderSamples=0,transparentBorderPixels=0;
+    for(let x=0;x<w;x++)for(const y of [0,h-1]){
+      transparentBorderSamples++;
+      if(pixels[(y*w+x)*4+3]<=24)transparentBorderPixels++;
+    }
+    for(let y=1;y<h-1;y++)for(const x of [0,w-1]){
+      transparentBorderSamples++;
+      if(pixels[(y*w+x)*4+3]<=24)transparentBorderPixels++;
+    }
+    const transparent=transparentBorderSamples>0&&transparentBorderPixels/transparentBorderSamples>=0.12;
     const labels=new Int32Array(w*h),components=[],queue=new Int32Array(w*h),similarity=42;
     for(let i=0;i<w*h;i++)if(pixels[i*4+3]<=24)labels[i]=-1;
     for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
@@ -5162,7 +5173,11 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       const variance=distanceWeight*foregroundWeight*(meanBackground-meanForeground)*(meanBackground-meanForeground);
       if(variance>distanceVariance){distanceVariance=variance;otsuDistance=i;}
     }
-    const adaptiveBackgroundThreshold=Math.max(8,Math.min(24,backgroundThreshold,Math.floor(otsuDistance*0.35)));
+    const normalizedSensitivity=Math.max(0,Math.min(100,Number(sensitivity)||0));
+    // 55 % entspricht dem bisherigen v86-Standard. Höhere Werte senken
+    // die Hintergrundschwelle, damit blasse Motivkanten erhalten bleiben.
+    const sensitivityFactor=0.55-normalizedSensitivity*0.0036363636;
+    const adaptiveBackgroundThreshold=Math.max(4,Math.min(24,backgroundThreshold,Math.floor(otsuDistance*sensitivityFactor)));
     for(let i=0;i<w*h;i++){
       if(pixels[i*4+3]<=24)continue;
       if(transparent)continue;
@@ -5299,10 +5314,12 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     state.rotation=(state.rotation+90)%360; updateDimensions(); scheduleRender(); status('Bildansicht um 90° gedreht.');
   });
   $('imageStudioFit').addEventListener('click',() => { zoom=1;panX=0;panY=0;scheduleRender();status('Ansicht eingepasst.'); });
+  const sensitivityInput=$('imageStudioSensitivity'),sensitivityValue=$('imageStudioSensitivityValue');
+  sensitivityInput.addEventListener('input',()=>{sensitivityValue.textContent=sensitivityInput.value+' %';});
   $('imageStudioAutoTrace').addEventListener('click',() => {
     if(!image){status('Lade zuerst ein Bild.');return;}
     try{
-      const contours=autoTraceContours(image);
+      const contours=autoTraceContours(image,Number(sensitivityInput.value));
       state.contours=contours;
       drawMode=false;$('imageStudioDrawToggle').setAttribute('aria-pressed','false');
       $('imageStudioDrawToggle').textContent='✎ Kontur zeichnen: AUS';canvas.classList.remove('isw-drawing');
@@ -5313,8 +5330,8 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
     const probe=new Image();probe.onload=()=>{try{resolve(autoTraceContour(probe));}catch(e){reject(e);}};probe.onerror=()=>reject(new Error('Testbild konnte nicht geladen werden.'));probe.src=dataUrl;
   });
   window.__silmoImageStudioValidateForPrintTest = (outer,holes,minWallMM=0.8) => validatePrintableContours(outer,holes,minWallMM);
-  window.__silmoImageStudioAutoTraceAllTest = dataUrl => new Promise((resolve,reject)=>{
-    const probe=new Image();probe.onload=()=>{try{resolve(autoTraceContours(probe));}catch(e){reject(e);}};probe.onerror=()=>reject(new Error('Testbild konnte nicht geladen werden.'));probe.src=dataUrl;
+  window.__silmoImageStudioAutoTraceAllTest = (dataUrl,sensitivity=55) => new Promise((resolve,reject)=>{
+    const probe=new Image();probe.onload=()=>{try{resolve(autoTraceContours(probe,sensitivity));}catch(e){reject(e);}};probe.onerror=()=>reject(new Error('Testbild konnte nicht geladen werden.'));probe.src=dataUrl;
   });
   $('imageStudioDrawToggle').addEventListener('click',() => {
     drawMode=!drawMode; $('imageStudioDrawToggle').setAttribute('aria-pressed',String(drawMode));
