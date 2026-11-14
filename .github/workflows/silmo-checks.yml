@@ -3,6 +3,7 @@ name: SILMO code checks
 on:
   push:
     branches:
+      - main
       - development/v30-pwa-ipad-polish
       - development/v29-ipad
       - development/v31-multi-object-move
