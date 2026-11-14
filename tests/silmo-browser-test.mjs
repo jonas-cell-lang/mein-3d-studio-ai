@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v87/, 'Build-Metadaten zeigen nicht v82');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v88/, 'Build-Metadaten zeigen nicht v82');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -885,6 +885,15 @@ try {
   assert.equal(await page.locator('#imageStudioSensitivity').inputValue(),'55','v87: Standard-Empfindlichkeit fehlt');
   await page.locator('#imageStudioSensitivity').evaluate(el=>{el.value='80';el.dispatchEvent(new Event('input',{bubbles:true}));});
   assert.equal(await page.locator('#imageStudioSensitivityValue').innerText(),'80 %','v87: Empfindlichkeitsanzeige aktualisiert sich nicht');
+  const cadLayout=await page.evaluate(()=>({
+    grid:getComputedStyle(document.querySelector('main')).gridTemplateColumns,
+    headerHeight:getComputedStyle(document.querySelector('header')).height,
+    tabBackground:getComputedStyle(document.querySelector('.tool-tabs')).backgroundColor,
+    viewportBackground:getComputedStyle(document.querySelector('#viewport')).backgroundImage
+  }));
+  assert.match(cadLayout.grid,/252px/,'v88: CAD-Linkspanel hat nicht die erwartete Breite');
+  assert.match(cadLayout.headerHeight,/54px/,'v88: kompakte CAD-Kopfzeile fehlt');
+  assert.ok(cadLayout.viewportBackground.includes('linear-gradient'),'v88: technisches Raster im Arbeitsbereich fehlt');
   await page.locator('#imageStudioSensitivity').evaluate(el=>{el.value='55';el.dispatchEvent(new Event('input',{bubbles:true}));});
   const tinyPng='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=';
   await page.evaluate(async data => {
