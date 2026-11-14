@@ -4,6 +4,10 @@ import assert from 'node:assert/strict';
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-gl=swiftshader'] });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 const pageErrors = [];
+async function showCreateSubtab(index) {
+  await page.locator('[data-tab="create"]').click();
+  await page.locator('#pane-create-left > .inner-tab-nav button').nth(index).click();
+}
 page.on('pageerror', error => pageErrors.push(error.message));
 page.on('console', message => {
   if (message.type() === 'error') pageErrors.push('console: ' + message.text());
@@ -396,7 +400,9 @@ try {
   await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 5000 });
   await page.locator('#tutorialNext').click();
   assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 8 VON/, 'Tutorial kann die zweite CAD-Aufgabe nicht abschliessen');
+  await showCreateSubtab(2); // Objektliste
   await page.locator('#objects .object-select').last().click();
+  await showCreateSubtab(0); // Grundformen und Duplizieren
   await page.locator('#duplicate').click();
   await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 5000 });
   await page.locator('#tutorialNext').click();
@@ -637,16 +643,17 @@ try {
   await page.locator('#cancelSketch').click();
   assert.equal((await page.evaluate(() => window.__silmoSketchCameraLockSnapshot())).active, false, 'Zeichenmodus lässt sich nicht beenden');
   assert.equal(await page.locator('#gizmoModeToggle').isDisabled(), false, 'Drehfunktion wurde nach dem Beenden nicht freigegeben');
-  await page.locator('[data-tab="create"]').click();
+  await showCreateSubtab(0);
 
   // Boolesche Verbindung muss sich wieder in die ursprünglichen Formen zerlegen lassen.
   const unionStartCount=await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click(); await page.locator('#addSphere').click();
   await page.locator('[data-tab="edit"]').click();
   await page.locator('#multiSelectToggle').click();
-  await page.locator('[data-tab="create"]').click();
+  await showCreateSubtab(2);
   await page.locator('#objects .object-select').nth(unionStartCount).click();
   assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(),2,'Union-Test konnte nicht beide Formen auswählen');
+  await showCreateSubtab(1);
   await page.locator('#booleanUnion').click();
   assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+1,'Verbinden erzeugt nicht genau ein Ergebnisobjekt');
   assert.equal((await page.evaluate(()=>window.__silmoUnionSnapshot())).partCount,2,'Verbundene Form speichert die ursprünglichen Einzelteile nicht');
@@ -657,7 +664,7 @@ try {
   await page.locator('#projectFileInput').setInputFiles(await unionDownload.path());
   await page.waitForFunction(()=>window.__silmoUnionSnapshot().partCount===2,null,{timeout:10000});
   assert.equal((await page.evaluate(()=>window.__silmoUnionSnapshot())).partCount,2,'Projektimport verliert die gespeicherten Einzelteile');
-  await page.locator('[data-tab="create"]').click();
+  await showCreateSubtab(1);
   await page.locator('#booleanSeparate').click();
   assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+2,'Verbindung lösen stellt die ursprünglichen Objekte nicht wieder her');
   assert.match(await page.locator('#status').innerText(),/Verbindung gelöst: 2 ursprüngliche Einzelobjekte/,'Trennen meldet keinen Erfolg');
@@ -670,6 +677,7 @@ try {
 
   // Die App kann bereits ein Startobjekt enthalten. Nur die beiden neu erstellten prüfen.
   const initialCount = await page.locator('#objects .object-row').count();
+  await showCreateSubtab(0);
   await page.locator('#addCube').click();
   await page.locator('#addSphere').click();
   assert.equal(await page.locator('#objects .object-row').count(), initialCount + 2, 'Neue Objekte wurden nicht korrekt erstellt');
@@ -681,7 +689,7 @@ try {
   await xField.press('Enter');
   await page.waitForTimeout(150);
   await page.locator('#multiSelectToggle').click();
-  await page.locator('[data-tab="create"]').click();
+  await showCreateSubtab(2);
 
   // Das neu erstellte Würfel-Objekt zusätzlich zur Kugel auswählen.
   await page.locator('#objects .object-select').nth(initialCount).click();
@@ -720,7 +728,7 @@ try {
   // Gruppierung wieder aufheben.
   await page.locator('#ungroupObjects').click();
   assert.match(await page.locator('#status').innerText(), /Gruppierung von 2 Objekten aufgehoben/, 'Gruppierung aufheben hat nicht funktioniert');
-  await page.locator('[data-tab="create"]').click();
+  await showCreateSubtab(2);
   assert.equal(await page.locator('#objects .object-edit').count(), 0, 'Gruppenkennzeichnung ist nach dem Aufheben noch vorhanden');
   assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 1, 'Nach dem Aufheben darf nur ein Objekt ausgewählt bleiben');
   assert.equal(await page.locator('#multiSelectToggle').getAttribute('aria-pressed'), 'false', 'Mehrfachauswahl muss nach dem Aufheben ausgeschaltet sein');
