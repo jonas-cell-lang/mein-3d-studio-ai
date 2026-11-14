@@ -840,7 +840,7 @@ try {
   assert.equal(await page.locator('#objects .object-row').count(),primitiveStart+3,'Zusätzliche CAD-Grundkörper werden nicht erstellt');
   await page.locator('[data-tab="draw"]').click();
   const drawSubtabs=page.locator('#pane-draw-left > .inner-tab-nav button');
-  assert.equal(await drawSubtabs.count(),3,'v89: Unterreiter Zeichnen fehlen');
+  assert.equal(await drawSubtabs.count(),2,'v90: Unterreiter Zeichnen fehlen');
   await drawSubtabs.nth(1).click();
   assert.equal(await drawSubtabs.nth(1).getAttribute('aria-selected'),'true','v90: Kontur-Unterreiter wird nicht aktiviert');
   assert.equal(await page.locator('#pane-draw-left .inner-tab-panel').nth(0).isVisible(),false,'v90: Skizzieren bleibt trotz anderem Unterreiter sichtbar');
