@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v78/, 'Build-Metadaten zeigen nicht v77');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v79/, 'Build-Metadaten zeigen nicht v77');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -786,6 +786,23 @@ try {
   const autoOutline=await page.evaluate(data=>window.__silmoImageStudioAutoTraceTest(data),autoOutlineData);
   assert.ok(autoOutline.length>=4&&autoOutline.length<=240,'Automatische Konturhilfe liefert keine kompakte Aussenkontur');
   assert.ok(autoOutline.some(p=>Math.abs(p[0]-25)<3&&Math.abs(p[1]-15)<3),'Automatische Konturhilfe erkennt die Motivkante nicht');
+  // v79: Kürbis-Testbild mit eigenem Stiel sowie getrennten Augen und Mund.
+  const pumpkinData=await page.evaluate(()=>{
+    const c=document.createElement('canvas');c.width=120;c.height=100;const x=c.getContext('2d');
+    x.fillStyle='#ffffff';x.fillRect(0,0,120,100);
+    x.fillStyle='#f28a18';x.beginPath();x.ellipse(60,59,35,29,0,0,Math.PI*2);x.fill();
+    x.fillStyle='#398b35';x.fillRect(52,12,16,22);
+    x.fillStyle='#171717';x.beginPath();x.moveTo(43,47);x.lineTo(51,57);x.lineTo(35,57);x.closePath();x.fill();
+    x.beginPath();x.moveTo(77,47);x.lineTo(85,57);x.lineTo(69,57);x.closePath();x.fill();
+    x.beginPath();x.moveTo(40,68);x.lineTo(80,68);x.lineTo(72,81);x.lineTo(60,85);x.lineTo(48,81);x.closePath();x.fill();
+    return c.toDataURL('image/png');
+  });
+  const pumpkinContours=await page.evaluate(data=>window.__silmoImageStudioAutoTraceAllTest(data),pumpkinData);
+  assert.ok(pumpkinContours.length>=4,'v79 erkennt nicht mehrere getrennte Kürbis-Details (Stiel/Augen/Mund)');
+  const pumpkinMain=pumpkinContours[pumpkinContours.length-1];
+  assert.ok(Math.min(...pumpkinMain.map(p=>p[1]))<15,'v79 erkennt den oberen Stiel nicht in der Aussenkontur');
+  assert.ok(pumpkinMain.length>=6,'v79 erhält keine ausreichend detaillierte Kürbis-Aussenkontur');
+
   await page.locator('#imageStudioAutoTrace').click();
   assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).contourCount,1,'Automatischer Konturvorschlag wird nicht im Image Studio gespeichert');
   assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).widthMM,20,'Bildbreite wird nicht gespeichert');
