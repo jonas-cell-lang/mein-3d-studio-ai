@@ -929,11 +929,11 @@ try {
   assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),false,'Image Studio ist beim Start unerwartet geöffnet');
   await page.locator('#imageStudioLaunch').click();
   const imageSubtabs=page.locator('#imageStudioWorkspace .isw-tools > .inner-tab-nav button');
-  assert.equal(await imageSubtabs.count(),3,'v89: Unterreiter Bilderkennung fehlen');
-  await imageSubtabs.nth(1).click();
-  assert.equal(await imageSubtabs.nth(1).getAttribute('aria-selected'),'true','v90: Bilderkennungs-Unterreiter wird nicht aktiviert');
+  assert.equal(await imageSubtabs.count(),4,'v90: Unterreiter Bildvorlage, Grösse, Erkennung und 3D fehlen');
+  await imageSubtabs.nth(2).click();
+  assert.equal(await imageSubtabs.nth(2).getAttribute('aria-selected'),'true','v90: Erkennungs-Unterreiter wird nicht aktiviert');
   assert.equal(await page.locator('#imageStudioWorkspace .isw-tools .inner-tab-panel').nth(0).isVisible(),false,'v90: Vorlage bleibt trotz anderem Unterreiter sichtbar');
-  assert.equal(await page.locator('#imageStudioWorkspace .isw-tools .inner-tab-panel').nth(1).isVisible(),true,'v90: aktiver Erkennungs-Bereich ist nicht sichtbar');
+  assert.equal(await page.locator('#imageStudioWorkspace .isw-tools .inner-tab-panel').nth(2).isVisible(),true,'v90: aktiver Erkennungs-Bereich ist nicht sichtbar');
   assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),true,'Image Studio lässt sich nicht öffnen');
   assert.equal(await page.locator('#imageStudioSensitivity').inputValue(),'55','v87: Standard-Empfindlichkeit fehlt');
   await page.locator('#imageStudioSensitivity').evaluate(el=>{el.value='80';el.dispatchEvent(new Event('input',{bubbles:true}));});
@@ -981,11 +981,13 @@ try {
   await page.locator('#imageStudioAutoTrace').click();
   assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).contourCount,1,'Automatischer Konturvorschlag wird nicht im Image Studio gespeichert');
   assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).widthMM,20,'Bildbreite wird nicht gespeichert');
+  await imageSubtabs.nth(1).click(); // Grösse und Ansicht
   await page.locator('#imageStudioRotate').click();
   assert.equal((await page.evaluate(()=>window.__silmoImageStudioSnapshot())).rotation,90,'Bildrotation funktioniert nicht');
   const imageState=await page.evaluate(()=>window.__silmoImageStudioExport());
   assert.equal(imageState.fileName,'test.png','Bilddatei-Metadaten werden nicht exportiert');
   assert.ok(imageState.dataUrl.startsWith('data:image/png;base64,'),'Bilddaten werden nicht in Projektstruktur eingebettet');
+  await imageSubtabs.nth(3).click(); // Kontur und 3D
   await page.locator('#imageStudioCreate3D').click();
   assert.match(await page.locator('#imageStudioStatus').innerText(),/3D-Körper erstellt/,'Bildkontur wird nicht in einen vorhandenen CAD-Körper übertragen');
   assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),false,'Image Studio schliesst nach erfolgreicher CAD-Übertragung nicht');
