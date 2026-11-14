@@ -697,11 +697,13 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       <button id="imageStudioRotate" class="isw-btn" type="button">↻ 90° drehen</button>
       <button id="imageStudioFit" class="isw-btn" type="button">◎ Ansicht einpassen</button>
       <div class="panel-rule"></div>
-      <h2>3 · KONTUR ZEICHNEN</h2>
+      <h2>3 · MOTIVERKENNUNG</h2>
       <div class="isw-field"><label for="imageStudioSensitivity">Motivempfindlichkeit: <span id="imageStudioSensitivityValue">55 %</span></label><input id="imageStudioSensitivity" type="range" min="0" max="100" step="1" value="55"></div>
       <p class="isw-note">Höhere Empfindlichkeit hilft bei blassen Motiven und schwachem Kontrast. Niedrigere Werte reduzieren störende Hintergrunddetails. Nach jeder Änderung die Kontur erneut vorschlagen lassen.</p>
       <button id="imageStudioAutoTrace" class="isw-btn" type="button">✧ Kontur automatisch vorschlagen</button>
       <p class="isw-note">Erkennt Aussenformen und getrennte Details. Prüfe das Ergebnis und korrigiere es bei Bedarf manuell.</p>
+      <div class="panel-rule"></div>
+      <h2>4 · KONTUR & 3D</h2>
       <button id="imageStudioDrawToggle" class="isw-btn" type="button" aria-pressed="false">✎ Kontur zeichnen: AUS</button>
       <p class="isw-note">Aktiviere den Zeichenmodus und ziehe mit der Maus oder dem Finger eine geschlossene Aussenkontur. Ohne Zeichenmodus kannst du die Ansicht verschieben. Mit dem Mausrad zoomst du.</p>
       <button id="imageStudioUndo" class="isw-btn" type="button">↶ Letzte Kontur rückgängig</button>
@@ -1134,7 +1136,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   addSectionTabs(paneMap.draw.right,drawRightGroups.map((d,i)=>({label:['Werkzeug','Masse','Raster','Kontur','Profi'][i]||d.querySelector('summary')?.textContent||'Optionen',target:d})),'Unterbereiche Zeichen-Eigenschaften');
   const imageTools=document.querySelector('#imageStudioWorkspace .isw-tools');
   const imageHeadings=imageTools?[...imageTools.querySelectorAll(':scope > h2')]:[];
-  addSectionTabs(imageTools,imageHeadings.map((h,i)=>({label:['Vorlage','Erkennung','Kontur & 3D'][i]||h.textContent,target:h})),'Unterbereiche Bilderkennung',true);
+  addSectionTabs(imageTools,imageHeadings.map((h,i)=>({label:['Vorlage','Grösse','Erkennung','Kontur & 3D'][i]||h.textContent,target:h})),'Unterbereiche Bilderkennung',true);
 
   // Den Schalter außerhalb der Reiter lassen, damit er immer erreichbar bleibt.
   const expertToggle = nodes.get('expertCenterToggle');
