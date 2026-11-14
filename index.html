@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v88 – Professional CAD Workspace</title>
+<title>SILMO 3D Studio AI – v89 – Nested CAD Tool Tabs</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
@@ -369,10 +369,21 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   .header-actions button{font-size:10px;padding:5px 6px}
 }
 @media(prefers-reduced-motion:reduce){.tab-pane.active-pane{animation:none}}
+
+/* v89 – verschachtelte CAD-Unterbereiche mit Schnellnavigation */
+.inner-tab-nav{position:sticky;top:-13px;z-index:8;display:flex;gap:4px;margin:-13px -12px 12px;padding:7px 8px;background:#202630;border-bottom:1px solid #3a4552;overflow-x:auto;scrollbar-width:thin}
+.inner-tab-nav button{flex:0 0 auto;min-height:30px;padding:5px 9px;border-radius:4px;background:#252e39;border-color:#3a4655;color:#aeb9c7;font-size:10px;white-space:nowrap}
+.inner-tab-nav button[aria-current="location"]{background:#29465a;border-color:#69b9db;color:#f0f7fb;box-shadow:inset 0 -2px #69b9db}
+.inner-tab-target{scroll-margin-top:58px}
+#imageStudioWorkspace .inner-tab-nav{top:-16px;margin:-16px -16px 14px;padding:8px 10px;background:#101a2b;border-color:#263953}
+#imageStudioWorkspace .inner-tab-nav button{background:#17283b;border-color:#304965}
+#imageStudioWorkspace .inner-tab-nav button[aria-current="location"]{background:#17435a;border-color:#53d8e8;color:#dffaff;box-shadow:inset 0 -2px #53d8e8}
+@media(max-width:760px){.inner-tab-nav{top:-10px;margin:-10px -8px 10px}.inner-tab-nav button{min-height:34px;padding:6px 8px}}
+
 </style>
 </head>
 <body>
-<!-- SILMO BUILD: v78 – Auto Outline Assist -->
+<!-- SILMO BUILD: v89 – Nested CAD Tool Tabs -->
 <script id="silmoDeveloperDiagnostics">
 (function(){
   'use strict';
@@ -1044,6 +1055,39 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   
   heading(paneMap.expert.right,'Erweiterte Hinweise','expert-only');
   paneMap.expert.right.appendChild(sizeNote);
+
+
+  // v89: Unterreiter springen direkt zu den Werkzeuggruppen, ohne Funktionen
+  // aus dem DOM zu entfernen oder bestehende Bedienabläufe zu verändern.
+  function addSectionJumpTabs(container, targets, ariaLabel) {
+    if (!container || !targets.length || container.querySelector(':scope > .inner-tab-nav')) return;
+    const nav=document.createElement('nav'); nav.className='inner-tab-nav';
+    nav.setAttribute('aria-label',ariaLabel); nav.setAttribute('role','tablist');
+    const buttons=[];
+    targets.forEach((item,index)=>{
+      if(!item.target)return;
+      item.target.classList.add('inner-tab-target');
+      const button=document.createElement('button'); button.type='button';
+      button.setAttribute('role','tab'); button.textContent=item.label;
+      button.setAttribute('aria-current',index===0?'location':'false');
+      button.addEventListener('click',()=>{
+        item.target.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+        buttons.forEach(b=>b.setAttribute('aria-current',b===button?'location':'false'));
+      });
+      buttons.push(button); nav.appendChild(button);
+    });
+    if(buttons.length>1)container.insertBefore(nav,container.firstChild);
+  }
+  const directHeadings=(pane)=>[...pane.querySelectorAll(':scope > h2')];
+  const createHeadings=directHeadings(paneMap.create.left);
+  addSectionJumpTabs(paneMap.create.left,createHeadings.map((h,i)=>({label:['Grundformen','Kombinieren','Objektliste'][i]||h.textContent,target:h})),'Unterbereiche Erstellen');
+  const drawHeadings=directHeadings(paneMap.draw.left);
+  addSectionJumpTabs(paneMap.draw.left,drawHeadings.map((h,i)=>({label:['Skizzieren','Kontur','Aktionen'][i]||h.textContent,target:h})),'Unterbereiche Zeichnen');
+  const drawRightGroups=[...paneMap.draw.right.querySelectorAll(':scope > details')];
+  addSectionJumpTabs(paneMap.draw.right,drawRightGroups.map((d,i)=>({label:['Werkzeug','Masse','Raster','Kontur','Profi'][i]||d.querySelector('summary')?.textContent||'Optionen',target:d})),'Unterbereiche Zeichen-Eigenschaften');
+  const imageTools=document.querySelector('#imageStudioWorkspace .isw-tools');
+  const imageHeadings=imageTools?[...imageTools.querySelectorAll(':scope > h2')]:[];
+  addSectionJumpTabs(imageTools,imageHeadings.map((h,i)=>({label:['Vorlage','Erkennung','Kontur & 3D'][i]||h.textContent,target:h})),'Unterbereiche Bilderkennung');
 
   // Den Schalter außerhalb der Reiter lassen, damit er immer erreichbar bleibt.
   const expertToggle = nodes.get('expertCenterToggle');
