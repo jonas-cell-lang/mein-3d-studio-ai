@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v85/, 'Build-Metadaten zeigen nicht v82');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v86/, 'Build-Metadaten zeigen nicht v82');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -55,6 +55,31 @@ try {
   assert.ok(ghostContours.length>=4,'Komplexes Geistmotiv verliert Aussenkontur oder mehrere Innenbereiche');
   const ghostAreas=ghostContours.map(points=>Math.abs(points.reduce((sum,p,i)=>{const q=points[(i+1)%points.length];return sum+p[0]*q[1]-q[0]*p[1];},0)/2)).sort((a,b)=>b-a);
   assert.ok(ghostAreas[0]>ghostAreas[1]*2,'Geist-Aussenkontur wird nicht klar von Details getrennt');
+
+  // Schwach kontrastierter Geist auf hellem, leicht verlaufendem Hintergrund.
+  // Prüft die adaptive Farbabstandsschwelle statt eines festen RGB-Minimums.
+  const paleGhostContours=await page.evaluate(async()=>{
+    const c=document.createElement('canvas');c.width=320;c.height=260;
+    const x=c.getContext('2d');
+    const bg=x.createLinearGradient(0,0,320,260);bg.addColorStop(0,'#dedede');bg.addColorStop(1,'#c9c9c9');
+    x.fillStyle=bg;x.fillRect(0,0,320,260);
+    x.fillStyle='rgba(90,90,90,0.12)';x.beginPath();x.ellipse(160,188,104,24,0,0,Math.PI*2);x.fill();
+    x.fillStyle='#eeeeee';x.beginPath();
+    x.moveTo(160,34);x.bezierCurveTo(205,34,238,70,238,116);
+    x.bezierCurveTo(238,148,254,166,278,184);
+    x.lineTo(258,211);x.lineTo(232,194);x.lineTo(210,226);
+    x.lineTo(184,201);x.lineTo(160,235);x.lineTo(136,201);
+    x.lineTo(110,226);x.lineTo(88,194);x.lineTo(62,211);
+    x.lineTo(42,184);x.bezierCurveTo(66,166,82,148,82,116);
+    x.bezierCurveTo(82,70,115,34,160,34);x.closePath();x.fill();
+    x.fillStyle='#555555';x.beginPath();x.ellipse(137,116,5,10,0,0,Math.PI*2);x.fill();
+    x.beginPath();x.ellipse(184,116,5,10,0,0,Math.PI*2);x.fill();
+    x.beginPath();x.ellipse(160,160,12,18,0,0,Math.PI*2);x.fill();
+    return await window.__silmoImageStudioAutoTraceAllTest(c.toDataURL('image/png'));
+  });
+  assert.ok(paleGhostContours.length>=4,'Schwach kontrastierter Geist auf hellem Hintergrund wird nicht vollständig erkannt');
+  const paleGhostAreas=paleGhostContours.map(points=>Math.abs(points.reduce((sum,p,i)=>{const q=points[(i+1)%points.length];return sum+p[0]*q[1]-q[0]*p[1];},0)/2)).sort((a,b)=>b-a);
+  assert.ok(paleGhostAreas[0]>paleGhostAreas[1]*2,'Aussenkontur des hellen Geistes wird nicht von den Details getrennt');
 
   const printGeometryChecks=await page.evaluate(()=>{
     const outer=[[0,0],[40,0],[40,30],[0,30]];
