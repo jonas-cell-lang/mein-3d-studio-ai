@@ -13,7 +13,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v88/, 'Build-Metadaten zeigen nicht v82');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v89/, 'Build-Metadaten zeigen nicht v82');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -819,11 +819,20 @@ try {
 
   // Allgemeine CAD-Werkzeuge: keine produktgebundene Sonderfunktion, sondern wiederverwendbare Konstruktion.
   await page.locator('[data-tab="create"]').click();
+  const createSubtabs=page.locator('#pane-create-left > .inner-tab-nav button');
+  assert.equal(await createSubtabs.count(),3,'v89: Unterreiter Erstellen fehlen');
+  await createSubtabs.nth(1).click();
+  assert.equal(await createSubtabs.nth(1).getAttribute('aria-current'),'location','v89: Unterreiter Kombinieren wird nicht aktiviert');
+  await createSubtabs.nth(0).click();
   for (const id of ['addCone','addHexPrism','addTorus']) assert.equal(await page.locator('#'+id).count(),1,`Allgemeines CAD-Grundwerkzeug ${id} fehlt`);
   const primitiveStart = await page.locator('#objects .object-row').count();
   await page.locator('#addCone').click(); await page.locator('#addHexPrism').click(); await page.locator('#addTorus').click();
   assert.equal(await page.locator('#objects .object-row').count(),primitiveStart+3,'Zusätzliche CAD-Grundkörper werden nicht erstellt');
   await page.locator('[data-tab="draw"]').click();
+  const drawSubtabs=page.locator('#pane-draw-left > .inner-tab-nav button');
+  assert.equal(await drawSubtabs.count(),3,'v89: Unterreiter Zeichnen fehlen');
+  await drawSubtabs.nth(1).click();
+  assert.equal(await drawSubtabs.nth(1).getAttribute('aria-current'),'location','v89: Kontur-Unterreiter wird nicht aktiviert');
   assert.equal(await page.locator('#sketchTool').isVisible(),true,'Freie Zeichenwerkzeuge sind nicht erreichbar');
   assert.equal(await page.locator('#cadSketchToolPalette button').count(),9,'Die CAD-Werkzeugpalette ist unvollständig');
   assert.equal(await page.locator('#pane-draw-right').isVisible(),true,'Das rechte CAD-Eigenschaftenpanel fehlt');
@@ -881,6 +890,10 @@ try {
   // persistente Vorlagendaten und Übergabe an die bestehende CAD-Freiform.
   assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),false,'Image Studio ist beim Start unerwartet geöffnet');
   await page.locator('#imageStudioLaunch').click();
+  const imageSubtabs=page.locator('#imageStudioWorkspace .isw-tools > .inner-tab-nav button');
+  assert.equal(await imageSubtabs.count(),3,'v89: Unterreiter Bilderkennung fehlen');
+  await imageSubtabs.nth(1).click();
+  assert.equal(await imageSubtabs.nth(1).getAttribute('aria-current'),'location','v89: Bilderkennungs-Unterreiter wird nicht aktiviert');
   assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),true,'Image Studio lässt sich nicht öffnen');
   assert.equal(await page.locator('#imageStudioSensitivity').inputValue(),'55','v87: Standard-Empfindlichkeit fehlt');
   await page.locator('#imageStudioSensitivity').evaluate(el=>{el.value='80';el.dispatchEvent(new Event('input',{bubbles:true}));});
