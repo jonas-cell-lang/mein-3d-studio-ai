@@ -417,6 +417,7 @@ try {
 
   // Zeichenmodus: Rechtsklick-Ziehen darf die Kamera nicht drehen.
   await page.locator('[data-tab="draw"]').click();
+  await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('rectangle');
   await page.locator('#startSketch').click();
   assert.equal((await page.evaluate(() => window.__silmoSketchCameraLockSnapshot())).active, true, 'Zeichenmodus aktiviert die Kamerasperre nicht');
@@ -479,6 +480,7 @@ try {
   await page.mouse.move(sketchEnd.x, sketchEnd.y, { steps: 8 });
   await page.mouse.up();
   assert.equal(await page.locator('#createSketchSolid').isEnabled(), true, '2D-Skizze wird nach dem Ziehen nicht vorbereitet');
+  await showDrawRightSubtab(1);
   await page.locator('#sketchWidthMM').fill('25');
   await page.locator('#sketchDepthMM').fill('15');
   await page.locator('#sketchHeightMM').fill('5');
@@ -489,11 +491,15 @@ try {
   assert.ok(Math.abs(sketchSnapshot.actualDepthMM - 15) < 0.01, 'Exakte Rechtecktiefe wurde nicht übernommen');
   assert.ok(Math.abs(sketchSnapshot.actualHeightMM - 5) < 0.01, 'Extrusionshöhe wurde nicht übernommen');
   assert.equal(await page.locator('#createSketchSolid').isDisabled(), true, 'Erstellte Skizze bleibt fälschlich zur erneuten Extrusion bereit');
+  await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('circle');
+  await showDrawRightSubtab(1);
   assert.equal(await page.locator('#sketchDepthMM').isVisible(), false, 'Kreis zeigt ein unnötiges separates Tiefenfeld');
 
   // Ellipse: unabhängige Breite und Tiefe sowie Extrusion prüfen.
+  await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('ellipse');
+  await showDrawRightSubtab(1);
   assert.equal(await page.locator('#sketchDepthMM').isVisible(), true, 'Ellipse zeigt kein separates Tiefenfeld');
   await page.locator('#startSketch').click();
   const ellipseStart = await page.evaluate(() => window.__silmoSketchPointForTest(-0.72, -0.48));
@@ -509,7 +515,9 @@ try {
   assert.ok(Math.abs(ellipseSnapshot.actualHeightMM - 4) < 0.01, 'Ellipsenhöhe stimmt nicht');
 
   // Dreieck: echte dreieckige Extrusionsgeometrie mit eigenen Massen.
+  await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('triangle');
+  await showDrawRightSubtab(1);
   await page.locator('#startSketch').click();
   const triangleStart = await page.evaluate(() => window.__silmoSketchPointForTest(-0.65, -0.6));
   const triangleEnd = await page.evaluate(() => window.__silmoSketchPointForTest(0.65, 0.6));
@@ -524,6 +532,7 @@ try {
   assert.ok(Math.abs(triangleSnapshot.actualHeightMM - 6) < 0.01, 'Dreieckshöhe stimmt nicht');
 
   // Das sichtbare Druckplattenraster muss dieselbe einstellbare Weite verwenden.
+  await showDrawRightSubtab(2);
   await page.locator('#sketchGridMM').fill('2');
   const gridAt2 = await page.evaluate(() => window.__silmoSketchGridSnapshot());
   assert.equal(gridAt2.spacingMM, 2, 'Rasterweite 2 mm wird nicht übernommen');
@@ -539,7 +548,9 @@ try {
   assert.ok(Math.abs(boundedPoint.y) <= 10.00001, 'Zeichenpunkt kann über die Y-Grenze der 200-mm-Druckplatte hinaus');
 
   // Rasterfang: gezeichnete Rechteckkanten werden auf das gewählte 5-mm-Raster gesetzt.
+  await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('rectangle');
+  await showDrawRightSubtab(2);
   await page.locator('#sketchSnapEnabled').check();
   await page.locator('#sketchGridMM').fill('5');
   await page.locator('#startSketch').click();
@@ -557,7 +568,9 @@ try {
   await page.locator('#sketchSnapEnabled').uncheck();
 
   // 2D-Freiform: eine geschlossene Kontur mit mehreren Punkten zeichnen und extrudieren.
+  await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('freeform2d');
+  await showDrawRightSubtab(1);
   assert.equal(await page.locator('#sketchWidthMM').isVisible(), false, 'Freiform zeigt unnötige Breitenfelder');
   await page.locator('#sketchHeightMM').fill('7');
   await page.locator('#startSketch').click();
@@ -583,7 +596,9 @@ try {
   assert.ok(freeformSnapshot.actualHeightMM > 0, 'Freiform wurde nicht zu einem 3D-Körper extrudiert');
 
   // 2D-Linie: eine gerade Linie auf XY als echten runden Körper erzeugen.
+  await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('line2d');
+  await showDrawRightSubtab(2);
   assert.equal(await page.locator('#sketchDiameterMM').isVisible(), true, '2D-Linie zeigt kein Durchmesserfeld');
   await page.locator('#sketchDiameterMM').fill('1.5');
   await page.locator('#startSketch').click();
@@ -602,7 +617,9 @@ try {
   assert.ok(line2dSnapshot.lengthMM > 0, '2D-Linie hat keine Länge');
 
   // 2D-Kurve: freie Kurve auf XY mit mehreren Punkten erzeugen.
+  await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('curve2d');
+  await showDrawRightSubtab(2);
   await page.locator('#sketchDiameterMM').fill('1.0');
   await page.locator('#startSketch').click();
   const curvePoints = [
@@ -623,7 +640,9 @@ try {
   assert.ok(curve2dSnapshot.lengthMM > 0, '2D-Kurve hat keine Länge');
 
   // 3D-Linie: eine räumliche Freihandlinie auf der XZ-Ebene zeichnen und als Körper erzeugen.
+  await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('line3d');
+  await showDrawRightSubtab(2);
   await page.locator('#sketchPlaneSelect').selectOption('xz');
   await page.locator('#sketchDiameterMM').fill('1.2');
   await page.locator('#startSketch').click();
