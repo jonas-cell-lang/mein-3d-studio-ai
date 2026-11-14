@@ -77,7 +77,7 @@ try {
     x.beginPath();x.ellipse(160,160,12,18,0,0,Math.PI*2);x.fill();
     return await window.__silmoImageStudioAutoTraceAllTest(c.toDataURL('image/png'));
   });
-  assert.ok(paleGhostContours.length>=4,'Schwach kontrastierter Geist auf hellem Hintergrund wird nicht vollständig erkannt');
+  assert.ok(paleGhostContours.length>=4,'Schwach kontrastierter Geist auf hellem Hintergrund: '+paleGhostContours.length+' Konturen erkannt, Flächen='+JSON.stringify(paleGhostContours.map(points=>Math.abs(points.reduce((sum,p,i)=>{const q=points[(i+1)%points.length];return sum+p[0]*q[1]-q[0]*p[1];},0)/2)).sort((a,b)=>b-a)));
   const paleGhostAreas=paleGhostContours.map(points=>Math.abs(points.reduce((sum,p,i)=>{const q=points[(i+1)%points.length];return sum+p[0]*q[1]-q[0]*p[1];},0)/2)).sort((a,b)=>b-a);
   assert.ok(paleGhostAreas[0]>paleGhostAreas[1]*2,'Aussenkontur des hellen Geistes wird nicht von den Details getrennt');
 
