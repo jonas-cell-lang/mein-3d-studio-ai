@@ -867,6 +867,7 @@ try {
   assert.equal(await drawSubtabs.nth(1).getAttribute('aria-selected'),'true','v90: Kontur-Unterreiter wird nicht aktiviert');
   assert.equal(await page.locator('#pane-draw-left .inner-tab-panel').nth(0).isVisible(),false,'v90: Skizzieren bleibt trotz anderem Unterreiter sichtbar');
   assert.equal(await page.locator('#pane-draw-left .inner-tab-panel').nth(1).isVisible(),true,'v90: aktiver Kontur-Bereich ist nicht sichtbar');
+  await showDrawRightSubtab(0); // Werkzeugtyp
   assert.equal(await page.locator('#sketchTool').isVisible(),true,'Freie Zeichenwerkzeuge sind nicht erreichbar');
   assert.equal(await page.locator('#cadSketchToolPalette button').count(),9,'Die CAD-Werkzeugpalette ist unvollständig');
   assert.equal(await page.locator('#pane-draw-right').isVisible(),true,'Das rechte CAD-Eigenschaftenpanel fehlt');
