@@ -5094,7 +5094,6 @@ main{grid-template-columns:250px minmax(0,1fr) 286px}
       return found.slice(0,maxContours);
     };
 
-    const minComponentPixels=Math.max(8,Math.floor(w*h*0.00012));
     const outerContours=extractMaskContours(foregroundMask,minComponentPixels,8);
     const detailContours=extractMaskContours(detailMask,minComponentPixels,19);
     const loops=detailContours.concat(outerContours).sort((a,b)=>a.area-b.area);
