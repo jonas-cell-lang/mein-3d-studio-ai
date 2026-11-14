@@ -326,6 +326,14 @@ try {
   assert.equal(await page.locator('#clickContourToggle').getAttribute('aria-pressed'),'true','Punktmodus lässt sich nicht einschalten');
   assert.equal(await page.locator('#clickContourStraight').isChecked(),true,'Gerade Linien sollten standardmässig aktiviert sein');
   assert.equal(await page.locator('#sketchSmoothEnabled').isChecked(),true,'Freihand-Beruhigung sollte standardmässig aktiviert sein');
+  const smoothSketchTest = await page.evaluate(() => window.__silmoTestSimplifySketchPolyline([
+    [0,0],[10,0.01],[20,0],[30,0],[30,10],[30,20],[20,20],[10,20],[0,20],[0,10],[0,0]
+  ]));
+  assert.ok(smoothSketchTest.length < 11,'Freihand-Beruhigung entfernt kleine Zitterschwankungen nicht');
+  for (const corner of [[0,0],[30,0],[30,20],[0,20]]) {
+    assert.ok(smoothSketchTest.some(point => Math.hypot(point[0]-corner[0],point[1]-corner[1]) < 0.01),
+      'Freihand-Beruhigung hat eine echte Rechteckecke entfernt');
+  }
   const simplifiedSketch=await page.evaluate(()=>window.__silmoTestSimplifySketchPolyline([[0,0],[0.05,0.01],[0.1,-0.01],[0.15,0.01],[0.2,0],[0.2,0.2],[0,0.2]]));
   assert.ok(simplifiedSketch.length<7,'Kleine Zitterschwankungen werden nicht reduziert');
   assert.ok(simplifiedSketch.some(p=>Math.abs(p[0]-0.2)<1e-6&&Math.abs(p[1])<1e-6),'Echte Ecke am Ende der waagrechten Kante ging verloren');
