@@ -882,6 +882,10 @@ try {
   assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),false,'Image Studio ist beim Start unerwartet geöffnet');
   await page.locator('#imageStudioLaunch').click();
   assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),true,'Image Studio lässt sich nicht öffnen');
+  assert.equal(await page.locator('#imageStudioSensitivity').inputValue(),'55','v87: Standard-Empfindlichkeit fehlt');
+  await page.locator('#imageStudioSensitivity').evaluate(el=>{el.value='80';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  assert.equal(await page.locator('#imageStudioSensitivityValue').innerText(),'80 %','v87: Empfindlichkeitsanzeige aktualisiert sich nicht');
+  await page.locator('#imageStudioSensitivity').evaluate(el=>{el.value='55';el.dispatchEvent(new Event('input',{bubbles:true}));});
   const tinyPng='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=';
   await page.evaluate(async data => {
     await window.__silmoImageStudioImport({version:1,fileName:'test.png',dataUrl:data,widthMM:20,rotation:0,contours:[[[0,0],[1,0],[1,1],[0,1]]]});
