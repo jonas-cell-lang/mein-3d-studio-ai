@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-gl=swiftshader'] });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
@@ -23,6 +24,7 @@ try {
   assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v91/, 'Build-Metadaten zeigen nicht v91');
   assert.equal(await page.evaluate(() => window.SILMOUnits?.mmToWorldUnits(10)), 1, 'Zentrale Einheiten-API ist im Browser nicht verfügbar');
   assert.equal(await page.evaluate(() => window.SILMOUnits?.worldUnitsToMm(1)), 10, 'Zentrale Einheiten-API liefert falsche Millimeterwerte');
+  assert.equal(await page.evaluate(() => window.SILMOProjectSchema?.CURRENT_PROJECT_VERSION), 3, 'Projektformat-Version 3 ist nicht registriert');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -316,7 +318,10 @@ try {
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/Downloads-Ordner/,'Aufgabe 26 erklärt den Import aus Downloads nicht');
   const saveDownload=page.waitForEvent('download');
   await page.locator('#saveProjectButton').click();
-  await saveDownload;
+  const savedProjectDownload = await saveDownload;
+  const savedProjectPath = await savedProjectDownload.path();
+  const savedProject = JSON.parse(readFileSync(savedProjectPath, 'utf8'));
+  assert.equal(savedProject.version, 3, 'Gespeicherte Projekte verwenden nicht mehr Formatversion 3');
   const exportDownload=page.waitForEvent('download');
   await page.locator('#exportModel').click();
   await exportDownload;
@@ -994,6 +999,19 @@ try {
   assert.match(await page.locator('#imageStudioStatus').innerText(),/3D-Körper erstellt/,'Bildkontur wird nicht in einen vorhandenen CAD-Körper übertragen');
   assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),false,'Image Studio schliesst nach erfolgreicher CAD-Übertragung nicht');
   assert.ok((await page.locator('#objects .object-row').count())>0,'CAD-Übergabe hat kein Objekt erstellt');
+
+  // Projektformat v3: echtes Fixture laden und unbekannte Version atomar ablehnen.
+  const projectFixture = readFileSync(new URL('./fixtures/project-v3-minimal.json', import.meta.url));
+  await page.locator('#projectFileInput').setInputFiles({name:'project-v3-minimal.json',mimeType:'application/json',buffer:projectFixture});
+  await page.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Projekt geöffnet (1 Objekt(e))'), null, {timeout:5000});
+  assert.equal(await page.locator('#objects .object-row').count(),1,'Projektformat-v3-Fixture wurde nicht korrekt geladen');
+  assert.match(await page.locator('#objects').innerText(),/Fixture Würfel v3/,'Projektformat-v3-Fixture hat den falschen Objektinhalt');
+  const unsupportedProject = JSON.parse(projectFixture.toString('utf8'));
+  unsupportedProject.version = 4;
+  await page.locator('#projectFileInput').setInputFiles({name:'unsupported-project-v4.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(unsupportedProject))});
+  await page.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Nicht unterstützte Projektversion 4'), null, {timeout:5000});
+  assert.equal(await page.locator('#objects .object-row').count(),1,'Ungültige Projektversion hat das bestehende Projekt verändert');
+  assert.match(await page.locator('#objects').innerText(),/Fixture Würfel v3/,'Ungültige Projektversion hat das geladene v3-Projekt ersetzt');
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
   console.log('BESTANDEN: 3D-Start, CAD-Zeichenarbeitsplatz, Werkzeugpalette, exakte Skizzenposition, Skizzenbearbeitung, Konturpunkt-Editor, Kantenbearbeitung, Loft, Sweep, Parallel/Senkrecht, Tangential/Konzentrisch, Pfadlänge und Objektabstand, Zeichnen, allgemeine CAD-Konstruktion, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
