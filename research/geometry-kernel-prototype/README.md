@@ -69,4 +69,4 @@ Das Artefakt heisst `silmo-kernel-provenance-<commit-sha>` und enthält:
 
 Die SBOM erfasst den npm-Abhängigkeitsbaum (28 Komponenten); Browser-Binaries, Betriebssystempakete und sämtliche Build-Toolchains sind damit nicht automatisch vollständig inventarisiert.
 
-Die übergeordnete Freigabe für die nächste Programmierphase ist in [docs/SILMO_ARCHITECTURE_DECISION.md](../../../docs/SILMO_ARCHITECTURE_DECISION.md) dokumentiert. Sie erlaubt Phase 1, aber keine Kernel-Integration.
+Die übergeordnete Freigabe für die nächste Programmierphase ist in [docs/SILMO_ARCHITECTURE_DECISION.md](../../docs/SILMO_ARCHITECTURE_DECISION.md) dokumentiert. Sie erlaubt Phase 1, aber keine Kernel-Integration.
