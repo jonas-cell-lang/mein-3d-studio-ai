@@ -5,6 +5,7 @@ import { OcctKernel } from "occt-wasm";
 const started = performance.now();
 const kernel = await OcctKernel.init();
 const timings = {};
+const observations = {};
 const closeTo = (actual, expected, label, relativeTolerance = 1e-6) => {
   const allowed = Math.max(1e-7, Math.abs(expected) * relativeTolerance);
   assert.ok(Number.isFinite(actual), `${label}: result is not finite (${actual})`);
@@ -16,6 +17,38 @@ const time = async (name, fn) => {
   const result = await fn();
   timings[name] = Number((performance.now() - t0).toFixed(3));
   return result;
+};
+const shapeSummary = (shape, label) => {
+  assert.equal(kernel.isValid(shape), true, `${label}: OCCT reports an invalid shape`);
+  const volume = kernel.getVolume(shape);
+  assert.ok(Number.isFinite(volume) && volume >= 0, `${label}: invalid volume ${volume}`);
+  const solids = kernel.getSubShapes(shape, "solid").length;
+  const faces = kernel.getSubShapes(shape, "face").length;
+  const edges = kernel.getSubShapes(shape, "edge").length;
+  assert.ok(faces > 0 && edges > 0, `${label}: topology is unexpectedly empty`);
+  return { volume, solids, faces, edges, shapeType: kernel.getShapeType(shape) };
+};
+
+// Tangential cases may be rejected by the Boolean builder on some topologies.
+// A returned result must always be valid and have the analytically expected volume;
+// a thrown OCCT error is recorded as a controlled rejection, never silently ignored.
+const characterizeBoolean = (label, operation, expectedVolume) => {
+  let shape;
+  try {
+    shape = operation();
+  } catch (error) {
+    const outcome = {
+      outcome: "controlled-rejection",
+      message: error instanceof Error ? error.message : String(error)
+    };
+    observations[label] = outcome;
+    return outcome;
+  }
+  const summary = shapeSummary(shape, label);
+  closeTo(summary.volume, expectedVolume, label);
+  const outcome = { outcome: "valid-result", ...summary };
+  observations[label] = outcome;
+  return outcome;
 };
 
 try {
@@ -73,6 +106,160 @@ try {
   assert.equal(invalidFilletRejected, true, "impossible fillet must fail explicitly");
   closeTo(kernel.getVolume(box), 24000, "kernel remains usable after failed operation");
 
+  // Difficult Boolean cases: coplanar faces, face/edge/vertex tangency and
+  // near-coincident geometry. Exact expected volumes are independent of OCCT.
+  await time("difficult-booleans", async () => {
+    const coplanarA = kernel.makeBox(10, 10, 10);
+    const coplanarB = kernel.translate(kernel.makeBox(10, 10, 10), 5, 0, 0);
+    const coplanarFuse = kernel.fuse(coplanarA, coplanarB);
+    const coplanarCommon = kernel.common(coplanarA, coplanarB);
+    const coplanarCut = kernel.cut(coplanarA, coplanarB);
+    closeTo(shapeSummary(coplanarFuse, "coplanar overlapping fuse").volume, 1500,
+      "coplanar overlapping fuse volume");
+    closeTo(shapeSummary(coplanarCommon, "coplanar overlapping common").volume, 500,
+      "coplanar overlapping common volume");
+    closeTo(shapeSummary(coplanarCut, "coplanar overlapping cut").volume, 500,
+      "coplanar overlapping cut volume");
+
+    const faceA = kernel.makeBox(10, 10, 10);
+    const faceB = kernel.translate(kernel.makeBox(10, 10, 10), 10, 0, 0);
+    characterizeBoolean("face-tangent boxes", () => kernel.fuse(faceA, faceB), 2000);
+
+    const edgeA = kernel.makeBox(10, 10, 10);
+    const edgeB = kernel.translate(kernel.makeBox(10, 10, 10), 10, 10, 0);
+    characterizeBoolean("edge-tangent boxes", () => kernel.fuse(edgeA, edgeB), 2000);
+
+    const vertexA = kernel.makeBox(10, 10, 10);
+    const vertexB = kernel.translate(kernel.makeBox(10, 10, 10), 10, 10, 10);
+    characterizeBoolean("vertex-tangent boxes", () => kernel.fuse(vertexA, vertexB), 2000);
+
+    const tangentBox = kernel.makeBox(10, 10, 10);
+    const tangentCylinder = kernel.translate(kernel.makeCylinder(5, 10), 15, 5, 0);
+    characterizeBoolean("tangent cylinder and box", () =>
+      kernel.fuse(tangentBox, tangentCylinder), 1000 + 250 * Math.PI);
+
+    const almostTouchingA = kernel.makeBox(10, 10, 10);
+    const almostTouchingB = kernel.translate(kernel.makeBox(10, 10, 10), 9.9999, 0, 0);
+    const nearCoincident = kernel.fuse(almostTouchingA, almostTouchingB);
+    closeTo(shapeSummary(nearCoincident, "near-coplanar overlap").volume, 1999.9,
+      "near-coplanar overlap volume", 1e-6);
+  });
+
+  // Thin-wall and small-feature checks use millimetre-scale analytic geometry.
+  await time("thin-wall-booleans", async () => {
+    const thinPlate = kernel.makeBox(40, 30, 0.2);
+    const thinPlateHole = kernel.translate(kernel.makeCylinder(0.05, 0.2), 20, 15, 0);
+    const perforatedThinPlate = kernel.cut(thinPlate, thinPlateHole);
+    closeTo(shapeSummary(perforatedThinPlate, "0.2 mm thin plate with 0.1 mm hole").volume,
+      240 - Math.PI * 0.05 * 0.05 * 0.2,
+      "thin plate analytic volume", 1e-6);
+
+    const thinWall = kernel.makeBox(20, 0.1, 10);
+    const wallHole = kernel.translate(kernel.makeCylinder(0.02, 10), 10, 0.05, 0);
+    const perforatedWall = kernel.cut(thinWall, wallHole);
+    closeTo(shapeSummary(perforatedWall, "0.1 mm wall with 0.04 mm hole").volume,
+      20 - Math.PI * 0.02 * 0.02 * 10,
+      "thin wall analytic volume", 1e-6);
+  });
+
+  // Invalid and degenerate input must be rejected explicitly.
+  await time("invalid-inputs", async () => {
+    const invalidInputs = [
+      ["zero-width box", () => kernel.makeBox(0, 10, 10)],
+      ["negative-width box", () => kernel.makeBox(-1, 10, 10)],
+      ["NaN box dimension", () => kernel.makeBox(Number.NaN, 10, 10)],
+      ["infinite box dimension", () => kernel.makeBox(Number.POSITIVE_INFINITY, 10, 10)],
+      ["zero-radius cylinder", () => kernel.makeCylinder(0, 10)],
+      ["zero-height cylinder", () => kernel.makeCylinder(5, 0)]
+    ];
+    for (const [label, create] of invalidInputs) {
+      assert.throws(create, `${label} must be rejected`);
+    }
+    closeTo(kernel.getVolume(box), 24000, "kernel remains usable after invalid inputs");
+  });
+
+  // Exercise OCCT's explicit evolution/history API across consecutive cuts.
+  await time("topology-history", async () => {
+    const historyBase = kernel.makeBox(20, 20, 20);
+    const firstTool = kernel.translate(kernel.makeCylinder(2, 20), 5, 10, 0);
+    const secondTool = kernel.translate(kernel.makeCylinder(2, 20), 15, 10, 0);
+    const hashUpperBound = 2147483647;
+    const originalFaceHashes = kernel.subShapeHashes(historyBase, "face", hashUpperBound);
+    assert.ok(originalFaceHashes.length >= 6, "history input must expose original face hashes");
+
+    const firstEvolution = kernel.cutWithHistory(
+      historyBase, firstTool, originalFaceHashes, hashUpperBound
+    );
+    assert.ok(firstEvolution && firstEvolution.shape,
+      "cutWithHistory must return a result shape and evolution data");
+    assert.equal(kernel.isValid(firstEvolution.shape), true,
+      "first history result must be a valid OCCT shape");
+    closeTo(kernel.getVolume(firstEvolution.shape), 8000 - 80 * Math.PI,
+      "first history cut volume");
+
+    const firstResultFaceHashes = kernel.subShapeHashes(
+      firstEvolution.shape, "face", hashUpperBound
+    );
+    assert.ok(firstResultFaceHashes.length > 0,
+      "first history result must retain queryable face identities");
+    const secondEvolution = kernel.cutWithHistory(
+      firstEvolution.shape, secondTool, firstResultFaceHashes, hashUpperBound
+    );
+    assert.ok(secondEvolution && secondEvolution.shape,
+      "second cutWithHistory must return a result shape and evolution data");
+    assert.equal(kernel.isValid(secondEvolution.shape), true,
+      "second history result must be a valid OCCT shape");
+    closeTo(kernel.getVolume(secondEvolution.shape), 8000 - 160 * Math.PI,
+      "sequential history cut volume");
+    observations.topologyHistory = {
+      firstEvolutionKeys: Object.keys(firstEvolution),
+      secondEvolutionKeys: Object.keys(secondEvolution),
+      originalFaceHashCount: originalFaceHashes.length,
+      firstResultFaceHashCount: firstResultFaceHashes.length,
+      finalFaceHashCount: kernel.subShapeHashes(
+        secondEvolution.shape, "face", hashUpperBound
+      ).length
+    };
+  });
+
+  // Measure arena-handle growth and verify deterministic release after a batch.
+  // The WASM linear-memory high-water mark is recorded separately; WebAssembly
+  // memory is not expected to shrink after objects are released.
+  await time("memory-growth-and-release", async () => {
+    const baselineShapeCount = kernel.shapeCount;
+    const rawModule = kernel.getRawModule();
+    const wasmBytesBefore = rawModule.HEAPU8?.buffer?.byteLength ?? null;
+    const processMemoryBefore = process.memoryUsage();
+    const checkpoint = kernel.checkpoint();
+    for (let index = 0; index < 40; index += 1) {
+      const memoryBox = kernel.makeBox(20 + index * 0.01, 15, 10);
+      const memoryTool = kernel.translate(kernel.makeCylinder(1, 10), 10, 7.5, 0);
+      const memoryResult = kernel.cut(memoryBox, memoryTool);
+      assert.equal(kernel.isValid(memoryResult), true,
+        `memory iteration ${index} produced an invalid result`);
+      assert.ok(kernel.getVolume(memoryResult) > 0,
+        `memory iteration ${index} produced an empty result`);
+    }
+    const peakShapeCount = kernel.shapeCount;
+    const wasmBytesAfter = rawModule.HEAPU8?.buffer?.byteLength ?? null;
+    const processMemoryAfter = process.memoryUsage();
+    assert.ok(peakShapeCount > baselineShapeCount,
+      "repeated boolean operations must allocate measurable shape handles");
+    kernel.releaseSince(checkpoint);
+    assert.equal(kernel.shapeCount, baselineShapeCount,
+      "releaseSince must return shape-handle count to the baseline");
+    observations.memory = {
+      iterations: 40,
+      baselineShapeCount,
+      peakShapeCount,
+      shapeCountAfterRelease: kernel.shapeCount,
+      wasmHeapBytesBefore: wasmBytesBefore,
+      wasmHeapBytesAfter: wasmBytesAfter,
+      rssDeltaBytes: processMemoryAfter.rss - processMemoryBefore.rss,
+      heapUsedDeltaBytes: processMemoryAfter.heapUsed - processMemoryBefore.heapUsed
+    };
+  });
+
   kernel.releaseAll();
   const afterRelease = kernel.makeBox(2, 2, 2);
   closeTo(kernel.getVolume(afterRelease), 8, "kernel remains usable after releaseAll");
@@ -88,10 +275,18 @@ try {
       "fillet and topological sub-shape queries",
       "mesh tessellation",
       "STEP export/import round trip",
-      "controlled failure and continued kernel use",
+      "controlled fillet failure and continued kernel use",
+      "coplanar overlapping fuse/cut/common",
+      "face-, edge- and vertex-tangent Boolean cases",
+      "tangent cylinder/box and near-coplanar overlap",
+      "thin plate and thin wall with small through-holes",
+      "zero, negative, NaN and infinite primitive input rejection",
+      "consecutive Boolean operations with explicit topology history",
+      "repeated Boolean allocation, WASM/process memory observations and releaseSince",
       "releaseAll and kernel reuse"
     ],
     timingsMs: timings,
+    observations,
     totalMs: Number((performance.now() - started).toFixed(3))
   }, null, 2));
 } finally {
