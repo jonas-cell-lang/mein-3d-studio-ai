@@ -29,6 +29,19 @@ jobs:
       - name: Run isolated analytic geometry tests
         working-directory: research/geometry-kernel-prototype
         run: npm test
+      - name: Download and verify moket OCCT release assets
+        working-directory: research/geometry-kernel-prototype
+        run: |
+          mkdir -p /tmp/silmo-moket
+          curl -fsSL https://github.com/moket-io/occt-wasm/releases/download/v0.10.1/index.mjs -o /tmp/silmo-moket/index.mjs
+          curl -fsSL https://github.com/moket-io/occt-wasm/releases/download/v0.10.1/occt-wasm.mjs -o /tmp/silmo-moket/occt-wasm.mjs
+          curl -fsSL https://github.com/moket-io/occt-wasm/releases/download/v0.10.1/occt-wasm.wasm -o /tmp/silmo-moket/occt-wasm.wasm
+          printf '%s  %s\\n' '716e57771d54b3a0c2ba050274ff52e50eabfac3f46e5145e3866f3c8de97ccc' '/tmp/silmo-moket/index.mjs' '112587262e74341827ae9c268e0eeb2873214f7b0d2fd27c278fab738f2f4faa' '/tmp/silmo-moket/occt-wasm.mjs' '06cc02b2927f7ed3d70650ecde79e777329975526c75f5e71580ae49f9512ccf' '/tmp/silmo-moket/occt-wasm.wasm' | sha256sum -c -
+      - name: Compare OCCT wrappers and OpenGeometry candidates
+        working-directory: research/geometry-kernel-prototype
+        env:
+          MOKET_OCCT_DIR: /tmp/silmo-moket
+        run: npm run test:candidates
       - name: Install Chromium for worker smoke test
         working-directory: research/geometry-kernel-prototype
         run: npx playwright install --with-deps chromium firefox webkit
