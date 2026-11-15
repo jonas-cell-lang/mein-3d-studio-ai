@@ -39,6 +39,7 @@ npm run test:browser:all
 
 - Tangentiale Boolesche Fälle werden als gültiges Ergebnis mit analytischem Volumen oder als kontrollierte OCCT-Ablehnung protokolliert. Ein ungültig zurückgegebenes Ergebnis lässt den Test fehlschlagen.
 - Ungültige Primitiveingaben werden nicht pauschal als abgelehnt vorausgesetzt: Der Test protokolliert, ob die API wirft, ein ungültiges Shape zurückgibt oder ein gültiges Shape akzeptiert. Das ist eine Verhaltensmessung, keine Freigabe dieses Verhaltens.
+- Im aktuellen Lauf akzeptiert die gepinnte API eine negative Quaderbreite als gültigen Körper; NaN-/unendliche Abmessungen sowie Zylinder mit Radius/Höhe 0 werden als ungültige Shapes zurückgegeben statt durchgehend geworfen. Diese Fälle sind als offene Eingabevalidierungs-Risiken festgehalten.
 - Die Speichermessung protokolliert den OCCT-Handle-Bestand, eine zugängliche WASM-Heap-Grösse (falls die Bibliothek sie exponiert) sowie Prozessspeicher-Spitzenwerte. WebAssembly-Speicher schrumpft nach Freigabe nicht zwingend; die Handle-Baseline muss jedoch wiederhergestellt werden. Der aktuelle Wrapper exponiert den WASM-Heap möglicherweise nicht direkt.
 - Der Worker-Abbruchtest prüft die Terminierung eines Workers während synchroner OCCT-Arbeit. Er beweist keine kooperative Unterbrechung einer einzelnen OCCT-Operation.
 - Die automatisierten WebKit-/Firefox-Läufe sind Browser-Kompatibilitätstests in Playwright auf Linux; sie ersetzen noch keine manuellen Prüfungen in Desktop-Safari bzw. realen Safari-Versionen.
