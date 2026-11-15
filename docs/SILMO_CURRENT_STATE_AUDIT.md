@@ -81,7 +81,7 @@ Die Anwendung enthält einen eigenen BSP-basierten CSG-Algorithmus. Das ist ein 
 **Folge:** CSG nicht blind entfernen. Erst Testkorpus und Vergleich mit alternativen Geometriekernen aufbauen.
 
 ### 3.3 Einheiten
-Der aktuelle Renderer nutzt die Umrechnung **10 interne Three.js-Einheiten = 1 mm**. Import und andere Modellierungsfunktionen rechnen an den jeweiligen Grenzen um.
+Der aktuelle Renderer nutzt die Umrechnung **1 interne Three.js-Einheit = 10 mm**. Das ist im Code durch `MM_PER_UNIT = 10` festgelegt: Millimeterwerte werden für interne Koordinaten durch 10 geteilt und beim STL-Export mit 10 multipliziert. Import und andere Modellierungsfunktionen rechnen an den jeweiligen Grenzen um.
 
 **Folge:** Langfristig eine zentrale Unit-/Tolerance-API einführen. Kein Modul soll eigene, abweichende Umrechnungsfaktoren definieren.
 
