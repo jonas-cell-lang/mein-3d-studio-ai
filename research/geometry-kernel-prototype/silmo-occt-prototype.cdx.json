@@ -1,0 +1,1226 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:f2103ae8-0650-4537-8b8c-8e0e31e44d71",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-11-15T10:08:21.785Z",
+    "lifecycles": [
+      {
+        "phase": "build"
+      }
+    ],
+    "tools": [
+      {
+        "vendor": "npm",
+        "name": "cli",
+        "version": "11.19.1"
+      }
+    ],
+    "component": {
+      "bom-ref": "silmo-occt-kernel-prototype@0.0.0-research",
+      "type": "library",
+      "name": "geometry-kernel-prototype",
+      "version": "0.0.0-research",
+      "scope": "required",
+      "description": "Isolated SILMO geometry-kernel evaluation; not part of the production app.",
+      "purl": "pkg:npm/silmo-occt-kernel-prototype@0.0.0-research",
+      "properties": [
+        {
+          "name": "cdx:npm:package:private",
+          "value": "true"
+        }
+      ],
+      "externalReferences": []
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "@oxc-project/types@0.156.0",
+      "type": "library",
+      "name": "@oxc-project/types",
+      "version": "0.156.0",
+      "scope": "required",
+      "author": "Boshen and oxc contributors",
+      "description": "Types for Oxc AST nodes",
+      "purl": "pkg:npm/%40oxc-project/types@0.156.0",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/@oxc-project/types/-/types-0.156.0.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/oxc-project/oxc.git"
+        },
+        {
+          "type": "website",
+          "url": "https://oxc.rs"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "d43bb2838f1374935dca1101f179f52f7e9b4fd3efe8652d94a8c7c4ecacf3191a17fad0ab75c913e6c0bab48afc0808cf998616c6fbedc9fd3dbdb4f9609273"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "@rolldown/binding-linux-x64-gnu@1.2.19",
+      "type": "library",
+      "name": "@rolldown/binding-linux-x64-gnu",
+      "version": "1.2.19",
+      "scope": "optional",
+      "description": "Fast JavaScript/TypeScript bundler in Rust with Rollup-compatible API.",
+      "purl": "pkg:npm/%40rolldown/binding-linux-x64-gnu@1.2.19",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/@rolldown/binding-linux-x64-gnu/-/binding-linux-x64-gnu-1.2.19.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/rolldown/rolldown.git"
+        },
+        {
+          "type": "website",
+          "url": "https://rolldown.rs/"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/rolldown/rolldown/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "ae6ef9ffd0e41ca794d969c0f30e17f785866202e50c21427e4402fb86e0b952660bf8ef0d1bf607edb02ce621c84d1f56ebfbfff0a4937f4ea0eb9fc82bbbe9"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "@rolldown/pluginutils@1.1.1",
+      "type": "library",
+      "name": "@rolldown/pluginutils",
+      "version": "1.1.1",
+      "scope": "required",
+      "description": "Plugin utilities for Rolldown",
+      "purl": "pkg:npm/%40rolldown/pluginutils@1.1.1",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/@rolldown/pluginutils/-/pluginutils-1.1.1.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/rolldown/plugins.git"
+        },
+        {
+          "type": "website",
+          "url": "https://github.com/rolldown/plugins/tree/main/packages/pluginutils#readme"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/rolldown/plugins/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "825148243bcb343b49853f6aacc1562cf6ef4beb24c60b782f42bc122d98b6784fcac0099ec23b9f2c522712a3e000de297d0e2e30b89ed464c292cea12debc0"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "@types/opentype.js@1.3.10",
+      "type": "library",
+      "name": "@types/opentype.js",
+      "version": "1.3.10",
+      "scope": "required",
+      "description": "TypeScript definitions for opentype.js",
+      "purl": "pkg:npm/%40types/opentype.js@1.3.10",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/@types/opentype.js/-/opentype.js-1.3.10.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git"
+        },
+        {
+          "type": "website",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/opentype.js"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "17aec417293a8f4da8907cf924281ab5add94407198bd18b9f39a41f0febcc9ab738273cfd955da0aaf13136237103fa2181c6073d9c6afd5ca7390e90f88f09"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "comlink@4.4.2",
+      "type": "library",
+      "name": "comlink",
+      "version": "4.4.2",
+      "scope": "required",
+      "author": "Surma",
+      "description": "Comlink makes WebWorkers enjoyable",
+      "purl": "pkg:npm/comlink@4.4.2",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/comlink/-/comlink-4.4.2.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/GoogleChromeLabs/comlink.git"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "3b119dbc1989b8d29208c3b83539752f8ed5469eb19f6c06e05ff6858cc1ead8826fbd3da2d3b1b446024af2bcd0fb633837d75d9bbc76cf8dc399150a3a9dda"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "detect-libc@2.1.2",
+      "type": "library",
+      "name": "detect-libc",
+      "version": "2.1.2",
+      "scope": "required",
+      "author": "Lovell Fuller <npm@lovell.info>",
+      "description": "Node.js module to detect the C standard library (libc) implementation family and version",
+      "purl": "pkg:npm/detect-libc@2.1.2",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git://github.com/lovell/detect-libc.git"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "06d8f604e38ef37a375b21f9f5ef0c817b3111055c6ab9143a9118aee6c1d2eaf09cdd74c90dfae2bb22072535d67665a966199b4e62fe87fb8a8e26ce2841b5"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "fdir@6.5.0",
+      "type": "library",
+      "name": "fdir",
+      "version": "6.5.0",
+      "scope": "required",
+      "author": "thecodrr <thecodrr@protonmail.com>",
+      "description": "The fastest directory crawler & globbing alternative to glob, fast-glob, & tiny-glob. Crawls 1m files in < 1s",
+      "purl": "pkg:npm/fdir@6.5.0",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/thecodrr/fdir.git"
+        },
+        {
+          "type": "website",
+          "url": "https://github.com/thecodrr/fdir#readme"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/thecodrr/fdir/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "b486d8b596ee70eb340511aa3c992c84951874bf920c7edd54cf208f2f84469dd60148cb105244fb4da46a7c87b708d63a7c2b298062c0098cd29e242c90275e"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "flatbush@4.7.0",
+      "type": "library",
+      "name": "flatbush",
+      "version": "4.7.0",
+      "scope": "required",
+      "author": "Vladimir Agafonkin",
+      "description": "Fast static spatial index for rectangles",
+      "purl": "pkg:npm/flatbush@4.7.0",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/flatbush/-/flatbush-4.7.0.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/mourner/flatbush.git"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "a050646d8237471eac9d910140e88949ac6dd4c7d9b5b1f6a7ceb675198838e6115714160f2027e28c8a8e826fed382639fb76c886afbe8a0e5398ad9626a03b"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "flatqueue@3.1.0",
+      "type": "library",
+      "name": "flatqueue",
+      "version": "3.1.0",
+      "scope": "required",
+      "author": "Vladimir Agafonkin",
+      "description": "The smallest and simplest JavaScript priority queue",
+      "purl": "pkg:npm/flatqueue@3.1.0",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/flatqueue/-/flatqueue-3.1.0.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/mourner/flatqueue.git"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "21ae2a218aebb04a88471ddcdd78644fe4032d0b94579a2fb2be9a875ac880a4f9c1c961a062b7940312d5b591016c65c7bc2d95306957b41707977d7ce491c4"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "lightningcss@1.33.0",
+      "type": "library",
+      "name": "lightningcss",
+      "version": "1.33.0",
+      "scope": "required",
+      "description": "A CSS parser, transformer, and minifier written in Rust",
+      "purl": "pkg:npm/lightningcss@1.33.0",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/lightningcss/-/lightningcss-1.33.0.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/parcel-bundler/lightningcss.git"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "5a4503ae88ee26cd3192019fdae756c5adf21814713edc54901efd8ba68264b46073b3ccf1f65ef53a2c7cf0dcbc4a5065bb850129c762644b04b51b98b38820"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MPL-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "lightningcss-linux-x64-gnu@1.33.0",
+      "type": "library",
+      "name": "lightningcss-linux-x64-gnu",
+      "version": "1.33.0",
+      "scope": "optional",
+      "description": "A CSS parser, transformer, and minifier written in Rust",
+      "purl": "pkg:npm/lightningcss-linux-x64-gnu@1.33.0",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/lightningcss-linux-x64-gnu/-/lightningcss-linux-x64-gnu-1.33.0.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/parcel-bundler/lightningcss.git"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "6abf89bbb2e670dd09a381692f88691726f0346f7fdc0fc1af9296da7da3c8e0e0dcc1195da0d800375e9a8352f810cd7cc80abf29492e3e12e6dc9101cb6e02"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MPL-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "manifold-3d@3.0.1",
+      "type": "library",
+      "name": "manifold-3d",
+      "version": "3.0.1",
+      "scope": "required",
+      "description": "Geometry library for topological robustness",
+      "purl": "pkg:npm/manifold-3d@3.0.1",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/manifold-3d/-/manifold-3d-3.0.1.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/elalish/manifold.git"
+        },
+        {
+          "type": "website",
+          "url": "https://github.com/elalish/manifold#readme"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/elalish/manifold/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "1de3429cb5822932b67ddc46a92235d660b78ba6d4aa01bc4bd43cace95ed4049ebb61ce6bae6a5cd65f1b6de277b1eae6b3000be1e4d52ecdcd05ab0d47d28c"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "nanoid@3.3.20",
+      "type": "library",
+      "name": "nanoid",
+      "version": "3.3.20",
+      "scope": "required",
+      "author": "Andrey Sitnik <andrey@sitnik.ru>",
+      "description": "A tiny (116 bytes), secure URL-friendly unique string ID generator",
+      "purl": "pkg:npm/nanoid@3.3.20",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/nanoid/-/nanoid-3.3.20.tgz"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "b8a760d86dc63422909fd6f260ea716c6aab4f67c63b9291b7927ff1bde9a24f2b4faab119617a871332262118b407fe155c98b83f6145a0ea5f9b8f15827865"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "occt-wasm@5.17.2",
+      "type": "library",
+      "name": "occt-wasm",
+      "version": "5.17.2",
+      "scope": "required",
+      "description": "OpenCascade (OCCT) compiled to WebAssembly with a clean TypeScript API",
+      "purl": "pkg:npm/occt-wasm@5.17.2",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/occt-wasm/-/occt-wasm-5.17.2.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/andymai/occt-wasm.git"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "db853f7c7179a332138435c3b208a9e03e0478cb4319657cdcefd463eeda7a90cfe42a0fa049a3ae2cac870a843daef584129255b17695cec1ceb01a556058eb"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ]
+    },
+    {
+      "bom-ref": "opengeometry@3.0.0",
+      "type": "library",
+      "name": "opengeometry",
+      "version": "3.0.0",
+      "scope": "required",
+      "description": "Open-source CAD kernel for the web and Node.js: exact B-rep solids, booleans, extrude, sweep, revolve, shell and STEP export, in Rust and WebAssembly with a TypeScript SDK for Three.js. For configurators, mechanical parts, buildings, robotics and AI agents.",
+      "purl": "pkg:npm/opengeometry@3.0.0",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/opengeometry/-/opengeometry-3.0.0.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/OpenGeometry-io/OpenGeometry.git"
+        },
+        {
+          "type": "website",
+          "url": "https://opengeometry.io?utm_source=npm"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/OpenGeometry-io/OpenGeometry/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "0bedddb3bd1918d841b53eff82c2741239b46069d77ac1fcb42e8f49149e27fbcdd094a9dded0aaf110f88eebcced5ea7e542c7f4bae75de37eaef265bc6e777"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MPL-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "opentype.js@2.0.0",
+      "type": "library",
+      "name": "opentype.js",
+      "version": "2.0.0",
+      "scope": "required",
+      "author": "Frederik De Bleser",
+      "description": "OpenType font parser",
+      "purl": "pkg:npm/opentype.js@2.0.0",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/opentype.js/-/opentype.js-2.0.0.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git://github.com/opentypejs/opentype.js.git"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "902ca3bfac5d0d8d56fe32d667f2f742185394a52a0d9310e7e25d970d766f775790a369601aaa94c323d180d03d2856153330819235846d7890ddd75034a0fc"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "picocolors@1.1.1",
+      "type": "library",
+      "name": "picocolors",
+      "version": "1.1.1",
+      "scope": "required",
+      "author": "Alexey Raspopov",
+      "description": "The tiniest and the fastest library for terminal output formatting with ANSI colors",
+      "purl": "pkg:npm/picocolors@1.1.1",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "c5c787dac9e1b5be4cf658aa0ec984c39ea57b7efa993664117fe311bfd1c4d1727a036e97b78db250973fd1438ff2dcbb45fc284c8c71e3f69eda5a1eb0c454"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "picomatch@4.0.7",
+      "type": "library",
+      "name": "picomatch",
+      "version": "4.0.7",
+      "scope": "required",
+      "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+      "description": "Blazing fast and accurate glob matcher written in JavaScript, with no dependencies and full support for standard and extended Bash glob features, including braces, extglobs, POSIX brackets, and regular expressions.",
+      "purl": "pkg:npm/picomatch@4.0.7",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/picomatch/-/picomatch-4.0.7.tgz"
+        },
+        {
+          "type": "website",
+          "url": "https://github.com/micromatch/picomatch"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/micromatch/picomatch/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "a9c26ef3c436216a89b030f9dbd24a31dc069bf76f2275b81ef427470887f49b62849bf318eb1c0ed1c4df1d6904a794393cac43c91598b9c9da426eef285c18"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "playwright@1.64.1",
+      "type": "library",
+      "name": "playwright",
+      "version": "1.64.1",
+      "scope": "required",
+      "author": "Microsoft Corporation",
+      "description": "A high-level API to automate web browsers",
+      "purl": "pkg:npm/playwright@1.64.1",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/playwright/-/playwright-1.64.1.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/microsoft/playwright.git"
+        },
+        {
+          "type": "website",
+          "url": "https://playwright.dev"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "1c2ad5847af9410bb0628b301141936fb806a79db6c9f95bbff493f27178b05586b8b8d00add7b43f12e6e918648d2989f5b6c4c23d9c6a1e11c27d5511bbb50"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "playwright-core@1.64.1",
+      "type": "library",
+      "name": "playwright-core",
+      "version": "1.64.1",
+      "scope": "required",
+      "author": "Microsoft Corporation",
+      "description": "A high-level API to automate web browsers",
+      "purl": "pkg:npm/playwright-core@1.64.1",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.64.1.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/microsoft/playwright.git"
+        },
+        {
+          "type": "website",
+          "url": "https://playwright.dev"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "042e2cf32e9211503a435ad2c594eda3c848d4a508df15e51c6660bc6a8fe08a8f748fdae855fd1f6f480cdcfbbcaa3d976d5be8b7d8a2c49c3cbe8cdf1c720d"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "postcss@8.5.33",
+      "type": "library",
+      "name": "postcss",
+      "version": "8.5.33",
+      "scope": "required",
+      "author": "Andrey Sitnik <andrey@sitnik.es>",
+      "description": "Tool for transforming styles with JS plugins",
+      "purl": "pkg:npm/postcss@8.5.33",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/postcss/-/postcss-8.5.33.tgz"
+        },
+        {
+          "type": "website",
+          "url": "https://postcss.org/"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/postcss/postcss/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "4551c453dfcfa751678ebfcca4026c668003ba408a85f222d793ae9c46221a4b489182e43d5bc2d6c8a85a89460d2ed7072313c7d9bf2066eba3426cd77ce19d"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "replicad@1.2.1",
+      "type": "library",
+      "name": "replicad",
+      "version": "1.2.1",
+      "scope": "required",
+      "author": "Steve Genoud <steve@sgenoud.com>",
+      "description": "The library to build browser based 3D models with code",
+      "purl": "pkg:npm/replicad@1.2.1",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/replicad/-/replicad-1.2.1.tgz"
+        },
+        {
+          "type": "website",
+          "url": "https://replicad.xyz"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "33c064f6c92f782aa4446efe47c7dc0395851d30dc98adc47862b3534fcd6ee5379400237aab7a7ea576731e20482124032d74cd4294258ebc0ad67f64c44c87"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "replicad-opencascadejs@1.2.1",
+      "type": "library",
+      "name": "replicad-opencascadejs",
+      "version": "1.2.1",
+      "scope": "required",
+      "author": "Steve Genoud <steve@sgenoud.com>",
+      "description": "OpencascadeJS custom build for replicad",
+      "purl": "pkg:npm/replicad-opencascadejs@1.2.1",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/replicad-opencascadejs/-/replicad-opencascadejs-1.2.1.tgz"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "9c55a42f9fb6e0988dd6cbf97cb1a1750af714a08e2d1dcf20191e64970b9b7ee9e1eada12d0fb26e7a8f1d3f6068a82949c1bf614d291fd903258b7195aa1a6"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "LGPL-2.1-only"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "rolldown@1.2.19",
+      "type": "library",
+      "name": "rolldown",
+      "version": "1.2.19",
+      "scope": "required",
+      "description": "Fast JavaScript/TypeScript bundler in Rust with Rollup-compatible API.",
+      "purl": "pkg:npm/rolldown@1.2.19",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/rolldown/-/rolldown-1.2.19.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/rolldown/rolldown.git"
+        },
+        {
+          "type": "website",
+          "url": "https://rolldown.rs/"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/rolldown/rolldown/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "408895d49f5dd29ccde2379e4c7e2c8cfcb4019e9c032d9c1b41317a8135f94f11be3fa1477818928931d186de50d1a566a890249daeb5c1137b4a0a5f0cecb8"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "source-map-js@1.2.2",
+      "type": "library",
+      "name": "source-map-js",
+      "version": "1.2.2",
+      "scope": "required",
+      "author": "Valentin 7rulnik Semirulnik <v7rulnik@gmail.com>",
+      "description": "Generates and consumes source maps",
+      "purl": "pkg:npm/source-map-js@1.2.2",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.2.tgz"
+        },
+        {
+          "type": "website",
+          "url": "https://github.com/7rulnik/source-map-js"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "2868fff18e37c77e5a6550edb7e27898ad61a0b18750b3187d290e0c93508cd0c2de85b53ea3e8c4cc28d292d4b1633f5041b338dfcdc5e1f2c047cd5cd3f757"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "three@0.168.0",
+      "type": "library",
+      "name": "three",
+      "version": "0.168.0",
+      "scope": "required",
+      "author": "mrdoob",
+      "description": "JavaScript 3D library",
+      "purl": "pkg:npm/three@0.168.0",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/three/-/three-0.168.0.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/mrdoob/three.js"
+        },
+        {
+          "type": "website",
+          "url": "https://threejs.org/"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/mrdoob/three.js/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "ea6ea35ed0f030910afc618c6c03934809b135dccabef07381deeaf1b13fed3afa9bb3da061e6428bacdedf696b658255dbce3eec55b6b8f08770c7e351b195f"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "tinyglobby@0.2.17",
+      "type": "library",
+      "name": "tinyglobby",
+      "version": "0.2.17",
+      "scope": "required",
+      "author": "Superchupu",
+      "description": "A fast and minimal alternative to globby and fast-glob",
+      "purl": "pkg:npm/tinyglobby@0.2.17",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.17.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/SuperchupuDev/tinyglobby.git"
+        },
+        {
+          "type": "website",
+          "url": "https://superchupu.dev/tinyglobby"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/SuperchupuDev/tinyglobby/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "c1747f758a5ca8a99f5a911d66388a24ec023459dd0f40cc9eb5bf7188d51adb449017d581c2c51e836b963e3b9a339589cf72c8dbbae5a96c805e0d4324dada"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "vite@8.3.5",
+      "type": "library",
+      "name": "vite",
+      "version": "8.3.5",
+      "scope": "required",
+      "author": "Evan You",
+      "description": "Native-ESM powered web dev build tool",
+      "purl": "pkg:npm/vite@8.3.5",
+      "properties": [],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/vite/-/vite-8.3.5.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/vitejs/vite.git"
+        },
+        {
+          "type": "website",
+          "url": "https://vite.dev"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/vitejs/vite/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "cf56298e2789f60d1e6d3990a4b06ffe8abd13717d10894e7beecb6a15bc4ab1372d3886dee7414545d03a56173fd6fe202daada9847795c63f711a5c37e0e11"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "silmo-occt-kernel-prototype@0.0.0-research",
+      "dependsOn": [
+        "occt-wasm@5.17.2",
+        "playwright@1.64.1",
+        "vite@8.3.5",
+        "opengeometry@3.0.0",
+        "replicad@1.2.1",
+        "replicad-opencascadejs@1.2.1",
+        "three@0.168.0",
+        "manifold-3d@3.0.1"
+      ]
+    },
+    {
+      "ref": "@oxc-project/types@0.156.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "@rolldown/binding-linux-x64-gnu@1.2.19",
+      "dependsOn": []
+    },
+    {
+      "ref": "@rolldown/pluginutils@1.1.1",
+      "dependsOn": []
+    },
+    {
+      "ref": "@types/opentype.js@1.3.10",
+      "dependsOn": []
+    },
+    {
+      "ref": "comlink@4.4.2",
+      "dependsOn": []
+    },
+    {
+      "ref": "detect-libc@2.1.2",
+      "dependsOn": []
+    },
+    {
+      "ref": "fdir@6.5.0",
+      "dependsOn": [
+        "picomatch@4.0.7"
+      ]
+    },
+    {
+      "ref": "flatbush@4.7.0",
+      "dependsOn": [
+        "flatqueue@3.1.0"
+      ]
+    },
+    {
+      "ref": "flatqueue@3.1.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "lightningcss@1.33.0",
+      "dependsOn": [
+        "detect-libc@2.1.2",
+        "lightningcss-linux-x64-gnu@1.33.0"
+      ]
+    },
+    {
+      "ref": "lightningcss-linux-x64-gnu@1.33.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "manifold-3d@3.0.1",
+      "dependsOn": []
+    },
+    {
+      "ref": "nanoid@3.3.20",
+      "dependsOn": []
+    },
+    {
+      "ref": "occt-wasm@5.17.2",
+      "dependsOn": [
+        "comlink@4.4.2"
+      ]
+    },
+    {
+      "ref": "opengeometry@3.0.0",
+      "dependsOn": [
+        "three@0.168.0"
+      ]
+    },
+    {
+      "ref": "opentype.js@2.0.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "picocolors@1.1.1",
+      "dependsOn": []
+    },
+    {
+      "ref": "picomatch@4.0.7",
+      "dependsOn": []
+    },
+    {
+      "ref": "playwright@1.64.1",
+      "dependsOn": [
+        "playwright-core@1.64.1"
+      ]
+    },
+    {
+      "ref": "playwright-core@1.64.1",
+      "dependsOn": []
+    },
+    {
+      "ref": "postcss@8.5.33",
+      "dependsOn": [
+        "nanoid@3.3.20",
+        "picocolors@1.1.1",
+        "source-map-js@1.2.2"
+      ]
+    },
+    {
+      "ref": "replicad@1.2.1",
+      "dependsOn": [
+        "@types/opentype.js@1.3.10",
+        "flatbush@4.7.0",
+        "opentype.js@2.0.0"
+      ]
+    },
+    {
+      "ref": "replicad-opencascadejs@1.2.1",
+      "dependsOn": []
+    },
+    {
+      "ref": "rolldown@1.2.19",
+      "dependsOn": [
+        "@oxc-project/types@0.156.0",
+        "@rolldown/pluginutils@1.1.1",
+        "@rolldown/binding-linux-x64-gnu@1.2.19"
+      ]
+    },
+    {
+      "ref": "source-map-js@1.2.2",
+      "dependsOn": []
+    },
+    {
+      "ref": "three@0.168.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "tinyglobby@0.2.17",
+      "dependsOn": [
+        "fdir@6.5.0",
+        "picomatch@4.0.7"
+      ]
+    },
+    {
+      "ref": "vite@8.3.5",
+      "dependsOn": [
+        "lightningcss@1.33.0",
+        "picomatch@4.0.7",
+        "postcss@8.5.33",
+        "rolldown@1.2.19",
+        "tinyglobby@0.2.17"
+      ]
+    }
+  ]
+}
