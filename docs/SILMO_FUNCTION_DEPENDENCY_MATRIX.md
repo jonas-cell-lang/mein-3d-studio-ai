@@ -64,6 +64,22 @@
 
 Diese offenen Fragen werden anhand konkreter Funktionsnamen, Aufrufstellen und Testfälle ergänzt, bevor produktiver Code auf ein neues Datenmodell umgestellt wird.
 
+
+## 3.1 Ergänzte Quellcodeprüfung (15.11.2026)
+
+Die zentralen Pfade wurden direkt im aktuellen Hauptbranch geprüft:
+
+- **Objekt-Erzeugung:** Grundkörper werden als Three.js-Geometrien und Meshes angelegt; Abmessungen werden aus der BufferGeometry-Bounding-Box abgeleitet.
+- **Mesh-/CSG-Pfad:** Die bestehende Boolesche Implementierung wandelt Mesh-Dreiecke in BSP-Polygone in Weltkoordinaten um und baut das Ergebnis als neue BufferGeometry auf. Sie ist meshbasiert und verwaltet keine analytische B-Rep-Topologie.
+- **Geometrieänderung:** Skizzenbearbeitung, Extrusion und Kantenbehandlung verändern bzw. ersetzen BufferGeometry direkt. Die getestete Kantenbehandlung basiert auf ExtrudeGeometry-Bevel und ist keine allgemeine B-Rep-Filleting-Operation.
+- **Projektserialisierung:** Projektversion 3 speichert Objekttransformationen, Metadaten sowie sämtliche Geometrieattribute/Indizes als JSON-Arrays. Der Loader prüft App-Kennung, Objektliste, Objektanzahl, numerische Geometriewerte und Indizes. Er baut neue Objekte vor dem Austausch des aktuellen Projekts auf; das ist ein wichtiger Schutzpfad.
+- **Versionsvalidierung:** Der Loader prüft derzeit keine explizite Liste unterstützter Projektversionsnummern, obwohl beim Speichern Version 3 geschrieben wird. Das wird als Phase-1-Aufgabe festgehalten.
+- **Undo/Redo:** Jeder Snapshot klont Geometrie und Material für alle Objekte; maximal 40 Undo-Zustände werden gehalten. Speicher-/Leistungsmessungen fehlen noch.
+- **STL:** Import liest STL-Koordinaten als mm und skaliert auf interne Welteinheiten; Export skaliert sowohl Geometrie als auch Objekttranslationen zurück auf mm.
+- **Image Studio:** Die Übergabe an den Haupteditor erfolgt über globale Export-/Import-Hooks; die Modulgrenze muss beim Umbau erhalten und später typisiert werden.
+
+Diese Prüfung reicht für die Architekturfreigabe von Phase 1. Sie ersetzt keine vollständige Inventur jeder einzelnen Schwelle, jedes direkten Mesh-Zugriffs oder aller Projektdateivarianten.
+
 ## 4. Migrationsschutz: Reihenfolge und Abnahmekriterien
 
 ### Schutzstufe 1 – Referenzverhalten sichern
@@ -99,10 +115,11 @@ Diese offenen Fragen werden anhand konkreter Funktionsnamen, Aufrufstellen und T
 **Abnahme:** Der migrierte Ablauf funktioniert vom Erstellen über Bearbeiten und Anzeigen bis Speichern/Wiederöffnen.
 
 ## 5. Nächste konkrete Arbeit nach dieser Matrix
-1. Quellcodeprüfung der Einheitenumrechnung, Objekt-Erzeugung, Mesh-Manipulation, Projektserialisierung und CSG-Aufrufstellen.
-2. Referenzfixtures und mathematische Sollwerte aus dem vorhandenen Verhalten ableiten.
-3. Zentrale Unit-/Tolerance-Spezifikation festlegen, ohne das aktuelle Verhalten zu verändern.
-4. Danach den isolierten Kernel-Prototyp anhand der dokumentierten Kandidaten und desselben Testkatalogs durchführen.
+1. Phase 1 starten: Build-/Modulstruktur für die bestehende App einführen, ohne UI oder Geometrieverhalten zu verändern.
+2. v3-Projektdateien als Fixtures sichern und die Versionsvalidierung/Migration ergänzen.
+3. Einheiten-API zentralisieren und mit den bestehenden Umrechnungen gegenprüfen.
+4. Undo-/Redo-Speicher- und Laufzeitbaseline messen.
+5. Die verbleibende Toleranz- und Aufrufstelleninventur parallel zur schrittweisen Modulmigration vervollständigen.
 
 ## 6. Quellen im SILMO-Projekt
 - [Masterplan](SILMO_MASTERPLAN.md)

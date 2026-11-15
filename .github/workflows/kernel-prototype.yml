@@ -10,12 +10,12 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   occt-prototype:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,15 +23,75 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Install pinned prototype dependency
+      - name: Generate exact dependency lock and install from it
         working-directory: research/geometry-kernel-prototype
-        run: npm install --no-audit --no-fund
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+            npm ci --no-audit --no-fund
+          fi
+      - name: Generate CycloneDX dependency inventory
+        working-directory: research/geometry-kernel-prototype
+        run: |
+          npm sbom --sbom-format=cyclonedx > silmo-occt-prototype.cdx.json
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          const path = 'silmo-occt-prototype.cdx.json';
+          const bom = JSON.parse(readFileSync(path, 'utf8'));
+          delete bom.metadata?.timestamp;
+          const hex = createHash('sha256').update(readFileSync('package-lock.json')).digest('hex').slice(0, 32).split('');
+          hex[12] = '5';
+          hex[16] = ((parseInt(hex[16], 16) & 0x3) | 0x8).toString(16);
+          const uuid = hex.join('').replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5');
+          bom.serialNumber = 'urn:uuid:' + uuid;
+          writeFileSync(path, JSON.stringify(bom, null, 2) + '\n');
+          NODE
+          mkdir -p .provenance
+          cp package-lock.json .provenance/package-lock.json
+          cp silmo-occt-prototype.cdx.json .provenance/
+          node --version > .provenance/toolchain.txt
+          npm --version >> .provenance/toolchain.txt
+      - name: Archive exact candidate source tags
+        working-directory: research/geometry-kernel-prototype
+        run: |
+          mkdir -p .provenance/sources
+          curl -fsSL https://github.com/andymai/occt-wasm/archive/refs/tags/v5.17.2.zip -o .provenance/sources/andymai-occt-wasm-v5.17.2.zip
+          curl -fsSL https://github.com/moket-io/occt-wasm/archive/refs/tags/v0.10.1.zip -o .provenance/sources/moket-occt-wasm-v0.10.1.zip
+          curl -fsSL https://github.com/sgenoud/replicad/archive/refs/tags/v1.2.1.zip -o .provenance/sources/replicad-v1.2.1.zip
+          curl -fsSL https://github.com/OpenGeometry-io/OpenGeometry/archive/refs/tags/v3.0.0.zip -o .provenance/sources/opengeometry-v3.0.0.zip
+          sha256sum .provenance/sources/*.zip > .provenance/source-archives.sha256
+          for archive in .provenance/sources/*.zip; do
+            echo "=== $archive ==="
+            unzip -Z1 "$archive" | grep -Ei '/(LICENSE|NOTICE|COPYING)(\.[^/]*)?$|/LICENSE$' || true
+          done
       - name: Run isolated analytic geometry tests
         working-directory: research/geometry-kernel-prototype
         run: npm test
-      - name: Install Chromium for worker smoke test
+      - name: Download and verify moket OCCT release assets
         working-directory: research/geometry-kernel-prototype
-        run: npx playwright install --with-deps chromium
+        run: |
+          mkdir -p /tmp/silmo-moket
+          curl -fsSL https://github.com/moket-io/occt-wasm/releases/download/v0.10.1/index.mjs -o /tmp/silmo-moket/index.mjs
+          curl -fsSL https://github.com/moket-io/occt-wasm/releases/download/v0.10.1/occt-wasm.mjs -o /tmp/silmo-moket/occt-wasm.mjs
+          curl -fsSL https://github.com/moket-io/occt-wasm/releases/download/v0.10.1/occt-wasm.wasm -o /tmp/silmo-moket/occt-wasm.wasm
+          cat > /tmp/silmo-moket.SHA256SUMS <<'EOF'
+          716e57771d54b3a0c2ba050274ff52e50eabfac3f46e5145e3866f3c8de97ccc  /tmp/silmo-moket/index.mjs
+          112587262e74341827ae9c268e0eeb2873214f7b0d2fd27c278fab738f2f4faa  /tmp/silmo-moket/occt-wasm.mjs
+          06cc02b2927f7ed3d70650ecde79e777329975526c75f5e71580ae49f9512ccf  /tmp/silmo-moket/occt-wasm.wasm
+          EOF
+          sha256sum -c /tmp/silmo-moket.SHA256SUMS
+          sed 's#  /tmp/silmo-moket/#  #' /tmp/silmo-moket.SHA256SUMS > .provenance/moket-release-assets.sha256
+      - name: Compare OCCT wrappers and OpenGeometry candidates
+        working-directory: research/geometry-kernel-prototype
+        env:
+          MOKET_OCCT_DIR: /tmp/silmo-moket
+        run: npm run test:candidates
+      - name: Install Chromium, Firefox and WebKit for worker tests
+        working-directory: research/geometry-kernel-prototype
+        run: npx playwright install --with-deps chromium firefox webkit
       - name: Prepare public WASM asset
         working-directory: research/geometry-kernel-prototype
         run: |
@@ -49,4 +109,55 @@ jobs:
           exit 1
       - name: Test OCCT in a browser Web Worker
         working-directory: research/geometry-kernel-prototype
-        run: npm run test:browser
+        run: npm run test:browser:all
+      - name: Version reviewed dependency provenance on research branch
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+        working-directory: research/geometry-kernel-prototype
+        run: |
+          mkdir -p /tmp/silmo-provenance
+          cp package-lock.json /tmp/silmo-provenance/package-lock.json
+          cp silmo-occt-prototype.cdx.json /tmp/silmo-provenance/silmo-occt-prototype.cdx.json
+          cp -a .provenance /tmp/silmo-provenance/provenance
+          rm -f package-lock.json silmo-occt-prototype.cdx.json
+          rm -rf .provenance
+          git fetch origin "$GITHUB_HEAD_REF:refs/remotes/origin/$GITHUB_HEAD_REF"
+          git checkout -B "$GITHUB_HEAD_REF" "origin/$GITHUB_HEAD_REF"
+          mkdir -p provenance
+          cp /tmp/silmo-provenance/package-lock.json package-lock.json
+          cp /tmp/silmo-provenance/silmo-occt-prototype.cdx.json silmo-occt-prototype.cdx.json
+          cp /tmp/silmo-provenance/provenance/source-archives.sha256 provenance/
+          cp /tmp/silmo-provenance/provenance/moket-release-assets.sha256 provenance/
+          cp /tmp/silmo-provenance/provenance/toolchain.txt provenance/
+          cp -a /tmp/silmo-provenance/provenance .provenance
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json silmo-occt-prototype.cdx.json provenance/source-archives.sha256 provenance/moket-release-assets.sha256 provenance/toolchain.txt
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(research): pin kernel prototype provenance"
+            pushed=false
+            for attempt in 1 2 3; do
+              if git push origin "HEAD:$GITHUB_HEAD_REF"; then
+                pushed=true
+                break
+              fi
+              git fetch origin "$GITHUB_HEAD_REF:refs/remotes/origin/$GITHUB_HEAD_REF"
+              git rebase "origin/$GITHUB_HEAD_REF"
+            done
+            if [ "$pushed" != true ]; then
+              echo "Could not push provenance commit after three attempts."
+              exit 1
+            fi
+          fi
+      - name: Upload lockfile, SBOM and source provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: silmo-kernel-provenance-${{ github.sha }}
+          path: |
+            research/geometry-kernel-prototype/.provenance/**
+            research/geometry-kernel-prototype/silmo-occt-prototype.cdx.json
+          if-no-files-found: warn
+          retention-days: 90
+          include-hidden-files: true
