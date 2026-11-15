@@ -20,6 +20,12 @@ test('Flächenumrechnung verwendet den quadrierten Längenfaktor', () => {
   assert.equal(units.mm2ToWorldUnits2(2500), 25);
 });
 
+test('Volumen verwendet den kubierten Längenfaktor', () => {
+  assert.equal(units.mm3ToWorldUnits3(1000), 1);
+  assert.equal(units.worldUnits3ToMm3(1), 1000);
+  assert.equal(units.mm3ToWorldUnits3(2500), 2.5);
+});
+
 test('API ist unveränderlich', () => {
   assert.equal(Object.isFrozen(units), true);
 });
