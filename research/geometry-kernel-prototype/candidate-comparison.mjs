@@ -23,8 +23,10 @@ async function andyOcct() {
   const { OcctKernel } = await import("occt-wasm");
   const k = await OcctKernel.init();
   try {
-    const box = k.makeBox(40,30,20);
-    const hole = k.translate(k.makeCylinder(5,20),20,15,0);
+    const box = k.makeBox(...TEST_CASES.throughHole.boxDimensionsMm);
+    const [holeX,holeY,holeZ]=TEST_CASES.throughHole.cylinder.originMm;
+    const hole = k.transform(k.makeCylinder(TEST_CASES.throughHole.cylinder.radiusMm,TEST_CASES.throughHole.cylinder.lengthMm),
+      [1,0,0,holeX, 0,0,1,holeY, 0,-1,0,holeZ]);
     const cut = k.cut(box,hole);
     closeTo(k.getVolume(cut),TEST_CASES.throughHole.expectedVolumeMm3,"andy base/cut");
     const a=k.makeBox(10,10,10), b=k.translate(k.makeBox(10,10,10),5,0,0);
@@ -50,8 +52,10 @@ async function andyOcct() {
       [1,0,0,15, 0,0,1,0, 0,-1,0,5]);
     const cylinderBoxUnion=k.fuse(tangentBox,tangentCylinder);
     closeTo(k.getVolume(cylinderBoxUnion),TEST_CASES.cylinderBoxTangency.expectedUnionVolumeMm3,"andy cylinder/box tangency",1e-6);
-    const wall=k.makeBox(20,.1,10), drill=k.makeCylinder(.2,.2);
-    const thinDrill=k.transform(drill,[1,0,0,10, 0,0,1,-.05, 0,-1,0,5]);
+    const wall=k.makeBox(...TEST_CASES.thinWall.wallDimensionsMm);
+    const [drillX,drillY,drillZ]=TEST_CASES.thinWall.cylinderOriginMm;
+    const drill=k.makeCylinder(TEST_CASES.thinWall.cylinderRadiusMm,TEST_CASES.thinWall.cylinderLengthMm);
+    const thinDrill=k.transform(drill,[1,0,0,drillX, 0,0,1,drillY, 0,-1,0,drillZ]);
     const thin=k.cut(wall,thinDrill);
     closeTo(k.getVolume(thin),TEST_CASES.thinWall.expectedVolumeMm3,"andy thin wall",1e-5);
     const historyBase=k.makeBox(20,20,20);
@@ -80,8 +84,9 @@ async function moketOcct() {
   const ok=(r,label)=>{assert.equal(r?.ok,true,`${label}: ${r?.error?.code||""} ${r?.error?.message||""}`);return r;};
   const props=(s)=>ok(k.properties(s),"moket properties");
   try {
-    const box=ok(k.makeBox(40,30,20),"moket box").shape;
-    const cyl=ok(k.makeCylinder([20,0,15],[0,1,0],5,20),"moket cylinder").shape;
+    const box=ok(k.makeBox(...TEST_CASES.throughHole.boxDimensionsMm),"moket box").shape;
+    const cyl=ok(k.makeCylinder(TEST_CASES.throughHole.cylinder.originMm,TEST_CASES.throughHole.cylinder.axis,
+      TEST_CASES.throughHole.cylinder.radiusMm,TEST_CASES.throughHole.cylinder.lengthMm),"moket cylinder").shape;
     const cut=ok(k.boolean("cut",box,cyl),"moket cut");
     closeTo(props(cut.shape).volume,TEST_CASES.throughHole.expectedVolumeMm3,"moket base/cut");
     const a=ok(k.makeBox(10,10,10),"moket a").shape;
@@ -108,8 +113,9 @@ async function moketOcct() {
     const tangentCylinder=ok(k.makeCylinder([15,0,5],[0,1,0],TEST_CASES.cylinderBoxTangency.cylinderRadiusMm,TEST_CASES.cylinderBoxTangency.cylinderLengthMm),"moket tangent cylinder").shape;
     const cylinderBoxUnion=ok(k.boolean("fuse",tangentBox,tangentCylinder),"moket cylinder/box tangent fuse");
     closeTo(props(cylinderBoxUnion.shape).volume,TEST_CASES.cylinderBoxTangency.expectedUnionVolumeMm3,"moket cylinder/box tangency");
-    const wall=ok(k.makeBox(20,.1,10),"moket thin wall").shape;
-    const drill=ok(k.makeCylinder([10,-.05,5],[0,1,0],.2,.2),"moket thin drill").shape;
+    const wall=ok(k.makeBox(...TEST_CASES.thinWall.wallDimensionsMm),"moket thin wall").shape;
+    const drill=ok(k.makeCylinder(TEST_CASES.thinWall.cylinderOriginMm,TEST_CASES.thinWall.cylinderAxis,
+      TEST_CASES.thinWall.cylinderRadiusMm,TEST_CASES.thinWall.cylinderLengthMm),"moket thin drill").shape;
     const thin=ok(k.boolean("cut",wall,drill),"moket thin cut");
     closeTo(props(thin.shape).volume,TEST_CASES.thinWall.expectedVolumeMm3,"moket thin wall",1e-5);
     const memoryBefore=k.heapStats();
@@ -134,8 +140,9 @@ async function replicadCandidate() {
   const valid=s=>{const a=new oc.BRepCheck_Analyzer(s.wrapped);try{return a.IsValid();}finally{a.delete();}};
   const measure=s=>({volumeMm3:r.measureVolume(s),valid:valid(s)});
   try {
-    const box=own(r.makeBox([0,0,0],[40,20,30]));
-    const hole=own(r.makeCylinder(5,20,[20,0,15],[0,1,0]));
+    const box=own(r.makeBox([0,0,0],TEST_CASES.throughHole.boxDimensionsMm));
+    const hole=own(r.makeCylinder(TEST_CASES.throughHole.cylinder.radiusMm,TEST_CASES.throughHole.cylinder.lengthMm,
+      TEST_CASES.throughHole.cylinder.originMm,TEST_CASES.throughHole.cylinder.axis));
     const cut=own(box.cut(hole,{simplify:false}));
     closeTo(measure(cut).volumeMm3,TEST_CASES.throughHole.expectedVolumeMm3,"Replicad base/cut");
     const a=own(r.makeBox([0,0,0],[10,10,10])),b=own(r.makeBox([5,0,0],[15,10,10]));
@@ -160,8 +167,9 @@ async function replicadCandidate() {
     const tangentCylinder=own(r.makeCylinder(TEST_CASES.cylinderBoxTangency.cylinderRadiusMm,TEST_CASES.cylinderBoxTangency.cylinderLengthMm,[15,0,5],[0,1,0]));
     const cylinderBoxUnion=own(tangentBox.fuse(tangentCylinder,{simplify:false}));
     closeTo(measure(cylinderBoxUnion).volumeMm3,TEST_CASES.cylinderBoxTangency.expectedUnionVolumeMm3,"Replicad cylinder/box tangency");
-    const wall=own(r.makeBox([0,0,0],[20,.1,10]));
-    const drill=own(r.makeCylinder(.2,.2,[10,-.05,5],[0,1,0]));
+    const wall=own(r.makeBox([0,0,0],TEST_CASES.thinWall.wallDimensionsMm));
+    const drill=own(r.makeCylinder(TEST_CASES.thinWall.cylinderRadiusMm,TEST_CASES.thinWall.cylinderLengthMm,
+      TEST_CASES.thinWall.cylinderOriginMm,TEST_CASES.thinWall.cylinderAxis));
     const thin=own(wall.cut(drill,{simplify:false}));
     closeTo(measure(thin).volumeMm3,TEST_CASES.thinWall.expectedVolumeMm3,"Replicad thin wall",1e-5);
     const topologyFaces=thin.faces, topologyEdges=thin.edges;
@@ -230,8 +238,9 @@ async function openGeometryCandidate() {
       closeTo(fine.volumeMm3,20-Math.PI*.02**2*.1,"OpenGeometry 0.04 mm hole",1e-4);
       return fine;
     });
-    const thinWall01mm=box(.02,.0001,.01),thinDrill01mm=cyl(.0002,.0002);
-    thinDrill01mm.transform(OG_TRANSFORM_TRANSLATE,{offset:[0,-.00005,0]});
+    const thinWall01mm=box(TEST_CASES.thinWall.wallDimensionsMm[0]/1000,TEST_CASES.thinWall.wallDimensionsMm[1]/1000,TEST_CASES.thinWall.wallDimensionsMm[2]/1000);
+    const thinDrill01mm=cyl(TEST_CASES.thinWall.cylinderRadiusMm/1000,TEST_CASES.thinWall.cylinderLengthMm/1000);
+    thinDrill01mm.transform(OG_TRANSFORM_TRANSLATE,{offset:[0,TEST_CASES.thinWall.cylinderOriginMm[1]/1000,0]});
     const thinWallOutcome=attempt(()=>{
       thinWall01mm.operate(OG_OPERATION_SUBTRACT,{tools:[thinDrill01mm]});
       const measured=summary(thinWall01mm);
