@@ -325,3 +325,13 @@ Playwright-WebKit unter Linux ist kein manueller Test einer installierten Deskto
 Als Nächstes folgen die Lizenzprüfung der Kandidaten und eine Bewertung der dokumentierten API-, Topologie-, Speicher- und Messpräzisionslücken. Danach kann eine technische Empfehlung erstellt werden. Erst nach dieser Prüfung wird über eine schrittweise Migration entschieden.
 
 **Wichtig:** Auch der erweiterte Vergleich ist keine Freigabe für die Produktionsintegration. Der bestehende SILMO-Geometriekern bleibt bis zu einer begründeten Architekturentscheidung unverändert.
+
+## 11. Lizenzprüfung der getesteten Kandidaten
+
+Die quellenbasierte Vorprüfung der exakt getesteten Versionen ist in [SILMO_LICENSE_REVIEW.md](SILMO_LICENSE_REVIEW.md) dokumentiert. Kernergebnis: Replicad selbst ist MIT, benötigt aber `replicad-opencascadejs` unter LGPL-2.1-only; andymai trennt MIT-/Apache-lizenzierte Build-/Wrapper-Bestandteile vom LGPL-2.1-only-WASM; Moket dokumentiert LGPL-2.1-only mit Open-CASCADE-Ausnahme 1.0 und die Runtime-Komponenten; OpenGeometry 3.0.0 steht unter MPL-2.0.
+
+**Vorläufiger Lizenzbefund:** Moket hat die transparenteste Dokumentation zu Lizenztexten, NOTICE, Quellcode und WASM-Austauschbarkeit. Andy Mai benötigt eine Klärung der abweichenden npm-Metadaten gegenüber der WASM-Lizenzangabe. Replicad beseitigt die LGPL-Frage des Kernels nicht. OpenGeometry bleibt lizenzseitig prüfbar, aber seine technischen Mess- und API-Lücken bleiben bestehen.
+
+**Noch nicht abgeschlossen:** Vollständige SBOM/transitive Lizenzinventur, Archivierung aller Release-Quellen und ein realer Austauschbarkeitstest im SILMO-Webbuild. Keine Bibliothek ist rechtlich oder technisch für die Produktion freigegeben. Das SILMO-Repository selbst hat derzeit keine explizite Repository-Lizenz; diese Entscheidung ist separat zu treffen.
+
+**Nächster Schritt:** Release-Artefakte und Quellcode-Zuordnung versionsgenau absichern, ein Lockfile/SBOM für den Forschungsordner ergänzen und danach die technische Architektur-Empfehlung auf Basis von Geometrie-, Mess-, Topologie-, Browser-, Speicher- und Lizenzbefunden formulieren.
