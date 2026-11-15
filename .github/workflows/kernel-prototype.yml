@@ -29,3 +29,24 @@ jobs:
       - name: Run isolated analytic geometry tests
         working-directory: research/geometry-kernel-prototype
         run: npm test
+      - name: Install Chromium for worker smoke test
+        working-directory: research/geometry-kernel-prototype
+        run: npx playwright install --with-deps chromium
+      - name: Prepare public WASM asset
+        working-directory: research/geometry-kernel-prototype
+        run: |
+          mkdir -p public
+          cp node_modules/occt-wasm/dist/occt-wasm.wasm public/occt-wasm.wasm
+      - name: Start Vite prototype server
+        working-directory: research/geometry-kernel-prototype
+        run: |
+          npx vite --host 127.0.0.1 --port 4174 >/tmp/silmo-kernel-vite.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:4174/worker-smoke.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/silmo-kernel-vite.log
+          exit 1
+      - name: Test OCCT in a browser Web Worker
+        working-directory: research/geometry-kernel-prototype
+        run: npm run test:browser
