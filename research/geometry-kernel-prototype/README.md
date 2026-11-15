@@ -4,39 +4,45 @@ Dieser Ordner ist eine Forschungs-/Testumgebung. Er wird nicht von der SILMO-Liv
 
 ## Gepinnter Kandidat
 
-- npm: occt-wasm 5.17.2
+- npm: `occt-wasm 5.17.2`
 - Kernelbasis laut Projekt: Open CASCADE 8.0.1
 - Laufzeit: Node.js 24 in CI
 - Geometrieeinheiten im Test: Millimeter (OCCT API)
-- Testtoleranz für analytische Volumenvergleiche: 1e-6 relativ (Testvergleich, keine SILMO-Kerneltoleranz)
+- Toleranz für analytische Volumenvergleiche: standardmässig 1e-6 relativ (Testvergleich, keine SILMO-Kerneltoleranz)
 
-## Lokaler Test
+## Lokale Tests
 
-Im Ordner research/geometry-kernel-prototype:
+Im Ordner `research/geometry-kernel-prototype`:
 
 ```sh
 npm install
 npm test
+npm run test:browser
 ```
 
 ## Testumfang
 
-- Analytischer Quader und Bounding Box
-- Boolescher Durchbruch mit bekanntem Volumen
-- Platte mit vier Durchgangslöchern
-- Fillet und Topologieabfragen
-- Tessellierung
-- STEP-Export und -Import mit Volumenvergleich
-- Fehlerfall und anschliessende Weiterverwendung des Kerns
-- Freigabe aller Handles und erneute Verwendung
+- Analytische Grundkörper, Bounding Box und bekannte Volumen
+- Boolescher Durchbruch und Platte mit vier Durchgangslöchern
+- Überlappende koplanare Flächen: Fuse, Cut und Common
+- Tangierende Körper: gemeinsame Fläche, Kante, Ecke sowie Zylinder/Quader
+- Nahezu koplanare Geometrie mit kleinem Überlapp
+- Dünne Platte und dünne Wand mit kleinen Durchgangslöchern
+- Ungültige primitive Eingaben: Null, negative, NaN- und unendliche Masse
+- Fillet, Flächen-/Kantenabfragen und explizite Topologiehistorie über aufeinanderfolgende Boolesche Operationen
+- Tessellierung und STEP-Export/-Import mit Volumenvergleich
+- Kontrollierter Fehlerfall und anschliessende Weiterverwendung des Kerns
+- Wiederholte Boolesche Operationen, Handle-Wachstum, WASM-/Prozessspeicher-Beobachtung und `releaseSince`
+- Browser-Worker: korrekte Geometrieantwort und Abbruch eines laufenden OCCT-Arbeitslaufs durch Worker-Terminierung
 
-## Grenzen dieses ersten Prototyps
+## Aussagekraft und Grenzen
 
-- Noch kein Browser-/Worker-Test
-- Noch kein Safari-/WebKit-Test
-- Noch kein Vergleichslauf mit Replicad, moket-io/occt-wasm oder OpenGeometry
-- Noch keine Last-/Langzeitmessung
+- Tangentiale Boolesche Fälle werden als gültiges Ergebnis mit analytischem Volumen oder als kontrollierte OCCT-Ablehnung protokolliert. Ein ungültig zurückgegebenes Ergebnis lässt den Test fehlschlagen.
+- Die Speichermessung protokolliert den OCCT-Handle-Bestand, den WASM-Heap-Höchststand und Prozessspeicherwerte. WebAssembly-Speicher schrumpft nach Freigabe nicht zwingend; die Handle-Baseline muss jedoch wiederhergestellt werden.
+- Der Worker-Abbruchtest prüft die Terminierung eines Workers während synchroner OCCT-Arbeit. Er beweist keine kooperative Unterbrechung einer einzelnen OCCT-Operation.
+- Noch keine Safari-/WebKit- oder Firefox-Prüfung
+- Noch kein reproduzierbarer Vergleichslauf mit Replicad, moket-io/occt-wasm oder OpenGeometry
 - Kein Nachweis der Kompatibilität mit SILMO-Projektdateien
 - Keine Integration in die bestehende Anwendung
 
-Ein erfolgreicher Lauf ist nur ein Kandidaten-Smoke-Test und keine Freigabe für die spätere Produktionsintegration.
+Ein erfolgreicher Lauf ist ein erweiterter Kandidaten-Test, aber keine Freigabe für die spätere Produktionsintegration.
