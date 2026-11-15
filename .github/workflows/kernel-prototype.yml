@@ -36,6 +36,19 @@ jobs:
         working-directory: research/geometry-kernel-prototype
         run: |
           npm sbom --sbom-format=cyclonedx > silmo-occt-prototype.cdx.json
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          const path = 'silmo-occt-prototype.cdx.json';
+          const bom = JSON.parse(readFileSync(path, 'utf8'));
+          delete bom.metadata?.timestamp;
+          const hex = createHash('sha256').update(readFileSync('package-lock.json')).digest('hex').slice(0, 32).split('');
+          hex[12] = '5';
+          hex[16] = ((parseInt(hex[16], 16) & 0x3) | 0x8).toString(16);
+          const uuid = hex.join('').replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5');
+          bom.serialNumber = 'urn:uuid:' + uuid;
+          writeFileSync(path, JSON.stringify(bom, null, 2) + '\n');
+          NODE
           mkdir -p .provenance
           cp package-lock.json .provenance/package-lock.json
           cp silmo-occt-prototype.cdx.json .provenance/
