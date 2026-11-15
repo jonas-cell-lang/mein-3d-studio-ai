@@ -48,7 +48,8 @@ Der Kandidatenvergleich verwendet `candidate-test-catalog.mjs` als gemeinsame, v
 - Der Worker-Abbruchtest prüft die Terminierung eines Workers während synchroner OCCT-Arbeit. Er beweist keine kooperative Unterbrechung einer einzelnen OCCT-Operation.
 - OpenGeometry liefert neben dem Volumen eine Messfehlergrenze. Liegt diese über der gemeinsamen analytischen Vergleichstoleranz, ist der Messwert nur eine Näherung und darf nicht als gleich präziser Nachweis wie ein exakter B-Rep-Volumenwert gewertet werden.
 - Die automatisierten WebKit-/Firefox-Läufe sind Browser-Kompatibilitätstests in Playwright auf Linux; sie ersetzen noch keine manuellen Prüfungen in Desktop-Safari bzw. realen Safari-Versionen.
-- Der standardisierte Vergleichslauf ist als CI-Test eingerichtet. Die Resultate bleiben Kandidaten-Charakterisierung und sind keine Freigabe für die Produktionsintegration.
+- Der standardisierte Vergleichslauf ist als CI-Test eingerichtet. Der Gesamtstatus `completed-with-gaps` bedeutet, dass alle Adapter ausgeführt wurden, aber dokumentierte API- oder Messpräzisionslücken verbleiben; er ist kein vollständiger Präzisionspass.
+- Die Resultate bleiben Kandidaten-Charakterisierung und sind keine Freigabe für die Produktionsintegration.
 - Kein Nachweis der Kompatibilität mit SILMO-Projektdateien
 - Keine Integration in die bestehende Anwendung
 
