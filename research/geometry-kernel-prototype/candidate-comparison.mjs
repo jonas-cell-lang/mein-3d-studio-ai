@@ -184,15 +184,24 @@ async function openGeometryCandidate() {
       closeTo(fine.volumeMm3,20-Math.PI*.02**2*.1,"OpenGeometry 0.04 mm hole",1e-4);
       return fine;
     });
-    const wall=box(.02,.0001,.01),drill=cyl(.0002,.0002);
-    wall.operate(OG_OPERATION_SUBTRACT,{tools:[drill]});
-    const thin=summary(wall);
-    closeTo(thin.volumeMm3,20-Math.PI*.2**2*.1,"OpenGeometry thin wall",1e-4);
+    const thinWall01mm=box(.02,.0001,.01),thinDrill01mm=cyl(.0002,.0002);
+    const thinWallOutcome=attempt(()=>{
+      thinWall01mm.operate(OG_OPERATION_SUBTRACT,{tools:[thinDrill01mm]});
+      const measured=summary(thinWall01mm);
+      if(!measured.valid) throw new Error("0.1 mm wall result is invalid");
+      closeTo(measured.volumeMm3,20-Math.PI*.2**2*.1,"OpenGeometry 0.1 mm wall",1e-4);
+      return measured;
+    });
+    const referenceWall=box(.02,.001,.01),referenceDrill=cyl(.0002,.002);
+    referenceWall.operate(OG_OPERATION_SUBTRACT,{tools:[referenceDrill]});
+    const referenceSummary=summary(referenceWall);
+    closeTo(referenceSummary.volumeMm3,200-Math.PI*.2**2*1,"OpenGeometry 1 mm wall reference",1e-4);
     return {candidate:"OpenGeometry",version:"3.0.0",status:"passed",unit:"m (converted to mm³)",
       coplanar:{union:summary(a).volumeMm3,common:summary(commonA).volumeMm3,cut:summary(cutA).volumeMm3},
-      tangency,thinWallMm3:thin.volumeMm3,fineFeature,topology:{bodyType:thin.bodyType,explicitHistory:false},
+      tangency,thinWall:{wall01mm:thinWallOutcome,referenceWall1mmMm3:referenceSummary.volumeMm3},
+      fineFeature,topology:{bodyType:referenceSummary.bodyType,explicitHistory:false},
       memory:{heapStats:"not exposed by public API",explicitDispose:true,ownedBodies:owned.length},
-      limitations:["No public face/edge evolution map in 3.0.","Loft and STL export are absent in 3.0.","Kernel modelling calls are synchronous; worker support is for tessellation/display."]};
+      limitations:["0.1 mm wall Boolean is rejected by the geometric-resolution guard; the 1 mm reference wall passes.","No public face/edge evolution map in 3.0.","Loft and STL export are absent in 3.0.","Kernel modelling calls are synchronous; worker support is for tessellation/display."]};
   } finally { for(const s of owned.reverse())try{s.dispose();}catch{} OpenGeometry.reset(); }
 }
 
