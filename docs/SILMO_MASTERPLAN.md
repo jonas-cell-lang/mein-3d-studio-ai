@@ -173,15 +173,27 @@ Die Anwendung wird schrittweise in klar getrennte Module aufgeteilt. Die genaue 
 
 ## 6. Nächster konkreter Arbeitsschritt
 
-Phase 1 – technisches Fundament – hat mit einem separaten Implementierungsbranch begonnen. Der erste kleine Schritt ist die zentrale Einheiten-API:
-- `src/units.js` definiert die bestehende Basisskala 1 Three.js-Welteinheit = 10 mm und getestete Umrechnungen für Längen und Flächen.
-- `index.html` lädt die API vor dem CAD-Hauptskript. Die vorhandene `MM_PER_UNIT`-Konstante bleibt als Kompatibilitätsalias erhalten; erste kritische CAD-Aufrufstellen verwenden bereits die benannten API-Funktionen.
-- `tests/units.test.cjs` ergänzt mathematische Tests; der Code-Check-Workflow führt sie aus.
-- Der Implementierungsbranch trägt die App-Version v91. Bis Review, erfolgreicher Regression und Merge bleibt die öffentliche Live-App unverändert.
+Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsbranch umgesetzt. Die ersten beiden Bausteine sind implementiert und auf dem aktuellen Stand v93 geprüft:
 
-Der erste Einheiten-API-Schritt ist umgesetzt und auf dem Branch v92 durch Code-Checks sowie die vollständige Playwright-Browserregression geprüft. Die übrigen historischen Umrechnungsaufrufe werden schrittweise migriert.
+### 6.1 Zentrale Einheiten-API
+- `src/units.js` definiert die bestehende Skala: 1 Three.js-Welteinheit = 10 mm.
+- Die API enthält getrennte Umrechnungen für Länge, Fläche und Volumen.
+- `index.html` lädt die API vor dem CAD-Hauptskript. Der bisherige `MM_PER_UNIT`-Name bleibt als Kompatibilitätsalias für noch nicht migrierte Aufrufstellen bestehen.
+- Objektabmessungen und exakte X-/Y-Skizzenpositionen verwenden bereits die benannten API-Funktionen.
+- Node.js-Unit-Tests und die Browserprüfung der geladenen API bestehen.
 
-Der Projektformat-Schritt ergänzt jetzt eine strikte Versionsprüfung für v3, eine getestete Schema-API, ein minimales v3-Kompatibilitätsfixture und Browserprüfungen: v3 wird geladen, v4 wird abgelehnt, und das bestehende Projekt bleibt bei Ablehnung erhalten. Der nächste Abnahmepunkt ist die Erweiterung der Fixtures auf repräsentative reale Projekte und der vollständige Referenzablauf Erstellen → Bearbeiten → Speichern → Öffnen → STL-Export.
+### 6.2 Projektformat v3
+- `src/project-schema.js` validiert App-Kennung, ganzzahlige Versionsnummer und Objektliste, bevor Geometrie importiert wird.
+- Speichern schreibt weiterhin Formatversion 3. Fehlende, nicht ganzzahlige sowie unbekannte ältere oder neuere Versionen werden abgelehnt.
+- Das Fixture `tests/fixtures/project-v3-minimal.json` wird im Browser erfolgreich geladen. Ein v4-Test wird abgelehnt, ohne das zuvor geöffnete Projekt zu verändern.
+- Die Spezifikation steht in `docs/SILMO_PROJECT_FORMAT_V3.md`.
+
+### 6.3 Vertikaler Referenzablauf
+Der Playwright-Browserlauf prüft jetzt einen echten Durchgang: Modellobjekte erstellen, Projektdatei speichern, die gespeicherte Datei in einer frischen Sitzung wieder öffnen, die Objektanzahl vergleichen und anschliessend eine STL-Datei exportieren. Zusätzlich werden das v3-Fixture und die Ablehnung von v4 geprüft.
+
+**Prüfstatus:** Code-Checks und vollständige Browserregression sind für den aktuellen Commit erfolgreich. PR 69 bleibt Draft und ungemergt; die öffentliche Live-App wurde nicht verändert und nicht neu deployed.
+
+**Als Nächstes:** weitere repräsentative v3-Fixtures für Gruppen, verbundene Formen, Skizzen und Image-Studio-Daten ergänzen. Danach folgen das kostenlose Root-Build-/Abhängigkeitsfundament und die schrittweise Modularisierung. Die übrigen historischen Einheiten-Aufrufstellen werden ohne globale riskante Ersetzungen migriert.
 
 Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Paket wird in die Produktionsanwendung eingebunden, bevor die offenen technischen und rechtlichen Abnahmepunkte geklärt sind.
 
