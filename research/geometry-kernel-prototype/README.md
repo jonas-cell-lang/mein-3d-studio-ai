@@ -23,13 +23,14 @@ npm run test:candidates
 
 ## Testumfang
 
-Zusätzlich läuft ein gemeinsamer Kandidatenvergleich mit den fest gepinnten Versionen `occt-wasm 5.17.2`, `@moket/occt-wasm v0.10.1` (über verifizierte GitHub-Release-Assets), `replicad 1.2.1` plus `replicad-opencascadejs 1.2.1` und `opengeometry 3.0.0`. Die Adapter führen denselben Kern aus Grundkörper, Bohrung, koplanarer Überlappung, Tangentialfällen, dünner Wand und Eingabevalidierung aus; nicht verfügbare API-Funktionen werden ausdrücklich als Lücke protokolliert.
+Der Kandidatenvergleich verwendet `candidate-test-catalog.mjs` als gemeinsame, versionierte Testspezifikation. Alle erwarteten Masse und Volumen sind dort in mm bzw. mm³ definiert; Adapter dürfen intern andere Achsen oder Einheiten verwenden, müssen aber dieselben physikalischen Fälle und Sollwerte prüfen. Verglichen werden die fest gepinnten Versionen `occt-wasm 5.17.2`, `@moket/occt-wasm v0.10.1` (über verifizierte GitHub-Release-Assets), `replicad 1.2.1` plus `replicad-opencascadejs 1.2.1` und `opengeometry 3.0.0`. Nicht verfügbare API-Funktionen werden ausdrücklich als Lücke protokolliert.
 
 - Analytische Grundkörper, Bounding Box und bekannte Volumen
 - Boolescher Durchbruch und Platte mit vier Durchgangslöchern
 - Überlappende koplanare Flächen: Fuse, Cut und Common
-- Tangierende Körper: gemeinsame Fläche, Kante, Ecke sowie Zylinder/Quader
-- Nahezu koplanare Geometrie mit kleinem Überlapp
+- Tangierende Körper: gemeinsame Fläche, Kante und Ecke
+- Tangierender Zylinder/Quader-Fall mit analytischem Sollvolumen
+- Nahezu koplanare bzw. fast deckungsgleiche Geometrie mit 0.0001 mm Überlapp
 - Dünne Platte und dünne Wand mit kleinen Durchgangslöchern
 - Ungültige primitive Eingaben: Null, negative, NaN- und unendliche Masse; Annahme/Ablehnung und OCCT-Validität werden getrennt protokolliert
 - Fillet, Flächen-/Kantenabfragen und explizite Topologiehistorie über aufeinanderfolgende Boolesche Operationen
@@ -45,8 +46,9 @@ Zusätzlich läuft ein gemeinsamer Kandidatenvergleich mit den fest gepinnten Ve
 - Im aktuellen Lauf akzeptiert die gepinnte API eine negative Quaderbreite als gültigen Körper; NaN-/unendliche Abmessungen sowie Zylinder mit Radius/Höhe 0 werden als ungültige Shapes zurückgegeben statt durchgehend geworfen. Diese Fälle sind als offene Eingabevalidierungs-Risiken festgehalten.
 - Die Speichermessung protokolliert den OCCT-Handle-Bestand, eine zugängliche WASM-Heap-Grösse (falls die Bibliothek sie exponiert) sowie Prozessspeicher-Spitzenwerte. WebAssembly-Speicher schrumpft nach Freigabe nicht zwingend; die Handle-Baseline muss jedoch wiederhergestellt werden. Der aktuelle Wrapper exponiert den WASM-Heap möglicherweise nicht direkt.
 - Der Worker-Abbruchtest prüft die Terminierung eines Workers während synchroner OCCT-Arbeit. Er beweist keine kooperative Unterbrechung einer einzelnen OCCT-Operation.
+- OpenGeometry liefert neben dem Volumen eine Messfehlergrenze. Liegt diese über der gemeinsamen analytischen Vergleichstoleranz, ist der Messwert nur eine Näherung und darf nicht als gleich präziser Nachweis wie ein exakter B-Rep-Volumenwert gewertet werden.
 - Die automatisierten WebKit-/Firefox-Läufe sind Browser-Kompatibilitätstests in Playwright auf Linux; sie ersetzen noch keine manuellen Prüfungen in Desktop-Safari bzw. realen Safari-Versionen.
-- Noch kein reproduzierbarer Vergleichslauf mit Replicad, moket-io/occt-wasm oder OpenGeometry
+- Der standardisierte Vergleichslauf ist als CI-Test eingerichtet. Die Resultate bleiben Kandidaten-Charakterisierung und sind keine Freigabe für die Produktionsintegration.
 - Kein Nachweis der Kompatibilität mit SILMO-Projektdateien
 - Keine Integration in die bestehende Anwendung
 
