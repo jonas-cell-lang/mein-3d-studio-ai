@@ -53,7 +53,15 @@ export const TEST_CASES = Object.freeze({
     cylinderOriginMm: Object.freeze([10, -0.05, 5]),
     cylinderAxis: Object.freeze([0, 1, 0]),
     expectedVolumeMm3: 20 - Math.PI * 0.2 ** 2 * 0.1
-  })
+  }),
+  invalidPrimitiveInputs: Object.freeze([
+    Object.freeze({ id: "zero-width-box", primitive: "box", dimensionsMm: Object.freeze([0, 10, 10]) }),
+    Object.freeze({ id: "negative-width-box", primitive: "box", dimensionsMm: Object.freeze([-1, 10, 10]) }),
+    Object.freeze({ id: "nan-box-dimension", primitive: "box", dimensionsMm: Object.freeze([Number.NaN, 10, 10]) }),
+    Object.freeze({ id: "infinite-box-dimension", primitive: "box", dimensionsMm: Object.freeze([Number.POSITIVE_INFINITY, 10, 10]) }),
+    Object.freeze({ id: "zero-radius-cylinder", primitive: "cylinder", dimensionsMm: Object.freeze([0, 10]) }),
+    Object.freeze({ id: "zero-height-cylinder", primitive: "cylinder", dimensionsMm: Object.freeze([5, 0]) })
+  ])
 });
 
 export function closeToExpectedVolume(actual, expected, label, relativeTolerance = TEST_CASES.tolerance.relativeVolume) {
