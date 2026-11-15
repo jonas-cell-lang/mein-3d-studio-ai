@@ -163,6 +163,7 @@ async function openGeometryCandidate() {
   };
   try {
     const base=box(.04,.02,.03),hole=cyl(.005,.04);
+    hole.transform(OG_TRANSFORM_TRANSLATE,{offset:[0,-.01,0]});
     base.operate(OG_OPERATION_SUBTRACT,{tools:[hole]});
     const baseCut=summary(base);
     closeTo(baseCut.volumeMm3,24000-500*Math.PI,"OpenGeometry base/cut",1e-5);
@@ -177,6 +178,7 @@ async function openGeometryCandidate() {
     closeTo(summary(cutA).volumeMm3,500,"OpenGeometry coplanar cut",1e-5);
     const tangency={face:tangent("face",[.01,0,0]),edge:tangent("edge",[.01,.01,0]),vertex:tangent("vertex",[.01,.01,.01])};
     const fineWall=box(.02,.0001,.01),fineDrill=cyl(.00002,.0002);
+    fineDrill.transform(OG_TRANSFORM_TRANSLATE,{offset:[0,-.00005,0]});
     const fineFeature=attempt(()=>{
       fineWall.operate(OG_OPERATION_SUBTRACT,{tools:[fineDrill]});
       const fine=summary(fineWall);
@@ -185,6 +187,7 @@ async function openGeometryCandidate() {
       return fine;
     });
     const thinWall01mm=box(.02,.0001,.01),thinDrill01mm=cyl(.0002,.0002);
+    thinDrill01mm.transform(OG_TRANSFORM_TRANSLATE,{offset:[0,-.00005,0]});
     const thinWallOutcome=attempt(()=>{
       thinWall01mm.operate(OG_OPERATION_SUBTRACT,{tools:[thinDrill01mm]});
       const measured=summary(thinWall01mm);
@@ -193,6 +196,7 @@ async function openGeometryCandidate() {
       return measured;
     });
     const referenceWall1mm=box(.02,.001,.01),referenceDrill1mm=cyl(.0002,.002);
+    referenceDrill1mm.transform(OG_TRANSFORM_TRANSLATE,{offset:[0,-.0005,0]});
     const referenceWall1mmOutcome=attempt(()=>{
       referenceWall1mm.operate(OG_OPERATION_SUBTRACT,{tools:[referenceDrill1mm]});
       const measured=summary(referenceWall1mm);
@@ -201,6 +205,7 @@ async function openGeometryCandidate() {
       return measured;
     });
     const referenceWall2mm=box(.02,.002,.01),referenceDrill2mm=cyl(.001,.004);
+    referenceDrill2mm.transform(OG_TRANSFORM_TRANSLATE,{offset:[0,-.001,0]});
     const referenceWall2mmOutcome=attempt(()=>{
       referenceWall2mm.operate(OG_OPERATION_SUBTRACT,{tools:[referenceDrill2mm]});
       const measured=summary(referenceWall2mm);
