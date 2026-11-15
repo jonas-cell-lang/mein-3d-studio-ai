@@ -86,16 +86,16 @@ Die Anwendung wird schrittweise in klar getrennte Module aufgeteilt. Die genaue 
 ## 4. Entwicklungsphasen und Abnahmekriterien
 
 ### Phase 0 – Bestandsaufnahme und Architekturplan
-**Status: weit fortgeschritten; Quellcodeprüfung und Architekturabnahme noch offen.**
+**Status: abgenommen für den Start von Phase 1; die Kernel-Auswahl bleibt offen.**
 
 - Bestandsaufnahme v90 und Funktions-/Abhängigkeitsmatrix erstellt
 - Kritische technische Risiken aus Mesh-Modell, BSP-CSG, Einheiten, Projektformat und Undo/Redo dokumentiert
 - Tatsächliche Einheitenumrechnung direkt im Quellcode geprüft und Dokumentationsfehler korrigiert: 1 Three.js-Einheit = 10 mm
 - Unit-/Tolerance-Spezifikation mit bekannten Schwellen und offenen Zuordnungen erstellt
 - CAD-Kern-Kandidaten verglichen und einen isolierten OCCT-WASM-Prototyp ergänzt
-- Weitere direkte Prüfung von Objekt-Erzeugung, Mesh-Manipulation, Projektserialisierung und CSG-Aufrufstellen bleibt erforderlich
+- Die Quellcodeprüfung der zentralen Objekt-, Mesh-, CSG-, Undo-/Redo-, Projekt- und STL-Pfade wurde für die Architekturfreigabe ergänzt; die vollständige Zuordnung aller Toleranzstellen und Leistungsgrenzen bleibt als Arbeit in Phase 1/2 dokumentiert
 
-**Abnahme:** Der Plan benennt vorhandene Funktionen, Risiken, Modulgrenzen, Migrationsschritte und überprüfbare Qualitätskriterien.
+**Abnahme:** Der Plan benennt vorhandene Funktionen, Risiken, Modulgrenzen, Migrationsschritte und überprüfbare Qualitätskriterien. Die Architekturentscheidung erlaubt den Start von Phase 1, ohne einen Geometriekern auszuwählen oder zu integrieren.
 
 ### Phase 1 – Zuverlässiges technisches Fundament
 - Modularer Build- und Entwicklungsablauf
@@ -196,8 +196,10 @@ Ausgeführt wurden:
 
 **Noch keine Architekturentscheidung:** Die Lizenzprüfung und die Bewertung der dokumentierten API-/Messlücken stehen aus. Es gibt keine Integration in die SILMO-Live-App; der bisherige Geometriekern bleibt unverändert. Phase 0 ist damit weiterhin nicht vollständig abgenommen.
 
-**Lizenzprüfung:** Die quellenbasierte Vorprüfung ist in [docs/SILMO_LICENSE_REVIEW.md](SILMO_LICENSE_REVIEW.md) dokumentiert. Moket hat derzeit die transparenteste Lizenz-/Quellcode-/Austausch-Dokumentation; andymai weist unterschiedliche Lizenzangaben für npm-Paket und kompiliertes WASM aus; Replicad benötigt zusätzlich ein LGPL-lizenziertes OCCT-WASM; OpenGeometry steht unter MPL-2.0. Das ist keine rechtliche Freigabe. Die vollständige SBOM, transitive Lizenzen, Release-Quellen und ein realer WASM-Austauschbarkeitstest bleiben offen. Auch die Lizenz für SILMO-eigenen Code ist separat zu entscheiden.
+**Lizenzprüfung:** Die quellenbasierte Vorprüfung ist in [docs/SILMO_LICENSE_REVIEW.md](SILMO_LICENSE_REVIEW.md) dokumentiert. Die Release-Archive bestätigen unter anderem eine MIT-Lizenzdatei im andymai-Quellarchiv bei gleichzeitig abweichender LGPL-Angabe für das kompilierte WASM; dieser Widerspruch ist ein Freigabeblocker. Moket hat derzeit die transparenteste Lizenz-/Quellcode-/Austausch-Dokumentation; andymai weist unterschiedliche Lizenzangaben für npm-Paket und kompiliertes WASM aus; Replicad benötigt zusätzlich ein LGPL-lizenziertes OCCT-WASM; OpenGeometry steht unter MPL-2.0. Das ist keine rechtliche Freigabe. Die vollständige SBOM, transitive Lizenzen, Release-Quellen und ein realer WASM-Austauschbarkeitstest bleiben offen. Auch die Lizenz für SILMO-eigenen Code ist separat zu entscheiden.
 
-**Nächster Schritt (in Arbeit):** Der Kernel-Prototyp-Workflow wurde so erweitert, dass er ein npm-Lockfile erzeugt und verwendet, eine CycloneDX-SBOM erstellt, die vier exakten Kandidaten-Quellarchive mit SHA-256-Prüfsummen sichert und die verifizierten Moket-WASM-Hashes ablegt. Erst nach einem erfolgreichen Actions-Lauf werden Lockfile, SBOM und Quellarchiv-Prüfsummen geprüft und als versionierte Nachweise übernommen. Danach folgt die begründete technische Architektur-Empfehlung anhand aller Geometrie-, Mess-, Topologie-, Browser-, Speicher- und Lizenzbefunde.
+**Provenienz-Abnahme abgeschlossen:** Der Workflow [43702597723](https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43702597723) hat Lockfile, CycloneDX-SBOM, Quellarchiv-Prüfsummen und Moket-Release-Asset-Prüfsummen erfolgreich erzeugt, geprüft und auf dem Forschungsbranch versioniert. Das Lockfile wird bei Folgeausführungen mit `npm ci` verwendet. Die vier Release-Quellarchive wurden zusätzlich als CI-Artefakt gesichert und ihre Lizenzdateien direkt geprüft. Die SBOM enthält 28 npm-Komponenten; Browser-Binaries, Betriebssystempakete und vollständige Build-Toolchains sind nicht automatisch abgedeckt.
+
+**Architekturentscheid:** [docs/SILMO_ARCHITECTURE_DECISION.md](SILMO_ARCHITECTURE_DECISION.md) gibt Phase 1 frei: Wir bauen das bestehende SILMO schrittweise modular und sichern Build, Einheiten, Projektformat und Regressionen. Three.js r128 und der vorhandene BSP-Mesh-CSG bleiben zunächst unverändert. Es wird kein Kernel in die Live-App integriert. Die Kernelwahl bleibt aufgrund der dokumentierten Mess-/API-Lücken und offenen Lizenznachweise vertagt. Phase 1 kann nach grünen Prüfungen auf dem aktuellen PR-Head beginnen.
 
 **Erfolg bedeutet nicht möglichst viele Werkzeuge. Erfolg bedeutet, dass SILMO komplexe 3D-Aufgaben präzise, stabil und verständlich erledigt.**
