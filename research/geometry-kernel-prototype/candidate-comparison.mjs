@@ -39,7 +39,7 @@ async function andyOcct() {
     closeTo(k.getVolume(c),TEST_CASES.coplanarOverlap.expectedVolumeMm3.common,"andy coplanar common");
     closeTo(k.getVolume(d),TEST_CASES.coplanarOverlap.expectedVolumeMm3.cut,"andy coplanar cut");
     const tangency={};
-    for(const [name,offset] of [["face",[10,0,0]],["edge",[10,10,0]],["vertex",[10,10,10]]]){
+    for(const [name,offset] of Object.entries(TEST_CASES.tangency.offsetsMm)){
       const first=k.makeBox(...TEST_CASES.tangency.boxDimensionsMm), second=k.transform(k.makeBox(...TEST_CASES.tangency.boxDimensionsMm),translation(...offset));
       tangency[name]=attempt(()=>{
         const result=k.fuse(first,second);
@@ -117,9 +117,9 @@ async function moketOcct() {
     closeTo(props(c.shape).volume,TEST_CASES.coplanarOverlap.expectedVolumeMm3.common,"moket coplanar common");
     closeTo(props(d.shape).volume,TEST_CASES.coplanarOverlap.expectedVolumeMm3.cut,"moket coplanar cut");
     const tangency={};
-    for(const [name,offset] of [["face",[10,0,0]],["edge",[10,10,0]],["vertex",[10,10,10]]]){
-      const first=ok(k.makeBox(10,10,10),"moket tangent A").shape;
-      const second=ok(k.transform(ok(k.makeBox(10,10,10),"moket tangent B").shape,translation(...offset)),"moket tangent transform").shape;
+    for(const [name,offset] of Object.entries(TEST_CASES.tangency.offsetsMm)){
+      const first=ok(k.makeBox(...TEST_CASES.tangency.boxDimensionsMm),"moket tangent A").shape;
+      const second=ok(k.transform(ok(k.makeBox(...TEST_CASES.tangency.boxDimensionsMm),"moket tangent B").shape,translation(...offset)),"moket tangent transform").shape;
       tangency[name]=attempt(()=>{
         const result=ok(k.boolean("fuse",first,second),"moket tangent fuse"), p=props(result.shape);
         assert.equal(p.valid,true); closeTo(p.volume,TEST_CASES.tangency.expectedUnionVolumeMm3,`moket ${name} contact`);
@@ -192,7 +192,7 @@ async function replicadCandidate() {
     closeTo(measure(c).volumeMm3,TEST_CASES.coplanarOverlap.expectedVolumeMm3.common,"Replicad coplanar common");
     closeTo(measure(d).volumeMm3,TEST_CASES.coplanarOverlap.expectedVolumeMm3.cut,"Replicad coplanar cut");
     const tangency={};
-    for(const [name,offset] of [["face",[10,0,0]],["edge",[10,10,0]],["vertex",[10,10,10]]]){
+    for(const [name,offset] of Object.entries(TEST_CASES.tangency.offsetsMm)){
       const first=own(r.makeBox([0,0,0],TEST_CASES.tangency.boxDimensionsMm));
       const second=own(r.makeBox(offset,offset.map((v,i)=>v+TEST_CASES.tangency.boxDimensionsMm[i])));
       tangency[name]=attempt(()=>{
@@ -284,7 +284,7 @@ async function openGeometryCandidate() {
       common:compareMeasured(summary(commonA),TEST_CASES.coplanarOverlap.expectedVolumeMm3.common,"OpenGeometry coplanar common"),
       cut:compareMeasured(summary(cutA),TEST_CASES.coplanarOverlap.expectedVolumeMm3.cut,"OpenGeometry coplanar cut")
     };
-    const tangency={face:tangent("face",[.01,0,0]),edge:tangent("edge",[.01,.01,0]),vertex:tangent("vertex",[.01,.01,.01])};
+    const tangency=Object.fromEntries(Object.entries(TEST_CASES.tangency.offsetsMm).map(([name,offset])=>[name,tangent(name,offset.map(v=>v/1000))]));
     const nearA=box(...TEST_CASES.nearCoincident.boxDimensionsMm.map(v=>v/1000)),nearB=box(...TEST_CASES.nearCoincident.boxDimensionsMm.map(v=>v/1000));
     nearB.transform(OG_TRANSFORM_TRANSLATE,{offset:[TEST_CASES.nearCoincident.secondOffsetMm/1000,0,0]});
     nearA.operate(OG_OPERATION_UNION,{tools:[nearB]});
@@ -358,5 +358,8 @@ for(const [name,run] of candidates){
   try{reports.push(await run());}
   catch(error){reports.push({candidate:name,status:"blocked-or-failed",error:error instanceof Error?error.message:String(error),stack:error instanceof Error?error.stack:undefined});}
 }
-console.log(JSON.stringify({status:reports.every(r=>r.status==="passed")?"passed":"partial",testCatalog:{file:"candidate-test-catalog.mjs",version:TEST_CASES.version,unit:TEST_CASES.unit},candidates:reports},null,2));
+const failed=reports.some(r=>r.status!=="passed");
+const hasGaps=reports.some(r=>(r.limitations?.length??0)>0||(r.measurementQuality??[]).some(item=>!item.precisionAdequate));
+const overallStatus=failed?"partial":hasGaps?"completed-with-gaps":"passed";
+console.log(JSON.stringify({status:overallStatus,testCatalog:{file:"candidate-test-catalog.mjs",version:TEST_CASES.version,unit:TEST_CASES.unit},candidates:reports},null,2));
 if(reports.some(r=>r.status!=="passed"))process.exitCode=1;
