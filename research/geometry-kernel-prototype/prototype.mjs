@@ -268,6 +268,9 @@ try {
     const wasmBufferBytes = () =>
       rawModule.HEAPU8?.buffer?.byteLength ??
       rawModule.HEAP8?.buffer?.byteLength ??
+      rawModule.HEAP32?.buffer?.byteLength ??
+      rawModule.HEAPU32?.buffer?.byteLength ??
+      rawModule.HEAPF32?.buffer?.byteLength ??
       rawModule.wasmMemory?.buffer?.byteLength ??
       rawModule.memory?.buffer?.byteLength ??
       rawModule.asm?.memory?.buffer?.byteLength ??
