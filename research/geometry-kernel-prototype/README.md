@@ -28,7 +28,7 @@ npm run test:browser
 - Tangierende Körper: gemeinsame Fläche, Kante, Ecke sowie Zylinder/Quader
 - Nahezu koplanare Geometrie mit kleinem Überlapp
 - Dünne Platte und dünne Wand mit kleinen Durchgangslöchern
-- Ungültige primitive Eingaben: Null, negative, NaN- und unendliche Masse
+- Ungültige primitive Eingaben: Null, negative, NaN- und unendliche Masse; Annahme/Ablehnung und OCCT-Validität werden getrennt protokolliert
 - Fillet, Flächen-/Kantenabfragen und explizite Topologiehistorie über aufeinanderfolgende Boolesche Operationen
 - Tessellierung und STEP-Export/-Import mit Volumenvergleich
 - Kontrollierter Fehlerfall und anschliessende Weiterverwendung des Kerns
@@ -38,7 +38,8 @@ npm run test:browser
 ## Aussagekraft und Grenzen
 
 - Tangentiale Boolesche Fälle werden als gültiges Ergebnis mit analytischem Volumen oder als kontrollierte OCCT-Ablehnung protokolliert. Ein ungültig zurückgegebenes Ergebnis lässt den Test fehlschlagen.
-- Die Speichermessung protokolliert den OCCT-Handle-Bestand, den WASM-Heap-Höchststand und Prozessspeicherwerte. WebAssembly-Speicher schrumpft nach Freigabe nicht zwingend; die Handle-Baseline muss jedoch wiederhergestellt werden.
+- Ungültige Primitiveingaben werden nicht pauschal als abgelehnt vorausgesetzt: Der Test protokolliert, ob die API wirft, ein ungültiges Shape zurückgibt oder ein gültiges Shape akzeptiert. Das ist eine Verhaltensmessung, keine Freigabe dieses Verhaltens.
+- Die Speichermessung protokolliert den OCCT-Handle-Bestand, eine zugängliche WASM-Heap-Grösse (falls die Bibliothek sie exponiert) sowie Prozessspeicher-Spitzenwerte. WebAssembly-Speicher schrumpft nach Freigabe nicht zwingend; die Handle-Baseline muss jedoch wiederhergestellt werden. Der aktuelle Wrapper exponiert den WASM-Heap möglicherweise nicht direkt.
 - Der Worker-Abbruchtest prüft die Terminierung eines Workers während synchroner OCCT-Arbeit. Er beweist keine kooperative Unterbrechung einer einzelnen OCCT-Operation.
 - Noch keine Safari-/WebKit- oder Firefox-Prüfung
 - Noch kein reproduzierbarer Vergleichslauf mit Replicad, moket-io/occt-wasm oder OpenGeometry
