@@ -136,7 +136,19 @@ jobs:
           git add package-lock.json silmo-occt-prototype.cdx.json provenance/source-archives.sha256 provenance/moket-release-assets.sha256 provenance/toolchain.txt
           if ! git diff --cached --quiet; then
             git commit -m "chore(research): pin kernel prototype provenance"
-            git push origin "HEAD:$GITHUB_HEAD_REF"
+            pushed=false
+            for attempt in 1 2 3; do
+              if git push origin "HEAD:$GITHUB_HEAD_REF"; then
+                pushed=true
+                break
+              fi
+              git fetch origin "$GITHUB_HEAD_REF:refs/remotes/origin/$GITHUB_HEAD_REF"
+              git rebase "origin/$GITHUB_HEAD_REF"
+            done
+            if [ "$pushed" != true ]; then
+              echo "Could not push provenance commit after three attempts."
+              exit 1
+            fi
           fi
       - name: Upload lockfile, SBOM and source provenance
         if: always()
