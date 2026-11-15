@@ -65,4 +65,6 @@ Das Artefakt heisst `silmo-kernel-provenance-<commit-sha>` und enthält:
 - Quellarchive der vier geprüften Release-Tags und SHA-256-Prüfsummen
 - Node-/npm-Versionen und Moket-Release-Asset-Prüfsummen
 
-**Wichtig:** Das generierte Lockfile wird zunächst als CI-Artefakt gesichert und ist noch nicht im Git-Branch eingecheckt. Erst nach erfolgreichem Lauf und Prüfung des Artefakts wird es als versionierte Datei übernommen. Die SBOM erfasst npm-Abhängigkeiten; Browser-Binaries, Betriebssystempakete und sämtliche Build-Toolchains sind damit nicht automatisch vollständig inventarisiert.
+**Verifizierter Stand (15.11.2026):** Der CI-Lauf `43701667009` hat das Lockfile, die CycloneDX-SBOM, vier Release-Quellarchive und SHA-256-Prüfsummen erfolgreich erzeugt und als Artefakt hochgeladen. Das Artefakt wurde anschliessend geöffnet und auf seine erwarteten Dateien geprüft. Der Workflow ist so angepasst, dass er das Lockfile beim ersten erfolgreichen PR-Lauf auf dem Forschungsbranch versioniert und bei späteren Läufen `npm ci` direkt aus dem eingecheckten Lockfile verwendet. Die Prüfsummen der Quellarchive, die Moket-WASM-Asset-Prüfsummen, die SBOM und das Lockfile werden versioniert; die grossen Quellarchive bleiben als zeitlich begrenztes Actions-Artefakt erhalten. Der nächste Lauf muss den neuen automatischen Commit-Schritt noch bestätigen.
+
+Die SBOM erfasst den npm-Abhängigkeitsbaum (28 Komponenten); Browser-Binaries, Betriebssystempakete und sämtliche Build-Toolchains sind damit nicht automatisch vollständig inventarisiert.
