@@ -265,8 +265,17 @@ try {
   await time("memory-growth-and-release", async () => {
     const baselineShapeCount = kernel.shapeCount;
     const rawModule = kernel.getRawModule();
-    const wasmBytesBefore = rawModule.HEAPU8?.buffer?.byteLength ?? null;
+    const wasmBufferBytes = () =>
+      rawModule.HEAPU8?.buffer?.byteLength ??
+      rawModule.HEAP8?.buffer?.byteLength ??
+      rawModule.wasmMemory?.buffer?.byteLength ??
+      rawModule.memory?.buffer?.byteLength ??
+      rawModule.asm?.memory?.buffer?.byteLength ??
+      null;
+    const wasmBytesBefore = wasmBufferBytes();
     const processMemoryBefore = process.memoryUsage();
+    let peakRssBytes = processMemoryBefore.rss;
+    let peakHeapUsedBytes = processMemoryBefore.heapUsed;
     const checkpoint = kernel.checkpoint();
     for (let index = 0; index < 40; index += 1) {
       const memoryBox = kernel.makeBox(20 + index * 0.01, 15, 10);
@@ -276,9 +285,12 @@ try {
         `memory iteration ${index} produced an invalid result`);
       assert.ok(kernel.getVolume(memoryResult) > 0,
         `memory iteration ${index} produced an empty result`);
+      const sample = process.memoryUsage();
+      peakRssBytes = Math.max(peakRssBytes, sample.rss);
+      peakHeapUsedBytes = Math.max(peakHeapUsedBytes, sample.heapUsed);
     }
     const peakShapeCount = kernel.shapeCount;
-    const wasmBytesAfter = rawModule.HEAPU8?.buffer?.byteLength ?? null;
+    const wasmBytesAfter = wasmBufferBytes();
     const processMemoryAfter = process.memoryUsage();
     assert.ok(peakShapeCount > baselineShapeCount,
       "repeated boolean operations must allocate measurable shape handles");
@@ -292,8 +304,11 @@ try {
       shapeCountAfterRelease: kernel.shapeCount,
       wasmHeapBytesBefore: wasmBytesBefore,
       wasmHeapBytesAfter: wasmBytesAfter,
-      rssDeltaBytes: processMemoryAfter.rss - processMemoryBefore.rss,
-      heapUsedDeltaBytes: processMemoryAfter.heapUsed - processMemoryBefore.heapUsed
+      wasmHeapExposureKeys: Object.keys(rawModule).filter(key => /heap|memory|wasm/i.test(key)),
+      peakRssDeltaBytes: peakRssBytes - processMemoryBefore.rss,
+      rssAfterReleaseDeltaBytes: processMemoryAfter.rss - processMemoryBefore.rss,
+      peakHeapUsedDeltaBytes: peakHeapUsedBytes - processMemoryBefore.heapUsed,
+      heapUsedAfterReleaseDeltaBytes: processMemoryAfter.heapUsed - processMemoryBefore.heapUsed
     };
   });
 
@@ -317,7 +332,7 @@ try {
       "face-, edge- and vertex-tangent Boolean cases",
       "tangent cylinder/box and near-coplanar overlap",
       "thin plate and thin wall with small through-holes",
-      "zero, negative, NaN and infinite primitive input rejection",
+      "zero, negative, NaN and infinite primitive input acceptance/rejection characterization",
       "consecutive Boolean operations with explicit topology history",
       "repeated Boolean allocation, WASM/process memory observations and releaseSince",
       "releaseAll and kernel reuse"
