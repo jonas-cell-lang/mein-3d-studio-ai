@@ -33,7 +33,7 @@ jobs:
         with:
           python-version: "3.x"
       - name: Test central unit conversion API
-        run: node --test tests/units.test.cjs
+        run: node --test tests/*.test.cjs
       - name: Check inline JavaScript syntax
         shell: bash
         run: |
