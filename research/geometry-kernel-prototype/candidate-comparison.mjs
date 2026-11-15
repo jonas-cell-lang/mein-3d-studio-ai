@@ -62,10 +62,11 @@ async function andyOcct() {
     const liveBefore=k.shapeCount;
     for(let i=0;i<20;i++) k.cut(k.makeBox(10+i*.01,10,10),k.makeCylinder(1,10));
     const livePeak=k.shapeCount, memoryAfter=k.getRawModule().HEAP32?.buffer?.byteLength??null;
+    const nearCoincidentVolume=k.getVolume(nearCoincident), cylinderBoxTangencyVolume=k.getVolume(cylinderBoxUnion);
     k.releaseAll();
     return {candidate:"occt-wasm (andymai)",version:"5.17.2 / OCCT 8.0.1",status:"passed",
       baseAndCutMm3:{base:baseVolume,cut:cutVolume},coplanar:{union:1500,common:500,cut:500},
-      tangency,nearCoincidentMm3:k.getVolume(nearCoincident),cylinderBoxTangencyMm3:k.getVolume(cylinderBoxUnion),thinWallMm3:thinVolume,
+      tangency,nearCoincidentMm3:nearCoincidentVolume,cylinderBoxTangencyMm3:cylinderBoxTangencyVolume,thinWallMm3:thinVolume,
       topologyHistory:!!history.result,memory:{liveBefore,livePeak,liveAfter:k.shapeCount,wasmBytesBefore:memoryBefore,wasmBytesAfter:memoryAfter},
       limitations:[]};
   } finally { k[Symbol.dispose](); }
@@ -115,10 +116,13 @@ async function moketOcct() {
     for(let i=0;i<20;i++) ok(k.boolean("cut",ok(k.makeBox(10+i*.01,10,10),"moket memory box").shape,
       ok(k.makeCylinder([5,0,5],[0,1,0],1,10),"moket memory drill").shape),"moket memory cut");
     const thinVolume=props(thin.shape).volume;
-    const memoryPeak=k.heapStats(); ok(k.releaseAll(),"moket release");
+    const memoryPeak=k.heapStats();
+    const nearCoincidentVolume=props(nearCoincident.shape).volume;
+    const cylinderBoxTangencyVolume=props(cylinderBoxUnion.shape).volume;
+    ok(k.releaseAll(),"moket release");
     const memoryAfter=k.heapStats();
     return {candidate:"@moket/occt-wasm",version:"0.10.1 / OCCT 8.0.1",status:"passed",
-      coplanar:TEST_CASES.coplanarOverlap.expectedVolumeMm3,tangency,nearCoincidentMm3:props(nearCoincident.shape).volume,cylinderBoxTangencyMm3:props(cylinderBoxUnion.shape).volume,thinWallMm3:thinVolume,
+      coplanar:TEST_CASES.coplanarOverlap.expectedVolumeMm3,tangency,nearCoincidentMm3:nearCoincidentVolume,cylinderBoxTangencyMm3:cylinderBoxTangencyVolume,thinWallMm3:thinVolume,
       topologyHistory:!!u.history,memory:{before:memoryBefore,peak:memoryPeak,after:memoryAfter},limitations:[]};
   } finally { k.releaseAll(); }
 }
