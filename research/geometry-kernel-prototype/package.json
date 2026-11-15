@@ -1,0 +1,12 @@
+{
+  "name": "silmo-occt-kernel-prototype",
+  "private": true,
+  "type": "module",
+  "description": "Isolated SILMO geometry-kernel evaluation; not part of the production app.",
+  "scripts": {
+    "test": "node ./prototype.mjs"
+  },
+  "dependencies": {
+    "occt-wasm": "5.17.2"
+  }
+}
