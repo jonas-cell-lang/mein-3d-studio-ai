@@ -1031,6 +1031,7 @@ try {
   await roundTripPage.locator('#projectFileInput').setInputFiles(savedProjectPath);
   await roundTripPage.waitForFunction(() => /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, {timeout:10000});
   assert.equal(await roundTripPage.locator('#objects .object-row').count(),savedProject.objects.length,'Gespeichertes Projekt wurde nicht vollständig wiederhergestellt');
+  await roundTripPage.locator('[data-tab="print"]').click();
   await roundTripPage.waitForFunction(() => typeof window.THREE?.STLExporter === 'function', null, {timeout:15000});
   const roundTripExportPromise = roundTripPage.waitForEvent('download',{timeout:5000}).catch(() => null);
   await roundTripPage.locator('#exportModel').click();
