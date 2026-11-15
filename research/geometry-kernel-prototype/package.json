@@ -6,11 +6,17 @@
   "scripts": {
     "test": "node ./prototype.mjs",
     "test:browser": "node ./browser-worker-test.mjs",
-    "test:browser:all": "node ./browser-worker-test.mjs chromium && node ./browser-worker-test.mjs firefox && node ./browser-worker-test.mjs webkit"
+    "test:browser:all": "node ./browser-worker-test.mjs chromium && node ./browser-worker-test.mjs firefox && node ./browser-worker-test.mjs webkit",
+    "test:candidates": "node ./candidate-comparison.mjs"
   },
   "dependencies": {
     "occt-wasm": "5.17.2",
     "playwright": "1.64.1",
-    "vite": "8.3.5"
+    "vite": "8.3.5",
+    "opengeometry": "3.0.0",
+    "replicad": "1.2.1",
+    "replicad-opencascadejs": "1.2.1",
+    "three": "0.168.0",
+    "manifold-3d": "3.0.1"
   }
 }
