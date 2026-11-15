@@ -1,0 +1,31 @@
+name: SILMO isolated OCCT kernel prototype
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "research/geometry-kernel-prototype/**"
+      - ".github/workflows/kernel-prototype.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  occt-prototype:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install pinned prototype dependency
+        working-directory: research/geometry-kernel-prototype
+        run: npm install --no-audit --no-fund
+      - name: Run isolated analytic geometry tests
+        working-directory: research/geometry-kernel-prototype
+        run: npm test
