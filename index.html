@@ -1354,7 +1354,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 
   function originalSize(obj) { return obj.userData.baseDimensions; }
   function currentSizeMM(obj, axis) {
-    return originalSize(obj)[axis] * Math.abs(obj.scale[axis]) * MM_PER_UNIT;
+    return window.SILMOUnits.worldUnitsToMm(originalSize(obj)[axis] * Math.abs(obj.scale[axis]));
   }
 
   // Robuste polygonbasierte CSG-Operationen (BSP), ohne zusätzliche Bibliothek.
@@ -3766,8 +3766,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       if (!['line3d','line2d','curve2d'].includes(tool)) {
         const exactX=document.getElementById('sketchPositionXMM')?.value;
         const exactY=document.getElementById('sketchPositionYMM')?.value;
-        if(exactX!==undefined&&exactX.trim()!==''){const value=Number(exactX);if(!Number.isFinite(value)||Math.abs(value)>2000)throw new Error('Mittelpunkt X muss zwischen −2000 und 2000 mm liegen.');meshPosition.x=value/MM_PER_UNIT;}
-        if(exactY!==undefined&&exactY.trim()!==''){const value=Number(exactY);if(!Number.isFinite(value)||Math.abs(value)>2000)throw new Error('Mittelpunkt Y muss zwischen −2000 und 2000 mm liegen.');meshPosition.y=value/MM_PER_UNIT;}
+        if(exactX!==undefined&&exactX.trim()!==''){const value=Number(exactX);if(!Number.isFinite(value)||Math.abs(value)>2000)throw new Error('Mittelpunkt X muss zwischen −2000 und 2000 mm liegen.');meshPosition.x=window.SILMOUnits.mmToWorldUnits(value);}
+        if(exactY!==undefined&&exactY.trim()!==''){const value=Number(exactY);if(!Number.isFinite(value)||Math.abs(value)>2000)throw new Error('Mittelpunkt Y muss zwischen −2000 und 2000 mm liegen.');meshPosition.y=window.SILMOUnits.mmToWorldUnits(value);}
       }
       geometry.computeBoundingBox();
       geometry.computeBoundingSphere();
