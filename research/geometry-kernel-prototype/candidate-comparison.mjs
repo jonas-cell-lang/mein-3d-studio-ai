@@ -190,7 +190,7 @@ async function openGeometryCandidate() {
   const owned=[], own=s=>(owned.push(s),s);
   const box=(w,h,d)=>own(new Solid(OG_PRIMITIVE_CUBOID,{width:w,height:h,depth:d}));
   const cyl=(r,h)=>own(new Solid(OG_PRIMITIVE_CYLINDER,{radius:r,height:h}));
-  const summary=s=>{const m=s.measure({deflection:1e-6}),v=s.validity();return {volumeMm3:m.volume*1e9,errorBoundMm3:m.errorBound*1e9,valid:v.valid,closed:v.closed,bodyType:v.bodyType};};
+  const summary=s=>{const m=s.measure({deflection:1e-8}),v=s.validity();return {volumeMm3:m.volume*1e9,errorBoundMm3:m.errorBound*1e9,valid:v.valid,closed:v.closed,bodyType:v.bodyType};};
   const tangent=(name,offset)=>{
     const a=box(.01,.01,.01),b=box(.01,.01,.01);b.transform(OG_TRANSFORM_TRANSLATE,{offset});
     return attempt(()=>{a.operate(OG_OPERATION_UNION,{tools:[b]});const p=summary(a);assert.equal(p.valid,true);closeTo(p.volumeMm3,TEST_CASES.tangency.expectedUnionVolumeMm3,`OpenGeometry ${name} contact`);return p;});
