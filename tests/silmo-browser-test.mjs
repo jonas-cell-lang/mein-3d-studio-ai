@@ -21,7 +21,7 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v91/, 'Build-Metadaten zeigen nicht v91');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v92/, 'Build-Metadaten zeigen nicht v92');
   assert.equal(await page.evaluate(() => window.SILMOUnits?.mmToWorldUnits(10)), 1, 'Zentrale Einheiten-API ist im Browser nicht verfügbar');
   assert.equal(await page.evaluate(() => window.SILMOUnits?.worldUnitsToMm(1)), 10, 'Zentrale Einheiten-API liefert falsche Millimeterwerte');
   assert.equal(await page.evaluate(() => window.SILMOProjectSchema?.CURRENT_PROJECT_VERSION), 3, 'Projektformat-Version 3 ist nicht registriert');
