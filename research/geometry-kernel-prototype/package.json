@@ -5,7 +5,8 @@
   "description": "Isolated SILMO geometry-kernel evaluation; not part of the production app.",
   "scripts": {
     "test": "node ./prototype.mjs",
-    "test:browser": "node ./browser-worker-test.mjs"
+    "test:browser": "node ./browser-worker-test.mjs",
+    "test:browser:all": "node ./browser-worker-test.mjs chromium && node ./browser-worker-test.mjs firefox && node ./browser-worker-test.mjs webkit"
   },
   "dependencies": {
     "occt-wasm": "5.17.2",
