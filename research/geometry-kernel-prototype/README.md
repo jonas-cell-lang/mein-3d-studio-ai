@@ -18,9 +18,12 @@ Im Ordner `research/geometry-kernel-prototype`:
 npm install
 npm test
 npm run test:browser:all
+npm run test:candidates
 ```
 
 ## Testumfang
+
+Zusätzlich läuft ein gemeinsamer Kandidatenvergleich mit den fest gepinnten Versionen `occt-wasm 5.17.2`, `@moket/occt-wasm v0.10.1` (über verifizierte GitHub-Release-Assets), `replicad 1.2.1` plus `replicad-opencascadejs 1.2.1` und `opengeometry 3.0.0`. Die Adapter führen denselben Kern aus Grundkörper, Bohrung, koplanarer Überlappung, Tangentialfällen, dünner Wand und Eingabevalidierung aus; nicht verfügbare API-Funktionen werden ausdrücklich als Lücke protokolliert.
 
 - Analytische Grundkörper, Bounding Box und bekannte Volumen
 - Boolescher Durchbruch und Platte mit vier Durchgangslöchern
