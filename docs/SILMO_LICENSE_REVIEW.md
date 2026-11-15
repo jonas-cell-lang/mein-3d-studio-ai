@@ -36,7 +36,7 @@ Diese Pakete sind Teil der Forschungsumgebung, aber nicht selbst einer der vier 
 | `vite` | 8.3.5 | MIT | Prototyp-Entwicklungsserver |
 | `manifold-3d` | 3.0.1 | Apache-2.0 | Im Prototyp deklariert, aber nicht Teil des aktuellen Vier-Kandidaten-Vergleichslaufs |
 
-Die obige Tabelle ist keine vollständige SBOM. Indirekte Abhängigkeiten, Browser-Binaries und Build-Werkzeuge sind damit noch nicht vollständig inventarisiert. Im Forschungsordner ist im aktuellen PR kein Lockfile enthalten; die direkten Versionen sind in `package.json` festgehalten, die transitive Auflösung ist damit aber noch nicht vollständig reproduzierbar.
+Die obige Tabelle ist keine vollständige SBOM. Indirekte Abhängigkeiten, Browser-Binaries und Build-Werkzeuge sind damit noch nicht vollständig inventarisiert. Das erfolgreiche Provenienz-Artefakt enthält ein `package-lock.json` und eine CycloneDX-1.5-SBOM mit 28 Komponenten. Der Lockfile-/SBOM-Nachweis wurde geprüft; der neue Workflow soll das Lockfile und die SBOM im Forschungsbranch versionieren. Der nächste Lauf muss den automatischen Commit-Schritt noch bestätigen.
 
 ## 4. Konsequenzen für SILMO
 
@@ -87,7 +87,7 @@ Die Lizenz darf nicht allein entscheiden: Geometriequalität, Messpräzision, To
 - Playwright: https://www.npmjs.com/package/playwright
 - Vite: https://www.npmjs.com/package/vite
 
-## 8. Technische Provenienz-Automatisierung (noch ohne Laufnachweis)
+## 8. Technische Provenienz-Automatisierung (Artefakt erfolgreich geprüft; Branch-Commit noch zu bestätigen)
 
 Der isolierte GitHub-Actions-Workflow wurde erweitert, um bei einem erfolgreichen Lauf:
 - ein Lockfile für die exakt deklarierten npm-Direktabhängigkeiten zu erzeugen und mit `npm ci` zu verwenden,
@@ -96,4 +96,13 @@ Der isolierte GitHub-Actions-Workflow wurde erweitert, um bei einem erfolgreiche
 - die bereits verifizierten Moket-WASM-Release-Asset-Prüfsummen abzulegen,
 - diese Nachweise als zeitlich begrenztes Actions-Artefakt bereitzustellen.
 
-**Noch nicht als erledigt gewertet:** Der neue Workflow-Schritt ist bisher nicht erfolgreich ausgeführt. Daher existiert noch kein geprüfter Lockfile-/SBOM-/Quellarchiv-Nachweis aus diesem Lauf. Das Lockfile ist noch nicht im Repository versioniert. Die SBOM deckt zunächst den npm-Baum ab und ist keine vollständige Inventur der Betriebssystem-, Browser- oder Compiler-Abhängigkeiten.
+**Nachweis:** Der Lauf [43701667009](https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43701667009) war vollständig erfolgreich. Das Actions-Artefakt `silmo-kernel-provenance-b413b659c26197c8e23e2b4246efb887eccddd0b` (SHA-256 `e1455c6b65dbf8ae70923c4fa065229b2d09d082b41f8fa8e09dfb0dd7d65d9d`) wurde heruntergeladen und geprüft. Es enthält das Lockfile, eine CycloneDX-1.5-SBOM mit 28 npm-Komponenten, die vier Quellarchive, die Quellarchiv-Prüfsummen, die verifizierten Moket-WASM-Asset-Prüfsummen und die Toolchain-Versionen Node 24.22.2 / npm 11.19.1. Die Quellarchive haben folgende SHA-256-Werte:
+
+```text
+4a5975d776ed673d831bda781428a4d7c175af4bb97a281e122ca7c305867e07  andymai-occt-wasm-v5.17.2.zip
+857fb6393c4ad3a99d287fb04eb06a63eb621622174fbb936ce556be9344e6b5  moket-occt-wasm-v0.10.1.zip
+02314a4d61eaec0386a8f07f75ec57551a1fc9b815e374f2e8a69353b6d49de4  opengeometry-v3.0.0.zip
+d4302cb2da28cef399b6628c3c8da8799c5067fe9ece7f39348f25cc2ceee989  replicad-v1.2.1.zip
+```
+
+Der Workflow wurde anschliessend so angepasst, dass ein erstmalig erzeugtes Lockfile nach erfolgreichen Tests auf dem PR-Branch versioniert und bei Folgeläufen mit `npm ci` verwendet wird. **Der automatische Commit-Schritt ist noch nicht durch einen Folge-CI-Lauf bestätigt.** Die SBOM deckt den npm-Baum ab, nicht automatisch Betriebssystem-, Browser- oder vollständige Compiler-Abhängigkeiten. Die Quellarchive bleiben als 90-Tage-Actions-Artefakt gesichert; die Hashes werden versioniert.
