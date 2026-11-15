@@ -72,4 +72,4 @@ Diese offenen Punkte blockieren den Beginn von Phase 1 nicht. Sie blockieren abe
 - Browser-Regression: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43701667067
 - Pull Request mit isolierter Forschung: https://github.com/jonas-cell-lang/mein-3d-studio-ai/pull/68
 
-**Freigabestatus:** Phase 1 darf beginnen, sobald der nachfolgende Provenienz-Workflow den Lockfile-Commit erfolgreich abgeschlossen hat und die drei CI-Prüfungen auf dem resultierenden PR-Head grün sind. PR 68 bleibt bis zur separaten Review-Entscheidung offen und unverändert ein Draft.
+**Freigabestatus:** Der Lockfile-/Provenienz-Commit wurde im Lauf `43702597723` erfolgreich ausgeführt. Für den aktuellen PR-Head müssen nach der letzten Workflow-Anpassung noch alle drei CI-Prüfungen grün sein. Danach ist Phase 1 startbereit. PR 68 bleibt bis zur separaten Review-Entscheidung offen und unverändert ein Draft.
