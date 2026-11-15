@@ -192,16 +192,28 @@ async function openGeometryCandidate() {
       closeTo(measured.volumeMm3,20-Math.PI*.2**2*.1,"OpenGeometry 0.1 mm wall",1e-4);
       return measured;
     });
-    const referenceWall=box(.02,.001,.01),referenceDrill=cyl(.0002,.002);
-    referenceWall.operate(OG_OPERATION_SUBTRACT,{tools:[referenceDrill]});
-    const referenceSummary=summary(referenceWall);
-    closeTo(referenceSummary.volumeMm3,200-Math.PI*.2**2*1,"OpenGeometry 1 mm wall reference",1e-4);
+    const referenceWall1mm=box(.02,.001,.01),referenceDrill1mm=cyl(.0002,.002);
+    const referenceWall1mmOutcome=attempt(()=>{
+      referenceWall1mm.operate(OG_OPERATION_SUBTRACT,{tools:[referenceDrill1mm]});
+      const measured=summary(referenceWall1mm);
+      if(!measured.valid) throw new Error("1 mm wall result is invalid");
+      closeTo(measured.volumeMm3,200-Math.PI*.2**2*1,"OpenGeometry 1 mm wall",1e-4);
+      return measured;
+    });
+    const referenceWall2mm=box(.02,.002,.01),referenceDrill2mm=cyl(.001,.004);
+    const referenceWall2mmOutcome=attempt(()=>{
+      referenceWall2mm.operate(OG_OPERATION_SUBTRACT,{tools:[referenceDrill2mm]});
+      const measured=summary(referenceWall2mm);
+      if(!measured.valid) throw new Error("2 mm wall result is invalid");
+      closeTo(measured.volumeMm3,400-Math.PI*1**2*2,"OpenGeometry 2 mm wall",1e-4);
+      return measured;
+    });
     return {candidate:"OpenGeometry",version:"3.0.0",status:"passed",unit:"m (converted to mm³)",
       coplanar:{union:summary(a).volumeMm3,common:summary(commonA).volumeMm3,cut:summary(cutA).volumeMm3},
-      tangency,thinWall:{wall01mm:thinWallOutcome,referenceWall1mmMm3:referenceSummary.volumeMm3},
-      fineFeature,topology:{bodyType:referenceSummary.bodyType,explicitHistory:false},
+      tangency,thinWall:{wall01mm:thinWallOutcome,referenceWall1mm:referenceWall1mmOutcome,referenceWall2mm:referenceWall2mmOutcome},
+      fineFeature,topology:{bodyType:baseCut.bodyType,explicitHistory:false},
       memory:{heapStats:"not exposed by public API",explicitDispose:true,ownedBodies:owned.length},
-      limitations:["0.1 mm wall Boolean is rejected by the geometric-resolution guard; the 1 mm reference wall passes.","No public face/edge evolution map in 3.0.","Loft and STL export are absent in 3.0.","Kernel modelling calls are synchronous; worker support is for tessellation/display."]};
+      limitations:["Thin-wall cuts at 0.1 mm and 1 mm are characterized as controlled rejection if the kernel's geometric-resolution guard refuses them.","No public face/edge evolution map in 3.0.","Loft and STL export are absent in 3.0.","Kernel modelling calls are synchronous; worker support is for tessellation/display."]};
   } finally { for(const s of owned.reverse())try{s.dispose();}catch{} OpenGeometry.reset(); }
 }
 
