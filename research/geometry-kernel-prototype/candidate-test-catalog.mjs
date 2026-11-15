@@ -2,6 +2,7 @@
 // All dimensions and expected volumes are expressed in millimetres / mm^3.
 // These are research comparison tolerances, not SILMO production tolerances.
 export const TEST_CASES = Object.freeze({
+  version: 1,
   unit: "mm",
   tolerance: Object.freeze({ relativeVolume: 1e-6, absoluteVolumeMm3: 1e-7 }),
   throughHole: Object.freeze({
