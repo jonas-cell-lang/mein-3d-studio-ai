@@ -225,7 +225,7 @@ const candidates=[
 ];
 for(const [name,run] of candidates){
   try{reports.push(await run());}
-  catch(error){reports.push({candidate:name,status:"blocked-or-failed",error:error instanceof Error?error.message:String(error)});}
+  catch(error){reports.push({candidate:name,status:"blocked-or-failed",error:error instanceof Error?error.message:String(error),stack:error instanceof Error?error.stack:undefined});}
 }
 console.log(JSON.stringify({status:reports.every(r=>r.status==="passed")?"passed":"partial",candidates:reports},null,2));
 if(reports.some(r=>r.status!=="passed"))process.exitCode=1;
