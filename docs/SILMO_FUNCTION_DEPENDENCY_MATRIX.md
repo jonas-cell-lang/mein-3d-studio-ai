@@ -35,7 +35,7 @@
 | Rendering | Three.js r128 über externe CDN-Skripte | Rendering als eigene Schicht erhalten; Abhängigkeiten später lokal verwalten |
 | Modellrepräsentation | Aktive Objekte sind Three.js-Meshes mit BufferGeometry | Exakte Geometrie und triangulierte Darstellung trennen |
 | Boolesche Geometrie | Eigener BSP-basierter CSG-Algorithmus | Vergleichstestkorpus erstellen; keinen ungetesteten Austausch vornehmen |
-| Einheiten | 10 Three.js-Einheiten = 1 mm; Umrechnung an mehreren Stellen | Zentrale Unit-/Tolerance-API definieren; bisherige Umrechnung zunächst unverändert lassen |
+| Einheiten | 1 Three.js-Einheit = 10 mm (der Code teilt Millimeterwerte durch 10, um interne Koordinaten zu erhalten); Umrechnung an mehreren Stellen | Zentrale Unit-/Tolerance-API definieren; bisherige Umrechnung zunächst unverändert lassen |
 | Projektformat | JSON mit eingebetteten Geometriedaten, Transformationen und Metadaten | Dokumentmodell mit Schema-Versionen und Migrationen spezifizieren |
 | Undo/Redo | Vollständige Objektzustandskopien | Speicher-/Leistungsbaseline messen; später befehlsbasierten Verlauf vergleichen |
 | Tests | Playwright-Browser-Test mit 327 Assertions laut Audit | Mathematische Unit- und Integrationstests ergänzen |
