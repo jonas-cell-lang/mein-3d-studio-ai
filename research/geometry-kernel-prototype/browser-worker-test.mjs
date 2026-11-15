@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
-import { chromium } from "playwright";
+import { chromium, firefox, webkit } from "playwright";
 
-const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
+const engineName = process.argv[2] || "chromium";
+const browserEngines = { chromium, firefox, webkit };
+const browserType = browserEngines[engineName];
+assert.ok(browserType, `unsupported browser engine: ${engineName}`);
+
+const launchOptions = { headless: true };
+if (engineName === "chromium") launchOptions.args = ["--no-sandbox"];
+const browser = await browserType.launch(launchOptions);
 try {
   const page = await browser.newPage();
   const errors = [];
@@ -16,17 +23,20 @@ try {
   }, null, { timeout: 45000 });
   const status = await page.locator("#result").getAttribute("data-status");
   const text = await page.locator("#result").textContent();
-  assert.equal(status, "passed", text || "OCCT worker did not report success");
+  assert.equal(status, "passed", text || `OCCT worker did not report success in ${engineName}`);
   const result = JSON.parse(text || "{}");
-  assert.ok(Math.abs(result.volume - 6000) < 1e-7, "worker returned incorrect 10x20x30 box volume");
+  assert.ok(Math.abs(result.volume - 6000) < 1e-7,
+    `${engineName} worker returned incorrect 10x20x30 box volume`);
   assert.ok(result.triangleCount > 0 && result.positionValues > 0 && result.indexValues > 0,
-    "worker did not return a usable tessellated mesh");
+    `${engineName} worker did not return a usable tessellated mesh`);
 
-  // Terminate a worker after it signals that its synchronous OCCT workload
-  // has started. It must not send a completion result after termination.
+  // Terminate a worker while it is performing synchronous OCCT operations.
+  // A main-thread timer must still run before termination, proving that the
+  // geometry work does not block the page's event loop.
   const abortResult = await page.evaluate(() => new Promise((resolve, reject) => {
     const worker = new Worker("/kernel-worker.js", { type: "module" });
     let settled = false;
+    let uiResponsive = false;
     const timeout = setTimeout(() => {
       if (settled) return;
       settled = true;
@@ -35,13 +45,17 @@ try {
     }, 15000);
     worker.addEventListener("message", (event) => {
       if (event.data?.status === "started") {
-        worker.terminate();
+        setTimeout(() => { uiResponsive = true; }, 5);
         setTimeout(() => {
           if (settled) return;
-          settled = true;
-          clearTimeout(timeout);
-          resolve({ started: true, terminated: true });
-        }, 100);
+          worker.terminate();
+          setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeout);
+            resolve({ started: true, terminated: true, uiResponsive });
+          }, 50);
+        }, 50);
       } else if (event.data?.status === "completed") {
         if (settled) return;
         settled = true;
@@ -65,10 +79,10 @@ try {
     });
     worker.postMessage({ type: "stress" });
   }));
-  assert.deepEqual(abortResult, { started: true, terminated: true },
-    "worker must be terminable while OCCT work is in progress");
-  assert.deepEqual(errors, [], "browser reported worker, JavaScript, or console errors");
-  console.log(JSON.stringify({ status, ...result, abort: abortResult }, null, 2));
+  assert.deepEqual(abortResult, { started: true, terminated: true, uiResponsive: true },
+    `${engineName} must remain responsive and terminate a busy OCCT worker`);
+  assert.deepEqual(errors, [], `${engineName} reported worker, JavaScript, or console errors`);
+  console.log(JSON.stringify({ status, browser: engineName, ...result, abort: abortResult }, null, 2));
 } finally {
   await browser.close();
 }
