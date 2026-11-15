@@ -1032,12 +1032,13 @@ try {
   await roundTripPage.waitForFunction(() => /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, {timeout:10000});
   assert.equal(await roundTripPage.locator('#objects .object-row').count(),savedProject.objects.length,'Gespeichertes Projekt wurde nicht vollständig wiederhergestellt');
   await roundTripPage.waitForFunction(() => typeof window.THREE?.STLExporter === 'function', null, {timeout:15000});
-  const roundTripExportPromise = roundTripPage.waitForEvent('download',{timeout:5000});
+  const roundTripExportPromise = roundTripPage.waitForEvent('download',{timeout:5000}).catch(() => null);
   await roundTripPage.locator('#exportModel').click();
   await roundTripPage.waitForFunction(() => /STL exportiert|STL-Export fehlgeschlagen|STL-Export konnte nicht geladen werden|Es gibt keine Objekte/.test(document.querySelector('#status')?.textContent || ''), null, {timeout:5000});
   const roundTripExportStatus = await roundTripPage.locator('#status').innerText();
   assert.match(roundTripExportStatus,/STL exportiert/,'STL-Export nach Projekt-Wiederöffnung fehlgeschlagen: '+roundTripExportStatus);
   const roundTripStl = await roundTripExportPromise;
+  assert.ok(roundTripStl,'STL-Export meldet Erfolg, aber der Browser hat keinen Download erhalten');
   assert.match(roundTripStl.suggestedFilename(),/\\.stl$/i,'STL-Export erzeugt keine STL-Datei');
   const roundTripStlPath = await roundTripStl.path();
   assert.ok(roundTripStlPath && statSync(roundTripStlPath).size > 84,'STL-Export enthält keine nutzbaren Geometriedaten');
