@@ -86,3 +86,14 @@ Die Lizenz darf nicht allein entscheiden: Geometriequalität, Messpräzision, To
 - Three.js: https://www.npmjs.com/package/three
 - Playwright: https://www.npmjs.com/package/playwright
 - Vite: https://www.npmjs.com/package/vite
+
+## 8. Technische Provenienz-Automatisierung (noch ohne Laufnachweis)
+
+Der isolierte GitHub-Actions-Workflow wurde erweitert, um bei einem erfolgreichen Lauf:
+- ein Lockfile für die exakt deklarierten npm-Direktabhängigkeiten zu erzeugen und mit `npm ci` zu verwenden,
+- eine CycloneDX-SBOM aus dem aufgelösten npm-Abhängigkeitsbaum zu erstellen,
+- Quellarchive der vier getesteten Release-Tags zu speichern und SHA-256-Prüfsummen zu berechnen,
+- die bereits verifizierten Moket-WASM-Release-Asset-Prüfsummen abzulegen,
+- diese Nachweise als zeitlich begrenztes Actions-Artefakt bereitzustellen.
+
+**Noch nicht als erledigt gewertet:** Der neue Workflow-Schritt ist bisher nicht erfolgreich ausgeführt. Daher existiert noch kein geprüfter Lockfile-/SBOM-/Quellarchiv-Nachweis aus diesem Lauf. Das Lockfile ist noch nicht im Repository versioniert. Die SBOM deckt zunächst den npm-Baum ab und ist keine vollständige Inventur der Betriebssystem-, Browser- oder Compiler-Abhängigkeiten.
