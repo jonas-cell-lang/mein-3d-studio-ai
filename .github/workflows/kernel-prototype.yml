@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   occt-prototype:
@@ -26,8 +26,12 @@ jobs:
       - name: Generate exact dependency lock and install from it
         working-directory: research/geometry-kernel-prototype
         run: |
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          npm ci --no-audit --no-fund
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+            npm ci --no-audit --no-fund
+          fi
       - name: Generate CycloneDX dependency inventory
         working-directory: research/geometry-kernel-prototype
         run: |
@@ -93,6 +97,34 @@ jobs:
       - name: Test OCCT in a browser Web Worker
         working-directory: research/geometry-kernel-prototype
         run: npm run test:browser:all
+      - name: Version reviewed dependency provenance on research branch
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+        working-directory: research/geometry-kernel-prototype
+        run: |
+          mkdir -p /tmp/silmo-provenance
+          cp package-lock.json /tmp/silmo-provenance/package-lock.json
+          cp silmo-occt-prototype.cdx.json /tmp/silmo-provenance/silmo-occt-prototype.cdx.json
+          cp -a .provenance /tmp/silmo-provenance/provenance
+          rm -f package-lock.json silmo-occt-prototype.cdx.json
+          rm -rf .provenance
+          git fetch origin "$GITHUB_HEAD_REF"
+          git checkout "$GITHUB_HEAD_REF"
+          mkdir -p provenance
+          cp /tmp/silmo-provenance/package-lock.json package-lock.json
+          cp /tmp/silmo-provenance/silmo-occt-prototype.cdx.json silmo-occt-prototype.cdx.json
+          cp /tmp/silmo-provenance/provenance/source-archives.sha256 provenance/
+          cp /tmp/silmo-provenance/provenance/moket-release-assets.sha256 provenance/
+          cp /tmp/silmo-provenance/provenance/toolchain.txt provenance/
+          cp -a /tmp/silmo-provenance/provenance .provenance
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json silmo-occt-prototype.cdx.json provenance/source-archives.sha256 provenance/moket-release-assets.sha256 provenance/toolchain.txt
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(research): pin kernel prototype provenance"
+            git push origin "HEAD:$GITHUB_HEAD_REF"
+          fi
       - name: Upload lockfile, SBOM and source provenance
         if: always()
         uses: actions/upload-artifact@v4
