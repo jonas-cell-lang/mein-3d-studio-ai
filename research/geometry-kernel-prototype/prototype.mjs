@@ -141,7 +141,7 @@ try {
     const almostTouchingA = kernel.makeBox(10, 10, 10);
     const almostTouchingB = kernel.translate(kernel.makeBox(10, 10, 10), 9.9999, 0, 0);
     const nearCoincident = kernel.fuse(almostTouchingA, almostTouchingB);
-    closeTo(shapeSummary(nearCoincident, "near-coplanar overlap").volume, 1999.9,
+    closeTo(shapeSummary(nearCoincident, "near-coplanar overlap").volume, 1999.99,
       "near-coplanar overlap volume", 1e-6);
   });
 
