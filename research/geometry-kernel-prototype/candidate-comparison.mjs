@@ -60,6 +60,22 @@ async function andyOcct() {
     const thinDrill=k.transform(drill,[1,0,0,drillX, 0,0,1,drillY, 0,-1,0,drillZ]);
     const thin=k.cut(wall,thinDrill);
     closeTo(k.getVolume(thin),TEST_CASES.thinWall.expectedVolumeMm3,"andy thin wall",1e-5);
+    const invalidInputs={};
+    for(const testCase of TEST_CASES.invalidPrimitiveInputs){
+      try{
+        const shape=testCase.primitive==="box"
+          ? k.makeBox(...testCase.dimensionsMm)
+          : k.makeCylinder(testCase.dimensionsMm[0],testCase.dimensionsMm[1]);
+        try{
+          const valid=k.isValid(shape),volume=k.getVolume(shape);
+          invalidInputs[testCase.id]={outcome:valid?"accepted-valid":"accepted-invalid",valid,volumeMm3:Number.isFinite(volume)?volume:String(volume)};
+        }catch(error){
+          invalidInputs[testCase.id]={outcome:"created-but-query-failed",message:error instanceof Error?error.message:String(error)};
+        }
+      }catch(error){
+        invalidInputs[testCase.id]={outcome:"rejected",message:error instanceof Error?error.message:String(error)};
+      }
+    }
     const historyBase=k.makeBox(20,20,20);
     const historyHashes=k.subShapeHashes(historyBase,"face",2147483647);
     const history=k.cutWithHistory(historyBase,k.makeCylinder(2,20),historyHashes,2147483647);
@@ -72,7 +88,7 @@ async function andyOcct() {
     k.releaseAll();
     return {candidate:"occt-wasm (andymai)",version:"5.17.2 / OCCT 8.0.1",status:"passed",
       baseAndCutMm3:{base:baseVolume,cut:cutVolume},coplanar:{union:1500,common:500,cut:500},
-      tangency,nearCoincidentMm3:nearCoincidentVolume,cylinderBoxTangencyMm3:cylinderBoxTangencyVolume,thinWallMm3:thinVolume,
+      tangency,nearCoincidentMm3:nearCoincidentVolume,cylinderBoxTangencyMm3:cylinderBoxTangencyVolume,thinWallMm3:thinVolume,invalidInputs,
       topologyHistory:!!history.result,memory:{liveBefore,livePeak,liveAfter:k.shapeCount,wasmBytesBefore:memoryBefore,wasmBytesAfter:memoryAfter},
       limitations:[]};
   } finally { k[Symbol.dispose](); }
@@ -120,6 +136,26 @@ async function moketOcct() {
       TEST_CASES.thinWall.cylinderRadiusMm,TEST_CASES.thinWall.cylinderLengthMm),"moket thin drill").shape;
     const thin=ok(k.boolean("cut",wall,drill),"moket thin cut");
     closeTo(props(thin.shape).volume,TEST_CASES.thinWall.expectedVolumeMm3,"moket thin wall",1e-5);
+    const invalidInputs={};
+    for(const testCase of TEST_CASES.invalidPrimitiveInputs){
+      try{
+        const response=testCase.primitive==="box"
+          ? k.makeBox(...testCase.dimensionsMm)
+          : k.makeCylinder([0,0,0],[0,0,1],testCase.dimensionsMm[0],testCase.dimensionsMm[1]);
+        if(response?.ok!==true){
+          invalidInputs[testCase.id]={outcome:"rejected",code:response?.error?.code||null,message:response?.error?.message||null};
+        }else{
+          try{
+            const p=props(response.shape);
+            invalidInputs[testCase.id]={outcome:p.valid?"accepted-valid":"accepted-invalid",valid:p.valid,volumeMm3:Number.isFinite(p.volume)?p.volume:String(p.volume)};
+          }catch(error){
+            invalidInputs[testCase.id]={outcome:"created-but-query-failed",message:error instanceof Error?error.message:String(error)};
+          }
+        }
+      }catch(error){
+        invalidInputs[testCase.id]={outcome:"rejected",message:error instanceof Error?error.message:String(error)};
+      }
+    }
     const memoryBefore=k.heapStats();
     for(let i=0;i<20;i++) ok(k.boolean("cut",ok(k.makeBox(10+i*.01,10,10),"moket memory box").shape,
       ok(k.makeCylinder([5,0,5],[0,1,0],1,10),"moket memory drill").shape),"moket memory cut");
@@ -130,7 +166,7 @@ async function moketOcct() {
     ok(k.releaseAll(),"moket release");
     const memoryAfter=k.heapStats();
     return {candidate:"@moket/occt-wasm",version:"0.10.1 / OCCT 8.0.1",status:"passed",
-      coplanar:TEST_CASES.coplanarOverlap.expectedVolumeMm3,tangency,nearCoincidentMm3:nearCoincidentVolume,cylinderBoxTangencyMm3:cylinderBoxTangencyVolume,thinWallMm3:thinVolume,
+      coplanar:TEST_CASES.coplanarOverlap.expectedVolumeMm3,tangency,nearCoincidentMm3:nearCoincidentVolume,cylinderBoxTangencyMm3:cylinderBoxTangencyVolume,thinWallMm3:thinVolume,invalidInputs,
       topologyHistory:!!u.history,memory:{before:memoryBefore,peak:memoryPeak,after:memoryAfter},limitations:[]};
   } finally { k.releaseAll(); }
 }
@@ -178,9 +214,20 @@ async function replicadCandidate() {
     const topology={faces:topologyFaces.length,edges:topologyEdges.length,explicitHistory:false};
     topologyFaces.forEach(face=>face.delete()); topologyEdges.forEach(edge=>edge.delete());
     const invalidInputs={};
-    for(const [name,corners] of [["zero-width",[[0,0,0],[0,10,10]]],["negative-width",[[0,0,0],[-1,10,10]]]]){
-      try{const shape=own(r.makeBox(...corners));const p=measure(shape);invalidInputs[name]={outcome:p.valid?"accepted-valid":"accepted-invalid",valid:p.valid,volumeMm3:p.volumeMm3};}
-      catch(error){invalidInputs[name]={outcome:"rejected",message:error.message};}
+    for(const testCase of TEST_CASES.invalidPrimitiveInputs){
+      try{
+        const shape=testCase.primitive==="box"
+          ? own(r.makeBox([0,0,0],testCase.dimensionsMm))
+          : own(r.makeCylinder(testCase.dimensionsMm[0],testCase.dimensionsMm[1],[0,0,0],[0,0,1]));
+        try{
+          const p=measure(shape);
+          invalidInputs[testCase.id]={outcome:p.valid?"accepted-valid":"accepted-invalid",valid:p.valid,volumeMm3:Number.isFinite(p.volumeMm3)?p.volumeMm3:String(p.volumeMm3)};
+        }catch(error){
+          invalidInputs[testCase.id]={outcome:"created-but-query-failed",message:error instanceof Error?error.message:String(error)};
+        }
+      }catch(error){
+        invalidInputs[testCase.id]={outcome:"rejected",message:error instanceof Error?error.message:String(error)};
+      }
     }
     return {candidate:"Replicad",version:"1.2.1 / replicad-opencascadejs 1.2.1",status:"passed",
       invalidInputs,coplanar:TEST_CASES.coplanarOverlap.expectedVolumeMm3,tangency,nearCoincidentMm3:measure(nearCoincident).volumeMm3,cylinderBoxTangencyMm3:measure(cylinderBoxUnion).volumeMm3,thinWallMm3:measure(thin).volumeMm3,
@@ -281,9 +328,16 @@ async function openGeometryCandidate() {
       return measured;
     });
     const invalidInputs={};
-    for(const [name,dimensions] of [["zero-width",{width:0,height:.01,depth:.01}],["negative-width",{width:-.001,height:.01,depth:.01}]]){
-      try{const shape=own(new Solid(OG_PRIMITIVE_CUBOID,dimensions));const p=shape.validity();invalidInputs[name]={outcome:p.valid?"accepted-valid":"accepted-invalid",valid:p.valid,bodyType:p.bodyType};}
-      catch(error){invalidInputs[name]={outcome:"rejected",message:error.message};}
+    for(const testCase of TEST_CASES.invalidPrimitiveInputs){
+      try{
+        const shape=own(testCase.primitive==="box"
+          ? new Solid(OG_PRIMITIVE_CUBOID,{width:testCase.dimensionsMm[0]/1000,height:testCase.dimensionsMm[1]/1000,depth:testCase.dimensionsMm[2]/1000})
+          : new Solid(OG_PRIMITIVE_CYLINDER,{radius:testCase.dimensionsMm[0]/1000,height:testCase.dimensionsMm[1]/1000}));
+        const p=shape.validity();
+        invalidInputs[testCase.id]={outcome:p.valid?"accepted-valid":"accepted-invalid",valid:p.valid,bodyType:p.bodyType};
+      }catch(error){
+        invalidInputs[testCase.id]={outcome:"rejected",message:error instanceof Error?error.message:String(error)};
+      }
     }
     return {candidate:"OpenGeometry",version:"3.0.0",status:"passed",unit:"m (converted to mm³)",
       invalidInputs,coplanar:TEST_CASES.coplanarOverlap.expectedVolumeMm3,
