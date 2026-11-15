@@ -1020,6 +1020,39 @@ try {
   assert.deepEqual(validationPageErrors,[],'Projektformat-v3-Fixture löst Browserfehler aus');
   await validationPage.close();
 
+  // Erweitertes v3-Fixture: Gruppen, Boolesche Ursprungsformen, Skizzenkontur,
+  // Konturrahmen und gespeicherte Image-Studio-Vorlage müssen erhalten bleiben.
+  const advancedPage = await browser.newPage({viewport:{width:1280,height:900}});
+  const advancedErrors = [];
+  advancedPage.on('pageerror', error => advancedErrors.push(error.message));
+  advancedPage.on('console', message => { if(message.type()==='error') advancedErrors.push('console: '+message.text()); });
+  await advancedPage.goto('http://127.0.0.1:4173', {waitUntil:'domcontentloaded'});
+  await advancedPage.waitForSelector('#viewport canvas', {timeout:20000});
+  const advancedFixture = readFileSync(new URL('./fixtures/project-v3-advanced.json', import.meta.url));
+  await advancedPage.locator('#projectFileInput').setInputFiles({name:'project-v3-advanced.json',mimeType:'application/json',buffer:advancedFixture});
+  await advancedPage.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Projekt geöffnet (3 Objekt(e))'), null, {timeout:10000});
+  await advancedPage.waitForFunction(() => window.__silmoImageStudioSnapshot?.().loaded === true, null, {timeout:10000});
+  assert.equal(await advancedPage.locator('#objects .object-row').count(),3,'Erweitertes v3-Fixture hat nicht alle drei Objekte geladen');
+  const advancedImageState = await advancedPage.evaluate(() => window.__silmoImageStudioSnapshot());
+  assert.equal(advancedImageState.fileName,'fixture-image.png','Image-Studio-Dateiname wurde nicht geladen');
+  assert.equal(advancedImageState.rotation,90,'Image-Studio-Drehung wurde nicht geladen');
+  assert.equal(advancedImageState.contourCount,1,'Image-Studio-Kontur wurde nicht geladen');
+  const advancedSavePromise = advancedPage.waitForEvent('download');
+  await advancedPage.locator('#saveProjectButton').click();
+  const advancedSave = await advancedSavePromise;
+  const advancedSavedPath = await advancedSave.path();
+  assert.ok(advancedSavedPath && statSync(advancedSavedPath).size > 1000,'Erweitertes Projekt wurde nicht vollständig gespeichert');
+  const advancedSavedProject = JSON.parse(readFileSync(advancedSavedPath,'utf8'));
+  assert.deepEqual(advancedSavedProject.objects.slice(0,2).map(item => item.groupId),['fixture-gruppe-01','fixture-gruppe-01'],'Gruppenzugehörigkeit ging beim Speichern verloren');
+  assert.equal(advancedSavedProject.objects[2].unionParts.length,2,'Ursprüngliche Teile der verbundenen Form gingen verloren');
+  assert.equal(advancedSavedProject.objects[2].sketchOutline.length,4,'Skizzenkontur ging beim Speichern verloren');
+  assert.deepEqual(advancedSavedProject.objects[2].contourFrame,{wallThicknessMM:1.2,wallHeightMM:12},'Konturrahmen-Metadaten gingen beim Speichern verloren');
+  assert.equal(advancedSavedProject.imageStudio.fileName,'fixture-image.png','Image-Studio-Datei ging beim Speichern verloren');
+  assert.equal(advancedSavedProject.imageStudio.rotation,90,'Image-Studio-Drehung ging beim Speichern verloren');
+  assert.equal(advancedSavedProject.imageStudio.contours.length,1,'Image-Studio-Kontur ging beim Speichern verloren');
+  assert.deepEqual(advancedErrors,[],'Erweitertes v3-Fixture löst Browserfehler aus');
+  await advancedPage.close();
+
   // Vertikaler Referenzablauf: gespeichertes Projekt erneut öffnen und als STL exportieren.
   assert.ok(savedProject.objects.length > 0,'Referenzprojekt enthält keine Modellobjekte');
   const roundTripPage = await browser.newPage({viewport:{width:1280,height:900}});
