@@ -51,7 +51,26 @@ Die öffentliche Projektbeschreibung nennt:
 
 **Bewertung:** Sehr gute funktionale Abdeckung und eine für SILMO passende Worker-Schnittstelle. Noch zu prüfen sind reale Browserintegration, Speicherverhalten, Lizenz- und Austauschpflichten, Release-Stabilität sowie die Frage, ob die vorhandene Fassade alle benötigten Operationen in ausreichender Qualität abdeckt. Die geringe öffentliche Verbreitung ist ein Wartungsrisiko, aber kein Beweis für schlechte Geometrie.
 
-### D. OpenGeometry 3.x
+### D. occt-wasm (andymai) – öffentliche TypeScript/WASM-Distribution
+
+**Rolle:** Neuer direkter OCCT-Kandidat mit öffentlich installierbarem npm-Paket.
+
+Der Projektstand und die npm-Veröffentlichung weisen Version **5.17.2** aus. Das Projekt baut Open CASCADE 8.0.1 nach WebAssembly und stellt eine TypeScript-API sowie einen Worker-Zugang bereit.
+
+Dokumentierte Eigenschaften:
+- Über 170 API-Methoden für Grundkörper, Boolesche Operationen, Sweep/Loft, Topologie, Kurven/Flächen, STEP/STL/BREP/glTF und Formhistorie.
+- Three.js bleibt als Renderer möglich; die Bibliothek enthält keine eigene OCCT-Visualisierung.
+- OcctKernel.init() lädt den Kernel; OcctWorker führt CAD-Aufgaben getrennt vom UI-Thread aus.
+- Speicher wird über Shape-Handles verwaltet. Formen müssen explizit freigegeben oder der Kernel muss deterministisch entsorgt werden.
+- Dokumentierte komprimierte WASM-Grösse: ungefähr 4,5 MB Brotli.
+- Browseranforderungen laut Projekt: Chrome/Edge 114+, Safari 17.2+, Firefox 121+.
+- IGES wird nicht unterstützt; STEP ist der vorgesehene CAD-Austauschweg.
+- Eine Kernel-Instanz ist single-threaded; Worker-Verwendung verschiebt die Arbeit aus dem UI-Thread.
+- Build-Tooling und TypeScript-Wrapper: MIT OR Apache-2.0. Das kompilierte WASM: LGPL-2.1-only (OCCT). Lizenzhinweise und Austauschbarkeit des WASM-Moduls müssen für SILMO separat geprüft werden.
+
+**Bewertung:** Derzeit der praktischste OCCT-Prototyp-Kandidat, weil ein öffentliches npm-Paket mit TypeScript-API und Worker-Helfer vorhanden ist. Das ist keine Qualitätsfreigabe: Geometrie, Stabilität, Speicherfreigabe, Browserkompatibilität, Worker-Fehlerverhalten und Lizenzanforderungen müssen im SILMO-Testkorpus selbst geprüft werden. Die Paketversion ist jung und muss für reproduzierbare Tests exakt gepinnt werden.
+
+### E. OpenGeometry 3.x
 
 **Rolle:** Moderner Web-/WASM-B-Rep-Kandidat mit direkter Three.js-Integration.
 
@@ -71,7 +90,7 @@ Wichtige Einschränkungen der dokumentierten 3.0-Version:
 
 **Bewertung:** Unbedingt als Challenger testen. Die Three.js-Integration und die Web-Ausrichtung sind attraktiv. Für SILMO bestehen derzeit aber sichtbare Funktionslücken bei Loft, Freiformkurven und einigen Austausch-/Geometrieaufgaben. Diese Lücken müssen im Prototyp konkret bewertet werden.
 
-### E. Manifold
+### F. Manifold
 
 **Rolle:** Mesh-basierter Vergleichs- und Ergänzungskandidat, nicht der bevorzugte alleinige CAD-Kern.
 
@@ -81,7 +100,7 @@ Wichtige Einschränkungen der dokumentierten 3.0-Version:
 
 **Bewertung:** Sehr interessant für druckorientierte Mesh-Operationen, Validierung und als Vergleich zum bestehenden BSP-CSG. Es ersetzt aber nicht ohne Weiteres einen analytischen B-Rep-Kern mit stabilen Flächen-, Kanten- und Vertex-Beziehungen, parametrischer Feature-Historie und nativer STEP-Modellierung.
 
-### F. Truck und weitere Rust-B-Rep-Projekte
+### G. Truck und weitere Rust-B-Rep-Projekte
 
 **Rolle:** Beobachtungskandidaten, derzeit keine erste Integrationsentscheidung.
 
@@ -93,12 +112,13 @@ Truck ist ein Rust-B-Rep-/NURBS-Projekt mit WebGPU-Ausrichtung und Apache-2.0-Li
 |---|---|---|---|---|
 | OCCT 8.x | Sehr hoch | Über Wrapper | Sehr hoch | Lizenzpflichten und WASM-Integration |
 | Replicad + OCCT | Sehr hoch | Browserorientiert | Hoch | Wrapper-Abdeckung und OCCT-Lizenz bleiben zu prüfen |
-| moket occt-wasm | Sehr hoch | Direkt für WASM/Worker | Sehr hoch laut dokumentierter API | Junger Wrapper, noch keine SILMO-Benchmarks |
+| moket occt-wasm | Sehr hoch | Direkt für WASM/Worker | Sehr hoch laut dokumentierter API | Privates npm-Paket; Quellbuild und Verteilung prüfen |
+| occt-wasm (andymai) 5.17.2 | Sehr hoch | Direkt für WASM/Worker | Sehr hoch laut dokumentierter API | Junge API, WASM-Lizenz und Browser-Mindestversionen prüfen |
 | OpenGeometry 3.x | B-Rep-orientiert | Direkt für Web/WASM | Mittel bis hoch | Sichtbare Funktionslücken und bewegliche API |
 | Manifold | Mesh-basiert | WASM vorhanden | Ergänzend | Kein vollwertiger analytischer B-Rep-Ersatz |
 | Truck | B-Rep/NURBS-Ziel | Rust/WebGPU-Ausrichtung | Noch offen | Reifegrad und fehlende Produktionsnachweise |
 
-**Vorläufige technische Richtung:** Der erste echte Prototyp soll OCCT-WASM über mindestens zwei Zugänge vergleichen: Replicad und moket-io/occt-wasm. OpenGeometry 3.x wird als dritter B-Rep-Kandidat mitgetestet. Manifold dient als Mesh-Benchmark und mögliche Ergänzung. Das ist ausdrücklich noch keine endgültige Kernelwahl.
+**Vorläufige technische Richtung:** Der erste echte Prototyp soll den öffentlich installierbaren Kandidaten occt-wasm (andymai, exakt gepinnte Version) mit dem separaten moket-io/occt-wasm-Build und Replicad vergleichen. OpenGeometry 3.x bleibt ein zusätzlicher B-Rep-Challenger. Manifold dient als Mesh-Benchmark und mögliche Ergänzung. Das ist ausdrücklich noch keine endgültige Kernelwahl.
 
 ## 4. Einheitlicher Prototyp-Testkatalog
 
@@ -201,6 +221,8 @@ Unabhängig vom gewählten Kern gilt:
 - OpenCascade.js – Projektüberblick und Browser/WASM-Portierung: https://ocjs.org/docs/about
 - Replicad – Repository und eigene MIT-Lizenz: https://github.com/sgenoud/replicad
 - moket-io/occt-wasm – OCCT 8.0.1 WASM, API, Worker-Empfehlung und Grössenangaben: https://github.com/moket-io/occt-wasm
+- occt-wasm (andymai) – öffentliches npm-Paket, TypeScript-API, Worker, Browseranforderungen und Lizenzaufteilung: https://github.com/andymai/occt-wasm
+- occt-wasm 5.17.2 – veröffentlichte npm-Version: https://www.npmjs.com/package/occt-wasm
 - OpenGeometry – Repository, API-Stand 3.0, Funktionen und MPL-2.0: https://github.com/openGeometry-io/OpenGeometry
 - Manifold – offizielle Dokumentation zu manifold Meshes und WASM: https://manifoldcad.org/docs/html/
 - Truck – Repository und Projektbeschreibung: https://github.com/ricosjp/truck
