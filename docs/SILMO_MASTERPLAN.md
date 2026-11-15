@@ -196,6 +196,8 @@ Ausgeführt wurden:
 
 **Noch keine Architekturentscheidung:** Die Lizenzprüfung und die Bewertung der dokumentierten API-/Messlücken stehen aus. Es gibt keine Integration in die SILMO-Live-App; der bisherige Geometriekern bleibt unverändert. Phase 0 ist damit weiterhin nicht vollständig abgenommen.
 
-**Nächster Schritt:** Lizenzbedingungen und Wartbarkeit der Kandidaten prüfen, die offenen Fähigkeiten und Messlücken bewerten und erst danach eine begründete Architektur-Empfehlung erstellen.
+**Lizenzprüfung:** Die quellenbasierte Vorprüfung ist in [docs/SILMO_LICENSE_REVIEW.md](SILMO_LICENSE_REVIEW.md) dokumentiert. Moket hat derzeit die transparenteste Lizenz-/Quellcode-/Austausch-Dokumentation; andymai weist unterschiedliche Lizenzangaben für npm-Paket und kompiliertes WASM aus; Replicad benötigt zusätzlich ein LGPL-lizenziertes OCCT-WASM; OpenGeometry steht unter MPL-2.0. Das ist keine rechtliche Freigabe. Die vollständige SBOM, transitive Lizenzen, Release-Quellen und ein realer WASM-Austauschbarkeitstest bleiben offen. Auch die Lizenz für SILMO-eigenen Code ist separat zu entscheiden.
+
+**Nächster Schritt:** Release-Artefakte und Quellcode-Zuordnung versionsgenau absichern, ein Lockfile/SBOM für den Forschungsordner ergänzen und danach eine begründete technische Architektur-Empfehlung anhand aller Geometrie-, Mess-, Topologie-, Browser-, Speicher- und Lizenzbefunde erstellen.
 
 **Erfolg bedeutet nicht möglichst viele Werkzeuge. Erfolg bedeutet, dass SILMO komplexe 3D-Aufgaben präzise, stabil und verständlich erledigt.**
