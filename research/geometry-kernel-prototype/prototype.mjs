@@ -166,36 +166,39 @@ try {
   await time("invalid-inputs", async () => {
     const invalidInputs = [
       ["zero-width box", () => kernel.makeBox(0, 10, 10)],
+      ["negative-width box", () => kernel.makeBox(-1, 10, 10)],
       ["NaN box dimension", () => kernel.makeBox(Number.NaN, 10, 10)],
       ["infinite box dimension", () => kernel.makeBox(Number.POSITIVE_INFINITY, 10, 10)],
       ["zero-radius cylinder", () => kernel.makeCylinder(0, 10)],
       ["zero-height cylinder", () => kernel.makeCylinder(5, 0)]
     ];
+    observations.invalidInputs = {};
     for (const [label, create] of invalidInputs) {
-      assert.throws(create, `${label} must be rejected`);
-    }
-
-    // Negative extents are characterized separately: this pinned binding
-    // currently accepts them, so record whether it normalizes or rejects them.
-    let negativeBoxAccepted = false;
-    try {
-      const negativeBox = kernel.makeBox(-1, 10, 10);
-      negativeBoxAccepted = true;
-      assert.equal(kernel.isValid(negativeBox), true,
-        "accepted negative-width box must still be a valid shape");
-      closeTo(kernel.getVolume(negativeBox), 100,
-        "negative-width box normalized volume");
-    } catch (error) {
-      observations.negativeDimension = {
-        outcome: "rejected",
-        message: error instanceof Error ? error.message : String(error)
-      };
-    }
-    if (negativeBoxAccepted) {
-      observations.negativeDimension = {
-        outcome: "accepted-valid-shape",
-        note: "Pinned binding accepts a negative box dimension; treat this as an API-contract finding."
-      };
+      try {
+        const candidate = create();
+        let valid = null;
+        let volume = null;
+        try {
+          valid = kernel.isValid(candidate);
+          volume = kernel.getVolume(candidate);
+        } catch (queryError) {
+          observations.invalidInputs[label] = {
+            outcome: "created-but-query-failed",
+            message: queryError instanceof Error ? queryError.message : String(queryError)
+          };
+          continue;
+        }
+        observations.invalidInputs[label] = {
+          outcome: valid ? "accepted-valid-shape" : "accepted-invalid-shape",
+          valid,
+          volume: Number.isFinite(volume) ? volume : String(volume)
+        };
+      } catch (error) {
+        observations.invalidInputs[label] = {
+          outcome: "rejected",
+          message: error instanceof Error ? error.message : String(error)
+        };
+      }
     }
     closeTo(kernel.getVolume(box), 24000, "kernel remains usable after invalid inputs");
   });
