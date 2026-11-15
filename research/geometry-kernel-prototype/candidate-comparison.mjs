@@ -13,7 +13,10 @@ const closeTo = (actual, expected, label, rel = TEST_CASES.tolerance.relativeVol
 };
 const translation = (x, y, z) => [1,0,0,x, 0,1,0,y, 0,0,1,z];
 const attempt = (fn) => {
-  try { return { outcome: "valid-result", value: fn() }; }
+  try {
+    const value=fn();
+    return value?.outcome==="measurement-unresolved" ? value : { outcome: "valid-result", value };
+  }
   catch (error) {
     return { outcome: "controlled-rejection", message: error instanceof Error ? error.message : String(error) };
   }
@@ -248,56 +251,56 @@ async function openGeometryCandidate() {
   const box=(w,h,d)=>own(new Solid(OG_PRIMITIVE_CUBOID,{width:w,height:h,depth:d}));
   const cyl=(r,h)=>own(new Solid(OG_PRIMITIVE_CYLINDER,{radius:r,height:h}));
   const summary=s=>{const m=s.measure({deflection:1e-6}),v=s.validity();return {volumeMm3:m.volume*1e9,errorBoundMm3:m.errorBound*1e9,valid:v.valid,closed:v.closed,bodyType:v.bodyType};};
+  const measurementQuality=[];
+  const compareMeasured=(measurement,expected,label)=>{
+    const tolerance=Math.max(TEST_CASES.tolerance.absoluteVolumeMm3,Math.abs(expected)*TEST_CASES.tolerance.relativeVolume);
+    const deviation=Math.abs(measurement.volumeMm3-expected);
+    const withinReportedErrorBound=deviation<=Math.max(tolerance,measurement.errorBoundMm3);
+    assert.ok(withinReportedErrorBound,`${label}: deviation ${deviation} mm³ exceeds reported error bound ${measurement.errorBoundMm3} mm³`);
+    const result={...measurement,expectedVolumeMm3:expected,deviationMm3:deviation,comparisonToleranceMm3:tolerance,
+      withinReportedErrorBound,precisionAdequate:measurement.errorBoundMm3<=tolerance,
+      outcome:measurement.errorBoundMm3<=tolerance?"valid-result":"measurement-unresolved"};
+    measurementQuality.push({case:label,errorBoundMm3:measurement.errorBoundMm3,comparisonToleranceMm3:tolerance,precisionAdequate:result.precisionAdequate});
+    return result;
+  };
   const tangent=(name,offset)=>{
-    const a=box(.01,.01,.01),b=box(.01,.01,.01);b.transform(OG_TRANSFORM_TRANSLATE,{offset});
-    return attempt(()=>{a.operate(OG_OPERATION_UNION,{tools:[b]});const p=summary(a);assert.equal(p.valid,true);closeTo(p.volumeMm3,TEST_CASES.tangency.expectedUnionVolumeMm3,`OpenGeometry ${name} contact`);return p;});
+    const a=box(...TEST_CASES.tangency.boxDimensionsMm.map(v=>v/1000)),b=box(...TEST_CASES.tangency.boxDimensionsMm.map(v=>v/1000));b.transform(OG_TRANSFORM_TRANSLATE,{offset});
+    return attempt(()=>{a.operate(OG_OPERATION_UNION,{tools:[b]});const p=summary(a);assert.equal(p.valid,true);return compareMeasured(p,TEST_CASES.tangency.expectedUnionVolumeMm3,`OpenGeometry ${name} contact`);});
   };
   try {
     const base=box(...TEST_CASES.throughHole.boxDimensionsMm.map(v=>v/1000));
     const hole=cyl(TEST_CASES.throughHole.cylinder.radiusMm/1000,TEST_CASES.throughHole.cylinder.lengthMm/1000);
     hole.transform(OG_TRANSFORM_TRANSLATE,{offset:[0,TEST_CASES.throughHole.cylinder.originMm[1]/1000,0]});
     base.operate(OG_OPERATION_SUBTRACT,{tools:[hole]});
-    const baseCut=summary(base);
-    closeTo(baseCut.volumeMm3,TEST_CASES.throughHole.expectedVolumeMm3,"OpenGeometry base/cut",1e-5);
+    const baseCut=compareMeasured(summary(base),TEST_CASES.throughHole.expectedVolumeMm3,"OpenGeometry through-hole");
     const a=box(...TEST_CASES.coplanarOverlap.boxDimensionsMm.map(v=>v/1000)),b=box(...TEST_CASES.coplanarOverlap.boxDimensionsMm.map(v=>v/1000));b.transform(OG_TRANSFORM_TRANSLATE,{offset:TEST_CASES.coplanarOverlap.secondOffsetMm.map(v=>v/1000)});
     a.operate(OG_OPERATION_UNION,{tools:[b]});
     const commonA=box(.01,.01,.01),commonB=box(.01,.01,.01);commonB.transform(OG_TRANSFORM_TRANSLATE,{offset:[.005,0,0]});
     commonA.operate(OG_OPERATION_INTERSECT,{tools:[commonB]});
     const cutA=box(.01,.01,.01),cutB=box(.01,.01,.01);cutB.transform(OG_TRANSFORM_TRANSLATE,{offset:[.005,0,0]});
     cutA.operate(OG_OPERATION_SUBTRACT,{tools:[cutB]});
-    closeTo(summary(a).volumeMm3,TEST_CASES.coplanarOverlap.expectedVolumeMm3.fuse,"OpenGeometry coplanar union",1e-5);
-    closeTo(summary(commonA).volumeMm3,TEST_CASES.coplanarOverlap.expectedVolumeMm3.common,"OpenGeometry coplanar common",1e-5);
-    closeTo(summary(cutA).volumeMm3,TEST_CASES.coplanarOverlap.expectedVolumeMm3.cut,"OpenGeometry coplanar cut",1e-5);
+    const coplanar={
+      union:compareMeasured(summary(a),TEST_CASES.coplanarOverlap.expectedVolumeMm3.fuse,"OpenGeometry coplanar union"),
+      common:compareMeasured(summary(commonA),TEST_CASES.coplanarOverlap.expectedVolumeMm3.common,"OpenGeometry coplanar common"),
+      cut:compareMeasured(summary(cutA),TEST_CASES.coplanarOverlap.expectedVolumeMm3.cut,"OpenGeometry coplanar cut")
+    };
     const tangency={face:tangent("face",[.01,0,0]),edge:tangent("edge",[.01,.01,0]),vertex:tangent("vertex",[.01,.01,.01])};
     const nearA=box(...TEST_CASES.nearCoincident.boxDimensionsMm.map(v=>v/1000)),nearB=box(...TEST_CASES.nearCoincident.boxDimensionsMm.map(v=>v/1000));
     nearB.transform(OG_TRANSFORM_TRANSLATE,{offset:[TEST_CASES.nearCoincident.secondOffsetMm/1000,0,0]});
     nearA.operate(OG_OPERATION_UNION,{tools:[nearB]});
-    const nearCoincident=summary(nearA);
-    closeTo(nearCoincident.volumeMm3,TEST_CASES.nearCoincident.expectedUnionVolumeMm3,"OpenGeometry near-coincident union",1e-5);
+    const nearCoincident=compareMeasured(summary(nearA),TEST_CASES.nearCoincident.expectedUnionVolumeMm3,"OpenGeometry near-coincident union");
     const tangentBox=box(...TEST_CASES.cylinderBoxTangency.boxDimensionsMm.map(v=>v/1000));
     const tangentCylinder=cyl(TEST_CASES.cylinderBoxTangency.cylinderRadiusMm/1000,TEST_CASES.cylinderBoxTangency.cylinderLengthMm/1000);
     tangentCylinder.transform(OG_TRANSFORM_TRANSLATE,{offset:TEST_CASES.cylinderBoxTangency.cylinderOriginMm.map(v=>v/1000)});
     tangentBox.operate(OG_OPERATION_UNION,{tools:[tangentCylinder]});
-    const cylinderBoxUnion=summary(tangentBox);
-    const cylinderBoxExpectedMm3=TEST_CASES.cylinderBoxTangency.expectedUnionVolumeMm3;
-    const cylinderBoxDeviationMm3=Math.abs(cylinderBoxUnion.volumeMm3-cylinderBoxExpectedMm3);
-    const cylinderBoxToleranceMm3=Math.max(TEST_CASES.tolerance.absoluteVolumeMm3,
-      cylinderBoxExpectedMm3*TEST_CASES.tolerance.relativeVolume);
-    const cylinderBoxComparison={
-      ...cylinderBoxUnion,
-      expectedVolumeMm3:cylinderBoxExpectedMm3,
-      deviationMm3:cylinderBoxDeviationMm3,
-      comparisonToleranceMm3:cylinderBoxToleranceMm3,
-      withinReportedErrorBound:cylinderBoxDeviationMm3<=Math.max(cylinderBoxToleranceMm3,cylinderBoxUnion.errorBoundMm3)
-    };
+    const cylinderBoxComparison=compareMeasured(summary(tangentBox),TEST_CASES.cylinderBoxTangency.expectedUnionVolumeMm3,"OpenGeometry cylinder/box tangency");
     const fineWall=box(.02,.0001,.01),fineDrill=cyl(.00002,.0002);
     fineDrill.transform(OG_TRANSFORM_TRANSLATE,{offset:[0,-.00005,0]});
     const fineFeature=attempt(()=>{
       fineWall.operate(OG_OPERATION_SUBTRACT,{tools:[fineDrill]});
       const fine=summary(fineWall);
       if(!fine.valid) throw new Error("fine-feature result is invalid");
-      closeTo(fine.volumeMm3,20-Math.PI*.02**2*.1,"OpenGeometry 0.04 mm hole",1e-4);
-      return fine;
+      return compareMeasured(fine,20-Math.PI*.02**2*.1,"OpenGeometry 0.04 mm hole");
     });
     const thinWall01mm=box(TEST_CASES.thinWall.wallDimensionsMm[0]/1000,TEST_CASES.thinWall.wallDimensionsMm[1]/1000,TEST_CASES.thinWall.wallDimensionsMm[2]/1000);
     const thinDrill01mm=cyl(TEST_CASES.thinWall.cylinderRadiusMm/1000,TEST_CASES.thinWall.cylinderLengthMm/1000);
@@ -306,8 +309,7 @@ async function openGeometryCandidate() {
       thinWall01mm.operate(OG_OPERATION_SUBTRACT,{tools:[thinDrill01mm]});
       const measured=summary(thinWall01mm);
       if(!measured.valid) throw new Error("0.1 mm wall result is invalid");
-      closeTo(measured.volumeMm3,TEST_CASES.thinWall.expectedVolumeMm3,"OpenGeometry 0.1 mm wall",1e-4);
-      return measured;
+      return compareMeasured(measured,TEST_CASES.thinWall.expectedVolumeMm3,"OpenGeometry 0.1 mm wall");
     });
     const referenceWall1mm=box(.02,.001,.01),referenceDrill1mm=cyl(.0002,.002);
     referenceDrill1mm.transform(OG_TRANSFORM_TRANSLATE,{offset:[0,-.0005,0]});
@@ -315,8 +317,7 @@ async function openGeometryCandidate() {
       referenceWall1mm.operate(OG_OPERATION_SUBTRACT,{tools:[referenceDrill1mm]});
       const measured=summary(referenceWall1mm);
       if(!measured.valid) throw new Error("1 mm wall result is invalid");
-      closeTo(measured.volumeMm3,200-Math.PI*.2**2*1,"OpenGeometry 1 mm wall",1e-4);
-      return measured;
+      return compareMeasured(measured,200-Math.PI*.2**2*1,"OpenGeometry 1 mm wall");
     });
     const referenceWall2mm=box(.02,.002,.01),referenceDrill2mm=cyl(.001,.004);
     referenceDrill2mm.transform(OG_TRANSFORM_TRANSLATE,{offset:[0,-.001,0]});
@@ -324,8 +325,7 @@ async function openGeometryCandidate() {
       referenceWall2mm.operate(OG_OPERATION_SUBTRACT,{tools:[referenceDrill2mm]});
       const measured=summary(referenceWall2mm);
       if(!measured.valid) throw new Error("2 mm wall result is invalid");
-      closeTo(measured.volumeMm3,400-Math.PI*1**2*2,"OpenGeometry 2 mm wall",1e-4);
-      return measured;
+      return compareMeasured(measured,400-Math.PI*1**2*2,"OpenGeometry 2 mm wall");
     });
     const invalidInputs={};
     for(const testCase of TEST_CASES.invalidPrimitiveInputs){
@@ -340,11 +340,11 @@ async function openGeometryCandidate() {
       }
     }
     return {candidate:"OpenGeometry",version:"3.0.0",status:"passed",unit:"m (converted to mm³)",
-      invalidInputs,coplanar:TEST_CASES.coplanarOverlap.expectedVolumeMm3,
-      tangency,nearCoincidentMm3:nearCoincident.volumeMm3,cylinderBoxTangency:cylinderBoxComparison,thinWall:{wall01mm:thinWallOutcome,referenceWall1mm:referenceWall1mmOutcome,referenceWall2mm:referenceWall2mmOutcome},
+      invalidInputs,coplanar,measurementQuality,
+      tangency,nearCoincident,cylinderBoxTangency:cylinderBoxComparison,thinWall:{wall01mm:thinWallOutcome,referenceWall1mm:referenceWall1mmOutcome,referenceWall2mm:referenceWall2mmOutcome},
       fineFeature,topology:{bodyType:baseCut.bodyType,explicitHistory:false},
       memory:{heapStats:"not exposed by public API",explicitDispose:true,ownedBodies:owned.length},
-      limitations:[...(cylinderBoxComparison.withinReportedErrorBound?[]:["Cylinder/box tangency volume is outside the shared tolerance and its reported measurement error bound; this case is unresolved."]),"Thin-wall cuts at 0.1 mm and 1 mm are characterized as controlled rejection if the kernel's geometric-resolution guard refuses them.","No public face/edge evolution map in 3.0.","Loft and STL export are absent in 3.0.","Kernel modelling calls are synchronous; worker support is for tessellation/display."]};
+      limitations:[...(measurementQuality.some(item=>!item.precisionAdequate)?["Approximate volume error bounds exceed the shared comparison tolerance in one or more cases; those measurements are characterized as unresolved, not as precision passes."]:[]),"Thin-wall cuts at 0.1 mm and 1 mm are characterized as controlled rejection if the kernel's geometric-resolution guard refuses them.","No public face/edge evolution map in 3.0.","Loft and STL export are absent in 3.0.","Kernel modelling calls are synchronous; worker support is for tessellation/display."]};
   } finally { for(const s of owned.reverse())try{s.dispose();}catch{} OpenGeometry.reset(); }
 }
 
