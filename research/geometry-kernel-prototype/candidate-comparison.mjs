@@ -42,7 +42,7 @@ async function andyOcct() {
       });
     }
     const wall=k.makeBox(20,.1,10), drill=k.makeCylinder(.2,.2);
-    const thinDrill=k.transform(drill,[1,0,0,10, 0,0,-1,-.05, 0,1,0,5]);
+    const thinDrill=k.transform(drill,[1,0,0,10, 0,0,1,-.05, 0,-1,0,5]);
     const thin=k.cut(wall,thinDrill);
     closeTo(k.getVolume(thin),20-Math.PI*.2**2*.1,"andy thin wall",1e-5);
     const historyBase=k.makeBox(20,20,20);
