@@ -1001,17 +1001,24 @@ try {
   assert.ok((await page.locator('#objects .object-row').count())>0,'CAD-Übergabe hat kein Objekt erstellt');
 
   // Projektformat v3: echtes Fixture laden und unbekannte Version atomar ablehnen.
+  const validationPage = await browser.newPage({viewport:{width:1280,height:900}});
+  const validationPageErrors = [];
+  validationPage.on('pageerror', error => validationPageErrors.push(error.message));
+  await validationPage.goto('http://127.0.0.1:4173', {waitUntil:'domcontentloaded'});
+  await validationPage.waitForSelector('#viewport canvas', {timeout:20000});
   const projectFixture = readFileSync(new URL('./fixtures/project-v3-minimal.json', import.meta.url));
-  await page.locator('#projectFileInput').setInputFiles({name:'project-v3-minimal.json',mimeType:'application/json',buffer:projectFixture});
-  await page.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Projekt geöffnet (1 Objekt(e))'), null, {timeout:5000});
-  assert.equal(await page.locator('#objects .object-row').count(),1,'Projektformat-v3-Fixture wurde nicht korrekt geladen');
-  assert.match(await page.locator('#objects').innerText(),/Fixture Würfel v3/,'Projektformat-v3-Fixture hat den falschen Objektinhalt');
+  await validationPage.locator('#projectFileInput').setInputFiles({name:'project-v3-minimal.json',mimeType:'application/json',buffer:projectFixture});
+  await validationPage.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Projekt geöffnet (1 Objekt(e))'), null, {timeout:5000});
+  assert.equal(await validationPage.locator('#objects .object-row').count(),1,'Projektformat-v3-Fixture wurde nicht korrekt geladen');
+  assert.match(await validationPage.locator('#objects').innerText(),/Fixture Würfel v3/,'Projektformat-v3-Fixture hat den falschen Objektinhalt');
   const unsupportedProject = JSON.parse(projectFixture.toString('utf8'));
   unsupportedProject.version = 4;
-  await page.locator('#projectFileInput').setInputFiles({name:'unsupported-project-v4.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(unsupportedProject))});
-  await page.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Nicht unterstützte Projektversion 4'), null, {timeout:5000});
-  assert.equal(await page.locator('#objects .object-row').count(),1,'Ungültige Projektversion hat das bestehende Projekt verändert');
-  assert.match(await page.locator('#objects').innerText(),/Fixture Würfel v3/,'Ungültige Projektversion hat das geladene v3-Projekt ersetzt');
+  await validationPage.locator('#projectFileInput').setInputFiles({name:'unsupported-project-v4.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(unsupportedProject))});
+  await validationPage.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Nicht unterstützte Projektversion 4'), null, {timeout:5000});
+  assert.equal(await validationPage.locator('#objects .object-row').count(),1,'Ungültige Projektversion hat das bestehende Projekt verändert');
+  assert.match(await validationPage.locator('#objects').innerText(),/Fixture Würfel v3/,'Ungültige Projektversion hat das geladene v3-Projekt ersetzt');
+  assert.deepEqual(validationPageErrors,[],'Projektformat-v3-Fixture löst Browserfehler aus');
+  await validationPage.close();
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
   console.log('BESTANDEN: 3D-Start, CAD-Zeichenarbeitsplatz, Werkzeugpalette, exakte Skizzenposition, Skizzenbearbeitung, Konturpunkt-Editor, Kantenbearbeitung, Loft, Sweep, Parallel/Senkrecht, Tangential/Konzentrisch, Pfadlänge und Objektabstand, Zeichnen, allgemeine CAD-Konstruktion, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
