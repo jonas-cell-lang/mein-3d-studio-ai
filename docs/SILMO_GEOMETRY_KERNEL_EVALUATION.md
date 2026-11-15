@@ -335,3 +335,27 @@ Die quellenbasierte Vorprüfung der exakt getesteten Versionen ist in [SILMO_LIC
 **Noch nicht abgeschlossen:** Vollständige SBOM/transitive Lizenzinventur, Archivierung aller Release-Quellen und ein realer Austauschbarkeitstest im SILMO-Webbuild. Keine Bibliothek ist rechtlich oder technisch für die Produktion freigegeben. Das SILMO-Repository selbst hat derzeit keine explizite Repository-Lizenz; diese Entscheidung ist separat zu treffen.
 
 **Nächster Schritt:** Release-Artefakte und Quellcode-Zuordnung versionsgenau absichern, ein Lockfile/SBOM für den Forschungsordner ergänzen und danach die technische Architektur-Empfehlung auf Basis von Geometrie-, Mess-, Topologie-, Browser-, Speicher- und Lizenzbefunden formulieren.
+
+## 11. Erweiterte Kandidatenbewertung – schwierige Geometrie (15.11.2026)
+
+Der standardisierte Testkatalog Version 1 wurde auf alle vier Kandidaten angewendet. Alle Kandidaten liefen mit denselben physikalischen Fällen und analytischen Sollwerten in mm/mm³. Der vollständige Workflow einschliesslich Chromium-, Firefox- und WebKit-Worker-Tests war erfolgreich: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43701667009
+
+### Gemessene Unterschiede
+
+| Kandidat | Geometrie / ungültige Eingaben | Topologie / Speicher | Bewertung |
+|---|---|---|---|
+| andymai occt-wasm 5.17.2 | Die geprüften Geometriefälle stimmen weitgehend mit den Sollwerten überein. Eine negative Quaderbreite wird als gültiger Körper akzeptiert; NaN/Infinity und Nullparameter beim Zylinder können ungültige Shapes statt einer sauberen Eingabeablehnung erzeugen. | Explizite Topologiehistorie. Shape-Handles 47 → 107 → 0; beobachteter WASM-Heap 128 MiB. | Technisch interessant, aber Eingabevalidierung muss SILMO selbst übernehmen; Lizenzwiderspruch des ausgelieferten WASM bleibt ein Freigabeblocker. |
+| moket-io/occt-wasm 0.10.1 | Die geprüften Geometriefälle stimmen mit den Sollwerten überein; alle sechs ungültigen Primitiveingaben werden abgelehnt. | Explizite Topologiehistorie. Live-Shape-Bestand 31 → 91 → 0; beobachteter WASM-Heap 64 MiB. | Derzeit der transparenteste OCCT-Prototyp-Kandidat; Lizenzpflichten und Austauschbarkeit bleiben vor jeder Verteilung separat zu prüfen. |
+| Replicad 1.2.1 + replicad-opencascadejs 1.2.1 | Die geprüften Volumen stimmen mit den Sollwerten überein; einige ungültige Eingaben erzeugen ungültige Shapes. | Shape-Objekte werden explizit freigegeben. In der geprüften High-Level-API wurde keine öffentliche explizite Boolesche Face-/Edge-Evolution-Map nachgewiesen. | Gute TypeScript-Abstraktion, aber die LGPL-WASM-Komponente bleibt relevant; Topologiehistorie ist gegenüber den direkten OCCT-Wrappern eingeschränkt. |
+| OpenGeometry 3.0.0 | Geschlossene gültige Formen und Volumen-Näherungen wurden geprüft; alle sechs ungültigen Eingaben werden abgelehnt. | Keine öffentliche Face-/Edge-Evolution-Map im geprüften SDK; keine vergleichbaren WASM-Heap-Statistiken verfügbar. | Mehrere Messfehlergrenzen liegen über der gemeinsamen analytischen Vergleichstoleranz. Diese Fälle bleiben measurement-unresolved und sind kein Präzisionspass. |
+
+### Gesamturteil
+
+- Der standardisierte Lauf ist **completed-with-gaps**. Erfolgreich ausgeführte Adapter bedeuten nicht, dass alle Kandidaten gleich präzise oder funktionsgleich sind.
+- SILMO muss unabhängig vom späteren Kernel alle Eingaben streng validieren und Geometrieergebnisse vor Übernahme auf Gültigkeit prüfen.
+- Die automatisierten WebKit-Tests laufen mit Playwright unter Linux und ersetzen keine manuelle Desktop-Safari-Prüfung.
+- Kein Kandidat ist für die Produktionsintegration freigegeben. Es wurde keine Kernel-Abhängigkeit in die Live-App eingebaut.
+
+### Konsequenz für den Entwicklungsstart
+
+Phase 1 des Masterplans kann ohne Kernel-Auswahl beginnen. Die bestehende Three.js-Darstellung und BSP-Mesh-CSG bleiben vorerst unverändert. Die konkrete Kernel-Entscheidung wird erst in Phase 2 nach vollständiger Lizenzklärung, realem SILMO-WASM-Austauschbarkeitstest und erneuter Bewertung der offenen Mess-/Topologielücken getroffen. Siehe [Architekturentscheid](SILMO_ARCHITECTURE_DECISION.md).
