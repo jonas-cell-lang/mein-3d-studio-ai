@@ -2,7 +2,7 @@
 
 **Stand:** 15.11.2026  
 **Ausgangsstand:** v90 – Focused CAD Subtabs  
-**Arbeitszweig:** `research/geometry-kernel-evaluation`  
+**Ablage:** `main` (Dokumentations-Commit; keine Änderung an der App)  
 **Status:** Recherche und Vorauswahl; noch keine SILMO-Integration und noch kein eigener Laufzeit-Benchmark.
 
 ## 1. Ziel und Entscheidungsregel
