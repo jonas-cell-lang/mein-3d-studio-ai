@@ -54,3 +54,15 @@ Der Kandidatenvergleich verwendet `candidate-test-catalog.mjs` als gemeinsame, v
 - Keine Integration in die bestehende Anwendung
 
 Ein erfolgreicher Lauf ist ein erweiterter Kandidaten-Test, aber keine Freigabe für die spätere Produktionsintegration.
+
+## Reproduzierbare Abhängigkeiten und Lizenz-Provenienz
+
+Der GitHub-Actions-Workflow erzeugt vor den Tests ein npm-Lockfile und installiert anschliessend mit `npm ci` exakt aus diesem Lockfile. Zusätzlich wird eine CycloneDX-SBOM der npm-Abhängigkeiten erzeugt. Die Quellarchive der vier getesteten, fest markierten Kandidaten-Releases sowie SHA-256-Prüfsummen und die verifizierten Moket-WASM-Release-Prüfsummen werden als separates Actions-Artefakt gespeichert.
+
+Das Artefakt heisst `silmo-kernel-provenance-<commit-sha>` und enthält:
+- `package-lock.json` für die transitive npm-Auflösung dieses Laufs
+- `silmo-occt-prototype.cdx.json` (CycloneDX)
+- Quellarchive der vier geprüften Release-Tags und SHA-256-Prüfsummen
+- Node-/npm-Versionen und Moket-Release-Asset-Prüfsummen
+
+**Wichtig:** Das generierte Lockfile wird zunächst als CI-Artefakt gesichert und ist noch nicht im Git-Branch eingecheckt. Erst nach erfolgreichem Lauf und Prüfung des Artefakts wird es als versionierte Datei übernommen. Die SBOM erfasst npm-Abhängigkeiten; Browser-Binaries, Betriebssystempakete und sämtliche Build-Toolchains sind damit nicht automatisch vollständig inventarisiert.
