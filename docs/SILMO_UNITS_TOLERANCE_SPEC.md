@@ -87,8 +87,8 @@ Es werden hier bewusst keine neuen globalen Zahlenwerte festgelegt. Die bestehen
 
 - Alle Längen- und Abstandsgrenzen in index.html einer Einheit zuordnen.
 - Prüfen, welche Schwellen numerische Stabilität und welche nur UI-/Interaktionsabstände betreffen.
-- Druckbettprüfung ab Zeile 3776 vollständig lesen und ihre Toleranz fachlich zuordnen.
-- Prüfen, ob STL-Import die eingelesenen Koordinaten bereits auf interne Einheiten skaliert.
+- Weitere Druck- und Skizzen-Schwellen mit ihren jeweiligen Aufrufstellen fachlich zuordnen.
+- Quellcodeprüfung der übrigen Einheitenkonvertierungen fortsetzen; STL-Import ist bereits verifiziert.
 - Prüfen, ob Projektformat v3 die Basiseinheit explizit speichert oder sie nur implizit voraussetzt.
 - Testfälle für alle Einheiten-Grenzen aus dem vorhandenen Browser-Test und den Diagnosefunktionen ableiten.
 
