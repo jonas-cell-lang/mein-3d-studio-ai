@@ -47,7 +47,7 @@ jobs:
         env:
           MOKET_OCCT_DIR: /tmp/silmo-moket
         run: npm run test:candidates
-      - name: Install Chromium for worker smoke test
+      - name: Install Chromium, Firefox and WebKit for worker tests
         working-directory: research/geometry-kernel-prototype
         run: npx playwright install --with-deps chromium firefox webkit
       - name: Prepare public WASM asset
