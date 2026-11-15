@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v90 – Focused CAD Subtabs</title>
+<title>SILMO 3D Studio AI – v91 – Central Units API</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v90 – Focused CAD Subtabs">
+<meta name="silmo-build" content="v91 – Central Units API">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -1204,6 +1204,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 <script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
 <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
+<script src="./src/units.js"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -1318,7 +1319,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   // Test snapshot includes scale signs so mirror operations can be verified, not just their status text.
   window.__silmoTutorialAllTransforms = () => objects.map(obj => ({ uuid: obj.uuid, x: obj.position.x, y: obj.position.y, z: obj.position.z, sx: obj.scale.x, sy: obj.scale.y, sz: obj.scale.z, qx: obj.quaternion.x, qy: obj.quaternion.y, qz: obj.quaternion.z, qw: obj.quaternion.w }));
   let uniform = true;
-  const MM_PER_UNIT = 10;
+  const MM_PER_UNIT = window.SILMOUnits.MM_PER_WORLD_UNIT;
   let moveGizmo = null;
   let rotationGizmo = null;
   let gizmoMode = 'move';
