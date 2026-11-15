@@ -41,8 +41,9 @@ async function andyOcct() {
         return {volumeMm3:volume,solids:k.getSubShapes(result,"solid").length};
       });
     }
-    const wall=k.makeBox(20,.1,10), drill=k.makeCylinder(.2,.1);
-    const thin=k.cut(wall,k.transform(drill,translation(10,0,5)));
+    const wall=k.makeBox(20,.1,10), drill=k.makeCylinder(.2,.2);
+    const thinDrill=k.transform(drill,[1,0,0,10, 0,0,-1,-.05, 0,1,0,5]);
+    const thin=k.cut(wall,thinDrill);
     closeTo(k.getVolume(thin),20-Math.PI*.2**2*.1,"andy thin wall",1e-5);
     const historyBase=k.makeBox(20,20,20);
     const historyHashes=k.subShapeHashes(historyBase,"face",2147483647);
@@ -90,7 +91,7 @@ async function moketOcct() {
       });
     }
     const wall=ok(k.makeBox(20,.1,10),"moket thin wall").shape;
-    const drill=ok(k.makeCylinder([10,0,5],[0,1,0],.2,.1),"moket thin drill").shape;
+    const drill=ok(k.makeCylinder([10,-.05,5],[0,1,0],.2,.2),"moket thin drill").shape;
     const thin=ok(k.boolean("cut",wall,drill),"moket thin cut");
     closeTo(props(thin.shape).volume,20-Math.PI*.2**2*.1,"moket thin wall",1e-5);
     const memoryBefore=k.heapStats();
@@ -131,7 +132,7 @@ async function replicadCandidate() {
       });
     }
     const wall=own(r.makeBox([0,0,0],[20,.1,10]));
-    const drill=own(r.makeCylinder(.2,.1,[10,0,5],[0,1,0]));
+    const drill=own(r.makeCylinder(.2,.2,[10,-.05,5],[0,1,0]));
     const thin=own(wall.cut(drill,{simplify:false}));
     closeTo(measure(thin).volumeMm3,20-Math.PI*.2**2*.1,"Replicad thin wall",1e-5);
     const topologyFaces=thin.faces, topologyEdges=thin.edges;
@@ -175,7 +176,7 @@ async function openGeometryCandidate() {
     closeTo(summary(commonA).volumeMm3,500,"OpenGeometry coplanar common",1e-5);
     closeTo(summary(cutA).volumeMm3,500,"OpenGeometry coplanar cut",1e-5);
     const tangency={face:tangent("face",[.01,0,0]),edge:tangent("edge",[.01,.01,0]),vertex:tangent("vertex",[.01,.01,.01])};
-    const fineWall=box(.02,.0001,.01),fineDrill=cyl(.00002,.0001);
+    const fineWall=box(.02,.0001,.01),fineDrill=cyl(.00002,.0002);
     const fineFeature=attempt(()=>{
       fineWall.operate(OG_OPERATION_SUBTRACT,{tools:[fineDrill]});
       const fine=summary(fineWall);
@@ -183,7 +184,7 @@ async function openGeometryCandidate() {
       closeTo(fine.volumeMm3,20-Math.PI*.02**2*.1,"OpenGeometry 0.04 mm hole",1e-4);
       return fine;
     });
-    const wall=box(.02,.0001,.01),drill=cyl(.0002,.0001);
+    const wall=box(.02,.0001,.01),drill=cyl(.0002,.0002);
     wall.operate(OG_OPERATION_SUBTRACT,{tools:[drill]});
     const thin=summary(wall);
     closeTo(thin.volumeMm3,20-Math.PI*.2**2*.1,"OpenGeometry thin wall",1e-4);
