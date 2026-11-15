@@ -9,6 +9,10 @@ Eigenständiges professionelles 3D-Modellierungsprogramm.
 - [Vollständige Projektsicherung und Übergabe](docs/SILMO_PROJECT_BACKUP.md)
 - [Masterplan](docs/SILMO_MASTERPLAN.md)
 - [Technische Bestandsaufnahme](docs/SILMO_CURRENT_STATE_AUDIT.md)
+- [Funktions- und Abhängigkeitsmatrix](docs/SILMO_FUNCTION_DEPENDENCY_MATRIX.md)
+- [Einheiten- und Toleranzspezifikation](docs/SILMO_UNITS_TOLERANCE_SPEC.md)
+- [Geometriekern-Vorauswahl und Testplan](docs/SILMO_GEOMETRY_KERNEL_EVALUATION.md)
+- [Isolierter OCCT-WASM-Prototyp](research/geometry-kernel-prototype/README.md)
 
 ## Anwendung und Entwicklung
 
