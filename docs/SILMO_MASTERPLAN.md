@@ -21,7 +21,7 @@ Am 14.11.2026 wurde der aktuelle Hauptstand geprüft.
 
 - Die Anwendung liegt derzeit im Wesentlichen in einer einzelnen `index.html` mit rund 5'600 Zeilen und eingebettetem CSS/JavaScript.
 - Die 3D-Darstellung basiert auf Three.js r128, das aktuell über externe CDN-Skripte geladen wird.
-- Interne Modellkoordinaten verwenden derzeit den Faktor **10 Three.js-Einheiten = 1 mm**; diese Umrechnung ist an mehreren Stellen in der Anwendung verankert.
+- Interne Modellkoordinaten verwenden derzeit den Faktor **1 Three.js-Einheit = 10 mm (der Code teilt Millimeterwerte durch 10, um interne Koordinaten zu erhalten)**; diese Umrechnung ist an mehreren Stellen in der Anwendung verankert.
 - Es gibt bereits Grundkörper, Objekttransformationen, Auswahl, Mehrfachauswahl, Gruppierung, Undo/Redo, Projektdateien, STL-Import, STL-Export, 2D-Skizzen, Extrusion, Kontur- und Wandwerkzeuge, eigene BSP-basierte Boolesche Operationen, Loft/Sweep, Skizzenbeziehungen und Bildkontur-Erkennung.
 - Die Oberfläche besitzt Hauptbereiche und fokussierte Unterreiter.
 - Browser- und GitHub-Actions-Tests sind vorhanden.
