@@ -271,8 +271,57 @@ Ausgeführt im selben isolierten Prototyp-Workflow. Ein Worker erzeugte einen Qu
 
 Prototyp und Tests liegen unter: [research/geometry-kernel-prototype](../research/geometry-kernel-prototype/README.md). Der Prototyp wurde mit Commit 93cd7c9e877d56761032a6c6ff7ebaa4dfc57a51 in das Repository übernommen.
 
-## 10. Nächster Schritt
+## 10. Standardisierter Geometrie-Katalog und Kandidatenvergleich
 
-Den Testkorpus erweitern: koplanare und fast tangierende Flächen, dünne Wände, ungültige/degenerierte Eingaben, Topologiehistorie nach mehreren Operationen, Speicherwachstum über wiederholte Operationen, Worker-Abbruch und UI-Reaktionsfähigkeit. Danach Browserprüfungen in Safari/WebKit und Firefox ergänzen und denselben Testkatalog mit Replicad, moket-io/occt-wasm und OpenGeometry ausführen. Erst dann folgt eine technische Empfehlung.
+Der Testausbau aus Masterplan-Abschnitt 6 wurde im isolierten Forschungsordner umgesetzt. Die gemeinsame Spezifikation ist `research/geometry-kernel-prototype/candidate-test-catalog.mjs`, Version 1. Sie legt die physikalischen Eingaben und analytischen Sollwerte einheitlich in mm und mm³ fest. Alle vier Kandidatenadapter verwenden dieselben Kernfälle.
 
-**Wichtig:** Der erste Smoke-Test beweist nur, dass dieser Kandidat die geprüften einfachen Aufgaben in Node.js 24 und einem Chromium-Worker bestanden hat. Er beweist weder professionelle CAD-Reife noch Produktionsintegration, Foto-zu-3D-Eignung oder physische Druckqualität.
+### Gemeinsame Geometriefälle
+
+- Quader 40 × 20 × 30 mm mit Radius-5-mm-Durchgangsbohrung; Sollvolumen 22'429.203673 mm³.
+- Zwei 10-mm-Würfel mit 5 mm Überlappung: Fuse 1'500 mm³, Common 500 mm³, Cut 500 mm³.
+- Würfel mit Flächen-, Kanten- und Eckkontakt; Sollvolumen der Vereinigung 2'000 mm³.
+- Fast deckungsgleiche Würfel mit 0.0001 mm Überlapp; Sollvolumen 1'999.99 mm³.
+- Zylinder/Quader-Tangenz; Sollvolumen 1'785.398163 mm³.
+- Dünne Wand 20 × 0.1 × 10 mm mit Radius-0.2-mm-Bohrung; Sollvolumen 19.987434 mm³.
+- Sechs ungültige Eingaben: Quader mit Null-/Negativ-/NaN-/unendlicher Breite sowie Zylinder mit Radius oder Höhe 0.
+
+### Ergebnisse der Kandidaten
+
+| Kandidat | Geometrie-Fälle | Ungültige Eingaben | Topologiehistorie / Speicher |
+|---|---|---|---|
+| `occt-wasm` (andymai) 5.17.2 | Sollvolumen in den gemeinsamen Fällen getroffen; bei Kanten-/Eckkontakt entstehen zwei getrennte Solids | Negative Breite wird als gültiger Körper akzeptiert; NaN, Infinity und Null-Zylinderparameter erzeugen teilweise ungültige Shapes statt Ablehnung | Explizite Historie vorhanden; Shape-Handles 47 → 107 → 0, WASM-Heap 128 MiB |
+| `@moket/occt-wasm` 0.10.1 | Sollvolumen in den gemeinsamen Fällen getroffen; bei Kanten-/Eckkontakt entstehen zwei getrennte Solids | Alle sechs Fälle kontrolliert abgelehnt | Explizite Historie vorhanden; Live-Shapes 31 → 91 → 0, Heap 64 MiB |
+| Replicad 1.2.1 | Sollvolumen in den gemeinsamen Fällen getroffen; Ergebnisse gültig | Negative Breite wird als gültiger Körper akzeptiert; NaN, Infinity und Null-Zylinderparameter werden teilweise als ungültige Shapes zurückgegeben | Keine öffentliche explizite Boolesche Evolution-Map im geprüften High-Level-API; explizites Löschen der Shape-Objekte |
+| OpenGeometry 3.0.0 | Shapes sind gültig/geschlossen; Punktmessungen liegen nahe an den Sollwerten | Alle sechs Fälle kontrolliert abgelehnt | Keine öffentliche Face-/Edge-Evolution-Map; keine Heap-Statistik über die geprüfte API |
+
+**Wichtige Einordnung:** Der Gesamtstatus des reproduzierbaren Vergleichslaufs lautet `completed-with-gaps`. Das bedeutet: Alle vier Adapter liefen und die geometrischen Prüfungen wurden ausgeführt, aber nicht jede Fähigkeit und Messung ist gleichwertig. Insbesondere sind bei OpenGeometry die ausgegebenen Volumenfehlergrenzen in mehreren Fällen grösser als die gemeinsame Vergleichstoleranz. Diese Fälle sind im JSON-Bericht als `measurement-unresolved` markiert. Sie gelten nicht als Präzisionspass.
+
+Die ungültigen Eingaben sind eine reine Verhaltenscharakterisierung. Dass ein Kernel eine ungültige Eingabe annimmt oder ein ungültiges Shape zurückgibt, ist kein akzeptables SILMO-Verhalten. Eine spätere SILMO-Schnittstelle muss Eingaben unabhängig vom gewählten Kernel streng validieren.
+
+### Worker- und Regressionstests
+
+Ausgeführt im GitHub-Actions-Lauf [43700411664](https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43700411664):
+
+- Analytische Node.js-24-Geometrietests: bestanden.
+- Release-Dateien von moket-io/occt-wasm: SHA-256-Prüfung bestanden.
+- Kandidatenvergleich: ausgeführt; Gesamtstatus `completed-with-gaps`.
+- OCCT-Worker in Chromium, Firefox und WebKit: bestanden.
+- In allen drei Browsern: Quader-Volumen 6'000 mm³, 12 Dreiecke, UI bleibt während der Worker-Arbeit reaktionsfähig und ein laufender Worker lässt sich terminieren.
+- Bestehende SILMO-Browser-Regression: bestanden – [43700411668](https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43700411668).
+- Code-Prüfungen: bestanden – [43700411629](https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43700411629).
+
+Playwright-WebKit unter Linux ist kein manueller Test einer installierten Desktop-Safari-Version. Dieser bleibt offen.
+
+### Grenzen des Ergebnisses
+
+- Keine Lizenzprüfung abgeschlossen und keine Architekturentscheidung getroffen.
+- Keine Kompatibilität mit SILMO-Projektdateien nachgewiesen.
+- Keine Integration in die bestehende Anwendung.
+- Keine Änderung an App-Version oder Produktionscode; deshalb kein neues Live-Deployment.
+- Kein Nachweis professioneller CAD-Reife, allgemeiner Foto-zu-3D-Rekonstruktion oder physischer 3D-Druckqualität.
+
+## 11. Nächster Schritt
+
+Als Nächstes folgen die Lizenzprüfung der Kandidaten und eine Bewertung der dokumentierten API-, Topologie-, Speicher- und Messpräzisionslücken. Danach kann eine technische Empfehlung erstellt werden. Erst nach dieser Prüfung wird über eine schrittweise Migration entschieden.
+
+**Wichtig:** Auch der erweiterte Vergleich ist keine Freigabe für die Produktionsintegration. Der bestehende SILMO-Geometriekern bleibt bis zu einer begründeten Architekturentscheidung unverändert.
