@@ -215,34 +215,46 @@ try {
     const firstEvolution = kernel.cutWithHistory(
       historyBase, firstTool, originalFaceHashes, hashUpperBound
     );
-    assert.ok(firstEvolution && firstEvolution.shape,
+    assert.ok(firstEvolution && firstEvolution.result,
       "cutWithHistory must return a result shape and evolution data");
-    assert.equal(kernel.isValid(firstEvolution.shape), true,
+    for (const key of ["modified", "generated", "deleted"]) {
+      assert.ok(Array.isArray(firstEvolution[key]), `first topology history must include ${key}`);
+    }
+    assert.equal(kernel.isValid(firstEvolution.result), true,
       "first history result must be a valid OCCT shape");
-    closeTo(kernel.getVolume(firstEvolution.shape), 8000 - 80 * Math.PI,
+    closeTo(kernel.getVolume(firstEvolution.result), 8000 - 80 * Math.PI,
       "first history cut volume");
 
     const firstResultFaceHashes = kernel.subShapeHashes(
-      firstEvolution.shape, "face", hashUpperBound
+      firstEvolution.result, "face", hashUpperBound
     );
     assert.ok(firstResultFaceHashes.length > 0,
       "first history result must retain queryable face identities");
     const secondEvolution = kernel.cutWithHistory(
-      firstEvolution.shape, secondTool, firstResultFaceHashes, hashUpperBound
+      firstEvolution.result, secondTool, firstResultFaceHashes, hashUpperBound
     );
-    assert.ok(secondEvolution && secondEvolution.shape,
+    assert.ok(secondEvolution && secondEvolution.result,
       "second cutWithHistory must return a result shape and evolution data");
-    assert.equal(kernel.isValid(secondEvolution.shape), true,
+    for (const key of ["modified", "generated", "deleted"]) {
+      assert.ok(Array.isArray(secondEvolution[key]), `second topology history must include ${key}`);
+    }
+    assert.equal(kernel.isValid(secondEvolution.result), true,
       "second history result must be a valid OCCT shape");
-    closeTo(kernel.getVolume(secondEvolution.shape), 8000 - 160 * Math.PI,
+    closeTo(kernel.getVolume(secondEvolution.result), 8000 - 160 * Math.PI,
       "sequential history cut volume");
     observations.topologyHistory = {
       firstEvolutionKeys: Object.keys(firstEvolution),
+      firstModifiedFaces: firstEvolution.modified.length,
+      firstGeneratedFaces: firstEvolution.generated.length,
+      firstDeletedFaces: firstEvolution.deleted.length,
       secondEvolutionKeys: Object.keys(secondEvolution),
+      secondModifiedFaces: secondEvolution.modified.length,
+      secondGeneratedFaces: secondEvolution.generated.length,
+      secondDeletedFaces: secondEvolution.deleted.length,
       originalFaceHashCount: originalFaceHashes.length,
       firstResultFaceHashCount: firstResultFaceHashes.length,
       finalFaceHashCount: kernel.subShapeHashes(
-        secondEvolution.shape, "face", hashUpperBound
+        secondEvolution.result, "face", hashUpperBound
       ).length
     };
   });
