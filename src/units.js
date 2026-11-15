@@ -19,6 +19,12 @@
     },
     worldUnits2ToMm2(value) {
       return value * MM_PER_WORLD_UNIT * MM_PER_WORLD_UNIT;
+    },
+    mm3ToWorldUnits3(value) {
+      return value / (MM_PER_WORLD_UNIT * MM_PER_WORLD_UNIT * MM_PER_WORLD_UNIT);
+    },
+    worldUnits3ToMm3(value) {
+      return value * MM_PER_WORLD_UNIT * MM_PER_WORLD_UNIT * MM_PER_WORLD_UNIT;
     }
   });
 });
