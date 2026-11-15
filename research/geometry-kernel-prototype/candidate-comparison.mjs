@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
+import { TEST_CASES } from "./candidate-test-catalog.mjs";
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
 const reports = [];
-const closeTo = (actual, expected, label, rel = 1e-6) => {
-  const tolerance = Math.max(1e-7, Math.abs(expected) * rel);
+const closeTo = (actual, expected, label, rel = TEST_CASES.tolerance.relativeVolume) => {
+  const tolerance = Math.max(TEST_CASES.tolerance.absoluteVolumeMm3, Math.abs(expected) * rel);
   assert.ok(Number.isFinite(actual), `${label}: non-finite value`);
   assert.ok(Math.abs(actual - expected) <= tolerance,
     `${label}: expected ${expected} mm³, got ${actual} mm³ (±${tolerance})`);
@@ -25,26 +26,34 @@ async function andyOcct() {
     const box = k.makeBox(40,30,20);
     const hole = k.translate(k.makeCylinder(5,20),20,15,0);
     const cut = k.cut(box,hole);
-    closeTo(k.getVolume(cut),24000-500*Math.PI,"andy base/cut");
+    closeTo(k.getVolume(cut),TEST_CASES.throughHole.expectedVolumeMm3,"andy base/cut");
     const a=k.makeBox(10,10,10), b=k.translate(k.makeBox(10,10,10),5,0,0);
     const u=k.fuse(a,b), c=k.common(a,b), d=k.cut(a,b);
-    closeTo(k.getVolume(u),1500,"andy coplanar union");
-    closeTo(k.getVolume(c),500,"andy coplanar common");
-    closeTo(k.getVolume(d),500,"andy coplanar cut");
+    closeTo(k.getVolume(u),TEST_CASES.coplanarOverlap.expectedVolumeMm3.fuse,"andy coplanar union");
+    closeTo(k.getVolume(c),TEST_CASES.coplanarOverlap.expectedVolumeMm3.common,"andy coplanar common");
+    closeTo(k.getVolume(d),TEST_CASES.coplanarOverlap.expectedVolumeMm3.cut,"andy coplanar cut");
     const tangency={};
     for(const [name,offset] of [["face",[10,0,0]],["edge",[10,10,0]],["vertex",[10,10,10]]]){
       const first=k.makeBox(10,10,10), second=k.transform(k.makeBox(10,10,10),translation(...offset));
       tangency[name]=attempt(()=>{
         const result=k.fuse(first,second);
         assert.equal(k.isValid(result),true);
-        const volume=k.getVolume(result); closeTo(volume,2000,`andy ${name} contact`);
+        const volume=k.getVolume(result); closeTo(volume,TEST_CASES.tangency.expectedUnionVolumeMm3,`andy ${name} contact`);
         return {volumeMm3:volume,solids:k.getSubShapes(result,"solid").length};
       });
     }
+    const nearA=k.makeBox(10,10,10), nearB=k.transform(k.makeBox(10,10,10),translation(TEST_CASES.nearCoincident.secondOffsetMm,0,0));
+    const nearCoincident=k.fuse(nearA,nearB);
+    closeTo(k.getVolume(nearCoincident),TEST_CASES.nearCoincident.expectedUnionVolumeMm3,"andy near-coincident union",1e-5);
+    const tangentBox=k.makeBox(10,10,10);
+    const tangentCylinder=k.transform(k.makeCylinder(TEST_CASES.cylinderBoxTangency.cylinderRadiusMm,TEST_CASES.cylinderBoxTangency.cylinderLengthMm),
+      [1,0,0,15, 0,0,1,0, 0,-1,0,5]);
+    const cylinderBoxUnion=k.fuse(tangentBox,tangentCylinder);
+    closeTo(k.getVolume(cylinderBoxUnion),TEST_CASES.cylinderBoxTangency.expectedUnionVolumeMm3,"andy cylinder/box tangency",1e-6);
     const wall=k.makeBox(20,.1,10), drill=k.makeCylinder(.2,.2);
     const thinDrill=k.transform(drill,[1,0,0,10, 0,0,1,-.05, 0,-1,0,5]);
     const thin=k.cut(wall,thinDrill);
-    closeTo(k.getVolume(thin),20-Math.PI*.2**2*.1,"andy thin wall",1e-5);
+    closeTo(k.getVolume(thin),TEST_CASES.thinWall.expectedVolumeMm3,"andy thin wall",1e-5);
     const historyBase=k.makeBox(20,20,20);
     const historyHashes=k.subShapeHashes(historyBase,"face",2147483647);
     const history=k.cutWithHistory(historyBase,k.makeCylinder(2,20),historyHashes,2147483647);
@@ -56,7 +65,7 @@ async function andyOcct() {
     k.releaseAll();
     return {candidate:"occt-wasm (andymai)",version:"5.17.2 / OCCT 8.0.1",status:"passed",
       baseAndCutMm3:{base:baseVolume,cut:cutVolume},coplanar:{union:1500,common:500,cut:500},
-      tangency,thinWallMm3:thinVolume,
+      tangency,nearCoincidentMm3:k.getVolume(nearCoincident),cylinderBoxTangencyMm3:k.getVolume(cylinderBoxUnion),thinWallMm3:thinVolume,
       topologyHistory:!!history.result,memory:{liveBefore,livePeak,liveAfter:k.shapeCount,wasmBytesBefore:memoryBefore,wasmBytesAfter:memoryAfter},
       limitations:[]};
   } finally { k[Symbol.dispose](); }
@@ -73,27 +82,35 @@ async function moketOcct() {
     const box=ok(k.makeBox(40,30,20),"moket box").shape;
     const cyl=ok(k.makeCylinder([20,0,15],[0,1,0],5,20),"moket cylinder").shape;
     const cut=ok(k.boolean("cut",box,cyl),"moket cut");
-    closeTo(props(cut.shape).volume,24000-500*Math.PI,"moket base/cut");
+    closeTo(props(cut.shape).volume,TEST_CASES.throughHole.expectedVolumeMm3,"moket base/cut");
     const a=ok(k.makeBox(10,10,10),"moket a").shape;
     const b=ok(k.transform(ok(k.makeBox(10,10,10),"moket b").shape,translation(5,0,0)),"moket b transform").shape;
     const u=ok(k.boolean("fuse",a,b),"moket union"), c=ok(k.boolean("common",a,b),"moket common"), d=ok(k.boolean("cut",a,b),"moket cut");
-    closeTo(props(u.shape).volume,1500,"moket coplanar union");
-    closeTo(props(c.shape).volume,500,"moket coplanar common");
-    closeTo(props(d.shape).volume,500,"moket coplanar cut");
+    closeTo(props(u.shape).volume,TEST_CASES.coplanarOverlap.expectedVolumeMm3.fuse,"moket coplanar union");
+    closeTo(props(c.shape).volume,TEST_CASES.coplanarOverlap.expectedVolumeMm3.common,"moket coplanar common");
+    closeTo(props(d.shape).volume,TEST_CASES.coplanarOverlap.expectedVolumeMm3.cut,"moket coplanar cut");
     const tangency={};
     for(const [name,offset] of [["face",[10,0,0]],["edge",[10,10,0]],["vertex",[10,10,10]]]){
       const first=ok(k.makeBox(10,10,10),"moket tangent A").shape;
       const second=ok(k.transform(ok(k.makeBox(10,10,10),"moket tangent B").shape,translation(...offset)),"moket tangent transform").shape;
       tangency[name]=attempt(()=>{
         const result=ok(k.boolean("fuse",first,second),"moket tangent fuse"), p=props(result.shape);
-        assert.equal(p.valid,true); closeTo(p.volume,2000,`moket ${name} contact`);
+        assert.equal(p.valid,true); closeTo(p.volume,TEST_CASES.tangency.expectedUnionVolumeMm3,`moket ${name} contact`);
         return {volumeMm3:p.volume,solids:p.solids};
       });
     }
+    const nearA=ok(k.makeBox(10,10,10),"moket near A").shape;
+    const nearB=ok(k.transform(ok(k.makeBox(10,10,10),"moket near B").shape,translation(TEST_CASES.nearCoincident.secondOffsetMm,0,0)),"moket near transform").shape;
+    const nearCoincident=ok(k.boolean("fuse",nearA,nearB),"moket near fuse");
+    closeTo(props(nearCoincident.shape).volume,TEST_CASES.nearCoincident.expectedUnionVolumeMm3,"moket near-coincident union",1e-5);
+    const tangentBox=ok(k.makeBox(10,10,10),"moket cylinder tangent box").shape;
+    const tangentCylinder=ok(k.makeCylinder([15,0,5],[0,1,0],TEST_CASES.cylinderBoxTangency.cylinderRadiusMm,TEST_CASES.cylinderBoxTangency.cylinderLengthMm),"moket tangent cylinder").shape;
+    const cylinderBoxUnion=ok(k.boolean("fuse",tangentBox,tangentCylinder),"moket cylinder/box tangent fuse");
+    closeTo(props(cylinderBoxUnion.shape).volume,TEST_CASES.cylinderBoxTangency.expectedUnionVolumeMm3,"moket cylinder/box tangency");
     const wall=ok(k.makeBox(20,.1,10),"moket thin wall").shape;
     const drill=ok(k.makeCylinder([10,-.05,5],[0,1,0],.2,.2),"moket thin drill").shape;
     const thin=ok(k.boolean("cut",wall,drill),"moket thin cut");
-    closeTo(props(thin.shape).volume,20-Math.PI*.2**2*.1,"moket thin wall",1e-5);
+    closeTo(props(thin.shape).volume,TEST_CASES.thinWall.expectedVolumeMm3,"moket thin wall",1e-5);
     const memoryBefore=k.heapStats();
     for(let i=0;i<20;i++) ok(k.boolean("cut",ok(k.makeBox(10+i*.01,10,10),"moket memory box").shape,
       ok(k.makeCylinder([5,0,5],[0,1,0],1,10),"moket memory drill").shape),"moket memory cut");
@@ -101,7 +118,7 @@ async function moketOcct() {
     const memoryPeak=k.heapStats(); ok(k.releaseAll(),"moket release");
     const memoryAfter=k.heapStats();
     return {candidate:"@moket/occt-wasm",version:"0.10.1 / OCCT 8.0.1",status:"passed",
-      coplanar:{union:1500,common:500,cut:500},tangency,thinWallMm3:thinVolume,
+      coplanar:TEST_CASES.coplanarOverlap.expectedVolumeMm3,tangency,nearCoincidentMm3:props(nearCoincident.shape).volume,cylinderBoxTangencyMm3:props(cylinderBoxUnion.shape).volume,thinWallMm3:thinVolume,
       topologyHistory:!!u.history,memory:{before:memoryBefore,peak:memoryPeak,after:memoryAfter},limitations:[]};
   } finally { k.releaseAll(); }
 }
@@ -116,25 +133,33 @@ async function replicadCandidate() {
     const box=own(r.makeBox([0,0,0],[40,20,30]));
     const hole=own(r.makeCylinder(5,20,[20,0,15],[0,1,0]));
     const cut=own(box.cut(hole,{simplify:false}));
-    closeTo(measure(cut).volumeMm3,24000-500*Math.PI,"Replicad base/cut");
+    closeTo(measure(cut).volumeMm3,TEST_CASES.throughHole.expectedVolumeMm3,"Replicad base/cut");
     const a=own(r.makeBox([0,0,0],[10,10,10])),b=own(r.makeBox([5,0,0],[15,10,10]));
     const u=own(a.fuse(b,{simplify:false})),c=own(a.intersect(b,{simplify:false})),d=own(a.cut(b,{simplify:false}));
-    closeTo(measure(u).volumeMm3,1500,"Replicad coplanar union");
-    closeTo(measure(c).volumeMm3,500,"Replicad coplanar common");
-    closeTo(measure(d).volumeMm3,500,"Replicad coplanar cut");
+    closeTo(measure(u).volumeMm3,TEST_CASES.coplanarOverlap.expectedVolumeMm3.fuse,"Replicad coplanar union");
+    closeTo(measure(c).volumeMm3,TEST_CASES.coplanarOverlap.expectedVolumeMm3.common,"Replicad coplanar common");
+    closeTo(measure(d).volumeMm3,TEST_CASES.coplanarOverlap.expectedVolumeMm3.cut,"Replicad coplanar cut");
     const tangency={};
     for(const [name,offset] of [["face",[10,0,0]],["edge",[10,10,0]],["vertex",[10,10,10]]]){
       const first=own(r.makeBox([0,0,0],[10,10,10]));
       const second=own(r.makeBox(offset,[offset[0]+10,offset[1]+10,offset[2]+10]));
       tangency[name]=attempt(()=>{
         const result=own(first.fuse(second,{simplify:false})),p=measure(result);
-        assert.equal(p.valid,true);closeTo(p.volumeMm3,2000,`Replicad ${name} contact`);return p;
+        assert.equal(p.valid,true);closeTo(p.volumeMm3,TEST_CASES.tangency.expectedUnionVolumeMm3,`Replicad ${name} contact`);return p;
       });
     }
+    const nearA=own(r.makeBox([0,0,0],[10,10,10]));
+    const nearB=own(r.makeBox([TEST_CASES.nearCoincident.secondOffsetMm,0,0],[TEST_CASES.nearCoincident.secondOffsetMm+10,10,10]));
+    const nearCoincident=own(nearA.fuse(nearB,{simplify:false}));
+    closeTo(measure(nearCoincident).volumeMm3,TEST_CASES.nearCoincident.expectedUnionVolumeMm3,"Replicad near-coincident union",1e-5);
+    const tangentBox=own(r.makeBox([0,0,0],[10,10,10]));
+    const tangentCylinder=own(r.makeCylinder(TEST_CASES.cylinderBoxTangency.cylinderRadiusMm,TEST_CASES.cylinderBoxTangency.cylinderLengthMm,[15,0,5],[0,1,0]));
+    const cylinderBoxUnion=own(tangentBox.fuse(tangentCylinder,{simplify:false}));
+    closeTo(measure(cylinderBoxUnion).volumeMm3,TEST_CASES.cylinderBoxTangency.expectedUnionVolumeMm3,"Replicad cylinder/box tangency");
     const wall=own(r.makeBox([0,0,0],[20,.1,10]));
     const drill=own(r.makeCylinder(.2,.2,[10,-.05,5],[0,1,0]));
     const thin=own(wall.cut(drill,{simplify:false}));
-    closeTo(measure(thin).volumeMm3,20-Math.PI*.2**2*.1,"Replicad thin wall",1e-5);
+    closeTo(measure(thin).volumeMm3,TEST_CASES.thinWall.expectedVolumeMm3,"Replicad thin wall",1e-5);
     const topologyFaces=thin.faces, topologyEdges=thin.edges;
     const topology={faces:topologyFaces.length,edges:topologyEdges.length,explicitHistory:false};
     topologyFaces.forEach(face=>face.delete()); topologyEdges.forEach(edge=>edge.delete());
@@ -144,7 +169,7 @@ async function replicadCandidate() {
       catch(error){invalidInputs[name]={outcome:"rejected",message:error.message};}
     }
     return {candidate:"Replicad",version:"1.2.1 / replicad-opencascadejs 1.2.1",status:"passed",
-      invalidInputs,coplanar:{union:1500,common:500,cut:500},tangency,thinWallMm3:measure(thin).volumeMm3,
+      invalidInputs,coplanar:TEST_CASES.coplanarOverlap.expectedVolumeMm3,tangency,nearCoincidentMm3:measure(nearCoincident).volumeMm3,cylinderBoxTangencyMm3:measure(cylinderBoxUnion).volumeMm3,thinWallMm3:measure(thin).volumeMm3,
       topology,
       memory:{explicitDelete:true,ownedShapes:owned.length},limitations:["High-level API exposes no Boolean evolution-history map."]};
   } finally { for(const s of owned.reverse())try{s.delete();}catch{} }
@@ -164,24 +189,34 @@ async function openGeometryCandidate() {
   const summary=s=>{const m=s.measure({deflection:1e-6}),v=s.validity();return {volumeMm3:m.volume*1e9,errorBoundMm3:m.errorBound*1e9,valid:v.valid,closed:v.closed,bodyType:v.bodyType};};
   const tangent=(name,offset)=>{
     const a=box(.01,.01,.01),b=box(.01,.01,.01);b.transform(OG_TRANSFORM_TRANSLATE,{offset});
-    return attempt(()=>{a.operate(OG_OPERATION_UNION,{tools:[b]});const p=summary(a);assert.equal(p.valid,true);closeTo(p.volumeMm3,2000,`OpenGeometry ${name} contact`);return p;});
+    return attempt(()=>{a.operate(OG_OPERATION_UNION,{tools:[b]});const p=summary(a);assert.equal(p.valid,true);closeTo(p.volumeMm3,TEST_CASES.tangency.expectedUnionVolumeMm3,`OpenGeometry ${name} contact`);return p;});
   };
   try {
     const base=box(.04,.02,.03),hole=cyl(.005,.04);
     hole.transform(OG_TRANSFORM_TRANSLATE,{offset:[0,-.01,0]});
     base.operate(OG_OPERATION_SUBTRACT,{tools:[hole]});
     const baseCut=summary(base);
-    closeTo(baseCut.volumeMm3,24000-500*Math.PI,"OpenGeometry base/cut",1e-5);
+    closeTo(baseCut.volumeMm3,TEST_CASES.throughHole.expectedVolumeMm3,"OpenGeometry base/cut",1e-5);
     const a=box(.01,.01,.01),b=box(.01,.01,.01);b.transform(OG_TRANSFORM_TRANSLATE,{offset:[.005,0,0]});
     a.operate(OG_OPERATION_UNION,{tools:[b]});
     const commonA=box(.01,.01,.01),commonB=box(.01,.01,.01);commonB.transform(OG_TRANSFORM_TRANSLATE,{offset:[.005,0,0]});
     commonA.operate(OG_OPERATION_INTERSECT,{tools:[commonB]});
     const cutA=box(.01,.01,.01),cutB=box(.01,.01,.01);cutB.transform(OG_TRANSFORM_TRANSLATE,{offset:[.005,0,0]});
     cutA.operate(OG_OPERATION_SUBTRACT,{tools:[cutB]});
-    closeTo(summary(a).volumeMm3,1500,"OpenGeometry coplanar union",1e-5);
-    closeTo(summary(commonA).volumeMm3,500,"OpenGeometry coplanar common",1e-5);
-    closeTo(summary(cutA).volumeMm3,500,"OpenGeometry coplanar cut",1e-5);
+    closeTo(summary(a).volumeMm3,TEST_CASES.coplanarOverlap.expectedVolumeMm3.fuse,"OpenGeometry coplanar union",1e-5);
+    closeTo(summary(commonA).volumeMm3,TEST_CASES.coplanarOverlap.expectedVolumeMm3.common,"OpenGeometry coplanar common",1e-5);
+    closeTo(summary(cutA).volumeMm3,TEST_CASES.coplanarOverlap.expectedVolumeMm3.cut,"OpenGeometry coplanar cut",1e-5);
     const tangency={face:tangent("face",[.01,0,0]),edge:tangent("edge",[.01,.01,0]),vertex:tangent("vertex",[.01,.01,.01])};
+    const nearA=box(.01,.01,.01),nearB=box(.01,.01,.01);
+    nearB.transform(OG_TRANSFORM_TRANSLATE,{offset:[TEST_CASES.nearCoincident.secondOffsetMm/1000,0,0]});
+    nearA.operate(OG_OPERATION_UNION,{tools:[nearB]});
+    const nearCoincident=summary(nearA);
+    closeTo(nearCoincident.volumeMm3,TEST_CASES.nearCoincident.expectedUnionVolumeMm3,"OpenGeometry near-coincident union",1e-5);
+    const tangentBox=box(.01,.01,.01),tangentCylinder=cyl(.005,.01);
+    tangentCylinder.transform(OG_TRANSFORM_TRANSLATE,{offset:[.015,0,.005]});
+    tangentBox.operate(OG_OPERATION_UNION,{tools:[tangentCylinder]});
+    const cylinderBoxUnion=summary(tangentBox);
+    closeTo(cylinderBoxUnion.volumeMm3,TEST_CASES.cylinderBoxTangency.expectedUnionVolumeMm3,"OpenGeometry cylinder/box tangency",1e-5);
     const fineWall=box(.02,.0001,.01),fineDrill=cyl(.00002,.0002);
     fineDrill.transform(OG_TRANSFORM_TRANSLATE,{offset:[0,-.00005,0]});
     const fineFeature=attempt(()=>{
@@ -197,7 +232,7 @@ async function openGeometryCandidate() {
       thinWall01mm.operate(OG_OPERATION_SUBTRACT,{tools:[thinDrill01mm]});
       const measured=summary(thinWall01mm);
       if(!measured.valid) throw new Error("0.1 mm wall result is invalid");
-      closeTo(measured.volumeMm3,20-Math.PI*.2**2*.1,"OpenGeometry 0.1 mm wall",1e-4);
+      closeTo(measured.volumeMm3,TEST_CASES.thinWall.expectedVolumeMm3,"OpenGeometry 0.1 mm wall",1e-4);
       return measured;
     });
     const referenceWall1mm=box(.02,.001,.01),referenceDrill1mm=cyl(.0002,.002);
@@ -224,8 +259,8 @@ async function openGeometryCandidate() {
       catch(error){invalidInputs[name]={outcome:"rejected",message:error.message};}
     }
     return {candidate:"OpenGeometry",version:"3.0.0",status:"passed",unit:"m (converted to mm³)",
-      invalidInputs,coplanar:{union:summary(a).volumeMm3,common:summary(commonA).volumeMm3,cut:summary(cutA).volumeMm3},
-      tangency,thinWall:{wall01mm:thinWallOutcome,referenceWall1mm:referenceWall1mmOutcome,referenceWall2mm:referenceWall2mmOutcome},
+      invalidInputs,coplanar:TEST_CASES.coplanarOverlap.expectedVolumeMm3,
+      tangency,nearCoincidentMm3:nearCoincident.volumeMm3,cylinderBoxTangencyMm3:cylinderBoxUnion.volumeMm3,thinWall:{wall01mm:thinWallOutcome,referenceWall1mm:referenceWall1mmOutcome,referenceWall2mm:referenceWall2mmOutcome},
       fineFeature,topology:{bodyType:baseCut.bodyType,explicitHistory:false},
       memory:{heapStats:"not exposed by public API",explicitDispose:true,ownedBodies:owned.length},
       limitations:["Thin-wall cuts at 0.1 mm and 1 mm are characterized as controlled rejection if the kernel's geometric-resolution guard refuses them.","No public face/edge evolution map in 3.0.","Loft and STL export are absent in 3.0.","Kernel modelling calls are synchronous; worker support is for tessellation/display."]};
