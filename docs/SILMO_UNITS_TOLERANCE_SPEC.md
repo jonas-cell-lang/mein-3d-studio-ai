@@ -68,7 +68,7 @@ Es werden hier bewusst keine neuen globalen Zahlenwerte festgelegt. Die bestehen
 - `index.html` lädt das Modul synchron vor dem CAD-Hauptskript. Die bisherige Konstante `MM_PER_UNIT` bezieht ihren Wert nun aus `SILMOUnits.MM_PER_WORLD_UNIT`, damit noch nicht migrierte Aufrufstellen dasselbe Verhalten behalten.
 - Die zentrale API wird bereits für die Anzeige von Objektabmessungen und die präzise X-/Y-Positionierung von Skizzen verwendet. Die übrigen bestehenden Aufrufstellen werden schrittweise migriert, nicht mit einer unkontrollierten globalen Ersetzung.
 - `tests/units.test.cjs` prüft Längen, negative und gebrochene Werte, Flächenfaktoren und Unveränderlichkeit. Der Code-Check-Workflow führt diese Tests aus.
-- Die App-Metadaten tragen auf dem Implementierungsbranch die Version v91. Die Produktionsversion bleibt bis zur Review und zum Merge unverändert.
+- Die App-Metadaten tragen auf dem Implementierungsbranch die Version v92. Die Produktionsversion bleibt bis zur Review und zum Merge unverändert.
 
 ## 5. Migrations- und Testanforderungen
 
