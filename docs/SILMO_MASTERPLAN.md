@@ -179,7 +179,9 @@ Phase 1 – technisches Fundament – hat mit einem separaten Implementierungsbr
 - `tests/units.test.cjs` ergänzt mathematische Tests; der Code-Check-Workflow führt sie aus.
 - Der Implementierungsbranch trägt die App-Version v91. Bis Review, erfolgreicher Regression und Merge bleibt die öffentliche Live-App unverändert.
 
-Nach bestandenen CI- und Browserregressionen wird die Umstellung der übrigen Einheiten-Aufrufstellen in kleinen, separat geprüften Schritten fortgesetzt. Anschliessend folgen Projektformat-v3-Fixtures, Versionsvalidierung und der vertikale Referenzablauf Erstellen → Bearbeiten → Speichern → Öffnen → STL-Export.
+Der erste Einheiten-API-Schritt ist umgesetzt und auf dem Branch v92 durch Code-Checks sowie die vollständige Playwright-Browserregression geprüft. Die übrigen historischen Umrechnungsaufrufe werden schrittweise migriert.
+
+Der Projektformat-Schritt ergänzt jetzt eine strikte Versionsprüfung für v3, eine getestete Schema-API, ein minimales v3-Kompatibilitätsfixture und Browserprüfungen: v3 wird geladen, v4 wird abgelehnt, und das bestehende Projekt bleibt bei Ablehnung erhalten. Der nächste Abnahmepunkt ist die Erweiterung der Fixtures auf repräsentative reale Projekte und der vollständige Referenzablauf Erstellen → Bearbeiten → Speichern → Öffnen → STL-Export.
 
 Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Paket wird in die Produktionsanwendung eingebunden, bevor die offenen technischen und rechtlichen Abnahmepunkte geklärt sind.
 
