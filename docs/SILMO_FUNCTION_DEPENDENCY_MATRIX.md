@@ -107,5 +107,6 @@ Diese offenen Fragen werden anhand konkreter Funktionsnamen, Aufrufstellen und T
 ## 6. Quellen im SILMO-Projekt
 - [Masterplan](SILMO_MASTERPLAN.md)
 - [Technische Bestandsaufnahme v90](SILMO_CURRENT_STATE_AUDIT.md)
+- [Einheiten- und Toleranzspezifikation](SILMO_UNITS_TOLERANCE_SPEC.md)
 - [Geometriekern-Vorauswahl und Testplan](SILMO_GEOMETRY_KERNEL_EVALUATION.md)
 - [Vollständige Projektsicherung](SILMO_PROJECT_BACKUP.md)
