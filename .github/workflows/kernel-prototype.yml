@@ -70,7 +70,7 @@ jobs:
           06cc02b2927f7ed3d70650ecde79e777329975526c75f5e71580ae49f9512ccf  /tmp/silmo-moket/occt-wasm.wasm
           EOF
           sha256sum -c /tmp/silmo-moket.SHA256SUMS
-          cp /tmp/silmo-moket.SHA256SUMS .provenance/moket-release-assets.sha256
+          sed 's#  /tmp/silmo-moket/#  #' /tmp/silmo-moket.SHA256SUMS > .provenance/moket-release-assets.sha256
       - name: Compare OCCT wrappers and OpenGeometry candidates
         working-directory: research/geometry-kernel-prototype
         env:
