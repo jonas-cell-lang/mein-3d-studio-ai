@@ -42,10 +42,12 @@ Eine Änderung dieser Semantik erfordert eine neue Projektformatversion und eine
 - Fehlende oder unbekannte Versionen werden mit einer verständlichen Meldung abgelehnt.
 - Bei einer nicht unterstützten Version bleibt das aktuell geöffnete Projekt unverändert.
 - Das Speichern schreibt weiterhin Version 3.
-- Ein minimales, reales Kompatibilitätsfixture liegt unter `tests/fixtures/project-v3-minimal.json`.
+- Ein minimales Kompatibilitätsfixture liegt unter `tests/fixtures/project-v3-minimal.json`.
+- Ein erweitertes Fixture unter `tests/fixtures/project-v3-advanced.json` deckt zwei gruppierte Objekte, eine verbundene Form mit zwei Ursprungsobjekten, Skizzenkontur, Konturrahmen und eine eingebettete Image-Studio-Vorlage ab.
+- Der Browser-Regressionslauf öffnet das erweiterte Fixture und speichert es erneut. Er prüft, dass alle genannten Metadaten und Bilddaten im exportierten Projekt erhalten bleiben.
 
 ## Offene Erweiterungen
 
-- Vollständige Fixtures aus repräsentativen bestehenden Projekten, insbesondere mit Gruppen, Booleschen Verbindungen, Skizzen und Image-Studio-Daten.
+- Weitere reale Fixtures aus bestehenden Benutzerprojekten ergänzen; die repräsentativen Metadatenfälle sind nun durch das erweiterte synthetische Fixture abgedeckt. Das Fixture ist kein Ersatz für eine breite Sammlung echter Benutzerprojekte.
 - Explizite Migrationsregeln erst dann ergänzen, wenn ein konkretes älteres Format samt Testfixture vorliegt.
 - Vertikalen Referenzablauf Erstellen → Bearbeiten → Speichern → Öffnen → STL-Export über echte Projekte absichern.
