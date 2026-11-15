@@ -86,12 +86,14 @@ Die Anwendung wird schrittweise in klar getrennte Module aufgeteilt. Die genaue 
 ## 4. Entwicklungsphasen und Abnahmekriterien
 
 ### Phase 0 – Bestandsaufnahme und Architekturplan
-**Status: begonnen.**
+**Status: weit fortgeschritten; Quellcodeprüfung und Architekturabnahme noch offen.**
 
-- Bestehende Funktionen, Datenstrukturen und Tests inventarisieren
-- Kritische technische Risiken identifizieren
-- Zielmodule, Schnittstellen und Migrationsreihenfolge festlegen
-- Test- und Qualitätsstrategie dokumentieren
+- Bestandsaufnahme v90 und Funktions-/Abhängigkeitsmatrix erstellt
+- Kritische technische Risiken aus Mesh-Modell, BSP-CSG, Einheiten, Projektformat und Undo/Redo dokumentiert
+- Tatsächliche Einheitenumrechnung direkt im Quellcode geprüft und Dokumentationsfehler korrigiert: 1 Three.js-Einheit = 10 mm
+- Unit-/Tolerance-Spezifikation mit bekannten Schwellen und offenen Zuordnungen erstellt
+- CAD-Kern-Kandidaten verglichen und einen isolierten OCCT-WASM-Prototyp ergänzt
+- Weitere direkte Prüfung von Objekt-Erzeugung, Mesh-Manipulation, Projektserialisierung und CSG-Aufrufstellen bleibt erforderlich
 
 **Abnahme:** Der Plan benennt vorhandene Funktionen, Risiken, Modulgrenzen, Migrationsschritte und überprüfbare Qualitätskriterien.
 
@@ -171,6 +173,8 @@ Die Anwendung wird schrittweise in klar getrennte Module aufgeteilt. Die genaue 
 
 ## 6. Nächster konkreter Arbeitsschritt
 
-Die Bestandsaufnahme wird vertieft und in einer Funktions- und Abhängigkeitsmatrix festgehalten. Danach folgt ein Architekturentscheid mit kleinem, isoliertem Prototyp für den Geometrie-Kern. Erst wenn dieser Prototyp robuste Ergebnisse liefert, beginnt die schrittweise Migration der bestehenden SILMO-Funktionen.
+Die Funktions-/Abhängigkeitsmatrix und die Einheiten-/Toleranzspezifikation liegen vor. Ein erster isolierter Smoke-Test des öffentlich verfügbaren OCCT-WASM-Kandidaten (occt-wasm 5.17.2 / OCCT 8.0.1) besteht auf Node.js 24 sowie in einem Chromium-Web-Worker. Das ist nur eine erste technische Eignungsprobe, keine Kernel-Freigabe.
+
+Als Nächstes wird derselbe Testkatalog um schwierige Boolesche Fälle, tangierende/koplanare Flächen, dünne Wände, ungültige Eingaben, Topologiehistorie, Speicherwachstum und Worker-Abbruch erweitert. Danach folgen Vergleichsläufe mit Replicad, moket-io/occt-wasm und OpenGeometry sowie Browserprüfungen in Safari/WebKit und Firefox. Erst nach einem reproduzierbaren Vergleich und Lizenzprüfung wird eine Architekturentscheidung getroffen. Bis dahin bleibt der bestehende SILMO-Geometriecode unverändert.
 
 **Erfolg bedeutet nicht möglichst viele Werkzeuge. Erfolg bedeutet, dass SILMO komplexe 3D-Aufgaben präzise, stabil und verständlich erledigt.**
