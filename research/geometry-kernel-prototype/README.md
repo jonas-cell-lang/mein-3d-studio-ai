@@ -17,7 +17,7 @@ Im Ordner `research/geometry-kernel-prototype`:
 ```sh
 npm install
 npm test
-npm run test:browser
+npm run test:browser:all
 ```
 
 ## Testumfang
@@ -33,7 +33,7 @@ npm run test:browser
 - Tessellierung und STEP-Export/-Import mit Volumenvergleich
 - Kontrollierter Fehlerfall und anschliessende Weiterverwendung des Kerns
 - Wiederholte Boolesche Operationen, Handle-Wachstum, WASM-/Prozessspeicher-Beobachtung und `releaseSince`
-- Browser-Worker: korrekte Geometrieantwort und Abbruch eines laufenden OCCT-Arbeitslaufs durch Worker-Terminierung
+- Browser-Worker: korrekte Geometrieantwort, UI-Reaktionsfähigkeit und Abbruch eines laufenden OCCT-Arbeitslaufs durch Worker-Terminierung in Chromium, Firefox und WebKit
 
 ## Aussagekraft und Grenzen
 
@@ -41,7 +41,7 @@ npm run test:browser
 - Ungültige Primitiveingaben werden nicht pauschal als abgelehnt vorausgesetzt: Der Test protokolliert, ob die API wirft, ein ungültiges Shape zurückgibt oder ein gültiges Shape akzeptiert. Das ist eine Verhaltensmessung, keine Freigabe dieses Verhaltens.
 - Die Speichermessung protokolliert den OCCT-Handle-Bestand, eine zugängliche WASM-Heap-Grösse (falls die Bibliothek sie exponiert) sowie Prozessspeicher-Spitzenwerte. WebAssembly-Speicher schrumpft nach Freigabe nicht zwingend; die Handle-Baseline muss jedoch wiederhergestellt werden. Der aktuelle Wrapper exponiert den WASM-Heap möglicherweise nicht direkt.
 - Der Worker-Abbruchtest prüft die Terminierung eines Workers während synchroner OCCT-Arbeit. Er beweist keine kooperative Unterbrechung einer einzelnen OCCT-Operation.
-- Noch keine Safari-/WebKit- oder Firefox-Prüfung
+- Die automatisierten WebKit-/Firefox-Läufe sind Browser-Kompatibilitätstests in Playwright auf Linux; sie ersetzen noch keine manuellen Prüfungen in Desktop-Safari bzw. realen Safari-Versionen.
 - Noch kein reproduzierbarer Vergleichslauf mit Replicad, moket-io/occt-wasm oder OpenGeometry
 - Kein Nachweis der Kompatibilität mit SILMO-Projektdateien
 - Keine Integration in die bestehende Anwendung
