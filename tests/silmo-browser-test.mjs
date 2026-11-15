@@ -1040,7 +1040,7 @@ try {
   assert.match(roundTripExportStatus,/STL exportiert/,'STL-Export nach Projekt-Wiederöffnung fehlgeschlagen: '+roundTripExportStatus);
   const roundTripStl = await roundTripExportPromise;
   assert.ok(roundTripStl,'STL-Export meldet Erfolg, aber der Browser hat keinen Download erhalten');
-  assert.match(roundTripStl.suggestedFilename(),/\\.stl$/i,'STL-Export erzeugt keine STL-Datei');
+  assert.match(roundTripStl.suggestedFilename(),/\.stl$/i,'STL-Export erzeugt keine STL-Datei');
   const roundTripStlPath = await roundTripStl.path();
   assert.ok(roundTripStlPath && statSync(roundTripStlPath).size > 84,'STL-Export enthält keine nutzbaren Geometriedaten');
   assert.deepEqual(roundTripErrors,[],'Projekt-Wiederöffnung oder STL-Export löst Browserfehler aus');
