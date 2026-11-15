@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-gl=swiftshader'] });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
@@ -1019,6 +1019,25 @@ try {
   assert.match(await validationPage.locator('#objects').innerText(),/Fixture Würfel v3/,'Ungültige Projektversion hat das geladene v3-Projekt ersetzt');
   assert.deepEqual(validationPageErrors,[],'Projektformat-v3-Fixture löst Browserfehler aus');
   await validationPage.close();
+
+  // Vertikaler Referenzablauf: gespeichertes Projekt erneut öffnen und als STL exportieren.
+  assert.ok(savedProject.objects.length > 0,'Referenzprojekt enthält keine Modellobjekte');
+  const roundTripPage = await browser.newPage({viewport:{width:1280,height:900}});
+  const roundTripErrors = [];
+  roundTripPage.on('pageerror', error => roundTripErrors.push(error.message));
+  await roundTripPage.goto('http://127.0.0.1:4173', {waitUntil:'domcontentloaded'});
+  await roundTripPage.waitForSelector('#viewport canvas', {timeout:20000});
+  await roundTripPage.locator('#projectFileInput').setInputFiles(savedProjectPath);
+  await roundTripPage.waitForFunction(() => /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, {timeout:10000});
+  assert.equal(await roundTripPage.locator('#objects .object-row').count(),savedProject.objects.length,'Gespeichertes Projekt wurde nicht vollständig wiederhergestellt');
+  const roundTripExportPromise = roundTripPage.waitForEvent('download');
+  await roundTripPage.locator('#exportModel').click();
+  const roundTripStl = await roundTripExportPromise;
+  assert.match(roundTripStl.suggestedFilename(),/\\.stl$/i,'STL-Export erzeugt keine STL-Datei');
+  const roundTripStlPath = await roundTripStl.path();
+  assert.ok(roundTripStlPath && statSync(roundTripStlPath).size > 84,'STL-Export enthält keine nutzbaren Geometriedaten');
+  assert.deepEqual(roundTripErrors,[],'Projekt-Wiederöffnung oder STL-Export löst Browserfehler aus');
+  await roundTripPage.close();
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
   console.log('BESTANDEN: 3D-Start, CAD-Zeichenarbeitsplatz, Werkzeugpalette, exakte Skizzenposition, Skizzenbearbeitung, Konturpunkt-Editor, Kantenbearbeitung, Loft, Sweep, Parallel/Senkrecht, Tangential/Konzentrisch, Pfadlänge und Objektabstand, Zeichnen, allgemeine CAD-Konstruktion, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
