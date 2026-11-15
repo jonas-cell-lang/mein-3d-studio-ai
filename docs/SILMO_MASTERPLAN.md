@@ -173,8 +173,14 @@ Die Anwendung wird schrittweise in klar getrennte Module aufgeteilt. Die genaue 
 
 ## 6. Nächster konkreter Arbeitsschritt
 
-Die Funktions-/Abhängigkeitsmatrix und die Einheiten-/Toleranzspezifikation liegen vor. Ein erster isolierter Smoke-Test des öffentlich verfügbaren OCCT-WASM-Kandidaten (occt-wasm 5.17.2 / OCCT 8.0.1) besteht auf Node.js 24 sowie in einem Chromium-Web-Worker. Das ist nur eine erste technische Eignungsprobe, keine Kernel-Freigabe.
+Phase 1 – technisches Fundament – hat mit einem separaten Implementierungsbranch begonnen. Der erste kleine Schritt ist die zentrale Einheiten-API:
+- `src/units.js` definiert die bestehende Basisskala 1 Three.js-Welteinheit = 10 mm und getestete Umrechnungen für Längen und Flächen.
+- `index.html` lädt die API vor dem CAD-Hauptskript. Die vorhandene `MM_PER_UNIT`-Konstante bleibt als Kompatibilitätsalias erhalten; erste kritische CAD-Aufrufstellen verwenden bereits die benannten API-Funktionen.
+- `tests/units.test.cjs` ergänzt mathematische Tests; der Code-Check-Workflow führt sie aus.
+- Der Implementierungsbranch trägt die App-Version v91. Bis Review, erfolgreicher Regression und Merge bleibt die öffentliche Live-App unverändert.
 
-Als Nächstes wird derselbe Testkatalog um schwierige Boolesche Fälle, tangierende/koplanare Flächen, dünne Wände, ungültige Eingaben, Topologiehistorie, Speicherwachstum und Worker-Abbruch erweitert. Danach folgen Vergleichsläufe mit Replicad, moket-io/occt-wasm und OpenGeometry sowie Browserprüfungen in Safari/WebKit und Firefox. Erst nach einem reproduzierbaren Vergleich und Lizenzprüfung wird eine Architekturentscheidung getroffen. Bis dahin bleibt der bestehende SILMO-Geometriecode unverändert.
+Nach bestandenen CI- und Browserregressionen wird die Umstellung der übrigen Einheiten-Aufrufstellen in kleinen, separat geprüften Schritten fortgesetzt. Anschliessend folgen Projektformat-v3-Fixtures, Versionsvalidierung und der vertikale Referenzablauf Erstellen → Bearbeiten → Speichern → Öffnen → STL-Export.
+
+Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Paket wird in die Produktionsanwendung eingebunden, bevor die offenen technischen und rechtlichen Abnahmepunkte geklärt sind.
 
 **Erfolg bedeutet nicht möglichst viele Werkzeuge. Erfolg bedeutet, dass SILMO komplexe 3D-Aufgaben präzise, stabil und verständlich erledigt.**
