@@ -31,7 +31,7 @@ jobs:
         run: npm test
       - name: Install Chromium for worker smoke test
         working-directory: research/geometry-kernel-prototype
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox webkit
       - name: Prepare public WASM asset
         working-directory: research/geometry-kernel-prototype
         run: |
@@ -49,4 +49,4 @@ jobs:
           exit 1
       - name: Test OCCT in a browser Web Worker
         working-directory: research/geometry-kernel-prototype
-        run: npm run test:browser
+        run: npm run test:browser:all
