@@ -43,16 +43,18 @@ async function andyOcct() {
     const wall=k.makeBox(20,.1,10), drill=k.makeCylinder(.02,.1);
     const thin=k.cut(wall,k.transform(drill,translation(10,0,5)));
     closeTo(k.getVolume(thin),20-Math.PI*.02**2*.1,"andy thin wall",1e-5);
-    const history=k.cutWithHistory(k.makeBox(20,20,20),k.makeCylinder(2,20),
-      k.subShapeHashes(k.makeBox(20,20,20),"face",2147483647),2147483647);
+    const historyBase=k.makeBox(20,20,20);
+    const historyHashes=k.subShapeHashes(historyBase,"face",2147483647);
+    const history=k.cutWithHistory(historyBase,k.makeCylinder(2,20),historyHashes,2147483647);
+    const baseVolume=k.getVolume(box), cutVolume=k.getVolume(cut), thinVolume=k.getVolume(thin);
     const memoryBefore=k.getRawModule().HEAP32?.buffer?.byteLength??null;
     const liveBefore=k.shapeCount;
     for(let i=0;i<20;i++) k.cut(k.makeBox(10+i*.01,10,10),k.makeCylinder(1,10));
     const livePeak=k.shapeCount, memoryAfter=k.getRawModule().HEAP32?.buffer?.byteLength??null;
     k.releaseAll();
     return {candidate:"occt-wasm (andymai)",version:"5.17.2 / OCCT 8.0.1",status:"passed",
-      baseAndCutMm3:k.getVolume? "tested" : "tested",coplanar:{union:1500,common:500,cut:500},
-      tangency,thinWallMm3:k.getVolume? "analytic pass" : "analytic pass",
+      baseAndCutMm3:{base:baseVolume,cut:cutVolume},coplanar:{union:1500,common:500,cut:500},
+      tangency,thinWallMm3:thinVolume,
       topologyHistory:!!history.result,memory:{liveBefore,livePeak,liveAfter:k.shapeCount,wasmBytesBefore:memoryBefore,wasmBytesAfter:memoryAfter},
       limitations:[]};
   } finally { k[Symbol.dispose](); }
@@ -62,7 +64,7 @@ async function moketOcct() {
   const dir=process.env.MOKET_OCCT_DIR;
   if(!dir) throw new Error("MOKET_OCCT_DIR missing");
   const loader=await import(pathToFileURL(join(dir,"index.mjs")).href);
-  const k=await loader.createOcctKernel({wasmUrl:pathToFileURL(join(dir,"occt-wasm.wasm"))});
+  const k=await loader.createOcctKernel({wasmUrl:join(dir,"occt-wasm.wasm")});
   const ok=(r,label)=>{assert.equal(r?.ok,true,`${label}: ${r?.error?.code||""} ${r?.error?.message||""}`);return r;};
   const props=(s)=>ok(k.properties(s),"moket properties");
   try {
@@ -93,10 +95,12 @@ async function moketOcct() {
     const memoryBefore=k.heapStats();
     for(let i=0;i<20;i++) ok(k.boolean("cut",ok(k.makeBox(10+i*.01,10,10),"moket memory box").shape,
       ok(k.makeCylinder([5,0,5],[0,1,0],1,10),"moket memory drill").shape),"moket memory cut");
+    const thinVolume=props(thin.shape).volume;
     const memoryPeak=k.heapStats(); ok(k.releaseAll(),"moket release");
+    const memoryAfter=k.heapStats();
     return {candidate:"@moket/occt-wasm",version:"0.10.1 / OCCT 8.0.1",status:"passed",
-      coplanar:{union:1500,common:500,cut:500},tangency,thinWallMm3:props(thin.shape).volume,
-      topologyHistory:!!u.history,memory:{before:memoryBefore,peak:memoryPeak,after:k.heapStats()},limitations:[]};
+      coplanar:{union:1500,common:500,cut:500},tangency,thinWallMm3:thinVolume,
+      topologyHistory:!!u.history,memory:{before:memoryBefore,peak:memoryPeak,after:memoryAfter},limitations:[]};
   } finally { k.releaseAll(); }
 }
 
@@ -129,9 +133,12 @@ async function replicadCandidate() {
     const drill=own(r.makeCylinder(.02,.1,[10,0,5],[0,1,0]));
     const thin=own(wall.cut(drill,{simplify:false}));
     closeTo(measure(thin).volumeMm3,20-Math.PI*.02**2*.1,"Replicad thin wall",1e-5);
+    const topologyFaces=thin.faces, topologyEdges=thin.edges;
+    const topology={faces:topologyFaces.length,edges:topologyEdges.length,explicitHistory:false};
+    topologyFaces.forEach(face=>face.delete()); topologyEdges.forEach(edge=>edge.delete());
     return {candidate:"Replicad",version:"1.2.1 / replicad-opencascadejs 1.2.1",status:"passed",
       coplanar:{union:1500,common:500,cut:500},tangency,thinWallMm3:measure(thin).volumeMm3,
-      topology:{faces:thin.faces.length,edges:thin.edges.length,explicitHistory:false},
+      topology,
       memory:{explicitDelete:true,ownedShapes:owned.length},limitations:["High-level API exposes no Boolean evolution-history map."]};
   } finally { for(const s of owned.reverse())try{s.delete();}catch{} }
 }
