@@ -138,8 +138,13 @@ async function replicadCandidate() {
     const topologyFaces=thin.faces, topologyEdges=thin.edges;
     const topology={faces:topologyFaces.length,edges:topologyEdges.length,explicitHistory:false};
     topologyFaces.forEach(face=>face.delete()); topologyEdges.forEach(edge=>edge.delete());
+    const invalidInputs={};
+    for(const [name,corners] of [["zero-width",[[0,0,0],[0,10,10]]],["negative-width",[[0,0,0],[-1,10,10]]]]){
+      try{const shape=own(r.makeBox(...corners));const p=measure(shape);invalidInputs[name]={outcome:p.valid?"accepted-valid":"accepted-invalid",valid:p.valid,volumeMm3:p.volumeMm3};}
+      catch(error){invalidInputs[name]={outcome:"rejected",message:error.message};}
+    }
     return {candidate:"Replicad",version:"1.2.1 / replicad-opencascadejs 1.2.1",status:"passed",
-      coplanar:{union:1500,common:500,cut:500},tangency,thinWallMm3:measure(thin).volumeMm3,
+      invalidInputs,coplanar:{union:1500,common:500,cut:500},tangency,thinWallMm3:measure(thin).volumeMm3,
       topology,
       memory:{explicitDelete:true,ownedShapes:owned.length},limitations:["High-level API exposes no Boolean evolution-history map."]};
   } finally { for(const s of owned.reverse())try{s.delete();}catch{} }
@@ -213,8 +218,13 @@ async function openGeometryCandidate() {
       closeTo(measured.volumeMm3,400-Math.PI*1**2*2,"OpenGeometry 2 mm wall",1e-4);
       return measured;
     });
+    const invalidInputs={};
+    for(const [name,dimensions] of [["zero-width",{width:0,height:.01,depth:.01}],["negative-width",{width:-.001,height:.01,depth:.01}]]){
+      try{const shape=own(new Solid(OG_PRIMITIVE_CUBOID,dimensions));const p=shape.validity();invalidInputs[name]={outcome:p.valid?"accepted-valid":"accepted-invalid",valid:p.valid,bodyType:p.bodyType};}
+      catch(error){invalidInputs[name]={outcome:"rejected",message:error.message};}
+    }
     return {candidate:"OpenGeometry",version:"3.0.0",status:"passed",unit:"m (converted to mm³)",
-      coplanar:{union:summary(a).volumeMm3,common:summary(commonA).volumeMm3,cut:summary(cutA).volumeMm3},
+      invalidInputs,coplanar:{union:summary(a).volumeMm3,common:summary(commonA).volumeMm3,cut:summary(cutA).volumeMm3},
       tangency,thinWall:{wall01mm:thinWallOutcome,referenceWall1mm:referenceWall1mmOutcome,referenceWall2mm:referenceWall2mmOutcome},
       fineFeature,topology:{bodyType:baseCut.bodyType,explicitHistory:false},
       memory:{heapStats:"not exposed by public API",explicitDispose:true,ownedBodies:owned.length},
