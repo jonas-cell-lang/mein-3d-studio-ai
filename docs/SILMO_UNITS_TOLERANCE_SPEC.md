@@ -18,7 +18,7 @@ Der Quellcode setzt `MM_PER_UNIT = 10` (index.html, Zeile 1321). Die tatsächlic
 Das wird im Code konkret bestätigt:
 - Druckbettbreite und -tiefe werden durch `MM_PER_UNIT` geteilt (Zeilen 1267–1280).
 - Objektabmessungen werden mit `MM_PER_UNIT` in Millimeter umgerechnet (Funktion `currentSizeMM`, Zeilen 1353–1357).
-- Der STL-Export skaliert Geometrie und Objekttranslation mit `MM_PER_UNIT`, damit STL-Koordinaten Millimeter sind (Zeilen 2846–2860).
+- Der STL-Import behandelt STL-Koordinaten als Millimeter und teilt sie durch `MM_PER_UNIT` (Zeilen 2726–2750).
 - Skizzenraster und Skizzenvereinfachung rechnen Millimeterwerte in interne Einheiten um (z. B. Zeilen 3007–3011).
 
 **Korrektur der älteren Projektdokumentation:** Die frühere Formulierung „10 Three.js-Einheiten = 1 mm“ war umgekehrt. Richtig ist **1 Three.js-Einheit = 10 mm**. Masterplan und technische Bestandsaufnahme wurden entsprechend berichtigt.
