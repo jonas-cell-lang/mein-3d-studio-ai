@@ -18,5 +18,7 @@
     "replicad-opencascadejs": "1.2.1",
     "three": "0.168.0",
     "manifold-3d": "3.0.1"
-  }
+  },
+  "version": "0.0.0-research",
+  "license": "UNLICENSED"
 }
