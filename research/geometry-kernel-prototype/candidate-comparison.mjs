@@ -162,7 +162,7 @@ async function openGeometryCandidate() {
     return attempt(()=>{a.operate(OG_OPERATION_UNION,{tools:[b]});const p=summary(a);assert.equal(p.valid,true);closeTo(p.volumeMm3,2000,`OpenGeometry ${name} contact`);return p;});
   };
   try {
-    const base=box(.04,.02,.03),hole=cyl(.005,.02);
+    const base=box(.04,.02,.03),hole=cyl(.005,.04);
     base.operate(OG_OPERATION_SUBTRACT,{tools:[hole]});
     const baseCut=summary(base);
     closeTo(baseCut.volumeMm3,24000-500*Math.PI,"OpenGeometry base/cut",1e-5);
