@@ -171,10 +171,31 @@ Die Anwendung wird schrittweise in klar getrennte Module aufgeteilt. Die genaue 
 9. Keine Fortschrittsmeldung als Fertigmeldung ausgeben. Nur geprüfte und veröffentlichte Ergebnisse als abgeschlossen melden.
 10. Bei Unsicherheit wird die Funktion als experimentell gekennzeichnet, nicht als professionell fertig.
 
-## 6. Nächster konkreter Arbeitsschritt
+## 6. Stand des erweiterten Geometriekern-Testkatalogs
 
-Die Funktions-/Abhängigkeitsmatrix und die Einheiten-/Toleranzspezifikation liegen vor. Ein erster isolierter Smoke-Test des öffentlich verfügbaren OCCT-WASM-Kandidaten (occt-wasm 5.17.2 / OCCT 8.0.1) besteht auf Node.js 24 sowie in einem Chromium-Web-Worker. Das ist nur eine erste technische Eignungsprobe, keine Kernel-Freigabe.
+Der nächste konkrete Arbeitsschritt aus der vorherigen Fassung wurde auf einem isolierten Forschungsbranch umgesetzt. Die gemeinsame Spezifikation liegt in `research/geometry-kernel-prototype/candidate-test-catalog.mjs` (Version 1). Alle Adapter verwenden dieselben physikalischen Testfälle und Sollwerte; Masse und Volumen sind in mm bzw. mm³ definiert.
 
-Als Nächstes wird derselbe Testkatalog um schwierige Boolesche Fälle, tangierende/koplanare Flächen, dünne Wände, ungültige Eingaben, Topologiehistorie, Speicherwachstum und Worker-Abbruch erweitert. Danach folgen Vergleichsläufe mit Replicad, moket-io/occt-wasm und OpenGeometry sowie Browserprüfungen in Safari/WebKit und Firefox. Erst nach einem reproduzierbaren Vergleich und Lizenzprüfung wird eine Architekturentscheidung getroffen. Bis dahin bleibt der bestehende SILMO-Geometriecode unverändert.
+Ausgeführt wurden:
+- Schwierige Boolesche Fälle: koplanare Überlappung, Flächen-/Kanten-/Eckkontakt, Zylinder-/Quader-Tangenz und nahezu deckungsgleiche Körper.
+- Dünnwand- und Kleinfeature-Fälle.
+- Sechs standardisierte ungültige Primitiveingaben.
+- Topologiehistorie und Speicher-/Handle-Beobachtungen, soweit die jeweilige API diese Informationen bereitstellt.
+- Vergleich mit `occt-wasm 5.17.2`, `@moket/occt-wasm 0.10.1`, Replicad 1.2.1 und OpenGeometry 3.0.0.
+- Worker-Prüfungen in Chromium, Firefox und WebKit sowie Regressionstests der bestehenden SILMO-App.
+
+**Nachweis:** Der GitHub-Actions-Lauf [43700411664](https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43700411664) hat die isolierten Geometrietests, den standardisierten Kandidatenvergleich und alle drei Browser-Worker-Tests bestanden. Die Code-Prüfungen [43700411629](https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43700411629) und die Browser-Regression [43700411668](https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43700411668) waren ebenfalls erfolgreich.
+
+### Wichtige Befunde und offene Punkte
+
+- Der Gesamtstatus des Kandidatenvergleichs lautet **`completed-with-gaps`**: Alle vier Adapter wurden ausgeführt, aber nicht alle APIs liefern gleichwertige Fähigkeiten oder ausreichend präzise Messwerte.
+- `occt-wasm` (andymai) und Replicad akzeptieren eine negative Quaderbreite als gültigen Körper. NaN-/unendliche Masse und Zylinder mit Radius/Höhe 0 werden dort teilweise als ungültige Shapes statt als abgelehnte Eingaben zurückgegeben. SILMO müsste Eingaben daher unabhängig vom Kernel streng validieren.
+- `@moket/occt-wasm` und OpenGeometry lehnen alle sechs standardisierten ungültigen Eingaben ab.
+- Explizite Boolesche Topologiehistorie ist in den getesteten OCCT-Wrappern verfügbar. Replicad und OpenGeometry bieten in den geprüften öffentlichen APIs keine entsprechende Face-/Edge-Evolution-Map.
+- OpenGeometry liefert Volumenmessfehlergrenzen, die in mehreren Fällen deutlich über der gemeinsamen Vergleichstoleranz liegen. Diese Fälle werden ausdrücklich als **messpräzisionsbedingt ungeklärt** protokolliert und nicht als Präzisionspass gewertet.
+- Die automatisierten WebKit-Tests laufen in Playwright unter Linux. Ein manueller Test mit Desktop-Safari bleibt offen.
+
+**Noch keine Architekturentscheidung:** Die Lizenzprüfung und die Bewertung der dokumentierten API-/Messlücken stehen aus. Es gibt keine Integration in die SILMO-Live-App; der bisherige Geometriekern bleibt unverändert. Phase 0 ist damit weiterhin nicht vollständig abgenommen.
+
+**Nächster Schritt:** Lizenzbedingungen und Wartbarkeit der Kandidaten prüfen, die offenen Fähigkeiten und Messlücken bewerten und erst danach eine begründete Architektur-Empfehlung erstellen.
 
 **Erfolg bedeutet nicht möglichst viele Werkzeuge. Erfolg bedeutet, dass SILMO komplexe 3D-Aufgaben präzise, stabil und verständlich erledigt.**
