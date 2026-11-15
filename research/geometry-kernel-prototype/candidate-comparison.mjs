@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
+import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
 const reports = [];
@@ -147,7 +148,10 @@ async function openGeometryCandidate() {
   const og=await import("opengeometry");
   const {OpenGeometry,Solid,OG_PRIMITIVE_CUBOID,OG_PRIMITIVE_CYLINDER,
     OG_OPERATION_UNION,OG_OPERATION_SUBTRACT,OG_OPERATION_INTERSECT,OG_TRANSFORM_TRANSLATE}=og;
-  await OpenGeometry.create({}, {tessellation:"inline"});
+  const openGeometryEntry=import.meta.resolve("opengeometry");
+  const wasmUrl=new URL("./opengeometry_bg.wasm",openGeometryEntry);
+  const wasmModule=await WebAssembly.compile(await readFile(wasmUrl));
+  await OpenGeometry.create({wasmModule}, {tessellation:"inline"});
   const owned=[], own=s=>(owned.push(s),s);
   const box=(w,h,d)=>own(new Solid(OG_PRIMITIVE_CUBOID,{width:w,height:h,depth:d}));
   const cyl=(r,h)=>own(new Solid(OG_PRIMITIVE_CYLINDER,{radius:r,height:h}));
