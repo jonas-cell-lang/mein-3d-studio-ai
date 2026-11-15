@@ -162,7 +162,6 @@ async function openGeometryCandidate() {
   };
   try {
     const base=box(.04,.02,.03),hole=cyl(.005,.02);
-    hole.transform(OG_TRANSFORM_TRANSLATE,{offset:[0,-.01,0]});
     base.operate(OG_OPERATION_SUBTRACT,{tools:[hole]});
     const baseCut=summary(base);
     closeTo(baseCut.volumeMm3,24000-500*Math.PI,"OpenGeometry base/cut",1e-5);
@@ -177,7 +176,6 @@ async function openGeometryCandidate() {
     closeTo(summary(cutA).volumeMm3,500,"OpenGeometry coplanar cut",1e-5);
     const tangency={face:tangent("face",[.01,0,0]),edge:tangent("edge",[.01,.01,0]),vertex:tangent("vertex",[.01,.01,.01])};
     const wall=box(.02,.0001,.01),drill=cyl(.00002,.0001);
-    drill.transform(OG_TRANSFORM_TRANSLATE,{offset:[0,-.00005,0]});
     wall.operate(OG_OPERATION_SUBTRACT,{tools:[drill]});
     const thin=summary(wall);
     closeTo(thin.volumeMm3,20-Math.PI*.02**2*.1,"OpenGeometry thin wall",1e-4);
