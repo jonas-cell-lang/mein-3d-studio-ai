@@ -229,8 +229,50 @@ Unabhängig vom gewählten Kern gilt:
 
 ---
 
-## 9. Nächster Schritt
+## 9. Erster isolierter Prototyp – tatsächlich ausgeführte Tests
 
-Einen isolierten Prototyp auf einem eigenen Branch erstellen. Zuerst OCCT-WASM/Replicad und moket-io/occt-wasm mit demselben kleinen Quader-, Booleans-, Fillet-, Topologie- und STEP-Test ausführen. OpenGeometry 3.x wird mit denselben passenden Tests ergänzt. Erst nach realen CI- und Browsermessungen wird eine Empfehlung als Entscheidungsvorlage abgegeben.
+Der Kandidat **occt-wasm 5.17.2 / OCCT 8.0.1** wurde in einem getrennten Forschungsordner getestet. Die bestehende SILMO-App wurde nicht an den Kernel angebunden.
 
-**Wichtig:** Diese Recherche ist keine Behauptung, dass einer der Kandidaten bereits in SILMO getestet oder integriert wurde.
+### Node.js 24 – analytische Geometrietests
+
+<badge>Bestanden</badge>
+
+Ausgeführt im GitHub-Actions-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43693968178
+
+Bestandene Fälle:
+- Quader 40 × 30 × 20 mm: Volumen 24'000 mm³ und Bounding-Box-Abmessungen geprüft.
+- Boolescher Durchbruch mit Zylinder: analytisches Sollvolumen geprüft.
+- Platte 40 × 30 × 5 mm mit vier Durchgangslöchern: analytisches Sollvolumen geprüft.
+- Fillet auf vier Kanten eines Quaders: gültiger Volumenkörper und verändertes Volumen geprüft.
+- Flächen- und Kantenabfragen über Topologie-Handles.
+- Tessellierung in Positions- und Indexpuffer.
+- STEP-Export und erneuter Import mit Volumenvergleich.
+- Unmögliche Fillet-Operation wird abgelehnt; der Kernel bleibt danach nutzbar.
+- Freigabe aller Shape-Handles und erneute Kernel-Verwendung.
+
+### Chromium – Browser-Web-Worker
+
+<badge>Bestanden</badge>
+
+Ausgeführt im selben isolierten Prototyp-Workflow. Ein Worker erzeugte einen Quader 10 × 20 × 30 mm, las das Volumen aus und lieferte ein Mesh zurück.
+
+- Volumen: 6'000 mm³
+- Dreiecke: 12
+- Positionswerte: 72
+- Indexwerte: 36
+
+### Regression der bestehenden SILMO-App und Veröffentlichung
+
+- Bestehender Playwright-Browser-Regressionslauf auf dem PR: bestanden – https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43693968253
+- Manifest-/HTML-Validierung auf dem PR: bestanden – https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43693968196
+- Nach Merge: Build und GitHub-Pages-Deployment bestanden – https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43694122230
+- Nach Merge: bestehender Browser-Regressionslauf bestanden – https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43694122727
+- Nach Merge: Manifest-/HTML-Validierung bestanden – https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/43694122738
+
+Prototyp und Tests liegen unter: [research/geometry-kernel-prototype](../research/geometry-kernel-prototype/README.md). Der Prototyp wurde mit Commit 93cd7c9e877d56761032a6c6ff7ebaa4dfc57a51 in das Repository übernommen.
+
+## 10. Nächster Schritt
+
+Den Testkorpus erweitern: koplanare und fast tangierende Flächen, dünne Wände, ungültige/degenerierte Eingaben, Topologiehistorie nach mehreren Operationen, Speicherwachstum über wiederholte Operationen, Worker-Abbruch und UI-Reaktionsfähigkeit. Danach Browserprüfungen in Safari/WebKit und Firefox ergänzen und denselben Testkatalog mit Replicad, moket-io/occt-wasm und OpenGeometry ausführen. Erst dann folgt eine technische Empfehlung.
+
+**Wichtig:** Der erste Smoke-Test beweist nur, dass dieser Kandidat die geprüften einfachen Aufgaben in Node.js 24 und einem Chromium-Worker bestanden hat. Er beweist weder professionelle CAD-Reife noch Produktionsintegration, Foto-zu-3D-Eignung oder physische Druckqualität.
