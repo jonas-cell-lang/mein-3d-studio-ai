@@ -32,7 +32,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-      - name: Test central unit conversion API
+      - name: Test unit and project schema APIs
         run: node --test tests/*.test.cjs
       - name: Check inline JavaScript syntax
         shell: bash
