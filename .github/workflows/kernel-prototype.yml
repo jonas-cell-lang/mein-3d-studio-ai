@@ -109,8 +109,8 @@ jobs:
           cp -a .provenance /tmp/silmo-provenance/provenance
           rm -f package-lock.json silmo-occt-prototype.cdx.json
           rm -rf .provenance
-          git fetch origin "$GITHUB_HEAD_REF"
-          git checkout "$GITHUB_HEAD_REF"
+          git fetch origin "$GITHUB_HEAD_REF:refs/remotes/origin/$GITHUB_HEAD_REF"
+          git checkout -B "$GITHUB_HEAD_REF" "origin/$GITHUB_HEAD_REF"
           mkdir -p provenance
           cp /tmp/silmo-provenance/package-lock.json package-lock.json
           cp /tmp/silmo-provenance/silmo-occt-prototype.cdx.json silmo-occt-prototype.cdx.json
