@@ -1037,8 +1037,16 @@ try {
   assert.equal(advancedImageState.fileName,'fixture-image.png','Image-Studio-Dateiname wurde nicht geladen');
   assert.equal(advancedImageState.rotation,90,'Image-Studio-Drehung wurde nicht geladen');
   assert.equal(advancedImageState.contourCount,1,'Image-Studio-Kontur wurde nicht geladen');
-  const advancedSavePromise = advancedPage.waitForEvent('download');
+  const advancedSavePromise = advancedPage.waitForEvent('download', {timeout:10000});
   await advancedPage.locator('#saveProjectButton').click();
+  await advancedPage.waitForFunction(() => {
+    const text = document.querySelector('#status')?.textContent || '';
+    return /Vollständiges Projekt gespeichert|Projekt konnte nicht gespeichert werden/.test(text);
+  }, null, {timeout:10000});
+  const advancedSaveStatus = await advancedPage.locator('#status').innerText();
+  assert.equal(advancedSaveStatus, 'Vollständiges Projekt gespeichert',
+    'Erweitertes Projekt konnte nicht gespeichert werden: ' + advancedSaveStatus +
+    (advancedErrors.length ? ' | Browserfehler: ' + advancedErrors.join(' ; ') : ''));
   const advancedSave = await advancedSavePromise;
   const advancedSavedPath = await advancedSave.path();
   assert.ok(advancedSavedPath && statSync(advancedSavedPath).size > 1000,'Erweitertes Projekt wurde nicht vollständig gespeichert');
