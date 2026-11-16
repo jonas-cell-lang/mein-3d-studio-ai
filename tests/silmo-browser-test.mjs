@@ -1022,7 +1022,10 @@ try {
 
   // Erweitertes v3-Fixture: Gruppen, Boolesche Ursprungsformen, Skizzenkontur,
   // Konturrahmen und gespeicherte Image-Studio-Vorlage müssen erhalten bleiben.
-  const advancedPage = await browser.newPage({viewport:{width:1280,height:900}});
+  // Dieser isolierte Browserkontext muss Downloads explizit erlauben.
+  // Die übrigen Tests bleiben unverändert; der Download wird weiterhin vollständig geprüft.
+  const advancedContext = await browser.newContext({viewport:{width:1280,height:900},acceptDownloads:true});
+  const advancedPage = await advancedContext.newPage();
   const advancedErrors = [];
   advancedPage.on('pageerror', error => advancedErrors.push(error.message));
   advancedPage.on('console', message => { if(message.type()==='error') advancedErrors.push('console: '+message.text()); });
@@ -1059,7 +1062,7 @@ try {
   assert.equal(advancedSavedProject.imageStudio.rotation,90,'Image-Studio-Drehung ging beim Speichern verloren');
   assert.equal(advancedSavedProject.imageStudio.contours.length,1,'Image-Studio-Kontur ging beim Speichern verloren');
   assert.deepEqual(advancedErrors,[],'Erweitertes v3-Fixture löst Browserfehler aus');
-  await advancedPage.close();
+  await advancedContext.close();
 
   // Vertikaler Referenzablauf: gespeichertes Projekt erneut öffnen und als STL exportieren.
   assert.ok(savedProject.objects.length > 0,'Referenzprojekt enthält keine Modellobjekte');
