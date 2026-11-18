@@ -17,9 +17,18 @@ page.on('console', message => {
   if (message.type() === 'error') pageErrors.push('console: ' + message.text());
 });
 
+// Die Kernanwendung muss auch dann starten, wenn externe HTTPS-Zugriffe blockiert sind.
+await page.route('https://**/*', route => route.abort());
+
 try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
+  const runtimeInfo = await page.evaluate(() => ({
+    revision: window.THREE?.REVISION,
+    loader: typeof window.THREE?.STLLoader,
+    exporter: typeof window.THREE?.STLExporter
+  }));
+  assert.deepEqual(runtimeInfo, { revision: '128', loader: 'function', exporter: 'function' }, 'Lokale Three.js r128 Runtime oder STL-Erweiterungen fehlen');
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
   assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v93/, 'Build-Metadaten zeigen nicht v93');
   assert.equal(await page.evaluate(() => window.SILMOUnits?.mmToWorldUnits(10)), 1, 'Zentrale Einheiten-API ist im Browser nicht verfügbar');
