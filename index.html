@@ -510,6 +510,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 <script src="./src/tolerances.js"></script>
 <script src="./src/project-schema.js"></script>
 <script src="./src/project-geometry.js"></script>
+<script src="./src/project-io.js"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -1009,143 +1010,45 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     window.SILMO_DIAG?.log('VERBINDUNG GELÖST',{count:restored.length,labels:restored.map(obj=>obj.userData.label)});
   }
 
-  function saveProject() {
-    try {
-      const project = {
-        app: 'SILMO 3D Studio AI',
-        version: window.SILMOProjectSchema.CURRENT_PROJECT_VERSION,
-        imageStudio: window.__silmoImageStudioExport ? window.__silmoImageStudioExport() : null,
-        bedWidthMM,
-        bedDepthMM,
-        uniform,
-        objects: objects.map(obj => ({
-          label: obj.userData.label || 'Objekt',
-          position: obj.position.toArray(),
-          rotation: obj.rotation.toArray(),
-          scale: obj.scale.toArray(),
-          color: '#' + obj.material.color.getHexString(),
-          baseDimensions: obj.userData.baseDimensions || { x: 1, y: 1, z: 1 },
-          percent: obj.userData.percent || { x: 100, y: 100, z: 100 },
-          locked: obj.userData.locked === true,
-          groupId: typeof obj.userData.groupId === 'string' ? obj.userData.groupId : null,
-          unionParts: Array.isArray(obj.userData.unionParts) ? obj.userData.unionParts : null,
-          sketchOutline: Array.isArray(obj.userData.sketchOutline) ? obj.userData.sketchOutline : null,
-          contourFrame: obj.userData.contourFrame || null,
-          geometry: serializeGeometry(obj.geometry)
-        }))
-      };
-      const blob = new Blob([JSON.stringify(project)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'silmo-projekt.json';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
-      status.textContent = 'Vollständiges Projekt gespeichert';
-      window.__silmoSavedRevision=(window.__silmoSavedRevision||0)+1;
-    } catch (error) {
-      console.error(error);
-      status.textContent = 'Projekt konnte nicht gespeichert werden.';
-    }
-  }
-
-  function openProjectFile(file) {
-    if (!file) return;
-    if (file.size > 25 * 1024 * 1024) { status.textContent = 'Projektdatei ist zu gross (maximal 25 MB).'; $('projectFileInput').value = ''; return; }
-    const reader = new FileReader();
-    reader.onload = () => {
-      let newObjects = [];
-      try {
-        const project = JSON.parse(String(reader.result || ''));
-        window.SILMOProjectSchema.validateProjectEnvelope(project);
-        // Zuerst alle Objekte aufbauen. Das aktuelle Projekt bleibt erhalten,
-        // falls die Datei ungültig ist oder ein Modell nicht geladen werden kann.
-        newObjects = project.objects.map(item => {
-          const geometry = restoreGeometry(item.geometry);
-          const material = new THREE.MeshStandardMaterial({
-            color: /^#[0-9a-f]{6}$/i.test(item.color || '') ? item.color : '#4b91ed',
-            roughness: 0.5,
-            metalness: 0.05
-          });
-          const mesh = new THREE.Mesh(geometry, material);
-          const position = Array.isArray(item.position) ? item.position : [0, 0, 0];
-          const rotation = Array.isArray(item.rotation) ? item.rotation : [0, 0, 0];
-          const scale = Array.isArray(item.scale) ? item.scale : [1, 1, 1];
-          if ([position, rotation, scale].some((values, i) => !Array.isArray(values) || values.length < 3 || values.slice(0,3).some(v => !Number.isFinite(v) || Math.abs(v) > (i === 2 ? 1000 : 10000) || (i === 2 && v === 0)))) {
-            geometry.dispose(); material.dispose(); throw new Error('Ungültige Objektposition, Drehung oder Skalierung.');
-          }
-          mesh.position.fromArray(position);
-          mesh.rotation.fromArray(rotation);
-          mesh.scale.fromArray(scale);
-          const measured = new THREE.Vector3();
-          geometry.computeBoundingBox();
-          geometry.boundingBox.getSize(measured);
-          mesh.userData = {
-            label: typeof item.label === 'string' && item.label ? item.label : 'Objekt',
-            baseDimensions: item.baseDimensions && ['x','y','z'].every(a => Number.isFinite(item.baseDimensions[a]))
-              ? { x: item.baseDimensions.x, y: item.baseDimensions.y, z: item.baseDimensions.z }
-              : { x: measured.x, y: measured.y, z: measured.z },
-            percent: item.percent && ['x','y','z'].every(a => Number.isFinite(item.percent[a]))
-              ? { x: item.percent.x, y: item.percent.y, z: item.percent.z }
-              : { x: scale[0] * 100, y: scale[1] * 100, z: scale[2] * 100 },
-            locked: item.locked === true,
-            groupId: typeof item.groupId === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(item.groupId) ? item.groupId : null,
-             unionParts: Array.isArray(item.unionParts) && item.unionParts.length >= 2 && item.unionParts.length <= 100 ? item.unionParts.map(part => JSON.parse(JSON.stringify(part))) : null,
-             sketchOutline: (Array.isArray(item.sketchOutline) ? item.sketchOutline : item.caseOutline) && (Array.isArray(item.sketchOutline) ? item.sketchOutline : item.caseOutline).length >= 3 && (Array.isArray(item.sketchOutline) ? item.sketchOutline : item.caseOutline).length <= 240 && (Array.isArray(item.sketchOutline) ? item.sketchOutline : item.caseOutline).every(point => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite)) ? (Array.isArray(item.sketchOutline) ? item.sketchOutline : item.caseOutline).map(point => [point[0],point[1]]) : null,
-             contourFrame: (item.contourFrame || item.caseWallFrame) && Number.isFinite((item.contourFrame || item.caseWallFrame).wallThicknessMM) && Number.isFinite((item.contourFrame || item.caseWallFrame).wallHeightMM) ? {wallThicknessMM:(item.contourFrame || item.caseWallFrame).wallThicknessMM,wallHeightMM:(item.contourFrame || item.caseWallFrame).wallHeightMM} : null
-           };
-           if (Array.isArray(item.unionParts)) {
-             if (item.unionParts.length < 2 || item.unionParts.length > 100) { geometry.dispose(); material.dispose(); throw new Error('Ungültige Anzahl ursprünglicher Formteile.'); }
-             item.unionParts.forEach(part => { const check = restoreObjectForUnion(part); check.geometry.dispose(); check.material.dispose(); });
-           }
-          return mesh;
-        });
-
-        recordHistory();
-        objects.slice().forEach(obj => {
-          scene.remove(obj);
-          obj.geometry.dispose();
-          if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
-          else obj.material.dispose();
-        });
-        objects.length = 0;
-        newObjects.forEach(obj => { scene.add(obj); objects.push(obj); });
-        newObjects = [];
-
-        if (Number.isFinite(project.bedWidthMM) && project.bedWidthMM >= 5 && project.bedWidthMM <= 2000) {
-          bedWidthMM = project.bedWidthMM;
-          $('bedWidth').value = bedWidthMM;
-        }
-        if (Number.isFinite(project.bedDepthMM) && project.bedDepthMM >= 5 && project.bedDepthMM <= 2000) {
-          bedDepthMM = project.bedDepthMM;
-          $('bedDepth').value = bedDepthMM;
-        }
-        if (typeof project.uniform === 'boolean') uniform = project.uniform;
-        rebuildBed();
-        selectedObjects = [];
-        individualGroupEdit = false;
-        selected = objects.length ? objects[objects.length - 1] : null;
-        updateObjects();
-        showProperties();
-        updateMoveGizmo();
-        if (window.__silmoImageStudioImport) window.__silmoImageStudioImport(project.imageStudio || null).catch(error => console.warn('Image Studio konnte nicht geladen werden:', error));
-        status.textContent = 'Projekt geöffnet (' + objects.length + ' Objekt(e))';
-      } catch (error) {
-        newObjects.forEach(obj => {
-          obj.geometry.dispose();
-          if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
-          else if (obj.material) obj.material.dispose();
-        });
-        console.error(error);
-        status.textContent = 'Projekt konnte nicht geöffnet werden: ' + (error.message || 'Datei prüfen.');
+  const projectIO = window.SILMOProjectIO.createProjectIO({
+    getObjects: () => objects,
+    getBedWidthMM: () => bedWidthMM,
+    getBedDepthMM: () => bedDepthMM,
+    getUniform: () => uniform,
+    getProjectFileInput: () => $('projectFileInput'),
+    setStatus: message => { status.textContent = message; },
+    exportImageStudio: () => window.__silmoImageStudioExport ? window.__silmoImageStudioExport() : null,
+    importImageStudio: saved => window.__silmoImageStudioImport ? window.__silmoImageStudioImport(saved) : null,
+    onSaved: () => { window.__silmoSavedRevision = (window.__silmoSavedRevision || 0) + 1; },
+    commitProject: (project, newObjects) => {
+      recordHistory();
+      objects.slice().forEach(obj => {
+        scene.remove(obj);
+        obj.geometry.dispose();
+        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+        else obj.material.dispose();
+      });
+      objects.length = 0;
+      newObjects.forEach(obj => { scene.add(obj); objects.push(obj); });
+      if (Number.isFinite(project.bedWidthMM) && project.bedWidthMM >= 5 && project.bedWidthMM <= 2000) {
+        bedWidthMM = project.bedWidthMM;
+        $('bedWidth').value = bedWidthMM;
       }
-      $('projectFileInput').value = '';
-    };
-    reader.onerror = () => { status.textContent = 'Projektdatei konnte nicht gelesen werden.'; };
-    reader.readAsText(file);
-  }
+      if (Number.isFinite(project.bedDepthMM) && project.bedDepthMM >= 5 && project.bedDepthMM <= 2000) {
+        bedDepthMM = project.bedDepthMM;
+        $('bedDepth').value = bedDepthMM;
+      }
+      if (typeof project.uniform === 'boolean') uniform = project.uniform;
+      rebuildBed();
+      selectedObjects = [];
+      individualGroupEdit = false;
+      selected = objects.length ? objects[objects.length - 1] : null;
+      updateObjects();
+      showProperties();
+      updateMoveGizmo();
+    }
+  });
+  const { saveProject, openProjectFile } = projectIO;
 
   $('saveProjectButton').addEventListener('click', saveProject);
   $('openProjectButton').addEventListener('click', () => $('projectFileInput').click());
