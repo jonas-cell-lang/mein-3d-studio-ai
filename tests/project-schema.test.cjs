@@ -65,6 +65,37 @@ test('erweitertes v3-Fixture deckt Gruppen, verbundene Formen und Bildstudio ab'
   assert.ok(fixture.objects.some(object => object.contourFrame && Number.isFinite(object.contourFrame.wallThicknessMM)));
 });
 
+test('Serialisierte Mesh-Geometrie wird vor dem Wiederaufbau strukturell geprüft', () => {
+  const valid = {
+    attributes: {
+      position: { arrayType: 'Float32Array', array: [0,0,0, 1,0,0, 0,1,0], itemSize: 3, normalized: false },
+      normal: { arrayType: 'Float32Array', array: [0,0,1, 0,0,1, 0,0,1], itemSize: 3, normalized: false }
+    },
+    index: { arrayType: 'Uint16Array', array: [0,1,2] }
+  };
+  assert.equal(schema.validateSerializedGeometry(valid), valid);
+
+  const wrongPositionSize = structuredClone(valid);
+  wrongPositionSize.attributes.position.itemSize = 2;
+  assert.throws(() => schema.validateSerializedGeometry(wrongPositionSize), /Positionsdaten müssen mindestens drei 3D-Punkte/);
+
+  const incompleteTriangles = structuredClone(valid);
+  incompleteTriangles.index.array = [0,1,2,0];
+  assert.throws(() => schema.validateSerializedGeometry(incompleteTriangles), /Ungültige Modell-Indizes/);
+
+  const outOfRange = structuredClone(valid);
+  outOfRange.index.array = [0,1,3];
+  assert.throws(() => schema.validateSerializedGeometry(outOfRange), /Ungültige Modell-Indizes/);
+
+  const mismatchedAttributes = structuredClone(valid);
+  mismatchedAttributes.attributes.normal.array.pop();
+  assert.throws(() => schema.validateSerializedGeometry(mismatchedAttributes), /unterschiedliche Punktanzahlen/);
+
+  const nonFinite = structuredClone(valid);
+  nonFinite.attributes.position.array[0] = Infinity;
+  assert.throws(() => schema.validateSerializedGeometry(nonFinite), /Ungültige oder zu grosse Geometriedaten/);
+});
+
 test('Geometrie in beiden v3-Fixtures hat endliche Positionswerte und gültige Indizes', () => {
   for (const name of ['project-v3-minimal.json', 'project-v3-advanced.json']) {
     const fixture = readFixture(name);
@@ -72,6 +103,7 @@ test('Geometrie in beiden v3-Fixtures hat endliche Positionswerte und gültige I
     for (const object of fixture.objects) {
       visitGeometry(object, (geometry, label) => {
         geometryCount += 1;
+        assert.equal(schema.validateSerializedGeometry(geometry), geometry, name + ': Geometrie-Validator lehnt gültige Fixture-Geometrie ab: ' + label);
         const position = geometry.attributes && geometry.attributes.position;
         assert.ok(position, name + ': Positionsattribut fehlt bei ' + label);
         assert.equal(position.itemSize, 3, name + ': Position itemSize ist nicht 3 bei ' + label);
