@@ -221,6 +221,7 @@ jobs:
           root = Path("/tmp/silmo-pages-test")
           packaged_files = (
               "src/units.js",
+              "src/tolerances.js",
               "src/project-schema.js",
               "vendor/three/three.min.js",
               "vendor/three/STLLoader.js",
@@ -235,7 +236,7 @@ jobs:
               if source.read_bytes() != packaged.read_bytes():
                   raise SystemExit(f"Packaged file differs from generated source: {relative}")
           html = (root / "index.html").read_text(encoding="utf-8")
-          for relative in ("./src/units.js", "./src/project-schema.js", "./vendor/three/three.min.js", "./vendor/three/STLLoader.js", "./vendor/three/STLExporter.js"):
+          for relative in ("./src/units.js", "./src/tolerances.js", "./src/project-schema.js", "./vendor/three/three.min.js", "./vendor/three/STLLoader.js", "./vendor/three/STLExporter.js"):
               if relative not in html:
                   raise SystemExit(f"HTML does not reference expected local module: {relative}")
           print("Local Pages package contains every referenced SILMO module; no deployment performed.")
