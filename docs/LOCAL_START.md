@@ -68,4 +68,4 @@ npm run prepare:runtime
 - `node_modules/` und `vendor/` sind generierte Ordner und werden nicht eingecheckt.
 - Der lokale Webserver stellt nur Projektdateien bereit. Er verändert weder GitHub noch die öffentliche Live-App.
 - SILMO muss über den lokalen Webserver gestartet werden, nicht durch direktes Öffnen der HTML-Datei (`file://`).
-- Der Browser lädt die Kernbibliotheken nun aus `./vendor/three/` und benötigt dafür kein externes CDN.
+- Der Browser lädt die Kernbibliotheken nun aus `./vendor/three/` und benötigt dafür kein externes CDN. Die zentralen Module `src/units.js`, `src/tolerances.js` und `src/project-schema.js` werden ebenfalls lokal geladen.
