@@ -7,7 +7,35 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 const pageErrors = [];
 async function showCreateSubtab(index) {
   await page.locator('[data-tab="create"]').click();
-  await page.locator('#pane-create-left > .inner-tab-nav button').nth(index).click();
+  const tabs = page.locator('#pane-create-left > .inner-tab-nav button');
+  await tabs.nth(index).click();
+  const state = await page.locator('#addCube').evaluate(el => {
+    const ancestors = [];
+    for (let node = el; node; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      ancestors.push({
+        tag: node.tagName,
+        id: node.id || null,
+        className: typeof node.className === 'string' ? node.className : null,
+        hidden: node.hidden,
+        display: style.display,
+        visibility: style.visibility
+      });
+    }
+    return {
+      visible: el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden',
+      selectedTab: document.querySelector('[data-tab="create"]')?.getAttribute('aria-selected'),
+      selectedSubtab: tabsState(),
+      ancestors
+    };
+    function tabsState() {
+      return [...document.querySelectorAll('#pane-create-left > .inner-tab-nav button')]
+        .map(button => ({label: button.textContent, selected: button.getAttribute('aria-selected')}));
+    }
+  });
+  if (index === 0 && !state.visible) {
+    throw new Error('Grundformen-Unterreiter wurde aktiviert, aber Würfel-Button bleibt unsichtbar: ' + JSON.stringify(state));
+  }
 }
 async function showDrawRightSubtab(index) {
   await page.locator('#pane-draw-right > .inner-tab-nav button').nth(index).click();
