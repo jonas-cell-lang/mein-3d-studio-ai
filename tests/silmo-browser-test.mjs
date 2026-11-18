@@ -604,6 +604,13 @@ try {
   for (const point of freeformPoints.slice(1)) await page.mouse.move(point.x, point.y, { steps: 4 });
   await page.mouse.up();
   assert.equal(await page.locator('#createSketchSolid').isEnabled(), true, 'Freiform wurde nicht als geschlossene Skizze vorbereitet');
+  const freeformBeforeCreate = await page.evaluate(() => ({
+    tool: document.getElementById('sketchTool').value,
+    draft: window.__silmoSketchDraftSnapshot(),
+    status: document.getElementById('sketchStatus').textContent
+  }));
+  assert.equal(freeformBeforeCreate.tool, 'freeform2d', 'Skizzenwerkzeug wechselte vor der Freiform-Extrusion: ' + JSON.stringify(freeformBeforeCreate));
+  assert.equal(freeformBeforeCreate.draft?.type, 'freeform2d', 'Freiform-Zeichenpunkte gingen vor der Extrusion verloren: ' + JSON.stringify(freeformBeforeCreate));
   await page.locator('#createSketchSolid').click();
   const freeformSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
   assert.equal(freeformSnapshot.type, 'freeform2d', 'Freiform wurde nicht als Freiformkörper gespeichert');
