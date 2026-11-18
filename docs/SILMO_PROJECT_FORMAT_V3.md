@@ -36,9 +36,13 @@ Eine Änderung dieser Semantik erfordert eine neue Projektformatversion und eine
 
 ## Validierung und Kompatibilität
 
-`src/project-schema.js` validiert die Dokumenthülle, bevor der Geometrieimport beginnt. `restoreGeometry` prüft anschliessend die einzelnen Geometrieattribute und Indizes.
+`src/project-schema.js` validiert die Dokumenthülle und stellt mit `validateSerializedGeometry` zusätzlich einen reinen Geometrie-Validator bereit. `restoreGeometry` ruft diesen vor der Erzeugung typisierter Arrays auf und prüft beim Wiederaufbau weiterhin die Laufzeitobjekte.
 
 - Gültige v3-Projekte bleiben lesbar.
+- Das Positionsattribut muss mindestens drei 3D-Punkte mit `itemSize: 3` enthalten.
+- Alle Geometrieattribute müssen dieselbe Punktanzahl besitzen; Attributtypen, Arraylängen, endliche Werte und Grössenlimits werden geprüft.
+- Indizes müssen einen unterstützten Integer-Typ, gültige Vertex-Verweise und vollständige Dreiergruppen für Dreiecke enthalten.
+- Nicht-indizierte Mesh-Geometrie muss ebenfalls aus vollständigen Dreiecken bestehen.
 - Fehlende oder unbekannte Versionen werden mit einer verständlichen Meldung abgelehnt.
 - Bei einer nicht unterstützten Version bleibt das aktuell geöffnete Projekt unverändert.
 - Das Speichern schreibt weiterhin Version 3.
