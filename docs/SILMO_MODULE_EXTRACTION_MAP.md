@@ -11,6 +11,7 @@
 | `src/tolerances.js` | Benannte, fachlich getrennte Toleranzwerte | Keine Laufzeitabhängigkeit; unveränderliche API |
 | `src/project-schema.js` | Projekt-Hülle und serialisierte Geometrie validieren | Keine Three.js-Abhängigkeit |
 | `src/project-geometry.js` | BufferGeometry serialisieren/wiederherstellen; Union-Formteile speichern/wiederherstellen | Factory erhält `THREE` und `SILMOProjectSchema`; stellt `window.SILMOProjectGeometry` bereit |
+| `src/project-io.js` | Projektdateien speichern und öffnen; alle Objekte vor dem Ersetzen des aktuellen Modells aufbauen | Factory erhält Three.js, Schema und Projektgeometrie; der App-Zustand wird über explizite Getter-/Commit-/UI-Callbacks angebunden |
 | `src/developer-diagnostics.js` | Diagnosefenster, Laufzeit- und Bedienprotokoll | Eigenständige DOM-/Browser-IIFE; bleibt im Dokumentkopf |
 | `src/tool-navigation.js` | Hauptnavigation, Werkzeugbereiche und Unterreiter organisieren | Eigenständige DOM-IIFE; wird vor Three.js ausgeführt |
 | `src/tutorial.js` | Geführter Lernkurs und Erfolgskontrolle | Eigenständige DOM-IIFE; nutzt vorhandene `window`-Test-/App-Schnittstellen |
@@ -33,28 +34,25 @@ Das verbleibende Inline-CAD-Skript hält weiterhin den zentralen Laufzeitzustand
 
 Diese Bereiche sollten nicht als grosse Textblöcke verschoben werden. Zuerst müssen ihre Daten- und Seiteneffekt-Abhängigkeiten als explizite Schnittstellen sichtbar werden.
 
-## 3. Nächste geeignete Extraktionsgrenze: Projektdatei-I/O
+## 3. Abgeschlossene Extraktion: Projektdatei-I/O
 
-Die Funktionen `saveProject` und `openProjectFile` bleiben vorerst im Hauptskript. Die Geometrie-Serialisierung ist bereits ausgelagert; die Projektdatei-I/O-Funktionen greifen aber weiterhin auf veränderlichen App-Zustand zu.
+`src/project-io.js` kapselt jetzt `saveProject` und `openProjectFile`. Das Modul übernimmt Datei-Download und -Lesen, Projekthüllenprüfung, Mesh-Wiederaufbau und Fehlerbehandlung.
 
-Vor einer Extraktion müssen diese Abhängigkeiten über eine kleine Factory-/Callback-Schnittstelle bereitgestellt werden:
+Die App übergibt eine Factory-Abhängigkeit mit klaren Funktionen:
+- Objektbestand, Druckbettmasse und Uniform-Modus lesen
+- Projektdatei-Eingabefeld und Statusmeldung bereitstellen
+- Image-Studio-Daten exportieren/importieren
+- beim erfolgreichen Öffnen über `commitProject(project, newObjects)` Undo-History, Szene, Objektliste, Druckbett, Auswahl und UI aktualisieren
 
-- aktueller Objektbestand und Three.js-Szene
-- Druckbettbreite/-tiefe und Uniform-Skalierungsmodus
-- Undo-History vor dem Ersetzen des aktuellen Modells
-- Auswahlzustand und Gruppenbearbeitungsmodus
-- UI-Aktualisierung, Eigenschaftenanzeige, Gizmo-Aktualisierung und Statusmeldung
-- Projektdatei-Eingabefeld und Download-/Dateilesen
-- Image-Studio-Export beim Speichern und Import beim Öffnen
-- Geometrie-Serialisierung und -Wiederherstellung aus `SILMOProjectGeometry`
+**Wichtige Sicherheitsregel:** Das Modul baut alle neuen Objekte zuerst vollständig auf. Erst danach ruft es den Commit-Callback auf. Bei ungültiger Datei werden die neu erzeugten Ressourcen entsorgt; das bereits geöffnete Projekt bleibt bestehen.
 
-**Sicherheitsanforderung:** Das neue Modul muss zuerst alle Objekte vollständig validieren und aufbauen. Erst wenn alle erfolgreich erstellt sind, darf ein Callback den vorhandenen Modellbestand ersetzen. Bei einem Fehler müssen Modell, Auswahl und Undo-History des bereits geöffneten Projekts unverändert bleiben.
+Die Browser-Regression prüft weiterhin Speichern, Wiederöffnen, Objektanzahl und die Zurückweisung fehlerhafter Geometrie. Zusätzlich bestätigt sie, dass `SILMOProjectIO.createProjectIO` verfügbar ist.
 
 ## 4. Weitere spätere Kandidaten
 
 1. BSP-CSG-Kern als eigenständige Factory mit expliziter Three.js-Abhängigkeit.
 2. Geometrie- und Skizzenfunktionen in getrennte Werkzeuge, sobald gemeinsame Modelloperationen über eine stabile API laufen.
-3. Import-/Export-Adapter als eigene Module, die nur geprüfte Dokument- und Geometriedaten entgegennehmen.
+3. Import-/Export-Adapter weiter trennen, falls sie unabhängig von Projektdatei-I/O werden können.
 4. Renderer-/Kamera-/Gizmo-Bereich erst nach klarer Trennung vom Modellzustand.
 
 ## 5. Regeln für jede weitere Extraktion
