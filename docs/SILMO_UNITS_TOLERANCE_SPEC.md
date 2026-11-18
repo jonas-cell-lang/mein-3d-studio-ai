@@ -74,6 +74,24 @@ Die folgenden Werte wurden direkt im aktuellen `index.html` geprüft. Sie werden
 - Der Z-Vorschauversatz von `0,025` ist eine Darstellungsentscheidung und darf nicht als Modellgenauigkeit ausgegeben werden.
 - Vor jeder Änderung muss die jeweilige Schwelle mit positiven und negativen Grenzfällen im Browser oder als mathematischer Unit-Test abgesichert sein.
 
+
+### 3.1 Weitere einzeln benannte Kontur- und Skizzenschwellen
+
+Bei der weiteren Quellcodeprüfung wurden zusätzliche Schwellen in klar begrenzten Funktionen zugeordnet. Die bisherigen Zahlenwerte wurden nicht verändert:
+
+| API-Konstante | Wert | Dimension / Zweck |
+|---|---:|---|
+| `CONTOUR_FRAME_MIN_EDGE_WORLD_UNITS` | `1e-5` | Mindestlänge einer Kante beim Aufbau eines Kontur-Hohlrahmens |
+| `CONTOUR_FRAME_PARALLEL_CROSS_MIN` | `1e-5` | dimensionsloser Kreuzprodukt-Grenzwert zur Erkennung nahezu paralleler Kantenrichtungen |
+| `CONTOUR_FRAME_MIN_NORMAL_WORLD_UNITS` | `1e-5` | Mindestlänge des kombinierten Normalenvektors an einem Konturknick |
+| `CONTOUR_FRAME_MIN_AREA_WORLD_UNITS2` | `1e-4` | Mindestfläche der äusseren und inneren Hohlrahmen-Kontur |
+| `SKETCH_OUTLINE_MIN_AREA2_WORLD_UNITS2` | `1e-7` | Grenzwert für den doppelt orientierten Flächeninhalt der editierbaren Skizzenkontur |
+| `SKETCH_OUTLINE_MIN_EDGE_WORLD_UNITS` | `1e-5` | Mindestabstand benachbarter editierter Skizzenpunkte |
+| `CAD_PATH_MIN_DIRECTION_WORLD_UNITS` | `1e-6` | Mindestlänge einer Pfadrichtung vor der Richtungs-/Quaternionenberechnung |
+| `PROFILE_MIN_PERIMETER_WORLD_UNITS` | `1e-6` | Mindestumfang einer Profilkontur vor der Resampling-Operation |
+
+Diese Konstanten sind bewusst getrennt: Der Kreuzproduktwert ist dimensionslos, die Flächenwerte sind keine Längen, und die übrigen Werte prüfen unterschiedliche geometrische Bedingungen. Die Zuordnung ist eine Benennung des bestehenden Verhaltens, keine neue globale Genauigkeitsgarantie.
+
 ## 4. Zielstruktur der zentralen API
 
 Die API soll mindestens folgende getrennte Aufgaben anbieten:
