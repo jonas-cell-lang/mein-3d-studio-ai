@@ -127,8 +127,12 @@
           deps.commitProject(project, newObjects);
           newObjects = [];
           if (typeof deps.importImageStudio === 'function') {
-            Promise.resolve(deps.importImageStudio(project.imageStudio || null))
-              .catch(error => console.warn('Image Studio konnte nicht geladen werden:', error));
+            try {
+              Promise.resolve(deps.importImageStudio(project.imageStudio || null))
+                .catch(error => console.warn('Image Studio konnte nicht geladen werden:', error));
+            } catch (error) {
+              console.warn('Image Studio konnte nicht geladen werden:', error);
+            }
           }
           deps.setStatus('Projekt geöffnet (' + deps.getObjects().length + ' Objekt(e))');
         } catch (error) {
