@@ -214,6 +214,7 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - Die Dateien wurden ohne Änderung ihrer Funktionslogik ausgelagert. Sie verwenden eigene lokale Variablen und die vorhandenen DOM-/`window`-Schnittstellen.
 - Der lokale Pages-Test prüft, dass alle fünf Module vorhanden sind und von `index.html` referenziert werden. Die statische Funktionsprüfung berücksichtigt auch den ausgelagerten Navigationscode.
 - Browser-Interaktionstests prüfen, dass die Anwendung mit den ausgelagerten Dateien weiterhin startet und die bestehenden Workflows funktionieren.
+- Die Abhängigkeitsgrenzen und die nächste sichere Extraktion sind in `docs/SILMO_MODULE_EXTRACTION_MAP.md` dokumentiert.
 - Das grosse CAD-Hauptskript bleibt bewusst unangetastet. Weitere Extraktionen benötigen zuerst eine klare Abhängigkeitsgrenze.
 
 ### 6.5 Vertikaler Referenzablauf
