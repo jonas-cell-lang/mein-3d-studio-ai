@@ -10,6 +10,7 @@ Eigenständiges professionelles 3D-Modellierungsprogramm.
 - [Masterplan](docs/SILMO_MASTERPLAN.md)
 - [Technische Bestandsaufnahme](docs/SILMO_CURRENT_STATE_AUDIT.md)
 - [Funktions- und Abhängigkeitsmatrix](docs/SILMO_FUNCTION_DEPENDENCY_MATRIX.md)
+- [Laufzeit-Abhängigkeitsprüfung und lokale Migration](docs/SILMO_RUNTIME_DEPENDENCY_AUDIT.md)
 - [Einheiten- und Toleranzspezifikation](docs/SILMO_UNITS_TOLERANCE_SPEC.md)
 - [Projektformat v3 und Kompatibilität](docs/SILMO_PROJECT_FORMAT_V3.md)
 - [Geometriekern-Vorauswahl und Testplan](docs/SILMO_GEOMETRY_KERNEL_EVALUATION.md)
