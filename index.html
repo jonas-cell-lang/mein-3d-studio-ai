@@ -1275,13 +1275,13 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       grid.traverse(child => { if (child.geometry) child.geometry.dispose(); if (child.material) (Array.isArray(child.material) ? child.material : [child.material]).forEach(material => material.dispose()); });
     }
     if (bedOutline) { scene.remove(bedOutline); bedOutline.geometry.dispose(); bedOutline.material.dispose(); }
-    const w = bedWidthMM / MM_PER_UNIT, d = bedDepthMM / MM_PER_UNIT;
+    const w = mmToWorldUnits(bedWidthMM), d = mmToWorldUnits(bedDepthMM);
     const requestedStepMM = Number(document.getElementById('sketchGridMM')?.value);
     const spacingMM = Number.isFinite(requestedStepMM) && requestedStepMM >= 0.1 && requestedStepMM <= 100 ? requestedStepMM : 10;
     const maxIntervals = 1200;
     const stride = Math.max(1, Math.ceil(Math.max(bedWidthMM, bedDepthMM) / spacingMM / maxIntervals));
     const visualStepMM = spacingMM * stride;
-    const step = visualStepMM / MM_PER_UNIT;
+    const step = mmToWorldUnits(visualStepMM);
     const vertices = [];
     const halfW = w / 2, halfD = d / 2;
     for (let x = -Math.floor(halfW / step) * step; x <= halfW + 1e-8; x += step) {
@@ -1321,6 +1321,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   window.__silmoTutorialAllTransforms = () => objects.map(obj => ({ uuid: obj.uuid, x: obj.position.x, y: obj.position.y, z: obj.position.z, sx: obj.scale.x, sy: obj.scale.y, sz: obj.scale.z, qx: obj.quaternion.x, qy: obj.quaternion.y, qz: obj.quaternion.z, qw: obj.quaternion.w }));
   let uniform = true;
   const MM_PER_UNIT = window.SILMOUnits.MM_PER_WORLD_UNIT;
+  const mmToWorldUnits = window.SILMOUnits.mmToWorldUnits;
+  const worldUnitsToMm = window.SILMOUnits.worldUnitsToMm;
+  const mm2ToWorldUnits2 = window.SILMOUnits.mm2ToWorldUnits2;
+  const worldUnits2ToMm2 = window.SILMOUnits.worldUnits2ToMm2;
   let moveGizmo = null;
   let rotationGizmo = null;
   let gizmoMode = 'move';
@@ -2747,7 +2751,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         geometry.computeBoundingBox();
         if (!geometry.boundingBox || geometry.boundingBox.isEmpty()) throw new Error('Die STL-Datei enthält keine gültige Geometrie.');
         // STL-Dateien werden als Millimeter eingelesen und in die App-Einheiten umgerechnet.
-        geometry.scale(1 / MM_PER_UNIT, 1 / MM_PER_UNIT, 1 / MM_PER_UNIT);
+        geometry.scale(mmToWorldUnits(1), mmToWorldUnits(1), mmToWorldUnits(1));
         geometry.computeBoundingBox();
         const material = new THREE.MeshStandardMaterial({color:0x4b91ed,roughness:0.5,metalness:0.05});
         const mesh = new THREE.Mesh(geometry, material);
@@ -2845,12 +2849,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const exportGeometry = obj.geometry.clone();
         // The editor uses 10 mm per Three.js unit. STL coordinates must be in millimetres,
         // so convert vertices as well as object translations (not just the translations).
-        exportGeometry.scale(MM_PER_UNIT, MM_PER_UNIT, MM_PER_UNIT);
+        exportGeometry.scale(worldUnitsToMm(1), worldUnitsToMm(1), worldUnitsToMm(1));
         exportGeometry.computeBoundingBox();
         exportGeometry.computeBoundingSphere();
 
         const clone = new THREE.Mesh(exportGeometry, obj.material);
-        clone.position.copy(obj.position).multiplyScalar(MM_PER_UNIT);
+        clone.position.set(worldUnitsToMm(obj.position.x), worldUnitsToMm(obj.position.y), worldUnitsToMm(obj.position.z));
         clone.rotation.copy(obj.rotation);
         // Object scale is dimensionless and is applied after converting geometry to mm.
         clone.scale.copy(obj.scale);
@@ -2978,9 +2982,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
   }
   function clampSketchPoint(point, marginMM = 0) {
-    const margin = Math.max(0, Math.min(marginMM / MM_PER_UNIT, bedWidthMM / (2 * MM_PER_UNIT), bedDepthMM / (2 * MM_PER_UNIT)));
-    const halfW = bedWidthMM / (2 * MM_PER_UNIT);
-    const halfD = bedDepthMM / (2 * MM_PER_UNIT);
+    const margin = Math.max(0, Math.min(mmToWorldUnits(marginMM), mmToWorldUnits(bedWidthMM / 2), mmToWorldUnits(bedDepthMM / 2)));
+    const halfW = mmToWorldUnits(bedWidthMM / 2);
+    const halfD = mmToWorldUnits(bedDepthMM / 2);
     point.x = Math.max(-halfW + margin, Math.min(halfW - margin, point.x));
     point.y = Math.max(-halfD + margin, Math.min(halfD - margin, point.y));
     return point;
@@ -3006,7 +3010,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
   function simplifySketchPolyline(points, toleranceMM = 0.5) {
     if (!Array.isArray(points) || points.length < 3) return (points || []).map(point => point.clone());
-    const tolerance = Math.max(0.001, toleranceMM / MM_PER_UNIT);
+    const tolerance = Math.max(mmToWorldUnits(0.01), mmToWorldUnits(toleranceMM));
     const toleranceSq = tolerance * tolerance;
     const keep = new Uint8Array(points.length);
     keep[0] = 1; keep[points.length - 1] = 1;
@@ -3036,7 +3040,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         document.getElementById('sketchStatus').textContent = 'Die Rasterweite muss zwischen 0,1 und 100 mm liegen.';
         return clampSketchPoint(point, sketchDrawingMarginMM());
       }
-      const step = stepMM / MM_PER_UNIT;
+      const step = mmToWorldUnits(stepMM);
       point.set(
         Math.round(point.x / step) * step,
         Math.round(point.y / step) * step,
@@ -3056,7 +3060,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         widthMM > 2000 || depthMM > 2000 || heightMM > 2000) {
       throw new Error('Breite, Tiefe und Extrusionshöhe müssen zwischen 0,1 und 2000 mm liegen.');
     }
-    return { width: widthMM / MM_PER_UNIT, depth: depthMM / MM_PER_UNIT, height: heightMM / MM_PER_UNIT };
+    return { width: mmToWorldUnits(widthMM), depth: mmToWorldUnits(depthMM), height: mmToWorldUnits(heightMM) };
   }
   function updateSketchPreview() {
     if (!sketchDraft) return;
