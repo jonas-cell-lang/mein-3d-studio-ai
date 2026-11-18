@@ -1705,6 +1705,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
 
   function restoreGeometry(data) {
+    window.SILMOProjectSchema.validateSerializedGeometry(data);
     if (!data || !data.attributes || !data.attributes.position || typeof data.attributes !== 'object') {
       throw new Error('Geometriedaten fehlen.');
     }
