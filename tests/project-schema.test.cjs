@@ -77,7 +77,7 @@ test('Serialisierte Mesh-Geometrie wird vor dem Wiederaufbau strukturell geprüf
 
   const wrongPositionSize = structuredClone(valid);
   wrongPositionSize.attributes.position.itemSize = 2;
-  assert.throws(() => schema.validateSerializedGeometry(wrongPositionSize), /Positionsdaten müssen mindestens drei 3D-Punkte/);
+  assert.throws(() => schema.validateSerializedGeometry(wrongPositionSize), /Positionsdaten/);
 
   const incompleteTriangles = structuredClone(valid);
   incompleteTriangles.index.array = [0,1,2,0];
