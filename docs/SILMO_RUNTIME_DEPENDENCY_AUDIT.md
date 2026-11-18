@@ -93,12 +93,13 @@ Es handelt sich deshalb nicht um eine Bibliothek, die man durch blosses Entferne
 - `src/developer-diagnostics.js` wurde als eigenständiges Diagnosemodul in den Dokumentkopf verschoben; die Script-ID blieb erhalten.
 - `src/tool-navigation.js` enthält die bisherige, DOM-basierte Werkzeugnavigation. Sie wird an derselben Stelle vor Three.js geladen und greift nicht auf den lexikalischen CAD-Hauptskript-Scope zu.
 - `src/project-geometry.js` enthält die Geometrie-Serialisierung, den validierten Wiederaufbau von BufferGeometry sowie die Speicherung/Wiederherstellung der ursprünglichen Union-Formteile. Das Modul erhält Three.js und das Projekt-Schema über seine Factory-Schnittstelle.
-- Die CI prüft, dass alle fünf ausgelagerten Module im lokalen Pages-Testpaket enthalten sind und die HTML-Datei auf die lokalen Dateien verweist. Die statische Funktionsprüfung durchsucht zusätzlich die ausgelagerte Navigationsdatei.
+- `src/project-io.js` kapselt `saveProject` und `openProjectFile`. Es erhält den App-Zustand über Getter- und Commit-Callbacks und baut neue Objekte vollständig auf, bevor das bestehende Modell ersetzt wird.
+- Die CI prüft, dass alle sechs ausgelagerten Module im lokalen Pages-Testpaket enthalten sind und die HTML-Datei auf die lokalen Dateien verweist. Die statische Funktionsprüfung durchsucht zusätzlich die ausgelagerte Navigationsdatei.
 - Die erste Einheitenmigration ist abgeschlossen: `MM_PER_UNIT` wird in `index.html` nicht mehr verwendet; Längen- und Flächenkonvertierungen laufen über `src/units.js`.
 
 ### Verifizierter Stand
 
-Für Commit `64f681debbd04ff466c2e0d21a50140f3f0e898c` sind Code-Checks und Browser-Interaktionstests erfolgreich. Der Browserlauf blockiert externe HTTPS-Zugriffe. Der Workflow erzeugt die Runtime lokal und prüft die lokale Anwendung; es wurde kein Pages-Deployment ausgelöst.
+Für Commit `78fe9212433d4101f2b85732524788316b130b41` sind Code-Checks und Browser-Interaktionstests erfolgreich. Der Browserlauf blockiert externe HTTPS-Zugriffe. Der Workflow erzeugt die Runtime lokal und prüft die lokale Anwendung; es wurde kein Pages-Deployment ausgelöst.
 
 ## 6. Was bewusst noch nicht geändert wurde
 
