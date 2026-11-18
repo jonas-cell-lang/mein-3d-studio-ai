@@ -20,12 +20,12 @@
 Am 14.11.2026 wurde der aktuelle Hauptstand geprüft.
 
 - Die Anwendung liegt derzeit im Wesentlichen in einer einzelnen `index.html` mit rund 5'600 Zeilen und eingebettetem CSS/JavaScript.
-- Die 3D-Darstellung basiert auf Three.js r128, das aktuell über externe CDN-Skripte geladen wird.
-- Interne Modellkoordinaten verwenden derzeit den Faktor **1 Three.js-Einheit = 10 mm (der Code teilt Millimeterwerte durch 10, um interne Koordinaten zu erhalten)**; diese Umrechnung ist an mehreren Stellen in der Anwendung verankert.
+- Die 3D-Darstellung basiert weiterhin auf Three.js r128. Die Laufzeitbibliothek sowie STLLoader/STLExporter werden inzwischen aus der exakt festgelegten npm-Version lokal vorbereitet und nicht mehr von CDNs geladen.
+- Interne Modellkoordinaten verwenden weiterhin **1 Three.js-Einheit = 10 mm**. Die zentrale Einheiten-API ist implementiert und erste Kernbereiche sind migriert; der Kompatibilitätsalias `MM_PER_UNIT` bleibt für noch nicht migrierte Aufrufstellen bestehen.
 - Es gibt bereits Grundkörper, Objekttransformationen, Auswahl, Mehrfachauswahl, Gruppierung, Undo/Redo, Projektdateien, STL-Import, STL-Export, 2D-Skizzen, Extrusion, Kontur- und Wandwerkzeuge, eigene BSP-basierte Boolesche Operationen, Loft/Sweep, Skizzenbeziehungen und Bildkontur-Erkennung.
 - Die Oberfläche besitzt Hauptbereiche und fokussierte Unterreiter.
 - Browser- und GitHub-Actions-Tests sind vorhanden.
-- Ein `package.json` ist im Repository-Root derzeit nicht vorhanden; die aktuelle Struktur ist damit noch kein modernes, modular gebautes Entwicklungsprojekt.
+- Ein Root-`package.json` und eine Lockdatei sind inzwischen vorhanden. Der reproduzierbare Build-/Modulumbau ist aber noch nicht abgeschlossen; die Anwendung besteht weiterhin überwiegend aus einer grossen `index.html`.
 
 ### Konsequenz
 
@@ -178,22 +178,37 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 ### 6.1 Zentrale Einheiten-API
 - `src/units.js` definiert die bestehende Skala: 1 Three.js-Welteinheit = 10 mm.
 - Die API enthält getrennte Umrechnungen für Länge, Fläche und Volumen.
-- `index.html` lädt die API vor dem CAD-Hauptskript. Der bisherige `MM_PER_UNIT`-Name bleibt als Kompatibilitätsalias für noch nicht migrierte Aufrufstellen bestehen.
-- Objektabmessungen und exakte X-/Y-Skizzenpositionen verwenden bereits die benannten API-Funktionen.
-- Node.js-Unit-Tests und die Browserprüfung der geladenen API bestehen.
+- Erste Kernbereiche verwenden die API bereits: Druckbett/Raster, Skizzenbegrenzung und -vereinfachung, Eingabedimensionen, STL-Import/-Export, Ausrichtung/Abstandsverteilung, Tastaturschritte und Druckmassenausgabe.
+- Der bisherige `MM_PER_UNIT`-Name bleibt als Kompatibilitätsalias für noch nicht migrierte Aufrufstellen bestehen.
+- Unit-Tests und Browserprüfungen sichern die Referenzumrechnungen.
 
-### 6.2 Projektformat v3
-- `src/project-schema.js` validiert App-Kennung, ganzzahlige Versionsnummer und Objektliste, bevor Geometrie importiert wird.
-- Speichern schreibt weiterhin Formatversion 3. Fehlende, nicht ganzzahlige sowie unbekannte ältere oder neuere Versionen werden abgelehnt.
-- Das Fixture `tests/fixtures/project-v3-minimal.json` wird im Browser erfolgreich geladen. Ein v4-Test wird abgelehnt, ohne das zuvor geöffnete Projekt zu verändern.
+### 6.2 Projektformat v3 und Geometrievalidierung
+- `src/project-schema.js` validiert App-Kennung, ganzzahlige Versionsnummer und Objektliste.
+- `validateSerializedGeometry` prüft zusätzlich Positionen mit itemSize 3, Attributlängen und -anzahlen, endliche Werte, Indexgrenzen und vollständige Dreiecksgruppen.
+- `restoreGeometry` ruft die Validierung vor dem Wiederaufbau der typisierten Arrays auf.
+- Der Browser-Regressionslauf prüft auch fehlerhafte Positionsdaten: Das zuvor geöffnete Projekt muss erhalten bleiben.
+- Speichern schreibt weiterhin Formatversion 3; unbekannte ältere und neuere Versionen werden abgelehnt.
 - Die Spezifikation steht in `docs/SILMO_PROJECT_FORMAT_V3.md`.
 
-### 6.3 Vertikaler Referenzablauf
-Der Playwright-Browserlauf prüft jetzt einen echten Durchgang: Modellobjekte erstellen, Projektdatei speichern, die gespeicherte Datei in einer frischen Sitzung wieder öffnen, die Objektanzahl vergleichen und anschliessend eine STL-Datei exportieren. Zusätzlich werden das v3-Fixture und die Ablehnung von v4 geprüft.
+### 6.3 Lokale Runtime und reproduzierbare Abhängigkeiten
+- `package.json` und `package-lock.json` pinnen Three.js auf Version 0.128.0.
+- `npm ci` installiert die festgelegte Version; `scripts/prepare-runtime.mjs` stellt Three.js r128, STLLoader, STLExporter und die Lizenzdatei lokal bereit.
+- `index.html` lädt die Runtime aus `vendor/three/`; externe CDN-Script-Referenzen wurden entfernt.
+- Code- und Browser-CI erzeugen die Runtime vor den Tests. Der Browser-Test blockiert externe HTTPS-Zugriffe und prüft, dass SILMO trotzdem startet.
+- Der Pages-Build kopiert die lokal erzeugten Runtime-Dateien in sein Artefakt. Das Produktionsdeployment bleibt bis zur Freigabe des PR gesperrt.
 
-**Prüfstatus:** Code-Checks und vollständige Browserregression sind für den aktuellen Commit erfolgreich. PR 69 bleibt Draft und ungemergt; die öffentliche Live-App wurde nicht verändert und nicht neu deployed.
+### 6.4 Benannte Toleranzen
+- `src/tolerances.js` enthält die zuerst inventarisierten Werte mit klarer Dimension und Funktion: CSG, Ausrichtungs-/Änderungsschwellen, Skizzenvereinfachung, Skizzen-Druckbettgrenze und Druckprüfung.
+- Die Werte wurden nicht vereinheitlicht oder numerisch verändert. Die API macht die Bedeutung sichtbar.
+- `tests/tolerances.test.cjs` sichert Werte und Unveränderlichkeit.
+- Das Inventar und die offenen Zuordnungen stehen in `docs/SILMO_UNITS_TOLERANCE_SPEC.md`.
 
-**Als Nächstes:** weitere repräsentative v3-Fixtures für Gruppen, verbundene Formen, Skizzen und Image-Studio-Daten ergänzen. Danach folgen das kostenlose Root-Build-/Abhängigkeitsfundament und die schrittweise Modularisierung. Die übrigen historischen Einheiten-Aufrufstellen werden ohne globale riskante Ersetzungen migriert.
+### 6.5 Vertikaler Referenzablauf
+Der Playwright-Browserlauf prüft einen echten Durchgang: Modellobjekte erstellen, Projektdatei speichern, die gespeicherte Datei in einer frischen Sitzung wieder öffnen, die Objektanzahl vergleichen und anschliessend eine STL-Datei exportieren. Zusätzlich werden das v3-Fixture, die Ablehnung von v4, die lokalen Three.js-Dateien ohne CDN-Zugriff und die Zurückweisung fehlerhafter Geometriedaten geprüft.
+
+**Prüfstatus:** Für Code-Commit `d131d4ec23fe0c30349f548205dd819e759f3ec8` sind Code-Checks und Browser-Regression erfolgreich. Die nachfolgenden Änderungen an der Projektdokumentation werden ebenfalls durch GitHub Actions geprüft. PR 69 bleibt Draft und ungemergt; die öffentliche Live-App wurde nicht verändert und nicht neu deployed.
+
+**Als Nächstes:** Die noch offenen Einheiten-Aufrufstellen schrittweise migrieren und mit Referenzfällen absichern. Danach den modularen Build- und Dokument-/Befehlsaufbau vervollständigen und Phase 1 vollständig gegen die Abnahmekriterien prüfen. Die Kernel-Forschung bleibt getrennt; kein CAD-Kern wird vor erfolgreichem Prototyp- und Lizenzvergleich in die App integriert.eitere repräsentative v3-Fixtures für Gruppen, verbundene Formen, Skizzen und Image-Studio-Daten ergänzen. Danach folgen das kostenlose Root-Build-/Abhängigkeitsfundament und die schrittweise Modularisierung. Die übrigen historischen Einheiten-Aufrufstellen werden ohne globale riskante Ersetzungen migriert.
 
 Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Paket wird in die Produktionsanwendung eingebunden, bevor die offenen technischen und rechtlichen Abnahmepunkte geklärt sind.
 
