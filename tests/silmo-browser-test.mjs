@@ -1112,6 +1112,19 @@ try {
   await roundTripPage.locator('#projectFileInput').setInputFiles(savedProjectPath);
   await roundTripPage.waitForFunction(() => /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, {timeout:10000});
   assert.equal(await roundTripPage.locator('#objects .object-row').count(),savedProject.objects.length,'Gespeichertes Projekt wurde nicht vollständig wiederhergestellt');
+
+  // Ungültige Geometriedaten dürfen das bereits geöffnete Projekt nicht ersetzen.
+  const invalidGeometryProject = structuredClone(savedProject);
+  invalidGeometryProject.objects[0].geometry.attributes.position.itemSize = 2;
+  await roundTripPage.locator('#projectFileInput').setInputFiles({
+    name: 'invalid-geometry.silmo.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(invalidGeometryProject))
+  });
+  await roundTripPage.waitForFunction(() => /Projekt konnte nicht geöffnet werden/.test(document.querySelector('#status')?.textContent || ''), null, {timeout:10000});
+  assert.match(await roundTripPage.locator('#status').innerText(),/Positionsdaten müssen das itemSize 3 haben/,'Ungültige Positionsdaten werden nicht mit einer klaren Meldung abgewiesen');
+  assert.equal(await roundTripPage.locator('#objects .object-row').count(),savedProject.objects.length,'Ungültige Geometriedaten haben das zuvor geöffnete Projekt verändert');
+
   await roundTripPage.locator('[data-tab="print"]').click();
   await roundTripPage.waitForFunction(() => typeof window.THREE?.STLExporter === 'function', null, {timeout:15000});
   const roundTripExportPromise = roundTripPage.waitForEvent('download',{timeout:5000}).catch(() => null);
