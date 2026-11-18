@@ -749,6 +749,9 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#booleanSubtract').click();
   assert.equal(await page.locator('#objects .object-row').count(), subtractStartCount + 1, 'Differenz erzeugt nicht genau ein Ergebnisobjekt');
   assert.match(await page.locator('#status').innerText(), /Ausschnitt erfolgreich berechnet/, 'Boolesche Differenz wurde nicht erfolgreich ausgeführt');
+  // Den Mehrfachauswahlmodus für die nachfolgenden, unabhängigen Regressionen zurücksetzen.
+  await page.locator('[data-tab="edit"]').click();
+  await page.locator('#multiSelectToggle').click();
 
   // Die App kann bereits ein Startobjekt enthalten. Nur die beiden neu erstellten prüfen.
   const initialCount = await page.locator('#objects .object-row').count();
