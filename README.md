@@ -17,6 +17,7 @@ Eigenständiges professionelles 3D-Modellierungsprogramm.
 
 ## Anwendung und Entwicklung
 
+- [SILMO kostenlos lokal starten](docs/LOCAL_START.md)
 - [Live-App](https://jonas-cell-lang.github.io/mein-3d-studio-ai/)
 - [GitHub Actions / Tests und Deployment](https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions)
 - Hauptdatei: `index.html`
