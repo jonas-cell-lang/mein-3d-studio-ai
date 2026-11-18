@@ -12,6 +12,7 @@
 | `src/project-schema.js` | Projekt-Hülle und serialisierte Geometrie validieren | Keine Three.js-Abhängigkeit |
 | `src/project-geometry.js` | BufferGeometry serialisieren/wiederherstellen; Union-Formteile speichern/wiederherstellen | Factory erhält `THREE` und `SILMOProjectSchema`; stellt `window.SILMOProjectGeometry` bereit |
 | `src/project-io.js` | Projektdateien speichern und öffnen; alle Objekte vor dem Ersetzen des aktuellen Modells aufbauen | Factory erhält Three.js, Schema und Projektgeometrie; der App-Zustand wird über explizite Getter-/Commit-/UI-Callbacks angebunden |
+| `src/csg.js` | BSP-basierte Boolesche Geometrieoperationen (Verbindung und Differenz) | Factory erhält `THREE` und `SILMOTolerances`; stellt `window.SILMOCSG.combineMeshes` bereit |
 | `src/developer-diagnostics.js` | Diagnosefenster, Laufzeit- und Bedienprotokoll | Eigenständige DOM-/Browser-IIFE; bleibt im Dokumentkopf |
 | `src/tool-navigation.js` | Hauptnavigation, Werkzeugbereiche und Unterreiter organisieren | Eigenständige DOM-IIFE; wird vor Three.js ausgeführt |
 | `src/tutorial.js` | Geführter Lernkurs und Erfolgskontrolle | Eigenständige DOM-IIFE; nutzt vorhandene `window`-Test-/App-Schnittstellen |
@@ -50,10 +51,11 @@ Die Browser-Regression prüft weiterhin Speichern, Wiederöffnen, Objektanzahl u
 
 ## 4. Weitere spätere Kandidaten
 
-1. BSP-CSG-Kern als eigenständige Factory mit expliziter Three.js-Abhängigkeit.
-2. Geometrie- und Skizzenfunktionen in getrennte Werkzeuge, sobald gemeinsame Modelloperationen über eine stabile API laufen.
-3. Import-/Export-Adapter weiter trennen, falls sie unabhängig von Projektdatei-I/O werden können.
-4. Renderer-/Kamera-/Gizmo-Bereich erst nach klarer Trennung vom Modellzustand.
+Der BSP-CSG-Kern ist inzwischen als `src/csg.js` ausgelagert. Die Browser-Regression enthält neben der bestehenden Union-Prüfung jetzt auch eine Differenz-Prüfung; der vollständige neue Browserlauf wird noch abgewartet.
+
+1. Geometrie- und Skizzenfunktionen in getrennte Werkzeuge, sobald gemeinsame Modelloperationen über eine stabile API laufen.
+2. Import-/Export-Adapter weiter trennen, falls sie unabhängig von Projektdatei-I/O werden können.
+3. Renderer-/Kamera-/Gizmo-Bereich erst nach klarer Trennung vom Modellzustand.
 
 ## 5. Regeln für jede weitere Extraktion
 
