@@ -206,24 +206,25 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - Das Inventar und die offenen Zuordnungen stehen in `docs/SILMO_UNITS_TOLERANCE_SPEC.md`.
 
 ### 6.6 Erste schrittweise Modularisierung
-- `src/developer-diagnostics.js` enthält das zuvor im Dokumentkopf eingebettete Diagnosefenster als eigenständige Datei; die Script-ID blieb erhalten.
-- `src/tool-navigation.js` enthält die DOM-basierte Werkzeugnavigation, die vor Three.js ausgeführt wird und keinen lexikalischen Zugriff auf den CAD-Hauptskript-Scope benötigt.
-- `src/tutorial.js` enthält den zuvor nach dem CAD-Hauptskript eingebetteten Lernkurs als eigenständige IIFE-Datei.
-- `src/image-studio.js` enthält den zuvor ebenfalls eingebetteten Image-Studio-Arbeitsbereich als eigenständige IIFE-Datei.
-- `src/project-geometry.js` trennt die Geometrie-Serialisierung und den Wiederaufbau aus dem Hauptskript heraus.
-- Die ursprüngliche Ausführungsreihenfolge blieb erhalten: Diagnosemodul, Werkzeugnavigation, Three.js/Schema/Projektgeometrie/Projekt-I/O, CAD-Hauptskript, Lernkurs, Image Studio.
-- Die Dateien wurden ohne Änderung ihrer Funktionslogik ausgelagert. Sie verwenden eigene lokale Variablen und die vorhandenen DOM-/`window`-Schnittstellen.
-- Der lokale Pages-Test prüft, dass alle sechs Module vorhanden sind und von `index.html` referenziert werden. Die statische Funktionsprüfung berücksichtigt auch den ausgelagerten Navigationscode.
-- Browser-Interaktionstests prüfen, dass die Anwendung mit den ausgelagerten Dateien weiterhin startet und die bestehenden Workflows funktionieren.
-- Die Abhängigkeitsgrenzen und die nächste sichere Extraktion sind in `docs/SILMO_MODULE_EXTRACTION_MAP.md` dokumentiert.
-- Das grosse CAD-Hauptskript bleibt bewusst unangetastet. Weitere Extraktionen benötigen zuerst eine klare Abhängigkeitsgrenze.
+- `src/developer-diagnostics.js` enthält das Diagnosefenster als eigenständige Datei.
+- `src/tool-navigation.js` enthält Hauptnavigation, Werkzeugbereiche und Unterreiter.
+- `src/tutorial.js` enthält den geführten Lernkurs.
+- `src/image-studio.js` enthält den Bildbereich, die Konturerkennung und die CAD-Übergabe.
+- `src/project-geometry.js` kapselt Geometrie-Serialisierung und -Wiederaufbau.
+- `src/project-io.js` kapselt Speichern und Öffnen von Projektdateien über eine explizite Callback-Schnittstelle.
+- Die Module werden in dokumentierter Reihenfolge geladen; statische Prüfungen und Browser-Regressionen beziehen die ausgelagerten Module ein.
+- Das CAD-Hauptskript enthält weiterhin den zentralen Laufzeitzustand, die Modellierungswerkzeuge und eng gekoppelte Interaktionen. Weitere Extraktionen erfolgen erst nach dokumentierter Abhängigkeitsanalyse.
 
-### 6.5 Vertikaler Referenzablauf
-Der Playwright-Browserlauf prüft einen echten Durchgang: Modellobjekte erstellen, Projektdatei speichern, die gespeicherte Datei in einer frischen Sitzung wieder öffnen, die Objektanzahl vergleichen und anschliessend eine STL-Datei exportieren. Zusätzlich werden das v3-Fixture, die Ablehnung von v4, die lokalen Three.js-Dateien ohne CDN-Zugriff und die Zurückweisung fehlerhafter Geometriedaten geprüft.
+### 6.7 Aktueller Stand und nächste Schritte
+- Die zentrale Einheiten-API ist in `index.html` eingebunden; eine aktuelle Quellcodesuche findet dort keine Verwendung des alten Namens `MM_PER_UNIT`.
+- Die lokale Three.js-Runtime ist fest gepinnt und wird für Browser-Tests und Pages-Artefakte vorbereitet.
+- Projektformat v3 und Geometrievalidierung sind implementiert. Einfache und erweiterte Projekt-Fixtures sowie negative Importtests sind Teil der Browser-Regression.
+- Die benannten Toleranzen sind dokumentiert und erste Aufrufstellen migriert; das vollständige Toleranzinventar bleibt ein offener Prüfpunkt.
+- Projektdatei-I/O ist aus dem Hauptskript ausgelagert. Der atomare Wechsel auf das neue Modell wird durch Browser-Regressionen abgesichert.
+- Der aktuelle Entwicklungsbranch ist `phase1/central-units-api`; PR 69 bleibt Draft und ungemergt. Es erfolgt kein Produktionsdeployment vor der ausdrücklichen Fertigstellung und Freigabe.
+- Für Code-Commit `78fe9212433d4101f2b85732524788316b130b41` waren Code-Checks und Browser-Tests erfolgreich; spätere reine Dokumentationsänderungen werden separat geprüft.
 
-**Prüfstatus:** Für Code-Commit `78fe9212433d4101f2b85732524788316b130b41` sind Code-Checks und Browser-Regression erfolgreich. PR 69 bleibt Draft und ungemergt; die öffentliche Live-App wurde nicht verändert und nicht neu deployed.
-
-**Als Nächstes:** Die noch offenen Einheiten-Aufrufstellen schrittweise migrieren und mit Referenzfällen absichern. Danach den modularen Build- und Dokument-/Befehlsaufbau vervollständigen und Phase 1 vollständig gegen die Abnahmekriterien prüfen. Die Kernel-Forschung bleibt getrennt; kein CAD-Kern wird vor erfolgreichem Prototyp- und Lizenzvergleich in die App integriert.eitere repräsentative v3-Fixtures für Gruppen, verbundene Formen, Skizzen und Image-Studio-Daten ergänzen. Danach folgen das kostenlose Root-Build-/Abhängigkeitsfundament und die schrittweise Modularisierung. Die übrigen historischen Einheiten-Aufrufstellen werden ohne globale riskante Ersetzungen migriert.
+**Nächste Schritte:** Zuerst die noch offenen Einheiten-/Toleranz-Aufrufstellen anhand des Quellcodes inventarisieren und fachlich getrennt migrieren. Danach weitere kritische Import-/Export- und Projektdatei-Grenzfälle ergänzen. Anschliessend die nächste Modulgrenze aus der Abhängigkeitsmatrix auswählen und mit kleinem Diff extrahieren. Phase 1 gilt erst als abgeschlossen, wenn alle festgelegten Abnahmekriterien nachweisbar erfüllt sind.
 
 Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Paket wird in die Produktionsanwendung eingebunden, bevor die offenen technischen und rechtlichen Abnahmepunkte geklärt sind.
 
