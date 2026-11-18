@@ -97,7 +97,12 @@ jobs:
           from pathlib import Path
 
           html = Path("index.html").read_text(encoding="utf-8")
-          source = html + "\n" + Path("src/tool-navigation.js").read_text(encoding="utf-8")
+          source = "\n".join([
+              html,
+              Path("src/tool-navigation.js").read_text(encoding="utf-8"),
+              Path("src/project-geometry.js").read_text(encoding="utf-8"),
+              Path("src/project-io.js").read_text(encoding="utf-8"),
+          ])
           manifest = json.loads(Path("manifest.webmanifest").read_text(encoding="utf-8"))
           assert manifest.get("name") == "SILMO 3D Studio AI"
           ids = re.findall(r'\bid=["\']([^"\']+)["\']', html)
