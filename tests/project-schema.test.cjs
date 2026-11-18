@@ -88,7 +88,7 @@ test('Serialisierte Mesh-Geometrie wird vor dem Wiederaufbau strukturell geprüf
   assert.throws(() => schema.validateSerializedGeometry(outOfRange), /Ungültige Modell-Indizes/);
 
   const mismatchedAttributes = structuredClone(valid);
-  mismatchedAttributes.attributes.normal.array.pop();
+  mismatchedAttributes.attributes.normal.array.splice(-3);
   assert.throws(() => schema.validateSerializedGeometry(mismatchedAttributes), /unterschiedliche Punktanzahlen/);
 
   const nonFinite = structuredClone(valid);
