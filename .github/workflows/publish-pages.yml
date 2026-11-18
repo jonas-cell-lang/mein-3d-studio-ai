@@ -119,6 +119,8 @@ jobs:
               "src/units.js",
               "src/tolerances.js",
               "src/project-schema.js",
+              "src/tutorial.js",
+              "src/image-studio.js",
               "vendor/three/three.min.js",
               "vendor/three/STLLoader.js",
               "vendor/three/STLExporter.js",
