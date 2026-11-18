@@ -785,8 +785,8 @@ Eine Version gilt erst als veröffentlicht, wenn:
 **Entwicklungs-App-Metadaten:** v93 (Produktionsstand auf `main` bleibt unverändert)  
 **Entwicklungsbranch:** `phase1/central-units-api`  
 **Aktueller PR:** [PR 69 – Draft, nicht gemergt](https://github.com/jonas-cell-lang/mein-3d-studio-ai/pull/69)  
-**Letzter vollständig erfolgreich geprüfter Code-Commit:** `f591cda4be1c1dee92b3091b6a24201fb93079c6`  
-**Letzter Dokumentationscommit:** `2464bf58df38f7e536db07927012e33e26aab585` (Dokumentation; zugehörige CI-Prüfung läuft/ist noch abzuwarten).
+**Letzter vollständig erfolgreich geprüfter Code-Commit:** `d131d4ec23fe0c30349f548205dd819e759f3ec8`  
+**Letzter vollständig erfolgreich geprüfter Dokumentationsstand vor diesem Backup:** `1f626171b767fe452a2967a5b9f9260e4131456f`.
 
 ### Technische Fortschritte seit der letzten Sicherung
 
@@ -795,6 +795,7 @@ Eine Version gilt erst als veröffentlicht, wenn:
 - Benannte Toleranz-API in `src/tolerances.js` mit getrennten Werten für CSG, Ausrichtung, Skizzenvereinfachung und Druckbett-/Dreiecksprüfung. Die bisherigen Zahlenwerte wurden dabei nicht verändert.
 - Projektformat v3 besitzt nun einen separaten Geometrievalidator in `src/project-schema.js`. Er prüft vor dem Wiederaufbau unter anderem Positionen mit itemSize 3, Attributlängen, endliche Werte, Indexgrenzen und vollständige Dreiecksgruppen.
 - Repräsentative minimale und erweiterte v3-Fixtures sowie Tests für ungültige Geometriedaten sind vorhanden.
+- Ein zusätzlicher Browser-Regressionstest lädt absichtlich fehlerhafte Positionsdaten und prüft, dass das zuvor geöffnete Projekt vollständig erhalten bleibt.
 - Three.js r128, STLLoader und STLExporter werden nicht mehr von externen CDNs geladen. Die Bibliotheken werden aus der exakt festgelegten npm-Version lokal bereitgestellt.
 - `package.json`, `package-lock.json`, `scripts/prepare-runtime.mjs` und `.gitignore` richten die Runtime ein. Die Three.js-Lizenz wird mit den Laufzeitdateien übernommen.
 - Code- und Browser-CI bereiten die Runtime vor. Der Browser-Test blockiert externe HTTPS-Zugriffe und prüft den lokalen Start sowie STL-Funktionen.
@@ -808,7 +809,7 @@ Für Code-Commit `f591cda4be1c1dee92b3091b6a24201fb93079c6`:
 
 Für frühere Änderungen an der lokalen Runtime wurden ebenfalls beide Prüfungen erfolgreich abgeschlossen, unter anderem für Commit `5440c78`. Fehlerhafte Zwischenstände bei der neuen Geometrievalidierung wurden anhand der CI-Logs korrigiert; sie sind nicht der aktuelle geprüfte Code-Stand.
 
-Die Dokumentationsänderung `2464bf5` erfolgte nach dem geprüften Code-Commit. Für diesen reinen Dokumentationsstand wird der neue CI-Lauf noch abgewartet. Es gibt keinen neuen Produktionsdeploy.
+Für den aktuellen Code-Commit `d131d4e` sind sowohl Code-Prüfung als auch Browser-Regression erfolgreich. Es gibt keinen neuen Produktionsdeploy.
 
 ## 16.2 Was als Nächstes getan werden soll
 
@@ -870,8 +871,7 @@ Three.js soll zunächst Darstellung, Kamera und Interaktion weiter übernehmen k
 - Technische Bestandsaufnahme: `d960c71cb7300b2cef13f163e5c4f7cf1a030579`
 - Lokale Runtime / CDN-freier Browserlauf: `5440c78f2bddef1b1d9f4f9f648df5ff660be77b`
 - Zentrale Toleranzen: `2abc639121673ef39877d16847fb7a9bfe4a4d0a`
-- Geometrievalidierung: `f591cda4be1c1dee92b3091b6a24201fb93079c6`
-- Aktuelle Sicherung: `a5132ac0229bf025594ffb604753622a3787f576`
+- Geometrievalidierung und sicherer Fehlerfall im Browser: `d131d4ec23fe0c30349f548205dd819e759f3ec8`
 
 ---
 
