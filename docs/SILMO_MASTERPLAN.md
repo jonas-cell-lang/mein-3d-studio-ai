@@ -185,6 +185,7 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 ### 6.2 Projektformat v3 und Geometrievalidierung
 - `src/project-schema.js` validiert App-Kennung, ganzzahlige Versionsnummer und Objektliste.
 - `src/project-geometry.js` kapselt Serialisierung und Wiederaufbau von BufferGeometry sowie Union-Formteilen; es erhält Three.js und das Schema über eine explizite Factory-Schnittstelle.
+- `src/project-io.js` kapselt das Speichern und Öffnen von Projektdateien. Der Hauptcode übergibt App-Zustand und Commit-Änderungen über explizite Callbacks.
 - `validateSerializedGeometry` prüft zusätzlich Positionen mit itemSize 3, Attributlängen und -anzahlen, endliche Werte, Indexgrenzen und vollständige Dreiecksgruppen.
 - `restoreGeometry` ruft die Validierung vor dem Wiederaufbau der typisierten Arrays auf.
 - Der Browser-Regressionslauf prüft auch fehlerhafte Positionsdaten: Das zuvor geöffnete Projekt muss erhalten bleiben.
@@ -210,9 +211,9 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - `src/tutorial.js` enthält den zuvor nach dem CAD-Hauptskript eingebetteten Lernkurs als eigenständige IIFE-Datei.
 - `src/image-studio.js` enthält den zuvor ebenfalls eingebetteten Image-Studio-Arbeitsbereich als eigenständige IIFE-Datei.
 - `src/project-geometry.js` trennt die Geometrie-Serialisierung und den Wiederaufbau aus dem Hauptskript heraus.
-- Die ursprüngliche Ausführungsreihenfolge blieb erhalten: Diagnosemodul, Werkzeugnavigation, Three.js/Schema/Projektgeometrie, CAD-Hauptskript, Lernkurs, Image Studio.
+- Die ursprüngliche Ausführungsreihenfolge blieb erhalten: Diagnosemodul, Werkzeugnavigation, Three.js/Schema/Projektgeometrie/Projekt-I/O, CAD-Hauptskript, Lernkurs, Image Studio.
 - Die Dateien wurden ohne Änderung ihrer Funktionslogik ausgelagert. Sie verwenden eigene lokale Variablen und die vorhandenen DOM-/`window`-Schnittstellen.
-- Der lokale Pages-Test prüft, dass alle fünf Module vorhanden sind und von `index.html` referenziert werden. Die statische Funktionsprüfung berücksichtigt auch den ausgelagerten Navigationscode.
+- Der lokale Pages-Test prüft, dass alle sechs Module vorhanden sind und von `index.html` referenziert werden. Die statische Funktionsprüfung berücksichtigt auch den ausgelagerten Navigationscode.
 - Browser-Interaktionstests prüfen, dass die Anwendung mit den ausgelagerten Dateien weiterhin startet und die bestehenden Workflows funktionieren.
 - Die Abhängigkeitsgrenzen und die nächste sichere Extraktion sind in `docs/SILMO_MODULE_EXTRACTION_MAP.md` dokumentiert.
 - Das grosse CAD-Hauptskript bleibt bewusst unangetastet. Weitere Extraktionen benötigen zuerst eine klare Abhängigkeitsgrenze.
@@ -220,7 +221,7 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 ### 6.5 Vertikaler Referenzablauf
 Der Playwright-Browserlauf prüft einen echten Durchgang: Modellobjekte erstellen, Projektdatei speichern, die gespeicherte Datei in einer frischen Sitzung wieder öffnen, die Objektanzahl vergleichen und anschliessend eine STL-Datei exportieren. Zusätzlich werden das v3-Fixture, die Ablehnung von v4, die lokalen Three.js-Dateien ohne CDN-Zugriff und die Zurückweisung fehlerhafter Geometriedaten geprüft.
 
-**Prüfstatus:** Für Code-Commit `64f681debbd04ff466c2e0d21a50140f3f0e898c` sind Code-Checks und Browser-Regression erfolgreich. PR 69 bleibt Draft und ungemergt; die öffentliche Live-App wurde nicht verändert und nicht neu deployed.
+**Prüfstatus:** Für Code-Commit `78fe9212433d4101f2b85732524788316b130b41` sind Code-Checks und Browser-Regression erfolgreich. PR 69 bleibt Draft und ungemergt; die öffentliche Live-App wurde nicht verändert und nicht neu deployed.
 
 **Als Nächstes:** Die noch offenen Einheiten-Aufrufstellen schrittweise migrieren und mit Referenzfällen absichern. Danach den modularen Build- und Dokument-/Befehlsaufbau vervollständigen und Phase 1 vollständig gegen die Abnahmekriterien prüfen. Die Kernel-Forschung bleibt getrennt; kein CAD-Kern wird vor erfolgreichem Prototyp- und Lizenzvergleich in die App integriert.eitere repräsentative v3-Fixtures für Gruppen, verbundene Formen, Skizzen und Image-Studio-Daten ergänzen. Danach folgen das kostenlose Root-Build-/Abhängigkeitsfundament und die schrittweise Modularisierung. Die übrigen historischen Einheiten-Aufrufstellen werden ohne globale riskante Ersetzungen migriert.
 
