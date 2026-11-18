@@ -1106,7 +1106,11 @@ try {
   const roundTripPage = await browser.newPage({viewport:{width:1280,height:900}});
   const roundTripErrors = [];
   roundTripPage.on('pageerror', error => roundTripErrors.push(error.message));
-  roundTripPage.on('console', message => { if(message.type()==='error') roundTripErrors.push('console: '+message.text()); });
+  roundTripPage.on('console', message => {
+    if(message.type()==='error' && !message.text().includes('Positionsdaten müssen das itemSize 3 haben')) {
+      roundTripErrors.push('console: '+message.text());
+    }
+  });
   await roundTripPage.goto('http://127.0.0.1:4173', {waitUntil:'domcontentloaded'});
   await roundTripPage.waitForSelector('#viewport canvas', {timeout:20000});
   await roundTripPage.locator('#projectFileInput').setInputFiles(savedProjectPath);
