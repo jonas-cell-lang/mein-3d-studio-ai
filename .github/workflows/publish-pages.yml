@@ -9,6 +9,7 @@ on:
       - "manifest.webmanifest"
       - "silmo-icon.svg"
       - "icon-512.png"
+      - "src/**"
       - ".github/workflows/publish-pages.yml"
   workflow_dispatch:
 
@@ -99,6 +100,7 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html manifest.webmanifest silmo-icon.svg icon-512.png _site/
+          cp -R src _site/src
           touch _site/.nojekyll
 
       - name: Upload website artifact
