@@ -5,7 +5,8 @@ const root = process.cwd();
 const runtimeFiles = [
   ['node_modules/three/build/three.min.js', 'vendor/three/three.min.js'],
   ['node_modules/three/examples/js/loaders/STLLoader.js', 'vendor/three/STLLoader.js'],
-  ['node_modules/three/examples/js/exporters/STLExporter.js', 'vendor/three/STLExporter.js']
+  ['node_modules/three/examples/js/exporters/STLExporter.js', 'vendor/three/STLExporter.js'],
+  ['node_modules/three/LICENSE', 'vendor/three/LICENSE']
 ];
 
 for (const [sourceRelative, targetRelative] of runtimeFiles) {
