@@ -204,18 +204,20 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - Das Inventar und die offenen Zuordnungen stehen in `docs/SILMO_UNITS_TOLERANCE_SPEC.md`.
 
 ### 6.6 Erste schrittweise Modularisierung
-- `src/tutorial.js` enthält jetzt den zuvor nach dem CAD-Hauptskript eingebetteten Lernkurs als eigenständige IIFE-Datei.
+- `src/developer-diagnostics.js` enthält das zuvor im Dokumentkopf eingebettete Diagnosefenster als eigenständige Datei; die Script-ID blieb erhalten.
+- `src/tool-navigation.js` enthält die DOM-basierte Werkzeugnavigation, die vor Three.js ausgeführt wird und keinen lexikalischen Zugriff auf den CAD-Hauptskript-Scope benötigt.
+- `src/tutorial.js` enthält den zuvor nach dem CAD-Hauptskript eingebetteten Lernkurs als eigenständige IIFE-Datei.
 - `src/image-studio.js` enthält den zuvor ebenfalls eingebetteten Image-Studio-Arbeitsbereich als eigenständige IIFE-Datei.
-- Die ursprüngliche Ausführungsreihenfolge blieb erhalten: Hauptskript, Lernkurs, Image Studio.
-- Beide Dateien wurden ohne Änderung ihrer Funktionslogik ausgelagert. Sie verwenden ihre eigenen lokalen Variablen und die vorhandenen DOM-/`window`-Schnittstellen.
-- Der lokale Pages-Test prüft, dass beide Dateien vorhanden sind und von `index.html` referenziert werden.
+- Die ursprüngliche Ausführungsreihenfolge blieb erhalten: Diagnosemodul, Werkzeugnavigation, CAD-Hauptskript, Lernkurs, Image Studio.
+- Die Dateien wurden ohne Änderung ihrer Funktionslogik ausgelagert. Sie verwenden eigene lokale Variablen und die vorhandenen DOM-/`window`-Schnittstellen.
+- Der lokale Pages-Test prüft, dass alle Module vorhanden sind und von `index.html` referenziert werden. Die statische Funktionsprüfung berücksichtigt auch den ausgelagerten Navigationscode.
 - Browser-Interaktionstests prüfen, dass die Anwendung mit den ausgelagerten Dateien weiterhin startet und die bestehenden Workflows funktionieren.
 - Das grosse CAD-Hauptskript bleibt bewusst unangetastet. Weitere Extraktionen benötigen zuerst eine klare Abhängigkeitsgrenze.
 
 ### 6.5 Vertikaler Referenzablauf
 Der Playwright-Browserlauf prüft einen echten Durchgang: Modellobjekte erstellen, Projektdatei speichern, die gespeicherte Datei in einer frischen Sitzung wieder öffnen, die Objektanzahl vergleichen und anschliessend eine STL-Datei exportieren. Zusätzlich werden das v3-Fixture, die Ablehnung von v4, die lokalen Three.js-Dateien ohne CDN-Zugriff und die Zurückweisung fehlerhafter Geometriedaten geprüft.
 
-**Prüfstatus:** Für Code-Commit `10502a8b9f37139c642ce556937e3f4d3a814893` sind Code-Checks und Browser-Regression erfolgreich. PR 69 bleibt Draft und ungemergt; die öffentliche Live-App wurde nicht verändert und nicht neu deployed.
+**Prüfstatus:** Für Code-Commit `89214a0b37b39e1d227df16ba3f5056c35799ffa` sind Code-Checks und Browser-Regression erfolgreich. PR 69 bleibt Draft und ungemergt; die öffentliche Live-App wurde nicht verändert und nicht neu deployed.
 
 **Als Nächstes:** Die noch offenen Einheiten-Aufrufstellen schrittweise migrieren und mit Referenzfällen absichern. Danach den modularen Build- und Dokument-/Befehlsaufbau vervollständigen und Phase 1 vollständig gegen die Abnahmekriterien prüfen. Die Kernel-Forschung bleibt getrennt; kein CAD-Kern wird vor erfolgreichem Prototyp- und Lizenzvergleich in die App integriert.eitere repräsentative v3-Fixtures für Gruppen, verbundene Formen, Skizzen und Image-Studio-Daten ergänzen. Danach folgen das kostenlose Root-Build-/Abhängigkeitsfundament und die schrittweise Modularisierung. Die übrigen historischen Einheiten-Aufrufstellen werden ohne globale riskante Ersetzungen migriert.
 
