@@ -1040,7 +1040,20 @@ try {
   assert.equal(advancedImageState.fileName,'fixture-image.png','Image-Studio-Dateiname wurde nicht geladen');
   assert.equal(advancedImageState.rotation,90,'Image-Studio-Drehung wurde nicht geladen');
   assert.equal(advancedImageState.contourCount,1,'Image-Studio-Kontur wurde nicht geladen');
-  const advancedSavePromise = advancedPage.waitForEvent('download', {timeout:10000});
+  // Diagnose the browser's actual handling of the generated download link.
+  await advancedPage.evaluate(() => {
+    window.__silmoDownloadClicks = [];
+    document.addEventListener('click', event => {
+      const link = event.target instanceof Element ? event.target.closest('a[download]') : null;
+      if (!link) return;
+      const record = { href: link.href, download: link.download, trusted: event.isTrusted };
+      queueMicrotask(() => {
+        record.defaultPrevented = event.defaultPrevented;
+        window.__silmoDownloadClicks.push(record);
+      });
+    }, true);
+  });
+  const advancedSavePromise = advancedPage.waitForEvent('download', {timeout:10000}).catch(() => null);
   await advancedPage.locator('#saveProjectButton').click();
   await advancedPage.waitForFunction(() => {
     const text = document.querySelector('#status')?.textContent || '';
@@ -1051,6 +1064,15 @@ try {
     'Erweitertes Projekt konnte nicht gespeichert werden: ' + advancedSaveStatus +
     (advancedErrors.length ? ' | Browserfehler: ' + advancedErrors.join(' ; ') : ''));
   const advancedSave = await advancedSavePromise;
+  if (!advancedSave) {
+    const downloadDiagnostics = await advancedPage.evaluate(() => ({
+      clicks: window.__silmoDownloadClicks || [],
+      remainingDownloadLinks: Array.from(document.querySelectorAll('a[download]')).map(link => ({
+        href: link.href, download: link.download
+      }))
+    }));
+    assert.ok(advancedSave, 'Kein Browser-Download trotz erfolgreicher Statusmeldung. Download-Diagnose: ' + JSON.stringify(downloadDiagnostics));
+  }
   const advancedSavedPath = await advancedSave.path();
   assert.ok(advancedSavedPath && statSync(advancedSavedPath).size > 1000,'Erweitertes Projekt wurde nicht vollständig gespeichert');
   const advancedSavedProject = JSON.parse(readFileSync(advancedSavedPath,'utf8'));
