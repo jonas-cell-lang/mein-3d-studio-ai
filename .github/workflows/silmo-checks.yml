@@ -32,6 +32,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+      - name: Install locked runtime dependencies
+        run: npm ci
+
+      - name: Prepare local Three.js runtime
+        run: npm run prepare:runtime
+
       - name: Test unit and project schema APIs
         run: node --test tests/*.test.cjs
       - name: Check inline JavaScript syntax
@@ -65,6 +71,11 @@ jobs:
                       self.current = None
 
           html = Path("index.html").read_text(encoding="utf-8")
+          if "cdnjs.cloudflare.com/ajax/libs/three.js" in html or "cdn.jsdelivr.net/npm/three@" in html:
+              raise SystemExit("Three.js runtime must not be loaded from a CDN.")
+          for relative in ("./vendor/three/three.min.js", "./vendor/three/STLLoader.js", "./vendor/three/STLExporter.js"):
+              if relative not in html:
+                  raise SystemExit(f"Missing local Three.js runtime reference: {relative}")
           parser = ScriptExtractor()
           parser.feed(html)
           if not parser.scripts:
@@ -92,7 +103,7 @@ jobs:
           duplicates = [value for value, count in Counter(ids).items() if count > 1]
           if duplicates:
               raise SystemExit("Doppelte HTML-IDs: " + ", ".join(duplicates))
-          for asset in ("silmo-icon.svg", "icon-512.png", "manifest.webmanifest", "src/units.js", "src/project-schema.js"):
+          for asset in ("silmo-icon.svg", "icon-512.png", "manifest.webmanifest", "src/units.js", "src/project-schema.js", "vendor/three/three.min.js", "vendor/three/STLLoader.js", "vendor/three/STLExporter.js"):
               if not Path(asset).is_file():
                   raise SystemExit(f"Fehlende App-Datei: {asset}")
           required_group_move = [
@@ -203,6 +214,7 @@ jobs:
           mkdir -p /tmp/silmo-pages-test
           cp index.html manifest.webmanifest silmo-icon.svg icon-512.png /tmp/silmo-pages-test/
           cp -R src /tmp/silmo-pages-test/src
+          cp -R vendor /tmp/silmo-pages-test/vendor
           python - <<'PY'
           from pathlib import Path
 
@@ -215,7 +227,7 @@ jobs:
               if source.read_bytes() != packaged.read_bytes():
                   raise SystemExit(f"Module differs in local Pages package: {relative}")
           html = (root / "index.html").read_text(encoding="utf-8")
-          for relative in ("./src/units.js", "./src/project-schema.js"):
+          for relative in ("./src/units.js", "./src/project-schema.js", "./vendor/three/three.min.js", "./vendor/three/STLLoader.js", "./vendor/three/STLExporter.js"):
               if relative not in html:
                   raise SystemExit(f"HTML does not reference expected local module: {relative}")
           print("Local Pages package contains every referenced SILMO module; no deployment performed.")
