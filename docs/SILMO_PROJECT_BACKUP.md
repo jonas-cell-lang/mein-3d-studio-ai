@@ -785,33 +785,35 @@ Eine Version gilt erst als veröffentlicht, wenn:
 **Entwicklungs-App-Metadaten:** v93 (Produktionsstand auf `main` bleibt unverändert)  
 **Entwicklungsbranch:** `phase1/central-units-api`  
 **Aktueller PR:** [PR 69 – Draft, nicht gemergt](https://github.com/jonas-cell-lang/mein-3d-studio-ai/pull/69)  
-**Letzter vollständig erfolgreich geprüfter Code-Stand:** `89214a0b37b39e1d227df16ba3f5056c35799ffa` (Code-Checks und Browser-Regression erfolgreich). Die danach aktualisierten Projektdokumente werden erneut durch CI geprüft.
+**Letzter vollständig erfolgreich geprüfter Code-Stand:** `64f681debbd04ff466c2e0d21a50140f3f0e898c` (Code-Checks und Browser-Regression erfolgreich). Die danach aktualisierten Projektdokumente werden erneut durch CI geprüft.
 
 ### Technische Fortschritte seit der letzten Sicherung
 
 - Zentrale Einheiten-API in `src/units.js`; bestätigte Skala bleibt 1 Three.js-Welteinheit = 10 mm.
 - Die zentrale Einheiten-API wird nun für Längen- und Flächenumrechnungen in den bisherigen direkten Aufrufstellen verwendet: Druckbett/Raster, Skizzenbegrenzung und -vereinfachung, Eingabedimensionen, STL-Import/-Export, Ausrichtung/Abstandsverteilung, Tastaturschritte, Skizzengeometrie und Druckmassenausgabe. Der alte `MM_PER_UNIT`-Alias wurde entfernt.
 - Benannte Toleranz-API in `src/tolerances.js` mit getrennten Werten für CSG, Ausrichtung, Skizzenvereinfachung und Druckbett-/Dreiecksprüfung. Die bisherigen Zahlenwerte wurden dabei nicht verändert.
-- Projektformat v3 besitzt nun einen separaten Geometrievalidator in `src/project-schema.js`. Er prüft vor dem Wiederaufbau unter anderem Positionen mit itemSize 3, Attributlängen, endliche Werte, Indexgrenzen und vollständige Dreiecksgruppen.
+- Projektformat v3 besitzt nun einen separaten Geometrievalidator in `src/project-schema.js`.
+- `src/project-geometry.js` kapselt die Geometrie-Serialisierung und den validierten Wiederaufbau von Meshes sowie Union-Formteilen. Er prüft vor dem Wiederaufbau unter anderem Positionen mit itemSize 3, Attributlängen, endliche Werte, Indexgrenzen und vollständige Dreiecksgruppen.
 - Repräsentative minimale und erweiterte v3-Fixtures sowie Tests für ungültige Geometriedaten sind vorhanden.
 - Ein zusätzlicher Browser-Regressionstest lädt absichtlich fehlerhafte Positionsdaten und prüft, dass das zuvor geöffnete Projekt vollständig erhalten bleibt.
 - Three.js r128, STLLoader und STLExporter werden nicht mehr von externen CDNs geladen. Die Bibliotheken werden aus der exakt festgelegten npm-Version lokal bereitgestellt.
 - `package.json`, `package-lock.json`, `scripts/prepare-runtime.mjs` und `.gitignore` richten die Runtime ein. Die Three.js-Lizenz wird mit den Laufzeitdateien übernommen.
 - Code- und Browser-CI bereiten die Runtime vor. Der Browser-Test blockiert externe HTTPS-Zugriffe und prüft den lokalen Start sowie STL-Funktionen.
 - `src/developer-diagnostics.js`, `src/tool-navigation.js`, `src/tutorial.js` und `src/image-studio.js` wurden aus selbstständigen Inline-IIFEs ausgelagert; Reihenfolge und bestehende Schnittstellen blieben erhalten.
-- Die CI und der Pages-Build prüfen, dass alle vier Module im lokalen Seitenpaket vorhanden sind. Die statische Funktionsprüfung durchsucht den ausgelagerten Navigationscode mit.
+- `src/project-geometry.js` wurde als separates Modul für Projektgeometrie ergänzt.
+- Die CI und der Pages-Build prüfen, dass alle fünf Module im lokalen Seitenpaket vorhanden sind. Die statische Funktionsprüfung durchsucht den ausgelagerten Navigationscode mit.
 - Lokale Startanleitung und Runtime-/Toleranz-/Projektformat-Dokumentation wurden aktualisiert.
 
 ### Nachweisbare Tests
 
-Für den aktuellen Code-Stand `89214a0b37b39e1d227df16ba3f5056c35799ffa`:
+Für den aktuellen Code-Stand `64f681debbd04ff466c2e0d21a50140f3f0e898c`:
 - SILMO code checks: erfolgreich.
 - SILMO browser interaction tests: erfolgreich.
 - Der Browserlauf deckt weiterhin die Zeichenwerkzeuge einschliesslich Freiform-Extrusion sowie Projektimport/-export und die sichere Zurückweisung fehlerhafter Geometrie ab.
 
 Für frühere Änderungen an der lokalen Runtime wurden ebenfalls beide Prüfungen erfolgreich abgeschlossen, unter anderem für Commit `5440c78`. Fehlerhafte Zwischenstände bei der neuen Geometrievalidierung wurden anhand der CI-Logs korrigiert; sie sind nicht der aktuelle geprüfte Code-Stand.
 
-Für den aktuellen geprüften Code-Stand `89214a0` sind sowohl Code-Prüfung als auch Browser-Regression erfolgreich. Die vier ausgelagerten Module sind im Browserlauf enthalten. Es gibt keinen neuen Produktionsdeploy.
+Für den aktuellen geprüften Code-Stand `64f681d` sind sowohl Code-Prüfung als auch Browser-Regression erfolgreich. Die fünf ausgelagerten Module sind im Browserlauf enthalten. Es gibt keinen neuen Produktionsdeploy.
 
 ## 16.2 Was als Nächstes getan werden soll
 
