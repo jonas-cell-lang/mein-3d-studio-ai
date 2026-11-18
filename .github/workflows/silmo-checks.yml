@@ -103,7 +103,7 @@ jobs:
           duplicates = [value for value, count in Counter(ids).items() if count > 1]
           if duplicates:
               raise SystemExit("Doppelte HTML-IDs: " + ", ".join(duplicates))
-          for asset in ("silmo-icon.svg", "icon-512.png", "manifest.webmanifest", "src/units.js", "src/project-schema.js", "vendor/three/three.min.js", "vendor/three/STLLoader.js", "vendor/three/STLExporter.js", "vendor/three/LICENSE"):
+          for asset in ("silmo-icon.svg", "icon-512.png", "manifest.webmanifest", "src/units.js", "src/tolerances.js", "src/project-schema.js", "vendor/three/three.min.js", "vendor/three/STLLoader.js", "vendor/three/STLExporter.js", "vendor/three/LICENSE"):
               if not Path(asset).is_file():
                   raise SystemExit(f"Fehlende App-Datei: {asset}")
           required_group_move = [
