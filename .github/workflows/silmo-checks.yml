@@ -219,13 +219,21 @@ jobs:
           from pathlib import Path
 
           root = Path("/tmp/silmo-pages-test")
-          for relative in ("src/units.js", "src/project-schema.js"):
+          packaged_files = (
+              "src/units.js",
+              "src/project-schema.js",
+              "vendor/three/three.min.js",
+              "vendor/three/STLLoader.js",
+              "vendor/three/STLExporter.js",
+              "vendor/three/LICENSE",
+          )
+          for relative in packaged_files:
               source = Path(relative)
               packaged = root / relative
               if not packaged.is_file():
-                  raise SystemExit(f"Missing module in local Pages package: {relative}")
+                  raise SystemExit(f"Missing file in local Pages package: {relative}")
               if source.read_bytes() != packaged.read_bytes():
-                  raise SystemExit(f"Module differs in local Pages package: {relative}")
+                  raise SystemExit(f"Packaged file differs from generated source: {relative}")
           html = (root / "index.html").read_text(encoding="utf-8")
           for relative in ("./src/units.js", "./src/project-schema.js", "./vendor/three/three.min.js", "./vendor/three/STLLoader.js", "./vendor/three/STLExporter.js"):
               if relative not in html:
