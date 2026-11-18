@@ -801,6 +801,7 @@ Eine Version gilt erst als veröffentlicht, wenn:
 - Code- und Browser-CI bereiten die Runtime vor. Der Browser-Test blockiert externe HTTPS-Zugriffe und prüft den lokalen Start sowie STL-Funktionen.
 - `src/developer-diagnostics.js`, `src/tool-navigation.js`, `src/tutorial.js` und `src/image-studio.js` wurden aus selbstständigen Inline-IIFEs ausgelagert; Reihenfolge und bestehende Schnittstellen blieben erhalten.
 - `src/project-geometry.js` wurde als separates Modul für Projektgeometrie ergänzt.
+- `docs/SILMO_MODULE_EXTRACTION_MAP.md` dokumentiert die Modulgrenzen und die Abhängigkeiten für die nächste Projektdatei-I/O-Extraktion.
 - Die CI und der Pages-Build prüfen, dass alle fünf Module im lokalen Seitenpaket vorhanden sind. Die statische Funktionsprüfung durchsucht den ausgelagerten Navigationscode mit.
 - Lokale Startanleitung und Runtime-/Toleranz-/Projektformat-Dokumentation wurden aktualisiert.
 
