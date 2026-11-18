@@ -785,7 +785,7 @@ Eine Version gilt erst als veröffentlicht, wenn:
 **Entwicklungs-App-Metadaten:** v93 (Produktionsstand auf `main` bleibt unverändert)  
 **Entwicklungsbranch:** `phase1/central-units-api`  
 **Aktueller PR:** [PR 69 – Draft, nicht gemergt](https://github.com/jonas-cell-lang/mein-3d-studio-ai/pull/69)  
-**Letzter vollständig erfolgreich geprüfter Code-Stand:** `78fe9212433d4101f2b85732524788316b130b41` (Code-Checks und Browser-Regression erfolgreich). Eine kleine zusätzliche Fehlerbehandlung beim Image-Studio-Import wird gerade erneut geprüft.
+**Letzter vollständig erfolgreich geprüfter Stand:** `b3de4af99c30fe5d9d29dfb2ad5dc2bf3923218c` (Code-Checks und Browser-Regression erfolgreich).
 
 ### Technische Fortschritte seit der letzten Sicherung
 
@@ -794,7 +794,8 @@ Eine Version gilt erst als veröffentlicht, wenn:
 - Benannte Toleranz-API in `src/tolerances.js` mit getrennten Werten für CSG, Ausrichtung, Skizzenvereinfachung und Druckbett-/Dreiecksprüfung. Die bisherigen Zahlenwerte wurden dabei nicht verändert.
 - Projektformat v3 besitzt nun einen separaten Geometrievalidator in `src/project-schema.js`.
 - `src/project-geometry.js` kapselt die Geometrie-Serialisierung und den validierten Wiederaufbau von Meshes sowie Union-Formteilen.
-- `src/project-io.js` kapselt Projekt-Speichern und -Öffnen. Es baut neue Objekte vollständig auf und ersetzt das aktuelle Modell erst nach erfolgreicher Vorbereitung. Er prüft vor dem Wiederaufbau unter anderem Positionen mit itemSize 3, Attributlängen, endliche Werte, Indexgrenzen und vollständige Dreiecksgruppen.
+- `src/project-io.js` kapselt Projekt-Speichern und -Öffnen. Es baut neue Objekte vollständig auf und ersetzt das aktuelle Modell erst nach erfolgreicher Vorbereitung.
+- `src/csg.js` kapselt den BSP-Kern für Boolesche Verbindung und Differenz; der Browserlauf prüft beide Operationen. Er prüft vor dem Wiederaufbau unter anderem Positionen mit itemSize 3, Attributlängen, endliche Werte, Indexgrenzen und vollständige Dreiecksgruppen.
 - Repräsentative minimale und erweiterte v3-Fixtures sowie Tests für ungültige Geometriedaten sind vorhanden.
 - Ein zusätzlicher Browser-Regressionstest lädt absichtlich fehlerhafte Positionsdaten und prüft, dass das zuvor geöffnete Projekt vollständig erhalten bleibt.
 - Three.js r128, STLLoader und STLExporter werden nicht mehr von externen CDNs geladen. Die Bibliotheken werden aus der exakt festgelegten npm-Version lokal bereitgestellt.
@@ -803,12 +804,12 @@ Eine Version gilt erst als veröffentlicht, wenn:
 - `src/developer-diagnostics.js`, `src/tool-navigation.js`, `src/tutorial.js` und `src/image-studio.js` wurden aus selbstständigen Inline-IIFEs ausgelagert; Reihenfolge und bestehende Schnittstellen blieben erhalten.
 - `src/project-geometry.js` wurde als separates Modul für Projektgeometrie ergänzt.
 - `docs/SILMO_MODULE_EXTRACTION_MAP.md` dokumentiert die Modulgrenzen und die Abhängigkeiten für die nächste Projektdatei-I/O-Extraktion.
-- Die CI und der Pages-Build prüfen, dass alle sechs Module im lokalen Seitenpaket vorhanden sind. Die statische Funktionsprüfung durchsucht den ausgelagerten Navigationscode mit.
+- Die CI und der Pages-Build prüfen, dass alle sieben Module im lokalen Seitenpaket vorhanden sind. Die statische Funktionsprüfung durchsucht den ausgelagerten Navigationscode mit.
 - Lokale Startanleitung und Runtime-/Toleranz-/Projektformat-Dokumentation wurden aktualisiert.
 
 ### Nachweisbare Tests
 
-Für den aktuellen Code-Stand `78fe9212433d4101f2b85732524788316b130b41`:
+Für den aktuellen Stand `b3de4af99c30fe5d9d29dfb2ad5dc2bf3923218c`:
 - SILMO code checks: erfolgreich.
 - SILMO browser interaction tests: erfolgreich.
 - Der Browserlauf deckt weiterhin die Zeichenwerkzeuge einschliesslich Freiform-Extrusion sowie Projektimport/-export und die sichere Zurückweisung fehlerhafter Geometrie ab.
@@ -820,7 +821,7 @@ Für den aktuellen geprüften Code-Stand `78fe921` sind sowohl Code-Prüfung als
 ## 16.2 Was als Nächstes getan werden soll
 
 1. CI für den neuesten Dokumentationsstand abschliessen lassen.
-2. Als Nächstes den BSP-CSG-Kern als eigenständige Factory mit expliziter Three.js-Abhängigkeit isolieren und testen; danach die verbleibenden Geometrie-/Skizzenbereiche modularisieren.
+2. Als Nächstes die verbleibenden Geometrie- und Skizzenfunktionen nach Abhängigkeiten modularisieren, ohne Modellzustand, Undo/Redo und bestehende Werkzeuge zu beschädigen.
 3. Dokument-/Projektverwaltung und Import-/Export-Grenzen weiter modularisieren, ohne die bestehende Geometrie- und Undo/Redo-Logik zu beschädigen.
 4. Geometrievalidierung und Toleranzinventar mit zusätzlichen Grenzfalltests vervollständigen.
 5. Phase 1 gegen den Masterplan vollständig abgleichen und alle noch offenen Punkte dokumentiert abarbeiten.
