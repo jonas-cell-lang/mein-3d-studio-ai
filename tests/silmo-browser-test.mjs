@@ -33,6 +33,8 @@ try {
   assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v93/, 'Build-Metadaten zeigen nicht v93');
   assert.equal(await page.evaluate(() => window.SILMOUnits?.mmToWorldUnits(10)), 1, 'Zentrale Einheiten-API ist im Browser nicht verfügbar');
   assert.equal(await page.evaluate(() => window.SILMOUnits?.worldUnitsToMm(1)), 10, 'Zentrale Einheiten-API liefert falsche Millimeterwerte');
+  assert.equal(await page.evaluate(() => window.SILMOTolerances?.CSG_GEOMETRY_WORLD_UNITS), 1e-5, 'Zentrale Toleranz-API ist nicht verfügbar oder hat den falschen CSG-Wert');
+  assert.equal(await page.evaluate(() => window.SILMOTolerances?.PRINT_BED_BOUNDS_WORLD_UNITS), 1e-4, 'Druckbett-Toleranz hat sich unerwartet geändert');
   assert.equal(await page.evaluate(() => window.SILMOProjectSchema?.CURRENT_PROJECT_VERSION), 3, 'Projektformat-Version 3 ist nicht registriert');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
