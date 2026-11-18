@@ -104,7 +104,7 @@ jobs:
           duplicates = [value for value, count in Counter(ids).items() if count > 1]
           if duplicates:
               raise SystemExit("Doppelte HTML-IDs: " + ", ".join(duplicates))
-          for asset in ("silmo-icon.svg", "icon-512.png", "manifest.webmanifest", "src/units.js", "src/tolerances.js", "src/project-schema.js", "src/project-geometry.js", "src/tutorial.js", "src/developer-diagnostics.js", "src/image-studio.js", "src/tool-navigation.js", "vendor/three/three.min.js", "vendor/three/STLLoader.js", "vendor/three/STLExporter.js", "vendor/three/LICENSE"):
+          for asset in ("silmo-icon.svg", "icon-512.png", "manifest.webmanifest", "src/units.js", "src/tolerances.js", "src/project-schema.js", "src/project-geometry.js", "src/project-io.js", "src/tutorial.js", "src/developer-diagnostics.js", "src/image-studio.js", "src/tool-navigation.js", "vendor/three/three.min.js", "vendor/three/STLLoader.js", "vendor/three/STLExporter.js", "vendor/three/LICENSE"):
               if not Path(asset).is_file():
                   raise SystemExit(f"Fehlende App-Datei: {asset}")
           required_group_move = [
@@ -225,6 +225,7 @@ jobs:
               "src/tolerances.js",
               "src/project-schema.js",
               "src/project-geometry.js",
+              "src/project-io.js",
               "src/tutorial.js",
               "src/developer-diagnostics.js",
               "src/image-studio.js",
@@ -242,7 +243,7 @@ jobs:
               if source.read_bytes() != packaged.read_bytes():
                   raise SystemExit(f"Packaged file differs from generated source: {relative}")
           html = (root / "index.html").read_text(encoding="utf-8")
-          for relative in ("./src/units.js", "./src/tolerances.js", "./src/project-schema.js", "./src/project-geometry.js", "./src/tutorial.js", "./src/developer-diagnostics.js", "./src/image-studio.js", "./src/tool-navigation.js", "./vendor/three/three.min.js", "./vendor/three/STLLoader.js", "./vendor/three/STLExporter.js"):
+          for relative in ("./src/units.js", "./src/tolerances.js", "./src/project-schema.js", "./src/project-geometry.js", "./src/project-io.js", "./src/tutorial.js", "./src/developer-diagnostics.js", "./src/image-studio.js", "./src/tool-navigation.js", "./vendor/three/three.min.js", "./vendor/three/STLLoader.js", "./vendor/three/STLExporter.js"):
               if relative not in html:
                   raise SystemExit(f"HTML does not reference expected local module: {relative}")
           print("Local Pages package contains every referenced SILMO module; no deployment performed.")
