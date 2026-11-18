@@ -81,6 +81,7 @@ test('Geometrie in beiden v3-Fixtures hat endliche Positionswerte und gültige I
         if (geometry.index) {
           const indices = geometry.index.array;
           assert.ok(Array.isArray(indices) && indices.length > 0, name + ': Indexarray fehlt bei ' + label);
+          assert.equal(indices.length % 3, 0, name + ': Indexarray enthält keine vollständigen Dreiecke bei ' + label);
           const vertexCount = position.array.length / 3;
           assert.ok(indices.every(index => Number.isInteger(index) && index >= 0 && index < vertexCount),
             name + ': Index verweist ausserhalb des Positionsarrays bei ' + label);
