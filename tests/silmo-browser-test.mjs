@@ -734,6 +734,17 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#booleanSeparate').click();
   assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+2,'Verbindung kann nach Rückgängig nicht erneut gelöst werden');
 
+  // Boolesche Differenz muss den zweiten Körper aus dem ersten ausschneiden.
+  const subtractStartCount = await page.locator('#objects .object-row').count();
+  await page.locator('#addCube').click();
+  await page.locator('#addSphere').click();
+  await page.locator('#objects .object-select').nth(subtractStartCount).click();
+  await page.locator('#objects .object-select').nth(subtractStartCount + 1).click();
+  assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 2, 'Differenz-Test konnte nicht beide Formen auswählen');
+  await page.locator('#booleanSubtract').click();
+  assert.equal(await page.locator('#objects .object-row').count(), subtractStartCount + 1, 'Differenz erzeugt nicht genau ein Ergebnisobjekt');
+  assert.match(await page.locator('#status').innerText(), /Ausschnitt erfolgreich berechnet/, 'Boolesche Differenz wurde nicht erfolgreich ausgeführt');
+
   // Die App kann bereits ein Startobjekt enthalten. Nur die beiden neu erstellten prüfen.
   const initialCount = await page.locator('#objects .object-row').count();
   await showCreateSubtab(0);
