@@ -19,10 +19,9 @@ Danach lädt SILMO lokal und in dieser Reihenfolge:
 1. `./src/units.js`
 2. `./src/tolerances.js`
 3. `./src/project-schema.js`
-4. `./src/units.js`, `./src/tolerances.js` und `./src/project-schema.js`.
-5. Das grosse Inline-CAD-Hauptskript.
-6. `./src/tutorial.js` – ausgelagerter, selbstständiger Lernkurs.
-7. `./src/image-studio.js` – ausgelagerter, selbstständiger 2D-Bildarbeitsbereich.
+4. Das grosse Inline-CAD-Hauptskript.
+5. `./src/tutorial.js` – ausgelagerter, selbstständiger Lernkurs.
+6. `./src/image-studio.js` – ausgelagerter, selbstständiger 2D-Bildarbeitsbereich.
 
 Die Reihenfolge ist relevant: Das Hauptskript erwartet sowohl `THREE` samt STL-Erweiterungen als auch `window.SILMOUnits` und `window.SILMOProjectSchema`.
 
