@@ -6,19 +6,22 @@
 
 ## 1. Tatsächlich geladene Laufzeitabhängigkeiten
 
-Die aktuelle HTML-Datei lädt unmittelbar vor dem CAD-Hauptskript diese drei externen Dateien:
+Die HTML-Datei lädt Three.js und die beiden passenden STL-Erweiterungen aus lokalen, beim Build vorbereiteten Dateien:
 
 | Reihenfolge | Bibliothek | Exakte Version | Aktuelle Quelle | Benötigte globale API |
 |---|---|---:|---|---|
-| 1 | Three.js | r128 / 0.128.0 | cdnjs | `THREE` |
-| 2 | STLLoader | passend zu Three.js 0.128.0 | jsDelivr, `three@0.128.0` | `THREE.STLLoader` |
-| 3 | STLExporter | passend zu Three.js 0.128.0 | jsDelivr, `three@0.128.0` | `THREE.STLExporter` |
+| 1 | Three.js | r128 / 0.128.0 | `./vendor/three/three.min.js` | `THREE` |
+| 2 | STLLoader | passend zu Three.js 0.128.0 | `./vendor/three/STLLoader.js` | `THREE.STLLoader` |
+| 3 | STLExporter | passend zu Three.js 0.128.0 | `./vendor/three/STLExporter.js` | `THREE.STLExporter` |
 
 Danach lädt SILMO lokal und in dieser Reihenfolge:
 
 1. `./src/units.js`
-2. `./src/project-schema.js`
-3. Das grosse Inline-CAD-Hauptskript.
+2. `./src/tolerances.js`
+3. `./src/project-schema.js`
+4. Das grosse Inline-CAD-Hauptskript.
+5. `./src/tutorial.js` – ausgelagerter, selbstständiger Lernkurs.
+6. `./src/image-studio.js` – ausgelagerter, selbstständiger 2D-Bildarbeitsbereich.
 
 Die Reihenfolge ist relevant: Das Hauptskript erwartet sowohl `THREE` samt STL-Erweiterungen als auch `window.SILMOUnits` und `window.SILMOProjectSchema`.
 
@@ -75,33 +78,35 @@ Es handelt sich deshalb nicht um eine Bibliothek, die man durch blosses Entferne
 - Bestehende Funktionen während der Migration über Regressionstests schützen.
 - Die Umstellung auf ES-Module oder eine neue Three.js-Version ist eine eigene spätere Entscheidung, kein Bestandteil des ersten CDN-Abbaus.
 
-## 5. Umgesetzter erster Migrationsschritt
-
-Der Entwicklungsbranch enthält jetzt die erste lokale Runtime-Vorbereitung:
+## 5. Umgesetzte Runtime- und Modulschritte
 
 - `package.json` und `package-lock.json` pinnen Three.js exakt auf `0.128.0`.
-- `npm ci` installiert die festgelegte Paketversion reproduzierbar.
-- `scripts/prepare-runtime.mjs` kopiert die drei benötigten Dateien aus dem Paket nach `vendor/three/`.
-- `index.html` lädt Three.js, STLLoader und STLExporter ausschliesslich über lokale relative Pfade.
+- `npm ci` installiert die festgelegte Version reproduzierbar.
+- `scripts/prepare-runtime.mjs` kopiert Three.js r128, STLLoader, STLExporter und die Lizenzdatei nach `vendor/three/`.
+- `index.html` lädt die Runtime ausschliesslich über lokale relative Pfade; die drei CDN-Script-Referenzen wurden entfernt.
 - `.gitignore` schliesst `node_modules/` und den generierten Ordner `vendor/` aus.
 - Code- und Browser-CI installieren die Abhängigkeit und erzeugen die Runtime vor den Prüfungen.
-- Der Browser-Test blockiert HTTPS-Zugriffe und prüft Three.js r128 sowie beide STL-Erweiterungen.
+- Der Browser-Test blockiert externe HTTPS-Zugriffe und prüft den Start, Modellierungsabläufe, Projekt-Speichern/Wiederöffnen sowie STL-Funktionen.
 - Der GitHub-Pages-Build erzeugt die lokalen Dateien erst beim Build und kopiert sie in das Pages-Artefakt.
+- `src/tutorial.js` und `src/image-studio.js` wurden aus zwei selbstständigen Inline-IIFEs herausgelöst. Ihre Ausführungsreihenfolge blieb gleich; die Module verwenden eigene lokale Variablen und kommunizieren über die vorhandenen DOM-/`window`-Schnittstellen.
+- Die CI prüft, dass beide neuen Module im lokalen Pages-Testpaket enthalten sind und die HTML-Datei auf die lokalen Dateien verweist.
+- Die erste Einheitenmigration ist abgeschlossen: `MM_PER_UNIT` wird in `index.html` nicht mehr verwendet; Längen- und Flächenkonvertierungen laufen über `src/units.js`.
 
-Die npm-Installation und das Kopieren der drei Runtime-Dateien sind im Code-Workflow des aktuellen Entwicklungsstands bereits erfolgreich durchlaufen. Die vollständigen Prüfungen und der Offline-Browser-Test müssen für den aktuellen HEAD noch abschliessen.
+### Verifizierter Stand
 
-## 5. Was bewusst noch nicht geändert wurde
+Für Commit `10502a8` sind Code-Checks und Browser-Interaktionstests erfolgreich. Der Browserlauf blockiert externe HTTPS-Zugriffe. Der Workflow erzeugt die Runtime lokal und prüft die lokale Anwendung; es wurde kein Pages-Deployment ausgelöst.
 
-- Kein `package.json` nur als leere Hülle angelegt.
-- Keine Three.js-Version aktualisiert.
-- Die drei Three.js-CDN-Referenzen wurden im Entwicklungsbranch durch lokale Pfade ersetzt; der Offline-Browsernachweis läuft.
-- Kein Komplettumbau der Inline-CAD-Anwendung.
+## 6. Was bewusst noch nicht geändert wurde
+
+- Three.js wurde nicht aktualisiert; r128 bleibt aus Kompatibilitätsgründen festgelegt.
+- Das grosse CAD-Hauptskript in `index.html` wurde noch nicht aufgeteilt. Die ausgelagerten Lernkurs- und Image-Studio-Dateien sind ein erster, risikoarmer Schritt.
+- Keine sofortige ES-Module-Umstellung der gesamten Anwendung.
 - Keine Änderung am öffentlichen GitHub-Pages-Stand.
 
-Diese Zurückhaltung verhindert, dass SILMO durch einen halbfertigen Build-Schritt nicht mehr startet.
+## 7. Nächste Schritte
 
-## 6. Konkrete nächste Implementierung
-
-Als nächster Code-Schritt wird die Build- und Abhängigkeitsstruktur so eingerichtet, dass sie die aktuelle globale Three.js-Laufzeit zunächst unverändert lokal bereitstellen kann. Erst wenn der lokale Pages-Build und die Offline-Browserprüfung bestehen, werden die CDN-Tags entfernt.
-
-**Abnahmekriterium:** Ein frischer Checkout kann mit dokumentierten kostenlosen Werkzeugen reproduzierbar gebaut und lokal gestartet werden; der Browser benötigt für die Kernanwendung keine externen CDN-Skripte. Bestehende Projektdateien, Modellierungsabläufe und STL-Import/-Export bleiben funktionsfähig.
+1. Den verbleibenden Inline-Code in `index.html` nach Abhängigkeiten und klaren Verantwortlichkeiten inventarisieren.
+2. Als Nächstes eine kleine, eigenständige UI-/Diagnosekomponente extrahieren, ohne auf den CAD-Hauptskript-Scope zuzugreifen.
+3. Danach Dokument-/Projektverwaltung und Import-/Export-Grenzen schrittweise separieren.
+4. Für jede Extraktion Byte-/Verhaltensregressionen und Browserprüfungen ausführen.
+5. Erst nach stabiler Modulstruktur eine grössere Umstellung auf native ES-Module oder Bundling erwägen.
