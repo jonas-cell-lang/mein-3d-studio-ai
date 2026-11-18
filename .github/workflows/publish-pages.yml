@@ -122,6 +122,7 @@ jobs:
               "src/tutorial.js",
               "src/developer-diagnostics.js",
               "src/image-studio.js",
+              "src/tool-navigation.js",
               "vendor/three/three.min.js",
               "vendor/three/STLLoader.js",
               "vendor/three/STLExporter.js",
