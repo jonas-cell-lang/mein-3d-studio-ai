@@ -1040,6 +1040,10 @@ try {
   assert.equal(advancedImageState.fileName,'fixture-image.png','Image-Studio-Dateiname wurde nicht geladen');
   assert.equal(advancedImageState.rotation,90,'Image-Studio-Drehung wurde nicht geladen');
   assert.equal(advancedImageState.contourCount,1,'Image-Studio-Kontur wurde nicht geladen');
+  // Die Speichern-Funktion liegt im Druck-Reiter. Erst dorthin wechseln,
+  // dann sicherstellen, dass der Button wirklich sichtbar und anklickbar ist.
+  await advancedPage.locator('[data-tab="print"]').click();
+  await advancedPage.locator('#saveProjectButton').waitFor({state:'visible',timeout:5000});
   // Diagnose the browser's actual handling of the generated download link.
   await advancedPage.evaluate(() => {
     window.__silmoDownloadClicks = [];
