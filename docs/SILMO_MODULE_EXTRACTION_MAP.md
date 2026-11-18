@@ -51,7 +51,7 @@ Die Browser-Regression prüft weiterhin Speichern, Wiederöffnen, Objektanzahl u
 
 ## 4. Weitere spätere Kandidaten
 
-Der BSP-CSG-Kern ist inzwischen als `src/csg.js` ausgelagert. Die Browser-Regression enthält neben der bestehenden Union-Prüfung jetzt auch eine Differenz-Prüfung; der vollständige neue Browserlauf wird noch abgewartet.
+Der BSP-CSG-Kern ist als `src/csg.js` ausgelagert. Der vollständige Browserlauf hat sowohl die bestehende Union-Prüfung als auch die neue Differenz-Prüfung erfolgreich bestanden.
 
 1. Geometrie- und Skizzenfunktionen in getrennte Werkzeuge, sobald gemeinsame Modelloperationen über eine stabile API laufen.
 2. Import-/Export-Adapter weiter trennen, falls sie unabhängig von Projektdatei-I/O werden können.
