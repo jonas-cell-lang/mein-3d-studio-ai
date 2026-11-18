@@ -1205,6 +1205,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 <script src="./vendor/three/STLLoader.js"></script>
 <script src="./vendor/three/STLExporter.js"></script>
 <script src="./src/units.js"></script>
+<script src="./src/tolerances.js"></script>
 <script src="./src/project-schema.js"></script>
 <script>
 (() => {
@@ -1363,7 +1364,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   // Robuste polygonbasierte CSG-Operationen (BSP), ohne zusätzliche Bibliothek.
   // Die Geometrie wird für die Berechnung in Weltkoordinaten überführt und danach
   // wieder in lokale Koordinaten der Grundform zurückgerechnet.
-  const CSG_EPSILON = 1e-5;
+  const CSG_EPSILON = window.SILMOTolerances.CSG_GEOMETRY_WORLD_UNITS;
   class CSGVertex {
     constructor(pos) { this.pos = pos.clone(); }
     clone() { return new CSGVertex(this.pos); }
@@ -2057,7 +2058,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const totalWidth = ordered.reduce((sum,item)=>sum+(item.box.max[axis]-item.box.min[axis]),0);
         const outerSpan = last.box.max[axis]-first.box.min[axis];
         const gap = (outerSpan-totalWidth)/(ordered.length-1);
-        if (gap < -1e-7) {
+        if (gap < -window.SILMOTolerances.ALIGNMENT_OVERLAP_WORLD_UNITS) {
           status.textContent = 'Verteilen nicht möglich: Die äusseren Objekte lassen nicht genug Platz für gleiche Abstände.';
           return;
         }
@@ -2082,7 +2083,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         });
       }
     }
-    const changed = [...deltas.values()].some(delta => Math.abs(delta) > 1e-8);
+    const changed = [...deltas.values()].some(delta => Math.abs(delta) > window.SILMOTolerances.ALIGNMENT_CHANGE_WORLD_UNITS);
     if (!changed) {
       status.textContent = operation === 'align' ? 'Die Objekte sind bereits so ausgerichtet.' : 'Die Abstände sind bereits passend.';
       return;
@@ -2090,7 +2091,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     // Erst den alten Zustand sichern, dann die berechneten Änderungen anwenden.
     recordHistory();
     deltas.forEach((delta,obj) => {
-      if (Math.abs(delta) <= 1e-8) return;
+      if (Math.abs(delta) <= window.SILMOTolerances.ALIGNMENT_CHANGE_WORLD_UNITS) return;
       obj.position[axis] += delta;
       obj.updateMatrixWorld(true);
       notifyPositionChanged(obj);
@@ -3008,7 +3009,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
   function simplifySketchPolyline(points, toleranceMM = 0.5) {
     if (!Array.isArray(points) || points.length < 3) return (points || []).map(point => point.clone());
-    const tolerance = Math.max(mmToWorldUnits(0.01), mmToWorldUnits(toleranceMM));
+    const tolerance = Math.max(mmToWorldUnits(window.SILMOTolerances.SKETCH_SIMPLIFICATION_MIN_MM), mmToWorldUnits(toleranceMM));
     const toleranceSq = tolerance * tolerance;
     const keep = new Uint8Array(points.length);
     keep[0] = 1; keep[points.length - 1] = 1;
@@ -3775,7 +3776,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const worldSketchBounds = geometry.boundingBox.clone().translate(meshPosition);
       const halfBedW = bedWidthMM / (2 * MM_PER_UNIT);
       const halfBedD = bedDepthMM / (2 * MM_PER_UNIT);
-      const bedTolerance = 1e-5;
+      const bedTolerance = window.SILMOTolerances.SKETCH_BED_BOUNDS_WORLD_UNITS;
       if (worldSketchBounds.min.x < -halfBedW - bedTolerance ||
           worldSketchBounds.max.x > halfBedW + bedTolerance ||
           worldSketchBounds.min.y < -halfBedD - bedTolerance ||
@@ -4283,7 +4284,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     objects.forEach((obj, index) => {
       obj.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(obj);
-      const eps = 1e-4;
+      const eps = window.SILMOTolerances.PRINT_BED_BOUNDS_WORLD_UNITS;
       const outside = box.min.x < -halfW-eps || box.max.x > halfW+eps || box.min.y < -halfD-eps || box.max.y > halfD+eps || box.min.z < -eps;
       if (outside) issues.push((obj.userData.label || ('Objekt ' + (index+1))));
     });
@@ -4327,7 +4328,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
             continue;
           }
           const area2 = pts[1].clone().sub(pts[0]).cross(pts[2].clone().sub(pts[0])).length();
-          if (!Number.isFinite(area2) || area2 < 1e-8) degenerateTriangles++;
+          if (!Number.isFinite(area2) || area2 < window.SILMOTolerances.PRINT_TRIANGLE_AREA2_WORLD_UNITS2) degenerateTriangles++;
           const keys = ids.map(vertexKey);
           [[keys[0],keys[1]],[keys[1],keys[2]],[keys[2],keys[0]]].forEach(edge => {
             const k = edge[0] < edge[1] ? edge[0] + '|' + edge[1] : edge[1] + '|' + edge[0];
@@ -4351,8 +4352,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const mm = [size.x,size.y,size.z].map(worldUnitsToMm);
         dimensionText = mm.map(v => Number.isFinite(v) ? v.toFixed(2) : 'ungültig').join(' × ') + ' mm';
         if (mm.some(v => !Number.isFinite(v) || v < 0.01)) warnings.push('Abmessungen ungültig oder kleiner als 0,01 mm');
-        if (box.min.x < -halfW-1e-4 || box.max.x > halfW+1e-4 || box.min.y < -halfD-1e-4 || box.max.y > halfD+1e-4) warnings.push('ausserhalb des Druckbetts');
-        if (box.min.z < -1e-4) warnings.push('unterhalb der Druckbettfläche');
+        const bedTolerance = window.SILMOTolerances.PRINT_BED_BOUNDS_WORLD_UNITS;
+        if (box.min.x < -halfW-bedTolerance || box.max.x > halfW+bedTolerance || box.min.y < -halfD-bedTolerance || box.max.y > halfD+bedTolerance) warnings.push('ausserhalb des Druckbetts');
+        if (box.min.z < -window.SILMOTolerances.PRINT_BED_BOUNDS_WORLD_UNITS) warnings.push('unterhalb der Druckbettfläche');
       }
       lines.push(name + ': ' + dimensionText + (warnings.length ? '\n  Hinweise: ' + warnings.join('; ') : '\n  Keine erkannten Geometrie-/Bettprobleme.'));
       totalWarnings += warnings.length;
