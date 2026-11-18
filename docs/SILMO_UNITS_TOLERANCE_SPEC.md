@@ -94,9 +94,9 @@ Es werden hier bewusst keine neuen globalen Zahlenwerte festgelegt. Die bestehen
 - Die bestätigte Basisskala bleibt unverändert: 1 Three.js-Welteinheit = 10 mm.
 - `src/tolerances.js` stellt die bereits inventarisierten, fachlich getrennten Schwellen unveränderlich bereit: CSG-Geometrie, Ausrichtungs-/Änderungsschwellen, Mindestwert der Skizzenvereinfachung, Skizzen-Druckbettgrenze sowie Druckbett- und Dreiecksprüfung.
 - Die ersten produktiven Aufrufstellen verwenden diese benannten Werte. Die Zahlen bleiben gegenüber dem vorherigen Stand unverändert; die Änderung macht ihren Zweck und ihre Einheit sichtbar.
-- `index.html` lädt das Modul synchron vor dem CAD-Hauptskript. Die bisherige Konstante `MM_PER_UNIT` bezieht ihren Wert nun aus `SILMOUnits.MM_PER_WORLD_UNIT`, damit noch nicht migrierte Aufrufstellen dasselbe Verhalten behalten.
+- `index.html` lädt das Modul synchron vor dem CAD-Hauptskript. Die Längen- und Flächenumrechnungen im CAD-Hauptskript verwenden jetzt die passenden API-Funktionen; der alte `MM_PER_UNIT`-Kompatibilitätsalias wurde nach der vollständigen Migration der bisherigen Verwendungen entfernt.
 - Die zentrale API wird für die Anzeige von Objektabmessungen, die präzise X-/Y-Positionierung von Skizzen, Druckbett-/Rastermasse, Skizzenbegrenzung, Skizzenvereinfachung, Eingabedimensionen, STL-Import/-Export, Ausrichtung/Abstandsverteilung, Tastaturschritte und Druckbett-/Druckmassenausgabe verwendet.
-- Die übrigen bestehenden Aufrufstellen bleiben vorerst über den zentral abgeleiteten Kompatibilitätswert `MM_PER_UNIT` angebunden und werden schrittweise migriert. Es erfolgt keine unkontrollierte globale Ersetzung.
+- Die bisherigen direkten Verwendungen des Faktors wurden einzeln auf die API umgestellt. Eine Quellcodeprüfung bestätigt, dass `MM_PER_UNIT` in `index.html` nicht mehr verwendet wird und keine direkten `* 10`-/`/ 10`-Längenkonvertierungen übrig sind.
 - `tests/units.test.cjs` prüft Längen, negative und gebrochene Werte, Flächenfaktoren und Unveränderlichkeit; `tests/tolerances.test.cjs` sichert die inventarisierten Toleranzwerte und ihre Unveränderlichkeit. Der Code-Check-Workflow führt beide Tests aus.
 - Die App-Metadaten tragen auf dem Implementierungsbranch die Version v93. Die Produktionsversion bleibt bis zur Review und zum Merge unverändert.
 
