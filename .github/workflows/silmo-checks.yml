@@ -205,6 +205,7 @@ jobs:
           if "Eigene Hüllen-Konstruktion" in html or "createCaseWallFrame" in html:
               raise SystemExit("Produktgebundene Sonderfunktionen sind noch vorhanden.")
           print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung, Objektsperre, Gruppen, Spiegeln, Verbindung lösen und allgemeine CAD-Werkzeuge sind statisch geprüft.")
+          PY
 
       - name: Test local Pages package without deploying
         run: |
@@ -227,5 +228,4 @@ jobs:
               if relative not in html:
                   raise SystemExit(f"HTML does not reference expected local module: {relative}")
           print("Local Pages package contains every referenced SILMO module; no deployment performed.")
-          PY
           PY
