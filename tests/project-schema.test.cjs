@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
+const { join } = require('node:path');
 const schema = require('../src/project-schema.js');
 
 function validProject() {
@@ -8,7 +9,7 @@ function validProject() {
 }
 
 function readFixture(name) {
-  return JSON.parse(readFileSync(new URL('./fixtures/' + name, 'file://' + __filename), 'utf8'));
+  return JSON.parse(readFileSync(join(__dirname, 'fixtures', name), 'utf8'));
 }
 
 function visitGeometry(object, visit) {
