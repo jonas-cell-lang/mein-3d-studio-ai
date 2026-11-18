@@ -26,6 +26,9 @@
           !item || typeof item !== 'object' || !Array.isArray(item.array)) {
         throw new Error('Ungültiges Geometrieattribut.');
       }
+      if (name === 'position' && item.itemSize !== 3) {
+        throw new Error('Positionsdaten müssen das itemSize 3 haben.');
+      }
       if (!allowedArrays.has(item.arrayType) ||
           !Number.isInteger(item.itemSize) || item.itemSize < 1 || item.itemSize > 4 ||
           item.array.length === 0 || item.array.length % item.itemSize !== 0 ||
