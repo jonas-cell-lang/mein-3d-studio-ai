@@ -47,7 +47,34 @@ Die Werte dürfen nicht zu einer einzigen globalen Toleranz zusammengezogen werd
 9. Jeder neue Toleranzwert braucht eine dokumentierte fachliche Begründung, Einheit, betroffene Operation und positive/negative Grenzfalltests.
 10. Ein Kernel darf seine eigene interne Toleranzverwaltung haben; die SILMO-Adapter-Schicht muss die verwendeten Werte und Einheiten jedoch explizit übergeben oder dokumentieren.
 
-## 3. Zielstruktur der zentralen API
+## 3. Quellcode-Inventar der vorhandenen Toleranzen
+
+Die folgenden Werte wurden direkt im aktuellen `index.html` geprüft. Sie werden hier bewusst klassifiziert und noch nicht vereinheitlicht. Unterschiedliche Einheiten und Zwecke dürfen nicht in einen einzigen globalen Wert umgewandelt werden.
+
+| Fundstelle / Funktion | Aktueller Wert | Tatsächliche Bedeutung | Einordnung |
+|---|---:|---|---|
+| `CSG_EPSILON`, BSP-Klassifikation | `1e-5` Welteinheiten | Ebenen-/Polygonklassifikation und Filterung degenerierter CSG-Flächen; entspricht bei aktueller Skala `0,0001 mm` | Geometriekern-Toleranz |
+| Objektverteilung | `1e-7` Welteinheiten | Kleine negative Restlücke wird als Rundungsrest behandelt; entspricht `0,000001 mm` | Numerische Vergleichsschwelle |
+| Objekt-Ausrichtung | `1e-8` Welteinheiten | Delta darunter gilt als unverändert; entspricht `0,0000001 mm` | Numerische Vergleichsschwelle |
+| Skizzenvereinfachung | Standard `0,5 mm`, Untergrenze `0,01 mm` | Fachliche Ramer-Douglas-Peucker-Abweichung, danach Umrechnung in Welteinheiten | Benutzer-/Geometriequalität, keine Kernel-Epsilon |
+| Skizzenpunkt-Abstände | z. B. `0,015` und `0,02` Welteinheiten | Mindestabstand beim interaktiven Zeichnen; entspricht `0,15 mm` bzw. `0,2 mm` | Interaktions-/Eingabegrenze |
+| Vorschauversatz | `0,025` Welteinheiten | Zeichenvorschau liegt leicht über der Skizzenebene; entspricht `0,25 mm` | Darstellung, keine Geometrietoleranz |
+| Hohlrahmen-Konstruktion | `1e-5`, `0,0001`, `0,02` an verschiedenen Stellen | Prüft kurze Kontursegmente, Flächen und Offset-Schnittpunkte; mehrere unterschiedliche Kriterien | Fachliche Konturvalidierung; einzeln zu testen |
+| Druckbettprüfung | `1e-4` Welteinheiten | Erlaubter Bounding-Box-Rundungsrand; entspricht `0,001 mm` | Druckbett-/Importvergleich |
+| Mesh-Druckprüfung | `1e-5` Quantisierung; `1e-8` Welteinheiten² für degenerierte Dreiecke | Eckpunkte werden zur Kanten-Zuordnung quantisiert; Dreiecksfläche wird separat geprüft | Mesh-Analyse; Längen- und Flächenschwellen getrennt halten |
+| Image-Studio-Konturen | `1,1` Pixel beim Konturvereinfachen | Vereinfachung erfolgt vor der Umrechnung auf reale Millimeter | Bild-/Pixelraum, nicht CAD-Kernel |
+| Image-Studio-Druckkonturen | `0,01 mm²` Flächenminimum; `0,8 mm` Mindestwand | Konturen werden vor dem 3D-Aufbau bereits in reale Millimeter abgebildet | Fertigungs-/Druckbarkeitsregel |
+
+### Konsequenzen für die Migration
+
+- Werte mit gleicher Schreibweise können verschiedene Dimensionen haben: Längen, Flächen, Winkel, Pixel oder dimensionslose Faktoren.
+- `1e-8` in einer Orientierungsprüfung ist nicht austauschbar mit `1e-8` als Flächenschwelle.
+- Bildraumtoleranzen dürfen nicht mit Modellkoordinaten vermischt werden.
+- Druckbarkeitsregeln wie die Mindestwand von `0,8 mm` sind fachliche Anforderungen und keine numerischen Kernel-Epsilons.
+- Der Z-Vorschauversatz von `0,025` ist eine Darstellungsentscheidung und darf nicht als Modellgenauigkeit ausgegeben werden.
+- Vor jeder Änderung muss die jeweilige Schwelle mit positiven und negativen Grenzfällen im Browser oder als mathematischer Unit-Test abgesichert sein.
+
+## 4. Zielstruktur der zentralen API
 
 Die API soll mindestens folgende getrennte Aufgaben anbieten:
 
@@ -61,7 +88,7 @@ Die API soll mindestens folgende getrennte Aufgaben anbieten:
 
 Es werden hier bewusst keine neuen globalen Zahlenwerte festgelegt. Die bestehenden Schwellen müssen zuerst vollständig mit ihren Aufrufstellen und Tests inventarisiert werden.
 
-## 4. Erste Implementierung in Phase 1
+## 5. Erste Implementierung in Phase 1
 
 - `src/units.js` stellt eine unveränderliche, zentrale API bereit: `mmToWorldUnits`, `worldUnitsToMm`, `mm2ToWorldUnits2`, `worldUnits2ToMm2`, `mm3ToWorldUnits3` und `worldUnits3ToMm3`.
 - Die bestätigte Basisskala bleibt unverändert: 1 Three.js-Welteinheit = 10 mm.
@@ -71,7 +98,7 @@ Es werden hier bewusst keine neuen globalen Zahlenwerte festgelegt. Die bestehen
 - `tests/units.test.cjs` prüft Längen, negative und gebrochene Werte, Flächenfaktoren und Unveränderlichkeit. Der Code-Check-Workflow führt diese Tests aus.
 - Die App-Metadaten tragen auf dem Implementierungsbranch die Version v93. Die Produktionsversion bleibt bis zur Review und zum Merge unverändert.
 
-## 5. Migrations- und Testanforderungen
+## 6. Migrations- und Testanforderungen
 
 ### Referenzkonvertierungen
 - 10 mm müssen exakt 1,0 interne Welteinheit ergeben.
@@ -93,7 +120,7 @@ Es werden hier bewusst keine neuen globalen Zahlenwerte festgelegt. Die bestehen
 - Browser-Tests prüfen, dass die Oberfläche dieselben Millimeterwerte zeigt und dieselben STL-Abmessungen exportiert.
 - Kein bestehendes Projekt wird durch die neue API stillschweigend skaliert.
 
-## 6. Offene Quellcodeprüfung
+## 7. Offene Quellcodeprüfung
 
 - Alle Längen- und Abstandsgrenzen in index.html einer Einheit zuordnen.
 - Prüfen, welche Schwellen numerische Stabilität und welche nur UI-/Interaktionsabstände betreffen.
@@ -102,7 +129,7 @@ Es werden hier bewusst keine neuen globalen Zahlenwerte festgelegt. Die bestehen
 - Prüfen, ob Projektformat v3 die Basiseinheit explizit speichert oder sie nur implizit voraussetzt.
 - Testfälle für alle Einheiten-Grenzen aus dem vorhandenen Browser-Test und den Diagnosefunktionen ableiten.
 
-## 7. Quellen
+## 8. Quellen
 
 - `index.html`: Zeilen 1267–1321 (Druckbett und Umrechnungsfaktor)
 - `index.html`: Zeilen 1353–1357 (Objektabmessungen in mm)
