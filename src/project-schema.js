@@ -6,6 +6,64 @@
   const CURRENT_PROJECT_VERSION = 3;
   const SUPPORTED_PROJECT_VERSIONS = Object.freeze([3]);
 
+  function validateSerializedGeometry(data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data) ||
+        !data.attributes || typeof data.attributes !== 'object' || Array.isArray(data.attributes)) {
+      throw new Error('Geometriedaten fehlen oder sind ungültig.');
+    }
+
+    const allowedArrays = new Set([
+      'Float32Array', 'Float64Array', 'Uint8Array', 'Uint16Array', 'Uint32Array',
+      'Int8Array', 'Int16Array', 'Int32Array'
+    ]);
+    const names = Object.keys(data.attributes);
+    if (!names.length) throw new Error('Geometrie enthält keine Attribute.');
+
+    let totalValues = 0;
+    let positionCount = 0;
+    for (const [name, item] of Object.entries(data.attributes)) {
+      if (!/^[a-zA-Z][a-zA-Z0-9_]{0,31}$/.test(name) ||
+          !item || typeof item !== 'object' || !Array.isArray(item.array)) {
+        throw new Error('Ungültiges Geometrieattribut.');
+      }
+      if (!allowedArrays.has(item.arrayType) ||
+          !Number.isInteger(item.itemSize) || item.itemSize < 1 || item.itemSize > 4 ||
+          item.array.length === 0 || item.array.length % item.itemSize !== 0 ||
+          item.array.some(value => !Number.isFinite(value) || Math.abs(value) > 1e7)) {
+        throw new Error('Ungültige oder zu grosse Geometriedaten.');
+      }
+      totalValues += item.array.length;
+      if (totalValues > 1500000) throw new Error('Das Modell ist zu komplex für den sicheren Projektimport.');
+      const attributeCount = item.array.length / item.itemSize;
+      if (name === 'position') {
+        if (item.itemSize !== 3 || item.array.length < 9) {
+          throw new Error('Positionsdaten müssen mindestens drei 3D-Punkte enthalten.');
+        }
+        positionCount = attributeCount;
+      }
+    }
+    if (!positionCount) throw new Error('Geometriedaten enthalten kein Positionsattribut.');
+    for (const [name, item] of Object.entries(data.attributes)) {
+      if (item.array.length / item.itemSize !== positionCount) {
+        throw new Error('Geometrieattribute haben unterschiedliche Punktanzahlen: ' + name);
+      }
+    }
+
+    if (data.index != null) {
+      const index = data.index;
+      if (!index || typeof index !== 'object' || !Array.isArray(index.array) ||
+          index.array.length < 3 || index.array.length > 4500000 ||
+          index.array.length % 3 !== 0 ||
+          !['Uint8Array', 'Uint16Array', 'Uint32Array'].includes(index.arrayType) ||
+          !index.array.every(value => Number.isInteger(value) && value >= 0 && value < positionCount)) {
+        throw new Error('Ungültige Modell-Indizes.');
+      }
+    } else if (positionCount % 3 !== 0) {
+      throw new Error('Nicht-indizierte Mesh-Geometrie enthält keine vollständigen Dreiecke.');
+    }
+    return data;
+  }
+
   function validateProjectEnvelope(project) {
     if (!project || typeof project !== 'object' || Array.isArray(project)) {
       throw new Error('Projektdatei ist kein gültiges JSON-Objekt.');
@@ -28,6 +86,7 @@
   return Object.freeze({
     CURRENT_PROJECT_VERSION,
     SUPPORTED_PROJECT_VERSIONS,
-    validateProjectEnvelope
+    validateProjectEnvelope,
+    validateSerializedGeometry
   });
 });
