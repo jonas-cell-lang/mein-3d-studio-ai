@@ -10,6 +10,10 @@ on:
       - "silmo-icon.svg"
       - "icon-512.png"
       - "src/**"
+      - "vendor/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/publish-pages.yml"
   workflow_dispatch:
 
@@ -33,6 +37,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install locked runtime dependencies
+        run: npm ci
+
+      - name: Prepare local Three.js runtime
+        run: npm run prepare:runtime
+
 
       - name: Validate inline JavaScript
         shell: bash
@@ -101,10 +111,17 @@ jobs:
           mkdir -p _site
           cp index.html manifest.webmanifest silmo-icon.svg icon-512.png _site/
           cp -R src _site/src
+          cp -R vendor _site/vendor
           python - <<'PY'
           from pathlib import Path
 
-          required = ("src/units.js", "src/project-schema.js")
+          required = (
+              "src/units.js",
+              "src/project-schema.js",
+              "vendor/three/three.min.js",
+              "vendor/three/STLLoader.js",
+              "vendor/three/STLExporter.js",
+          )
           for relative in required:
               source = Path(relative)
               published = Path("_site") / relative
