@@ -19,9 +19,10 @@ Danach lädt SILMO lokal und in dieser Reihenfolge:
 1. `./src/units.js`
 2. `./src/tolerances.js`
 3. `./src/project-schema.js`
-4. Das grosse Inline-CAD-Hauptskript.
-5. `./src/tutorial.js` – ausgelagerter, selbstständiger Lernkurs.
-6. `./src/image-studio.js` – ausgelagerter, selbstständiger 2D-Bildarbeitsbereich.
+4. `./src/project-geometry.js` – Geometrie-Serialisierung und Wiederaufbau.
+5. Das grosse Inline-CAD-Hauptskript.
+6. `./src/tutorial.js` – ausgelagerter, selbstständiger Lernkurs.
+7. `./src/image-studio.js` – ausgelagerter, selbstständiger 2D-Bildarbeitsbereich.
 
 Die Reihenfolge ist relevant: Das Hauptskript erwartet sowohl `THREE` samt STL-Erweiterungen als auch `window.SILMOUnits` und `window.SILMOProjectSchema`.
 
@@ -91,12 +92,13 @@ Es handelt sich deshalb nicht um eine Bibliothek, die man durch blosses Entferne
 - `src/tutorial.js` und `src/image-studio.js` wurden aus zwei selbstständigen Inline-IIFEs herausgelöst. Ihre Ausführungsreihenfolge blieb gleich; die Module verwenden eigene lokale Variablen und kommunizieren über die vorhandenen DOM-/`window`-Schnittstellen.
 - `src/developer-diagnostics.js` wurde als eigenständiges Diagnosemodul in den Dokumentkopf verschoben; die Script-ID blieb erhalten.
 - `src/tool-navigation.js` enthält die bisherige, DOM-basierte Werkzeugnavigation. Sie wird an derselben Stelle vor Three.js geladen und greift nicht auf den lexikalischen CAD-Hauptskript-Scope zu.
-- Die CI prüft, dass alle vier ausgelagerten Module im lokalen Pages-Testpaket enthalten sind und die HTML-Datei auf die lokalen Dateien verweist. Die statische Funktionsprüfung durchsucht zusätzlich die ausgelagerte Navigationsdatei.
+- `src/project-geometry.js` enthält die Geometrie-Serialisierung, den validierten Wiederaufbau von BufferGeometry sowie die Speicherung/Wiederherstellung der ursprünglichen Union-Formteile. Das Modul erhält Three.js und das Projekt-Schema über seine Factory-Schnittstelle.
+- Die CI prüft, dass alle fünf ausgelagerten Module im lokalen Pages-Testpaket enthalten sind und die HTML-Datei auf die lokalen Dateien verweist. Die statische Funktionsprüfung durchsucht zusätzlich die ausgelagerte Navigationsdatei.
 - Die erste Einheitenmigration ist abgeschlossen: `MM_PER_UNIT` wird in `index.html` nicht mehr verwendet; Längen- und Flächenkonvertierungen laufen über `src/units.js`.
 
 ### Verifizierter Stand
 
-Für Commit `89214a0b37b39e1d227df16ba3f5056c35799ffa` sind Code-Checks und Browser-Interaktionstests erfolgreich. Der Browserlauf blockiert externe HTTPS-Zugriffe. Der Workflow erzeugt die Runtime lokal und prüft die lokale Anwendung; es wurde kein Pages-Deployment ausgelöst.
+Für Commit `64f681debbd04ff466c2e0d21a50140f3f0e898c` sind Code-Checks und Browser-Interaktionstests erfolgreich. Der Browserlauf blockiert externe HTTPS-Zugriffe. Der Workflow erzeugt die Runtime lokal und prüft die lokale Anwendung; es wurde kein Pages-Deployment ausgelöst.
 
 ## 6. Was bewusst noch nicht geändert wurde
 
