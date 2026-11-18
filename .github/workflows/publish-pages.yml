@@ -101,6 +101,19 @@ jobs:
           mkdir -p _site
           cp index.html manifest.webmanifest silmo-icon.svg icon-512.png _site/
           cp -R src _site/src
+          python - <<'PY'
+          from pathlib import Path
+
+          required = ("src/units.js", "src/project-schema.js")
+          for relative in required:
+              source = Path(relative)
+              published = Path("_site") / relative
+              if not source.is_file() or not published.is_file():
+                  raise SystemExit(f"Required source module missing from Pages artifact: {relative}")
+              if source.read_bytes() != published.read_bytes():
+                  raise SystemExit(f"Published source module differs from repository source: {relative}")
+          print("All locally loaded SILMO source modules are present in the Pages artifact.")
+          PY
           touch _site/.nojekyll
 
       - name: Upload website artifact
