@@ -2073,7 +2073,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           status.textContent = 'Bitte einen gültigen Abstand von 0 bis 100000 mm eingeben.';
           return;
         }
-        const gapUnits = gapMM / MM_PER_UNIT;
+        const gapUnits = mmToWorldUnits(gapMM);
         let cursor = ordered[0].box.max[axis];
         ordered.slice(1).forEach(item=>{
           const delta = cursor + gapUnits - item.box.min[axis];
@@ -2611,8 +2611,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     return {
       widthMM: bedWidthMM,
       depthMM: bedDepthMM,
-      outlineWidthMM: Number(((bounds.max.x - bounds.min.x) * MM_PER_UNIT).toFixed(4)),
-      outlineDepthMM: Number(((bounds.max.y - bounds.min.y) * MM_PER_UNIT).toFixed(4))
+      outlineWidthMM: Number(worldUnitsToMm(bounds.max.x - bounds.min.x).toFixed(4)),
+      outlineDepthMM: Number(worldUnitsToMm(bounds.max.y - bounds.min.y).toFixed(4))
     };
   };
 
@@ -4278,7 +4278,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     // Gültige Eingaben werden vor jeder Prüfung sicher in die echte 3D-Platte übernommen.
     if (!setBedSize()) return;
     if (!objects.length) { status.textContent = 'Druckbettprüfung: keine Modelle vorhanden. Erstelle oder importiere zuerst ein Modell.'; return; }
-    const halfW = bedWidthMM / (2 * MM_PER_UNIT), halfD = bedDepthMM / (2 * MM_PER_UNIT);
+    const halfW = mmToWorldUnits(bedWidthMM / 2), halfD = mmToWorldUnits(bedDepthMM / 2);
     const issues = [];
     objects.forEach((obj, index) => {
       obj.updateMatrixWorld(true);
@@ -4303,8 +4303,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
     const lines = [];
     let totalWarnings = 0;
-    const halfW = bedWidthMM / (2 * MM_PER_UNIT);
-    const halfD = bedDepthMM / (2 * MM_PER_UNIT);
+    const halfW = mmToWorldUnits(bedWidthMM / 2);
+    const halfD = mmToWorldUnits(bedDepthMM / 2);
     const keyFor = (x,y,z) => [x,y,z].map(v => Math.round(v * 1e5)).join(',');
     objects.forEach((obj, index) => {
       const name = obj.userData.label || ('Objekt ' + (index + 1));
@@ -4348,7 +4348,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         warnings.push('keine messbaren Abmessungen');
       } else {
         const size = new THREE.Vector3(); box.getSize(size);
-        const mm = [size.x,size.y,size.z].map(v => v * MM_PER_UNIT);
+        const mm = [size.x,size.y,size.z].map(worldUnitsToMm);
         dimensionText = mm.map(v => Number.isFinite(v) ? v.toFixed(2) : 'ungültig').join(' × ') + ' mm';
         if (mm.some(v => !Number.isFinite(v) || v < 0.01)) warnings.push('Abmessungen ungültig oder kleiner als 0,01 mm');
         if (box.min.x < -halfW-1e-4 || box.max.x > halfW+1e-4 || box.min.y < -halfD-1e-4 || box.max.y > halfD+1e-4) warnings.push('ausserhalb des Druckbetts');
@@ -4365,7 +4365,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   $('fitView').addEventListener('click', () => {
     if (!objects.length) {
       focus.set(0, 0, 0);
-      targetDistance = Math.max(5, Math.max(bedWidthMM, bedDepthMM) / MM_PER_UNIT * 1.6);
+      targetDistance = Math.max(5, mmToWorldUnits(Math.max(bedWidthMM, bedDepthMM)) * 1.6);
       targetRX = 0.3; targetRY = 0;
       status.textContent = 'Ansicht auf Druckbett zurückgesetzt.';
       return;
@@ -4513,7 +4513,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       if (!targets.length) { status.textContent = 'Kein verschiebbares Objekt ausgewählt (gesperrt oder keine Auswahl).'; return; }
       recordHistory();
       const stepMM = Number(document.getElementById('moveStepMM')?.value);
-      const step = (Number.isFinite(stepMM) && stepMM > 0 ? stepMM : 1) / MM_PER_UNIT * (e.shiftKey ? 10 : 1);
+      const step = mmToWorldUnits((Number.isFinite(stepMM) && stepMM > 0 ? stepMM : 1) * (e.shiftKey ? 10 : 1));
       const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
       const dy = e.key === 'ArrowUp' ? step : e.key === 'ArrowDown' ? -step : 0;
       targets.forEach(obj => { obj.position.x += dx; obj.position.y += dy; notifyPositionChanged(obj); });
@@ -4640,7 +4640,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   });
   createObject('Würfel');
   // Startwürfel steht auf der Platte; die Ansicht zeigt das ganze Standardbett.
-  targetDistance = Math.max(9, Math.max(bedWidthMM, bedDepthMM) / MM_PER_UNIT * 0.85);
+  targetDistance = Math.max(9, mmToWorldUnits(Math.max(bedWidthMM, bedDepthMM)) * 0.85);
   distance = targetDistance;
   resize();
   camera.position.set(focus.x + distance * Math.sin(ry) * Math.cos(rx), focus.y + distance * Math.cos(ry) * Math.cos(rx), focus.z + distance * Math.sin(rx));
