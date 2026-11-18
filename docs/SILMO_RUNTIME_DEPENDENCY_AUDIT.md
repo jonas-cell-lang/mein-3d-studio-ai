@@ -18,11 +18,12 @@ Danach lädt SILMO lokal und in dieser Reihenfolge:
 
 1. `./src/units.js`
 2. `./src/tolerances.js`
-3. `./src/project-schema.js`
-4. `./src/project-geometry.js` – Geometrie-Serialisierung und Wiederaufbau.
-5. Das grosse Inline-CAD-Hauptskript.
-6. `./src/tutorial.js` – ausgelagerter, selbstständiger Lernkurs.
-7. `./src/image-studio.js` – ausgelagerter, selbstständiger 2D-Bildarbeitsbereich.
+3. `./src/csg.js` – ausgelagerter BSP-Kern für Verbindung und Differenz.
+4. `./src/project-schema.js`
+5. `./src/project-geometry.js` – Geometrie-Serialisierung und Wiederaufbau.
+6. Das grosse Inline-CAD-Hauptskript.
+7. `./src/tutorial.js` – ausgelagerter, selbstständiger Lernkurs.
+8. `./src/image-studio.js` – ausgelagerter, selbstständiger 2D-Bildarbeitsbereich.
 
 Die Reihenfolge ist relevant: Das Hauptskript erwartet sowohl `THREE` samt STL-Erweiterungen als auch `window.SILMOUnits` und `window.SILMOProjectSchema`.
 
@@ -94,12 +95,13 @@ Es handelt sich deshalb nicht um eine Bibliothek, die man durch blosses Entferne
 - `src/tool-navigation.js` enthält die bisherige, DOM-basierte Werkzeugnavigation. Sie wird an derselben Stelle vor Three.js geladen und greift nicht auf den lexikalischen CAD-Hauptskript-Scope zu.
 - `src/project-geometry.js` enthält die Geometrie-Serialisierung, den validierten Wiederaufbau von BufferGeometry sowie die Speicherung/Wiederherstellung der ursprünglichen Union-Formteile. Das Modul erhält Three.js und das Projekt-Schema über seine Factory-Schnittstelle.
 - `src/project-io.js` kapselt `saveProject` und `openProjectFile`. Es erhält den App-Zustand über Getter- und Commit-Callbacks und baut neue Objekte vollständig auf, bevor das bestehende Modell ersetzt wird.
-- Die CI prüft, dass alle sechs ausgelagerten Module im lokalen Pages-Testpaket enthalten sind und die HTML-Datei auf die lokalen Dateien verweist. Die statische Funktionsprüfung durchsucht zusätzlich die ausgelagerte Navigationsdatei.
+- `src/csg.js` enthält den BSP-Kern für Boolesche Verbindung und Differenz. Die App übergibt Meshes an `SILMOCSG.combineMeshes`; die Toleranz kommt aus der zentralen Toleranz-API.
+- Die CI prüft, dass alle sieben ausgelagerten Module im lokalen Pages-Testpaket enthalten sind und die HTML-Datei auf die lokalen Dateien verweist. Die statische Funktionsprüfung durchsucht zusätzlich die ausgelagerte Navigationsdatei.
 - Die erste Einheitenmigration ist abgeschlossen: `MM_PER_UNIT` wird in `index.html` nicht mehr verwendet; Längen- und Flächenkonvertierungen laufen über `src/units.js`.
 
 ### Verifizierter Stand
 
-Für Commit `78fe9212433d4101f2b85732524788316b130b41` sind Code-Checks und Browser-Interaktionstests erfolgreich. Der Browserlauf blockiert externe HTTPS-Zugriffe. Der Workflow erzeugt die Runtime lokal und prüft die lokale Anwendung; es wurde kein Pages-Deployment ausgelöst.
+Für Commit `b3de4af99c30fe5d9d29dfb2ad5dc2bf3923218c` sind Code-Checks und Browser-Interaktionstests erfolgreich. Der Browserlauf prüft Boolesche Verbindung und Differenz. Der Browserlauf blockiert externe HTTPS-Zugriffe. Der Workflow erzeugt die Runtime lokal und prüft die lokale Anwendung; es wurde kein Pages-Deployment ausgelöst.
 
 ## 6. Was bewusst noch nicht geändert wurde
 
