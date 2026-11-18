@@ -75,11 +75,26 @@ Es handelt sich deshalb nicht um eine Bibliothek, die man durch blosses Entferne
 - Bestehende Funktionen während der Migration über Regressionstests schützen.
 - Die Umstellung auf ES-Module oder eine neue Three.js-Version ist eine eigene spätere Entscheidung, kein Bestandteil des ersten CDN-Abbaus.
 
+## 5. Umgesetzter erster Migrationsschritt
+
+Der Entwicklungsbranch enthält jetzt die erste lokale Runtime-Vorbereitung:
+
+- `package.json` und `package-lock.json` pinnen Three.js exakt auf `0.128.0`.
+- `npm ci` installiert die festgelegte Paketversion reproduzierbar.
+- `scripts/prepare-runtime.mjs` kopiert die drei benötigten Dateien aus dem Paket nach `vendor/three/`.
+- `index.html` lädt Three.js, STLLoader und STLExporter ausschliesslich über lokale relative Pfade.
+- `.gitignore` schliesst `node_modules/` und den generierten Ordner `vendor/` aus.
+- Code- und Browser-CI installieren die Abhängigkeit und erzeugen die Runtime vor den Prüfungen.
+- Der Browser-Test blockiert HTTPS-Zugriffe und prüft Three.js r128 sowie beide STL-Erweiterungen.
+- Der GitHub-Pages-Build erzeugt die lokalen Dateien erst beim Build und kopiert sie in das Pages-Artefakt.
+
+Die npm-Installation und das Kopieren der drei Runtime-Dateien sind im Code-Workflow des aktuellen Entwicklungsstands bereits erfolgreich durchlaufen. Die vollständigen Prüfungen und der Offline-Browser-Test müssen für den aktuellen HEAD noch abschliessen.
+
 ## 5. Was bewusst noch nicht geändert wurde
 
 - Kein `package.json` nur als leere Hülle angelegt.
 - Keine Three.js-Version aktualisiert.
-- Keine CDN-Referenz entfernt, bevor lokale Ersatzdateien und Browserprüfungen vorhanden sind.
+- Die drei Three.js-CDN-Referenzen wurden im Entwicklungsbranch durch lokale Pfade ersetzt; der Offline-Browsernachweis läuft.
 - Kein Komplettumbau der Inline-CAD-Anwendung.
 - Keine Änderung am öffentlichen GitHub-Pages-Stand.
 
