@@ -742,8 +742,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('[data-tab="edit"]').click();
   await page.locator('#multiSelectToggle').click();
   await showCreateSubtab(2);
+  // Die Kugel ist nach dem Erstellen bereits ausgewählt; nur den Würfel ergänzen.
   await page.locator('#objects .object-select').nth(subtractStartCount).click();
-  await page.locator('#objects .object-select').nth(subtractStartCount + 1).click();
   assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 2, 'Differenz-Test konnte nicht beide Formen auswählen');
   await showCreateSubtab(1);
   await page.locator('#booleanSubtract').click();
