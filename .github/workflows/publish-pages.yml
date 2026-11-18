@@ -121,6 +121,7 @@ jobs:
               "vendor/three/three.min.js",
               "vendor/three/STLLoader.js",
               "vendor/three/STLExporter.js",
+              "vendor/three/LICENSE",
           )
           for relative in required:
               source = Path(relative)
