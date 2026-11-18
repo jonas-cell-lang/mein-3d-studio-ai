@@ -29,7 +29,7 @@ Das verbleibende Inline-CAD-Skript hält weiterhin den zentralen Laufzeitzustand
 - Transformationen, Gizmos, Ausrichtung und Gruppierung
 - Boolesche Geometrieoperationen und BSP-CSG
 - Skizzen, Extrusion, Kontur- und Pfadwerkzeuge
-- Import/Export und Projektdatei-Ablauf
+- STL-Import/-Export und andere dateiformatbezogene Abläufe (Projektdatei-Speichern/-Öffnen ist bereits in `src/project-io.js` ausgelagert)
 - DOM-Ereignisse und Statusmeldungen
 
 Diese Bereiche sollten nicht als grosse Textblöcke verschoben werden. Zuerst müssen ihre Daten- und Seiteneffekt-Abhängigkeiten als explizite Schnittstellen sichtbar werden.
