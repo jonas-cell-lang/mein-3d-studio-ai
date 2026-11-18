@@ -205,4 +205,27 @@ jobs:
           if "Eigene Hüllen-Konstruktion" in html or "createCaseWallFrame" in html:
               raise SystemExit("Produktgebundene Sonderfunktionen sind noch vorhanden.")
           print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung, Objektsperre, Gruppen, Spiegeln, Verbindung lösen und allgemeine CAD-Werkzeuge sind statisch geprüft.")
+
+      - name: Test local Pages package without deploying
+        run: |
+          mkdir -p /tmp/silmo-pages-test
+          cp index.html manifest.webmanifest silmo-icon.svg icon-512.png /tmp/silmo-pages-test/
+          cp -R src /tmp/silmo-pages-test/src
+          python - <<'PY'
+          from pathlib import Path
+
+          root = Path("/tmp/silmo-pages-test")
+          for relative in ("src/units.js", "src/project-schema.js"):
+              source = Path(relative)
+              packaged = root / relative
+              if not packaged.is_file():
+                  raise SystemExit(f"Missing module in local Pages package: {relative}")
+              if source.read_bytes() != packaged.read_bytes():
+                  raise SystemExit(f"Module differs in local Pages package: {relative}")
+          html = (root / "index.html").read_text(encoding="utf-8")
+          for relative in ("./src/units.js", "./src/project-schema.js"):
+              if relative not in html:
+                  raise SystemExit(f"HTML does not reference expected local module: {relative}")
+          print("Local Pages package contains every referenced SILMO module; no deployment performed.")
+          PY
           PY
