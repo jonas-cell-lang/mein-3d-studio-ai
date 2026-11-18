@@ -25,10 +25,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install locked runtime dependencies
+        run: npm ci
+
       - name: Install Playwright
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
+
+      - name: Prepare local Three.js runtime
+        run: npm run prepare:runtime
       - name: Start local app server
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/silmo-http.log 2>&1 &
