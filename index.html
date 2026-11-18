@@ -3092,7 +3092,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       } else if(activeTool==='roundedRectangle') {
         const path=new THREE.Shape();
         const radiusMM=Number(document.getElementById('sketchCornerRadiusMM').value);
-        const radius=Math.max(0,Math.min(radiusMM/MM_PER_UNIT,sketchDraft.width/2,sketchDraft.depth/2));
+        const radius=Math.max(0,Math.min(mmToWorldUnits(radiusMM),sketchDraft.width/2,sketchDraft.depth/2));
         addRoundedRectPath(path,sketchDraft.width,sketchDraft.depth,radius,sketchDraft.centerX,sketchDraft.centerY);
         points=path.getPoints(10).map(point=>new THREE.Vector3(point.x,point.y,0.025));
       } else {
@@ -3130,8 +3130,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       document.getElementById('sketchStatus').textContent = label + ' bereit: ' + sketchDraft.points.length + ' Punkt(e) auf ' + plane + '. Linienstärke festlegen.';
       return;
     }
-    const width = sketchDraft.width * MM_PER_UNIT;
-    const depth = sketchDraft.depth * MM_PER_UNIT;
+    const width = worldUnitsToMm(sketchDraft.width);
+    const depth = worldUnitsToMm(sketchDraft.depth);
     document.getElementById('sketchWidthMM').value = width.toFixed(1);
     if (document.getElementById('sketchTool').value !== 'circle') {
       document.getElementById('sketchDepthMM').value = depth.toFixed(1);
@@ -3148,9 +3148,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       sketchDraft.width = dims.width;
       sketchDraft.depth = dims.depth;
       updateSketchPreview();
-      const widthMM = dims.width * MM_PER_UNIT, depthMM = dims.depth * MM_PER_UNIT;
+      const widthMM = worldUnitsToMm(dims.width), depthMM = worldUnitsToMm(dims.depth);
       document.getElementById('sketchStatus').textContent =
-        'Skizze angepasst: ' + widthMM.toFixed(1) + ' × ' + depthMM.toFixed(1) + ' mm. Extrusion: ' + (dims.height * MM_PER_UNIT).toFixed(1) + ' mm.';
+        'Skizze angepasst: ' + widthMM.toFixed(1) + ' × ' + depthMM.toFixed(1) + ' mm. Extrusion: ' + (worldUnitsToMm(dims.height)).toFixed(1) + ' mm.';
     } catch (error) {
       document.getElementById('sketchStatus').textContent = error.message;
     }
@@ -3301,7 +3301,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const signedArea=points=>points.reduce((sum,p,i)=>{const n=points[(i+1)%points.length];return sum+p.x*n.y-n.x*p.y;},0)/2;
     const area=signedArea(outer);
     if(!Number.isFinite(area)||Math.abs(area)<0.0001){status.textContent='Die Rückwand-Kontur ist zu klein oder ungültig.';return;}
-    const ccw=area>0,offset=thicknessMM/MM_PER_UNIT,inner=[];
+    const ccw=area>0,offset=mmToWorldUnits(thicknessMM),inner=[];
     const cross=(a,b)=>a.x*b.y-a.y*b.x;
     for(let i=0;i<outer.length;i++){
       const prev=outer[(i+outer.length-1)%outer.length],p=outer[i],next=outer[(i+1)%outer.length];
@@ -3330,13 +3330,13 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     shape.moveTo(outer[0].x,outer[0].y);outer.slice(1).forEach(p=>shape.lineTo(p.x,p.y));shape.closePath();
     const hole=new THREE.Path(),reversed=inner.slice().reverse();
     hole.moveTo(reversed[0].x,reversed[0].y);reversed.slice(1).forEach(p=>hole.lineTo(p.x,p.y));hole.closePath();shape.holes.push(hole);
-    const geometry=new THREE.ExtrudeGeometry(shape,{depth:heightMM/MM_PER_UNIT,bevelEnabled:false,curveSegments:16});
+    const geometry=new THREE.ExtrudeGeometry(shape,{depth:mmToWorldUnits(heightMM),bevelEnabled:false,curveSegments:16});
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
     if(![size.x,size.y,size.z].every(v=>Number.isFinite(v)&&v>CSG_EPSILON)){geometry.dispose();throw new Error('Hohlrahmen hat ungültige Abmessungen.');}
     recordHistory();
     const mesh=new THREE.Mesh(geometry,base.material.clone());
-    mesh.position.set(base.position.x,base.position.y,base.position.z+(base.userData.baseDimensions?.z||size.z)-0.02/MM_PER_UNIT);
+    mesh.position.set(base.position.x,base.position.y,base.position.z+(base.userData.baseDimensions?.z||size.z)-mmToWorldUnits(0.02));
     mesh.userData.baseDimensions={x:size.x,y:size.y,z:size.z};mesh.userData.percent={x:100,y:100,z:100};
     mesh.userData.label='Selbst gezeichneter Hohlrahmen';
     mesh.userData.contourFrame={source:base.uuid,wallThicknessMM:thicknessMM,wallHeightMM:heightMM};
@@ -3349,8 +3349,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     document.getElementById('sketchTool').value='rectangle';document.getElementById('sketchWidthMM').value='20';document.getElementById('sketchDepthMM').value='20';document.getElementById('sketchHeightMM').value='3';
     sketchDraft={type:'rectangle',centerX:0,centerY:0,width:20/MM_PER_UNIT,depth:20/MM_PER_UNIT};createSketchSolid();
     const obj=selected,old=obj.userData.sketchOutline[0].slice();loadSelectedSketchPoints();document.getElementById('sketchPointIndex').value='0';
-    document.getElementById('sketchPointXMM').value=String(old[0]*MM_PER_UNIT-2);document.getElementById('sketchPointYMM').value=String(old[1]*MM_PER_UNIT);applySelectedSketchPoint();
-    return {pointCount:obj.userData.sketchOutline.length,oldXMM:old[0]*MM_PER_UNIT,newXMM:obj.userData.sketchOutline[0][0]*MM_PER_UNIT,widthMM:obj.userData.sketch.widthMM,vertices:obj.geometry.attributes.position.count};
+    document.getElementById('sketchPointXMM').value=String(worldUnitsToMm(old[0])-2);document.getElementById('sketchPointYMM').value=String(old[1]*MM_PER_UNIT);applySelectedSketchPoint();
+    return {pointCount:obj.userData.sketchOutline.length,oldXMM:worldUnitsToMm(old[0]),newXMM:worldUnitsToMm(obj.userData.sketchOutline[0][0]),widthMM:obj.userData.sketch.widthMM,vertices:obj.geometry.attributes.position.count};
   };
   window.__silmoTestCreatePreciselyPositionedSketch=()=>{
     document.getElementById('sketchTool').value='rectangle';
@@ -3362,7 +3362,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     sketchDraft={type:'rectangle',centerX:0,centerY:0,width:20/MM_PER_UNIT,depth:30/MM_PER_UNIT};
     createSketchSolid();
     const obj=selected;
-    return {found:!!obj&&obj.userData.label==='Skizze Rechteck',xMM:obj?obj.position.x*MM_PER_UNIT:null,yMM:obj?obj.position.y*MM_PER_UNIT:null,widthMM:obj?obj.userData.sketch?.widthMM:null,depthMM:obj?obj.userData.sketch?.depthMM:null};
+    return {found:!!obj&&obj.userData.label==='Skizze Rechteck',xMM:obj?worldUnitsToMm(obj.position.x):null,yMM:obj?worldUnitsToMm(obj.position.y):null,widthMM:obj?obj.userData.sketch?.widthMM:null,depthMM:obj?obj.userData.sketch?.depthMM:null};
   };
   window.__silmoTestCreateRoundedShell=()=>{
     document.getElementById('sketchTool').value='roundedRectangle';
@@ -3490,7 +3490,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     status.textContent=relation==='concentric'?'Profile konzentrisch ausgerichtet.':relation==='parallel'?'Linien parallel ausgerichtet.':relation==='perpendicular'?'Linien senkrecht ausgerichtet.':'Kurven tangential verbunden.';
   }
   function loadSelectedPathLength(){
-    const obj=selectedCadObject(),curve=cadPathCurve(obj),length=curve.getLength()*MM_PER_UNIT;
+    const obj=selectedCadObject(),curve=cadPathCurve(obj),length=worldUnitsToMm(curve.getLength());
     document.getElementById('editPathLengthMM').value=length.toFixed(1);
     status.textContent='Pfadlänge geladen: '+length.toFixed(1)+' mm.';
   }
@@ -3498,13 +3498,13 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const obj=selectedCadObject(),data=obj.userData.sketch;
     const target=Number(document.getElementById('editPathLengthMM').value);
     if(!Number.isFinite(target)||target<0.1||target>20000)throw new Error('Pfadlänge muss zwischen 0,1 und 20000 mm liegen.');
-    const curve=cadPathCurve(obj),current=curve.getLength()*MM_PER_UNIT;
+    const curve=cadPathCurve(obj),current=worldUnitsToMm(curve.getLength());
     if(current<0.001)throw new Error('Pfad ist zu kurz.');
     const factor=target/current,scaled=data.pathPoints.map(p=>p.map(v=>v*factor));
     const points=scaled.map(p=>new THREE.Vector3(p[0],p[1],p[2]));
     const nextCurve=data.type==='line2d'?new THREE.LineCurve3(points[0],points[points.length-1]):new THREE.CatmullRomCurve3(points);
     const diameter=Number(data.diameterMM||1.2);
-    const geometry=new THREE.TubeGeometry(nextCurve,data.type==='line2d'?24:Math.max(24,Math.min(300,points.length*12)),diameter/MM_PER_UNIT/2,8,false);
+    const geometry=new THREE.TubeGeometry(nextCurve,data.type==='line2d'?24:Math.max(24,Math.min(300,points.length*12)),mmToWorldUnits(diameter)/2,8,false);
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     recordHistory();obj.geometry.dispose();obj.geometry=geometry;data.pathPoints=scaled;data.lengthMM=target;
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);obj.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
@@ -3514,7 +3514,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     if(selectedObjects.length!==2)throw new Error('Bitte genau zwei Objekte auswählen.');
     const axis=document.getElementById('objectDistanceAxis').value,value=Number(document.getElementById('objectDistanceMM').value);
     if(!Number.isFinite(value)||value<0||value>20000)throw new Error('Abstand muss zwischen 0 und 20000 mm liegen.');
-    const [a,b]=selectedObjects;recordHistory();b.position[axis]=a.position[axis]+value/MM_PER_UNIT;
+    const [a,b]=selectedObjects;recordHistory();b.position[axis]=a.position[axis]+mmToWorldUnits(value);
     notifyPositionChanged(b);updateObjects();showProperties();updateMoveGizmo();
     status.textContent='Mittelpunktabstand auf '+value.toFixed(1)+' mm entlang '+axis.toUpperCase()+' gesetzt.';
   }
@@ -3527,9 +3527,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const obj=selectedCadObject();
     if(!obj.userData.sketch)throw new Error('Die Auswahl ist keine bearbeitbare Skizzen-Extrusion.');
     obj.geometry.computeBoundingBox();const size=obj.geometry.boundingBox.getSize(new THREE.Vector3());
-    document.getElementById('editSketchWidthMM').value=(size.x*Math.abs(obj.scale.x)*MM_PER_UNIT).toFixed(1);
-    document.getElementById('editSketchDepthMM').value=(size.y*Math.abs(obj.scale.y)*MM_PER_UNIT).toFixed(1);
-    document.getElementById('editSketchHeightMM').value=(size.z*Math.abs(obj.scale.z)*MM_PER_UNIT).toFixed(1);
+    document.getElementById('editSketchWidthMM').value=(worldUnitsToMm(size.x*Math.abs(obj.scale.x))).toFixed(1);
+    document.getElementById('editSketchDepthMM').value=(worldUnitsToMm(size.y*Math.abs(obj.scale.y))).toFixed(1);
+    document.getElementById('editSketchHeightMM').value=(worldUnitsToMm(size.z*Math.abs(obj.scale.z))).toFixed(1);
     status.textContent='Skizzenmasse geladen. Werte ändern und anschliessend übernehmen.';
   }
   function applySelectedSketchDimensions(){
@@ -3539,10 +3539,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     if(values.some(v=>!Number.isFinite(v)||v<0.1||v>2000))throw new Error('Breite, Tiefe und Höhe müssen zwischen 0,1 und 2000 mm liegen.');
     obj.geometry.computeBoundingBox();const old=obj.geometry.boundingBox.getSize(new THREE.Vector3());
     if(old.x<1e-6||old.y<1e-6||old.z<1e-6)throw new Error('Diese Skizze besitzt keine skalierbare Fläche oder Extrusionshöhe.');
-    const factors=[values[0]/(old.x*Math.abs(obj.scale.x)*MM_PER_UNIT),values[1]/(old.y*Math.abs(obj.scale.y)*MM_PER_UNIT),values[2]/(old.z*Math.abs(obj.scale.z)*MM_PER_UNIT)];
+    const factors=[values[0]/(worldUnitsToMm(old.x*Math.abs(obj.scale.x))),values[1]/(worldUnitsToMm(old.y*Math.abs(obj.scale.y))),values[2]/(worldUnitsToMm(old.z*Math.abs(obj.scale.z)))];
     if(factors.some(v=>!Number.isFinite(v)||v<=0||v>20000))throw new Error('Die gewünschte Skalierung ist ausserhalb des gültigen Bereichs.');
     recordHistory();obj.geometry.scale(...factors);obj.geometry.computeVertexNormals();obj.geometry.computeBoundingBox();obj.geometry.computeBoundingSphere();
-    obj.userData.baseDimensions={x:values[0]/MM_PER_UNIT,y:values[1]/MM_PER_UNIT,z:values[2]/MM_PER_UNIT};
+    obj.userData.baseDimensions={x:mmToWorldUnits(values[0]),y:mmToWorldUnits(values[1]),z:mmToWorldUnits(values[2])};
     obj.userData.sketch.widthMM=values[0];obj.userData.sketch.depthMM=values[1];obj.userData.sketch.extrusionMM=values[2];
     updateObjects();showProperties();updateMoveGizmo();status.textContent='Skizzenmasse aktualisiert: '+values.map(v=>v.toFixed(1)).join(' × ')+' mm.';
   }
@@ -3559,8 +3559,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     if(!obj.userData.sketch||!Array.isArray(outline)||outline.length<3)throw new Error('Bitte zuerst die Konturpunkte laden.');
     const index=Number(document.getElementById('sketchPointIndex').value);
     if(!Number.isInteger(index)||index<0||index>=outline.length)throw new Error('Ungültiger Konturpunkt.');
-    document.getElementById('sketchPointXMM').value=(outline[index][0]*MM_PER_UNIT).toFixed(2);
-    document.getElementById('sketchPointYMM').value=(outline[index][1]*MM_PER_UNIT).toFixed(2);
+    document.getElementById('sketchPointXMM').value=(worldUnitsToMm(outline[index][0])).toFixed(2);
+    document.getElementById('sketchPointYMM').value=(worldUnitsToMm(outline[index][1])).toFixed(2);
   }
   function applySelectedSketchPoint(){
     const obj=selectedCadObject(),meta=obj.userData.sketch,outline=obj.userData.sketchOutline||meta?.outlinePoints;
@@ -3568,19 +3568,19 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const index=Number(document.getElementById('sketchPointIndex').value),xMM=Number(document.getElementById('sketchPointXMM').value),yMM=Number(document.getElementById('sketchPointYMM').value);
     if(!Number.isInteger(index)||index<0||index>=outline.length)throw new Error('Ungültiger Konturpunkt.');
     if(!Number.isFinite(xMM)||!Number.isFinite(yMM)||Math.abs(xMM)>2000||Math.abs(yMM)>2000)throw new Error('Punktkoordinaten müssen zwischen −2000 und 2000 mm liegen.');
-    const updated=outline.map(point=>[point[0],point[1]]);updated[index]=[xMM/MM_PER_UNIT,yMM/MM_PER_UNIT];
+    const updated=outline.map(point=>[point[0],point[1]]);updated[index]=[mmToWorldUnits(xMM),mmToWorldUnits(yMM)];
     const points=updated.map(point=>new THREE.Vector2(point[0],point[1]));
     let area=0;for(let i=0;i<points.length;i++){const a=points[i],b=points[(i+1)%points.length];area+=a.x*b.y-b.x*a.y;}
     if(Math.abs(area)<1e-7)throw new Error('Die Kontur wäre entartet. Wähle andere Punktkoordinaten.');
     for(let i=0;i<points.length;i++)if(points[i].distanceTo(points[(i+1)%points.length])<1e-5)throw new Error('Zwei benachbarte Konturpunkte liegen zu nahe beieinander.');
     const shape=new THREE.Shape();shape.moveTo(points[0].x,points[0].y);points.slice(1).forEach(point=>shape.lineTo(point.x,point.y));shape.closePath();
-    const geometry=new THREE.ExtrudeGeometry(shape,{depth:meta.extrusionMM/MM_PER_UNIT,bevelEnabled:false,curveSegments:32});
+    const geometry=new THREE.ExtrudeGeometry(shape,{depth:mmToWorldUnits(meta.extrusionMM),bevelEnabled:false,curveSegments:32});
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
     if(![size.x,size.y,size.z].every(value=>Number.isFinite(value)&&value>CSG_EPSILON)){geometry.dispose();throw new Error('Die geänderte Kontur erzeugt keine gültige 3D-Geometrie.');}
     recordHistory();obj.geometry.dispose();obj.geometry=geometry;obj.userData.sketchOutline=updated;meta.outlinePoints=updated;
-    meta.widthMM=size.x*MM_PER_UNIT;meta.depthMM=size.y*MM_PER_UNIT;meta.areaMM2=Math.abs(area)/2*MM_PER_UNIT*MM_PER_UNIT;
-    meta.perimeterMM=points.reduce((sum,point,i)=>sum+point.distanceTo(points[(i+1)%points.length])*MM_PER_UNIT,0);
+    meta.widthMM=worldUnitsToMm(size.x);meta.depthMM=worldUnitsToMm(size.y);meta.areaMM2=worldUnits2ToMm2(Math.abs(area)/2);
+    meta.perimeterMM=points.reduce((sum,point,i)=>sum+worldUnitsToMm(point.distanceTo(points[(i+1)%points.length])),0);
     obj.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
     updateObjects();showProperties();updateMoveGizmo();status.textContent='Konturpunkt '+(index+1)+' geändert. Die Skizzenfläche wurde neu aufgebaut.';
     loadSelectedSketchPoints();
@@ -3593,8 +3593,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const maxAllowed=Math.min(meta.widthMM||2000,meta.depthMM||2000,meta.extrusionMM)/2;
     if(radiusMM>=maxAllowed)throw new Error('Der Wert ist zu gross für diese Skizze. Verwende weniger als '+maxAllowed.toFixed(1)+' mm.');
     const shape=new THREE.Shape();shape.moveTo(outline[0][0],outline[0][1]);outline.slice(1).forEach(p=>shape.lineTo(p[0],p[1]));shape.closePath();
-    const bevel=radiusMM/MM_PER_UNIT;
-    const geometry=new THREE.ExtrudeGeometry(shape,{depth:meta.extrusionMM/MM_PER_UNIT,bevelEnabled:true,bevelSegments:mode==='fillet'?8:1,bevelSize:bevel,bevelThickness:bevel,curveSegments:32});
+    const bevel=mmToWorldUnits(radiusMM);
+    const geometry=new THREE.ExtrudeGeometry(shape,{depth:mmToWorldUnits(meta.extrusionMM),bevelEnabled:true,bevelSegments:mode==='fillet'?8:1,bevelSize:bevel,bevelThickness:bevel,curveSegments:32});
     geometry.translate(0,0,bevel);geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     recordHistory();obj.geometry.dispose();obj.geometry=geometry;
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);obj.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
@@ -3673,7 +3673,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const points = sketchDraft.points.map(point => point.clone());
         if (points.length < 2) throw new Error('Eine Linie oder Kurve braucht mindestens zwei Punkte.');
         const curve = tool === 'line2d' ? new THREE.LineCurve3(points[0], points[points.length - 1]) : new THREE.CatmullRomCurve3(points);
-        const radius = diameterMM / MM_PER_UNIT / 2;
+        const radius = mmToWorldUnits(diameterMM) / 2;
         geometry = new THREE.TubeGeometry(curve, tool === 'line2d' ? 24 : Math.max(24, Math.min(300, points.length * 4)), radius, 8, false);
         geometry.computeBoundingBox();
         const center = geometry.boundingBox.getCenter(new THREE.Vector3());
@@ -3684,7 +3684,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           plane: tool === 'line3d' ? document.getElementById('sketchPlaneSelect').value : 'xy',
           diameterMM,
           pointCount: points.length,
-          lengthMM: curve.getLength() * MM_PER_UNIT,
+          lengthMM: worldUnitsToMm(curve.getLength()),
           pathPoints: points.map(point=>[point.x-center.x,point.y-center.y,point.z-center.z])
         };
         label = tool === 'line3d' ? '3D-Linie' : tool === 'line2d' ? '2D-Linie' : '2D-Kurve';
@@ -3722,15 +3722,15 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           shape.holes.push(holePath);
           holeMetadata.push(holeVectors.map(point => [point.x, point.y]));
         }
-        geometry = new THREE.ExtrudeGeometry(shape, { depth: heightMM / MM_PER_UNIT, bevelEnabled: false });
+        geometry = new THREE.ExtrudeGeometry(shape, { depth: mmToWorldUnits(heightMM), bevelEnabled: false });
         geometry.computeVertexNormals();
         meshPosition.set(centerX, centerY, 0);
         sketchMetadata = {
           type: 'freeform2d', points: localPoints.length, holes: holeMetadata,
-          widthMM: (maxX - minX) * MM_PER_UNIT,
-          depthMM: (maxY - minY) * MM_PER_UNIT,
-          areaMM2: area * MM_PER_UNIT * MM_PER_UNIT,
-          perimeterMM: perimeter * MM_PER_UNIT,
+          widthMM: worldUnitsToMm(maxX - minX),
+          depthMM: worldUnitsToMm(maxY - minY),
+          areaMM2: worldUnits2ToMm2(area),
+          perimeterMM: worldUnitsToMm(perimeter),
           extrusionMM: heightMM,
           outlinePoints: localPoints.map(point=>[point.x,point.y])
         };
@@ -3747,8 +3747,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           shape.moveTo(-x, -y); shape.lineTo(x, -y); shape.lineTo(0, y); shape.closePath();
         } else if(tool==='roundedRectangle') {
           const radiusMM=Number(document.getElementById('sketchCornerRadiusMM').value);
-          if(!Number.isFinite(radiusMM)||radiusMM<0||radiusMM>Math.min(dims.width,dims.depth)*MM_PER_UNIT/2) throw new Error('Der Eckenradius muss zwischen 0 und der halben kleineren Seitenlänge liegen.');
-          addRoundedRectPath(shape,dims.width,dims.depth,radiusMM/MM_PER_UNIT);
+          if(!Number.isFinite(radiusMM)||radiusMM<0||radiusMM>worldUnitsToMm(Math.min(dims.width,dims.depth))/2) throw new Error('Der Eckenradius muss zwischen 0 und der halben kleineren Seitenlänge liegen.');
+          addRoundedRectPath(shape,dims.width,dims.depth,mmToWorldUnits(radiusMM));
         } else {
           const x = dims.width / 2, y = dims.depth / 2;
           shape.moveTo(-x, -y); shape.lineTo(x, -y); shape.lineTo(x, y); shape.lineTo(-x, y); shape.closePath();
@@ -3759,9 +3759,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         meshPosition.set(sketchDraft.centerX, sketchDraft.centerY, 0);
         sketchMetadata = {
           type: tool,
-          widthMM: dims.width * MM_PER_UNIT,
-          depthMM: dims.depth * MM_PER_UNIT,
-          extrusionMM: dims.height * MM_PER_UNIT,
+          widthMM: worldUnitsToMm(dims.width),
+          depthMM: worldUnitsToMm(dims.depth),
+          extrusionMM: worldUnitsToMm(dims.height),
           outlinePoints: profileOutline.map(point=>[point.x,point.y])
         };
         label = tool === 'circle' ? 'Skizze Kreis' : tool === 'ellipse' ? 'Skizze Ellipse' : tool === 'triangle' ? 'Skizze Dreieck' : tool === 'roundedRectangle' ? 'Abgerundete Rechteck-Skizze' : 'Skizze Rechteck';
@@ -3775,8 +3775,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       geometry.computeBoundingBox();
       geometry.computeBoundingSphere();
       const worldSketchBounds = geometry.boundingBox.clone().translate(meshPosition);
-      const halfBedW = bedWidthMM / (2 * MM_PER_UNIT);
-      const halfBedD = bedDepthMM / (2 * MM_PER_UNIT);
+      const halfBedW = mmToWorldUnits(bedWidthMM / 2);
+      const halfBedD = mmToWorldUnits(bedDepthMM / 2);
       const bedTolerance = window.SILMOTolerances.SKETCH_BED_BOUNDS_WORLD_UNITS;
       if (worldSketchBounds.min.x < -halfBedW - bedTolerance ||
           worldSketchBounds.max.x > halfBedW + bedTolerance ||
@@ -3837,8 +3837,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     sketchDraft = {
       centerX:0,
       centerY:0,
-      points:points.map(point => new THREE.Vector3(point[0] / MM_PER_UNIT, point[1] / MM_PER_UNIT, 0)),
-      holes:holes.map(hole => hole.map(point => new THREE.Vector3(point[0] / MM_PER_UNIT, point[1] / MM_PER_UNIT, 0)))
+      points:points.map(point => new THREE.Vector3(mmToWorldUnits(point[0]), mmToWorldUnits(point[1]), 0)),
+      holes:holes.map(hole => hole.map(point => new THREE.Vector3(mmToWorldUnits(point[0]), mmToWorldUnits(point[1]), 0)))
     };
     createSketchSolid();
     return objects.length > before
@@ -3977,9 +3977,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     return {
       label: obj.userData.label,
       ...obj.userData.sketch,
-      actualWidthMM: size.x * MM_PER_UNIT,
-      actualDepthMM: size.y * MM_PER_UNIT,
-      actualHeightMM: size.z * MM_PER_UNIT
+      actualWidthMM: worldUnitsToMm(size.x),
+      actualDepthMM: worldUnitsToMm(size.y),
+      actualHeightMM: worldUnitsToMm(size.z)
     };
   };
 
@@ -4638,7 +4638,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const box = new THREE.Box3().setFromObject(obj);
       const size = new THREE.Vector3(); box.getSize(size);
       const attribute = obj.geometry && obj.geometry.attributes && obj.geometry.attributes.position;
-      return { uuid: obj.uuid, width: size.x * MM_PER_UNIT, depth: size.y * MM_PER_UNIT, height: size.z * MM_PER_UNIT, vertexCount: attribute ? attribute.count : 0, label: obj.userData && obj.userData.label ? obj.userData.label : 'Objekt' };
+      return { uuid: obj.uuid, width: worldUnitsToMm(size.x), depth: worldUnitsToMm(size.y), height: worldUnitsToMm(size.z), vertexCount: attribute ? attribute.count : 0, label: obj.userData && obj.userData.label ? obj.userData.label : 'Objekt' };
     } catch (_) { return { uuid: obj.uuid, width: 0, depth: 0, height: 0, vertexCount: 0, label: 'Objekt' }; }
   });
   createObject('Würfel');
