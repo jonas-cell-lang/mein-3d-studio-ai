@@ -6,7 +6,7 @@
 
 ## 1. Tatsächlich geladene Laufzeitabhängigkeiten
 
-Die HTML-Datei lädt Three.js und die beiden passenden STL-Erweiterungen aus lokalen, beim Build vorbereiteten Dateien:
+Im Dokumentkopf wird zuerst das eigenständige Modul `./src/developer-diagnostics.js` geladen. Nach dem HTML-Arbeitsbereich folgt `./src/tool-navigation.js` für die Werkzeugnavigation. Danach lädt die HTML-Datei Three.js und die beiden passenden STL-Erweiterungen aus lokalen, beim Build vorbereiteten Dateien:
 
 | Reihenfolge | Bibliothek | Exakte Version | Aktuelle Quelle | Benötigte globale API |
 |---|---|---:|---|---|
@@ -19,9 +19,10 @@ Danach lädt SILMO lokal und in dieser Reihenfolge:
 1. `./src/units.js`
 2. `./src/tolerances.js`
 3. `./src/project-schema.js`
-4. Das grosse Inline-CAD-Hauptskript.
-5. `./src/tutorial.js` – ausgelagerter, selbstständiger Lernkurs.
-6. `./src/image-studio.js` – ausgelagerter, selbstständiger 2D-Bildarbeitsbereich.
+4. `./src/units.js`, `./src/tolerances.js` und `./src/project-schema.js`.
+5. Das grosse Inline-CAD-Hauptskript.
+6. `./src/tutorial.js` – ausgelagerter, selbstständiger Lernkurs.
+7. `./src/image-studio.js` – ausgelagerter, selbstständiger 2D-Bildarbeitsbereich.
 
 Die Reihenfolge ist relevant: Das Hauptskript erwartet sowohl `THREE` samt STL-Erweiterungen als auch `window.SILMOUnits` und `window.SILMOProjectSchema`.
 
@@ -89,12 +90,14 @@ Es handelt sich deshalb nicht um eine Bibliothek, die man durch blosses Entferne
 - Der Browser-Test blockiert externe HTTPS-Zugriffe und prüft den Start, Modellierungsabläufe, Projekt-Speichern/Wiederöffnen sowie STL-Funktionen.
 - Der GitHub-Pages-Build erzeugt die lokalen Dateien erst beim Build und kopiert sie in das Pages-Artefakt.
 - `src/tutorial.js` und `src/image-studio.js` wurden aus zwei selbstständigen Inline-IIFEs herausgelöst. Ihre Ausführungsreihenfolge blieb gleich; die Module verwenden eigene lokale Variablen und kommunizieren über die vorhandenen DOM-/`window`-Schnittstellen.
-- Die CI prüft, dass beide neuen Module im lokalen Pages-Testpaket enthalten sind und die HTML-Datei auf die lokalen Dateien verweist.
+- `src/developer-diagnostics.js` wurde als eigenständiges Diagnosemodul in den Dokumentkopf verschoben; die Script-ID blieb erhalten.
+- `src/tool-navigation.js` enthält die bisherige, DOM-basierte Werkzeugnavigation. Sie wird an derselben Stelle vor Three.js geladen und greift nicht auf den lexikalischen CAD-Hauptskript-Scope zu.
+- Die CI prüft, dass alle vier ausgelagerten Module im lokalen Pages-Testpaket enthalten sind und die HTML-Datei auf die lokalen Dateien verweist. Die statische Funktionsprüfung durchsucht zusätzlich die ausgelagerte Navigationsdatei.
 - Die erste Einheitenmigration ist abgeschlossen: `MM_PER_UNIT` wird in `index.html` nicht mehr verwendet; Längen- und Flächenkonvertierungen laufen über `src/units.js`.
 
 ### Verifizierter Stand
 
-Für Commit `10502a8` sind Code-Checks und Browser-Interaktionstests erfolgreich. Der Browserlauf blockiert externe HTTPS-Zugriffe. Der Workflow erzeugt die Runtime lokal und prüft die lokale Anwendung; es wurde kein Pages-Deployment ausgelöst.
+Für Commit `89214a0b37b39e1d227df16ba3f5056c35799ffa` sind Code-Checks und Browser-Interaktionstests erfolgreich. Der Browserlauf blockiert externe HTTPS-Zugriffe. Der Workflow erzeugt die Runtime lokal und prüft die lokale Anwendung; es wurde kein Pages-Deployment ausgelöst.
 
 ## 6. Was bewusst noch nicht geändert wurde
 
