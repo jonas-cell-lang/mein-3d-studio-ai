@@ -205,6 +205,10 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - `tests/tolerances.test.cjs` sichert Werte und Unveränderlichkeit.
 - Das Inventar und die offenen Zuordnungen stehen in `docs/SILMO_UNITS_TOLERANCE_SPEC.md`.
 
+### 6.7 BSP-CSG-Kern
+- Der polygonbasierte BSP-Kern wurde in `src/csg.js` ausgelagert und erhält Three.js sowie die CSG-Toleranz über eine explizite Factory-Schnittstelle.
+- `runBooleanOperation` bleibt im Hauptskript, weil es Auswahl, Undo-History, Szene und UI aktualisiert. Die reine Geometrieberechnung wird über `window.SILMOCSG.combineMeshes` ausgeführt.
+- Der Browser-Regressionslauf prüft sowohl Boolesche Verbindung als auch Differenz; bestehende Union-Teile bleiben speicher- und wiederherstellbar.
 ### 6.6 Erste schrittweise Modularisierung
 - `src/developer-diagnostics.js` enthält das Diagnosefenster als eigenständige Datei.
 - `src/tool-navigation.js` enthält Hauptnavigation, Werkzeugbereiche und Unterreiter.
