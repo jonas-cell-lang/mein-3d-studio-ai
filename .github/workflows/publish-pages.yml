@@ -119,6 +119,7 @@ jobs:
               "src/units.js",
               "src/tolerances.js",
               "src/project-schema.js",
+              "src/project-geometry.js",
               "src/tutorial.js",
               "src/developer-diagnostics.js",
               "src/image-studio.js",
