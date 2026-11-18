@@ -739,6 +739,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await showCreateSubtab(0);
   await page.locator('#addCube').click();
   await page.locator('#addSphere').click();
+  await page.locator('[data-tab="edit"]').click();
   await page.locator('#multiSelectToggle').click();
   await page.locator('#objects .object-select').nth(subtractStartCount).click();
   await page.locator('#objects .object-select').nth(subtractStartCount + 1).click();
