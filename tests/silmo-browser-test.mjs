@@ -738,6 +738,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const subtractStartCount = await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click();
   await page.locator('#addSphere').click();
+  await page.locator('#multiSelectToggle').click();
   await page.locator('#objects .object-select').nth(subtractStartCount).click();
   await page.locator('#objects .object-select').nth(subtractStartCount + 1).click();
   assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 2, 'Differenz-Test konnte nicht beide Formen auswählen');
