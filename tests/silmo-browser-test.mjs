@@ -612,8 +612,14 @@ try {
   assert.equal(freeformBeforeCreate.tool, 'freeform2d', 'Skizzenwerkzeug wechselte vor der Freiform-Extrusion: ' + JSON.stringify(freeformBeforeCreate));
   assert.equal(freeformBeforeCreate.draft?.type, 'freeform2d', 'Freiform-Zeichenpunkte gingen vor der Extrusion verloren: ' + JSON.stringify(freeformBeforeCreate));
   await page.locator('#createSketchSolid').click();
-  const freeformSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
-  assert.equal(freeformSnapshot.type, 'freeform2d', 'Freiform wurde nicht als Freiformkörper gespeichert');
+  const freeformAfterCreate = await page.evaluate(() => ({
+    snapshot: window.__silmoSketchSnapshot(),
+    status: document.getElementById('status')?.textContent,
+    sketchStatus: document.getElementById('sketchStatus')?.textContent,
+    tool: document.getElementById('sketchTool')?.value
+  }));
+  const freeformSnapshot = freeformAfterCreate.snapshot;
+  assert.equal(freeformSnapshot.type, 'freeform2d', 'Freiform wurde nicht als Freiformkörper gespeichert: ' + JSON.stringify(freeformAfterCreate));
   assert.ok(freeformSnapshot.points >= 3, 'Freiform enthält zu wenige Konturpunkte');
   assert.ok(freeformSnapshot.areaMM2 > 0, 'Freiform hat keine gültige Fläche');
   assert.ok(freeformSnapshot.perimeterMM > 0, 'Freiform hat keinen Umfang');
