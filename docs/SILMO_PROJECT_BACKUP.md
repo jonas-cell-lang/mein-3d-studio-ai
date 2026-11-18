@@ -803,7 +803,7 @@ Eine Version gilt erst als veröffentlicht, wenn:
 
 ### Nachweisbare Tests
 
-Für Code-Commit `f591cda4be1c1dee92b3091b6a24201fb93079c6`:
+Für Code-Commit `d131d4ec23fe0c30349f548205dd819e759f3ec8`:
 - SILMO code checks: erfolgreich.
 - SILMO browser interaction tests: erfolgreich.
 
