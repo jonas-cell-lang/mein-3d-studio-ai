@@ -219,7 +219,7 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - Die zentrale Einheiten-API ist in `index.html` eingebunden; eine aktuelle Quellcodesuche findet dort keine Verwendung des alten Namens `MM_PER_UNIT`.
 - Die lokale Three.js-Runtime ist fest gepinnt und wird für Browser-Tests und Pages-Artefakte vorbereitet.
 - Projektformat v3 und Geometrievalidierung sind implementiert. Einfache und erweiterte Projekt-Fixtures sowie negative Importtests sind Teil der Browser-Regression.
-- Die benannten Toleranzen sind dokumentiert und erste Aufrufstellen migriert; das vollständige Toleranzinventar bleibt ein offener Prüfpunkt.
+- Die benannten Toleranzen sind dokumentiert. Zusätzlich wurden Kontur-Hohlrahmen, editierte Skizzenkonturen, Pfadrichtungen und Profilumfang mit getrennten Konstanten versehen; die numerischen Altwerte blieben unverändert. Das vollständige Toleranzinventar und Grenzfalltests für alle Klassen bleiben offen.
 - Projektdatei-I/O ist aus dem Hauptskript ausgelagert. Der atomare Wechsel auf das neue Modell wird durch Browser-Regressionen abgesichert.
 - Der aktuelle Entwicklungsbranch ist `phase1/central-units-api`; PR 69 bleibt Draft und ungemergt. Es erfolgt kein Produktionsdeployment vor der ausdrücklichen Fertigstellung und Freigabe.
 - Für Code-Commit `78fe9212433d4101f2b85732524788316b130b41` waren Code-Checks und Browser-Tests erfolgreich; spätere reine Dokumentationsänderungen werden separat geprüft.
