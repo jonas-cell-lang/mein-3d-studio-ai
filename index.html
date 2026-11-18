@@ -2273,7 +2273,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         obj.userData.percent[a] = Math.abs(obj.scale[a]) * 100;
       });
     } else {
-      obj.scale[axis] = Math.sign(obj.scale[axis] || 1) * newMM / (base[axis] * MM_PER_UNIT);
+      obj.scale[axis] = Math.sign(obj.scale[axis] || 1) * newMM / worldUnitsToMm(base[axis]);
       obj.userData.percent[axis] = Math.abs(obj.scale[axis]) * 100;
     }
 
@@ -2593,7 +2593,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     rebuildBed();
     // Ansicht passend zum Bett ausrichten, ohne Objekte zu verändern.
     focus.set(0, 0, 0);
-    targetDistance = Math.max(5, Math.max(bedWidthMM, bedDepthMM) / MM_PER_UNIT * 1.6);
+    targetDistance = Math.max(5, mmToWorldUnits(Math.max(bedWidthMM, bedDepthMM)) * 1.6);
     resize();
     status.textContent = `Druckbett übernommen: ${width} × ${depth} mm`;
     return true;
@@ -3347,9 +3347,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 
   window.__silmoTestEditSketchPoint=()=>{
     document.getElementById('sketchTool').value='rectangle';document.getElementById('sketchWidthMM').value='20';document.getElementById('sketchDepthMM').value='20';document.getElementById('sketchHeightMM').value='3';
-    sketchDraft={type:'rectangle',centerX:0,centerY:0,width:20/MM_PER_UNIT,depth:20/MM_PER_UNIT};createSketchSolid();
+    sketchDraft={type:'rectangle',centerX:0,centerY:0,width:mmToWorldUnits(20),depth:mmToWorldUnits(20)};createSketchSolid();
     const obj=selected,old=obj.userData.sketchOutline[0].slice();loadSelectedSketchPoints();document.getElementById('sketchPointIndex').value='0';
-    document.getElementById('sketchPointXMM').value=String(worldUnitsToMm(old[0])-2);document.getElementById('sketchPointYMM').value=String(old[1]*MM_PER_UNIT);applySelectedSketchPoint();
+    document.getElementById('sketchPointXMM').value=String(worldUnitsToMm(old[0])-2);document.getElementById('sketchPointYMM').value=String(worldUnitsToMm(old[1]));applySelectedSketchPoint();
     return {pointCount:obj.userData.sketchOutline.length,oldXMM:worldUnitsToMm(old[0]),newXMM:worldUnitsToMm(obj.userData.sketchOutline[0][0]),widthMM:obj.userData.sketch.widthMM,vertices:obj.geometry.attributes.position.count};
   };
   window.__silmoTestCreatePreciselyPositionedSketch=()=>{
@@ -3359,7 +3359,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     document.getElementById('sketchHeightMM').value='4';
     document.getElementById('sketchPositionXMM').value='15';
     document.getElementById('sketchPositionYMM').value='-10';
-    sketchDraft={type:'rectangle',centerX:0,centerY:0,width:20/MM_PER_UNIT,depth:30/MM_PER_UNIT};
+    sketchDraft={type:'rectangle',centerX:0,centerY:0,width:mmToWorldUnits(20),depth:mmToWorldUnits(30)};
     createSketchSolid();
     const obj=selected;
     return {found:!!obj&&obj.userData.label==='Skizze Rechteck',xMM:obj?worldUnitsToMm(obj.position.x):null,yMM:obj?worldUnitsToMm(obj.position.y):null,widthMM:obj?obj.userData.sketch?.widthMM:null,depthMM:obj?obj.userData.sketch?.depthMM:null};
@@ -3372,7 +3372,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     document.getElementById('sketchCornerRadiusMM').value='8';
     document.getElementById('wallThicknessMM').value='1.4';
     document.getElementById('frameHeightMM').value='12';
-    sketchDraft={type:'rectangle',centerX:0,centerY:0,width:72/MM_PER_UNIT,depth:150/MM_PER_UNIT};
+    sketchDraft={type:'rectangle',centerX:0,centerY:0,width:mmToWorldUnits(72),depth:mmToWorldUnits(150)};
     createSketchSolid();
     const base=selected;
     const baseOK=!!base&&Array.isArray(base.userData.sketchOutline)&&base.userData.sketchOutline.length>=8;
@@ -3401,7 +3401,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     selectedObjects=[a];selected=a;loadSelectedPathLength();document.getElementById('editPathLengthMM').value='30';applySelectedPathLength();
     const lengthOK=Math.abs(a.userData.sketch.lengthMM-30)<0.01;
     selectedObjects=[profile1,profile2];selected=profile2;document.getElementById('objectDistanceAxis').value='z';document.getElementById('objectDistanceMM').value='15';applyObjectDistance();
-    const distanceOK=Math.abs((profile2.position.z-profile1.position.z)*MM_PER_UNIT-15)<0.01;
+    const distanceOK=Math.abs(worldUnitsToMm(profile2.position.z-profile1.position.z)-15)<0.01;
     return {parallelOK,perpendicularOK,tangentOK,concentricOK,lengthOK,distanceOK};
   };
   window.__silmoTestRunProCad=()=>{
@@ -3410,7 +3410,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const outline=shape.getPoints(16).slice(0,-1).map(p=>[p.x,p.y]);
       const geometry=new THREE.ExtrudeGeometry(shape,{depth:h,bevelEnabled:false});geometry.computeVertexNormals();
       const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:'#4b91ed'}));mesh.position.set(x,y,z);
-      mesh.userData={label:name,percent:{x:100,y:100,z:100},baseDimensions:{x:w,y:d,z:h},sketch:{type:'rectangle',widthMM:w*MM_PER_UNIT,depthMM:d*MM_PER_UNIT,extrusionMM:h*MM_PER_UNIT,outlinePoints:outline},sketchOutline:outline};
+      mesh.userData={label:name,percent:{x:100,y:100,z:100},baseDimensions:{x:w,y:d,z:h},sketch:{type:'rectangle',widthMM:worldUnitsToMm(w),depthMM:worldUnitsToMm(d),extrusionMM:worldUnitsToMm(h),outlinePoints:outline},sketchOutline:outline};
       scene.add(mesh);objects.push(mesh);return mesh;
     };
     const before=objects.length;
@@ -3418,7 +3418,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     selectedObjects=[p1];selected=p1;
     document.getElementById('editSketchWidthMM').value='30';document.getElementById('editSketchDepthMM').value='25';document.getElementById('editSketchHeightMM').value='4';
     applySelectedSketchDimensions();
-    const dimensionOK=Math.abs(p1.geometry.boundingBox.getSize(new THREE.Vector3()).x*MM_PER_UNIT-30)<0.01;
+    const dimensionOK=Math.abs(worldUnitsToMm(p1.geometry.boundingBox.getSize(new THREE.Vector3()).x)-30)<0.01;
     document.getElementById('edgeTreatmentMM').value='0.5';createEdgeTreatment('fillet');
     const filletOK=p1.userData.edgeTreatment?.type==='fillet'&&p1.geometry.attributes.position.count>0;
     selectedObjects=[p1,p2];selected=p2;createLoftFromSelection();
