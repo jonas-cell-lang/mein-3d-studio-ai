@@ -178,8 +178,8 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 ### 6.1 Zentrale Einheiten-API
 - `src/units.js` definiert die bestehende Skala: 1 Three.js-Welteinheit = 10 mm.
 - Die API enthält getrennte Umrechnungen für Länge, Fläche und Volumen.
-- Erste Kernbereiche verwenden die API bereits: Druckbett/Raster, Skizzenbegrenzung und -vereinfachung, Eingabedimensionen, STL-Import/-Export, Ausrichtung/Abstandsverteilung, Tastaturschritte und Druckmassenausgabe.
-- Der bisherige `MM_PER_UNIT`-Name bleibt als Kompatibilitätsalias für noch nicht migrierte Aufrufstellen bestehen.
+- Die Längen- und Flächenkonvertierungen im CAD-Hauptskript wurden auf die API umgestellt: Druckbett/Raster, Skizzenbegrenzung und -vereinfachung, Eingabedimensionen, STL-Import/-Export, Ausrichtung/Abstandsverteilung, Tastaturschritte, Skizzengeometrie und Druckmassenausgabe.
+- Der alte `MM_PER_UNIT`-Kompatibilitätsalias wurde entfernt; es gibt keine verbleibenden Verwendungen in `index.html`.
 - Unit-Tests und Browserprüfungen sichern die Referenzumrechnungen.
 
 ### 6.2 Projektformat v3 und Geometrievalidierung
