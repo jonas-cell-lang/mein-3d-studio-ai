@@ -854,12 +854,24 @@ Three.js soll zunächst Darstellung, Kamera und Interaktion weiter übernehmen k
 - Masterplan: `docs/SILMO_MASTERPLAN.md`
 - Technische Bestandsaufnahme: `docs/SILMO_CURRENT_STATE_AUDIT.md`
 - Diese vollständige Sicherung: `docs/SILMO_PROJECT_BACKUP.md`
+- Runtime-Abhängigkeitsprüfung: `docs/SILMO_RUNTIME_DEPENDENCY_AUDIT.md`
+- Einheiten- und Toleranzspezifikation: `docs/SILMO_UNITS_TOLERANCE_SPEC.md`
+- Projektformat v3: `docs/SILMO_PROJECT_FORMAT_V3.md`
+- Lokaler Start: `docs/LOCAL_START.md`
+- Zentrale Einheiten-API: `src/units.js`
+- Zentrale Toleranz-API: `src/tolerances.js`
+- Projekt-/Geometrievalidierung: `src/project-schema.js`
+- Geometrievalidierungstests: `tests/project-schema.test.cjs`
 
 ## Bestätigte Commits
 - v77 Smooth Sketch: `b7016db585e5bf5f237ff89866c5e093e983c911`
 - v90 App-Code: `f1caa90cb246db2bb66b35e24ca91cac0d838fa3`
 - Masterplan-Dokument: `63952de963b28518b1b0a23e1a11c4dbde75fa0b`
 - Technische Bestandsaufnahme: `d960c71cb7300b2cef13f163e5c4f7cf1a030579`
+- Lokale Runtime / CDN-freier Browserlauf: `5440c78f2bddef1b1d9f4f9f648df5ff660be77b`
+- Zentrale Toleranzen: `2abc639121673ef39877d16847fb7a9bfe4a4d0a`
+- Geometrievalidierung: `f591cda4be1c1dee92b3091b6a24201fb93079c6`
+- Aktuelle Sicherung: `a5132ac0229bf025594ffb604753622a3787f576`
 
 ---
 
