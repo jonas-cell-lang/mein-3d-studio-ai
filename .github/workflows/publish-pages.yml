@@ -117,6 +117,7 @@ jobs:
 
           required = (
               "src/units.js",
+              "src/tolerances.js",
               "src/project-schema.js",
               "vendor/three/three.min.js",
               "vendor/three/STLLoader.js",
