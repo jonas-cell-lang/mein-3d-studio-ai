@@ -595,3 +595,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Diese Tests prüfen gezielt, ob kleine, aber deutlich über der CSG-Toleranz liegende Wand- und Schnittgeometrie erhalten bleibt.
 - Ein korrektes Volumen allein ist kein Nachweis für vollständige STL-Manifold-Qualität; spätere Prüfungen müssen Kanteninzidenz, offene Kanten und Normalenorientierung ergänzen.
 - Teständerung enthalten in Commit `a04a3beff8d2d523aa30b1a387a9a630ed092672`; CI-Prüfungen ausstehend.
+
+
+### 6.50 CSG-Ausgabe: Topologieprüfung vor STL-Einsatz (20.11.2026)
+- Die vorhandene STL-Topologieanalyse wird jetzt direkt auf Ergebnisse der CSG-Vereinigung und CSG-Differenz angewendet.
+- Geprüft werden geschlossene Kanteninzidenz, nicht-manifold Kanten, konsistente Kantenrichtung, doppelte Dreiecke, kollabierte Dreiecke und umgekehrte Gesamtorientierung.
+- Die Testgeometrie wird für die Analyse entsprechend der bestehenden SILMO-Einheitenkonvention von 10 mm pro Welteinheit in Millimeter skaliert.
+- Ziel ist nicht nur ein korrektes Volumen, sondern auch ein geschlossenes, konsistent orientiertes Dreiecksnetz als Voraussetzung für verlässlichen STL-Export.
+- Neue Tests enthalten in Commit `57ccbcbb5fbf15c067aa6fe8d79b3d2c6f1d354d`; CI-Prüfungen ausstehend.
