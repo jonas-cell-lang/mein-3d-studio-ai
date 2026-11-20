@@ -271,3 +271,10 @@ Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPS
 - `LOFT_PROFILE_MIN_NORMAL_WORLD_UNITS = 1e-9` schützt die Ebenennormalenberechnung vor entarteten Konturen.
 - Beide Werte werden von `src/sketch-geometry.js` verwendet und sind in `tests/tolerances.test.cjs` einzeln festgeschrieben.
 - Die Toleranzen sind bewusst dimensionsbezogen und verändern keine bestehenden Bild-, Druck- oder Skizzenwerte.
+
+
+### 3.12 Skizzen-Kantenbearbeitung: dimensionsgetrennte Schnittpunkttoleranzen (20.11.2026)
+- Die Selbstüberschneidungs- und Kollinearitätsprüfung der Kantenbearbeitung verwendet nun `SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2 = 1e-12` für Kreuzprodukt-/Orientierungsvergleiche.
+- Die Begrenzungsprüfung eines Punktes auf einem Segment verwendet `SKETCH_GEOMETRY_BOUNDS_EPSILON_WORLD_UNITS = 1e-12` für Koordinatenvergleiche.
+- Die bisherigen Zahlenwerte bleiben unverändert. Die Trennung dokumentiert, dass Kreuzprodukte eine Flächendimension haben, während Segmentgrenzen Längenkoordinaten vergleichen.
+- Der bestehende Test für selbstüberschneidende und überlappende Konturen bleibt als Verhaltensregression bestehen; beide Konstanten werden zusätzlich im zentralen Toleranzwerttest und im Laufzeit-Verwendungs-Audit erfasst.
