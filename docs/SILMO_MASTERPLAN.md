@@ -306,3 +306,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Segment- und Punkt-in-Polygon-Prüfungen laufen ausschliesslich auf Konturen, die bereits auf reale Millimeter abgebildet wurden.
 - Fünf bisher mit `_PX` / `_PX2` bezeichnete Werte wurden deshalb dimensionsrichtig in `_MM` / `_MM2` umbenannt; Zahlenwerte und Verhalten blieben unverändert.
 - Die eigentliche Raster-/Bildkomponenten-Erkennung bleibt separat im Pixelraum.
+
+
+### 6.18 Projektweite Geometrie-Importgrenze
+- Die bisherige Schema-Grenze von 1'500'000 Attributwerten galt pro Mesh. Bei bis zu 100 Projektobjekten hätte sich daraus eine sehr grosse kumulierte Datenmenge ergeben.
+- `validateProjectEnvelope` validiert Geometrien jetzt bereits beim Projektumschlag und summiert Attributwerte sowie Indizes über alle Objekte und rekursiv gespeicherten Union-Teile.
+- Die projektweite Obergrenze beträgt 15'000'000 numerische Geometriewerte. Der Grenzfalltest akzeptiert exakt 15'000'000 Werte und weist einen zusätzlichen Geometrieanteil in einem Union-Teil ab.
+- Diese zusätzliche Schutzgrenze ändert keine Geometriekoordinaten und keine bestehende Modellierungsfunktion; sie begrenzt ausschliesslich die Datenmenge beim Projektimport.
+- Status: Implementiert auf Commit `dcc8246a53d00f4a569ea61e99bd5fa5dfde3d03`; Code- und Browser-CI für diesen Commit müssen noch erfolgreich nachgewiesen werden.
