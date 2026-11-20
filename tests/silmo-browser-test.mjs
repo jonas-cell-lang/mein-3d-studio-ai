@@ -1174,10 +1174,10 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await hollowLoftRoundTripPage.waitForFunction(()=>typeof window.SILMOProjectSchema?.validateProjectEnvelope==='function',null,{timeout:15000});
   await hollowLoftRoundTripPage.locator('[data-tab="print"]').click();
   await hollowLoftRoundTripPage.locator('#projectFileInput').setInputFiles(hollowLoftSavedPath);
-  await hollowLoftRoundTripPage.waitForFunction(()=>window.__silmoLoftMetadataSnapshot?.().some(item=>item.innerContourCount===1&&item.sourceHoleCount===1),null,{timeout:15000});
+  await hollowLoftRoundTripPage.waitForFunction(()=>window.__silmoLoftMetadataSnapshot?.().some(item=>item.innerContourCount===1&&item.sourceHoleCount===1&&item.sourceReferencesResolve),null,{timeout:15000});
   const restoredHollowLoft=await hollowLoftRoundTripPage.evaluate(()=>window.__silmoLoftMetadataSnapshot());
-  assert.ok(restoredHollowLoft.some(item=>item.innerContourCount===1&&item.sourceHoleCount===1),
-    'Projektimport stellt die Hohl-Loft-Zuordnung nicht wieder her');
+  assert.ok(restoredHollowLoft.some(item=>item.innerContourCount===1&&item.sourceHoleCount===1&&item.sourceReferencesResolve),
+    'Projektimport stellt die Hohl-Loft-Zuordnung oder Quellprofil-IDs nicht wieder her');
   await hollowLoftRoundTripPage.close();
   await page.locator('[data-tab="draw"]').click();
 
