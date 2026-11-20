@@ -210,4 +210,4 @@ Diese Werte sind keine globalen CAD-Genauigkeitsversprechen. Insbesondere Vorsch
 | `IMAGE_MIN_PRINT_CONTOUR_AREA_MM2` | 0,01 | mm²; Mindestfläche einer auf reale Modellmasse abgebildeten Aussen-/Innenkontur vor der CAD-Übergabe |
 | `IMAGE_MIN_WALL_THICKNESS_MM` | 0,8 | mm; Mindestmaterialstärke zwischen Aussparungen sowie zwischen Aussparung und Aussenkante |
 
-Die Bildkonturprüfung enthält ausserdem eine bestehende Flächenschwelle in `polygonIsSimple`, die sowohl vor als auch nach der Abbildung auf reale Modellmasse aufgerufen wird. Weil der Aufruf derzeit nicht eindeutig Pixel² oder mm² garantiert, bleibt diese Schwelle absichtlich unverändert und ist als offener Einheiten-Auditpunkt markiert.
+Die Flächenschwelle in `polygonIsSimple` wird ausschliesslich innerhalb von `validatePrintableContours` auf bereits auf reale Modellmasse abgebildete Konturen angewendet. Sie ist deshalb als `IMAGE_MIN_SIMPLE_POLYGON_AREA_MM2` mit 0,01 mm² benannt und getestet.
