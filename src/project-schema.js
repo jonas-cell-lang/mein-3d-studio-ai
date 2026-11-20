@@ -224,6 +224,10 @@
           validId(pair.a) && validId(pair.b))) {
       throw new Error('Ungültige Loft-Metadaten oder Innenkontur-Zuordnung.');
     }
+    const sourceIds = [loft.sourceA, loft.sourceB, ...loft.sourceHoles.flatMap(pair => [pair.a, pair.b])];
+    if (new Set(sourceIds).size !== sourceIds.length) {
+      throw new Error('Loft-Quellprofile müssen eindeutige Objektkennungen besitzen.');
+    }
   }
 
   const MAX_PROJECT_GEOMETRY_VALUES = 15000000;
