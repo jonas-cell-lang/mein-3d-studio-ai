@@ -370,3 +370,10 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Zusätzlich wurde ein geometrischer Grenzfall korrigiert: Bei zu grosser Wandstärke konnte ein nach innen versetztes Quadrat über den Kollapspunkt hinaus wieder eine kleine Kontur mit gleicher Flächenorientierung bilden. Die Factory prüft jetzt den tatsächlichen Mindestabstand der Innenkontur zur Ausgangskontur und weist diesen Fall zurück.
 - Tests prüfen Hohlrahmenvolumen, Abmessungen, beide Konturrichtungen sowie ungültige und kollabierte Innenkonturen.
 - Auf Code-Head `208815fd7d101f1af4520d2834c8437a9ea8bad4`: 54/54 Unit-Tests, Browser-Regression und OCCT-WebWorker erfolgreich.
+
+
+### 6.25 Kantenbearbeitung aus dem Hauptskript ausgelagert (20.11.2026)
+- Die Geometrieerzeugung für Skizzen-Abrundungen und -Fasen liegt jetzt in `src/sketch-geometry.js`.
+- Das Hauptskript behält die Eingabegrenzen, Auswahl, History, Material-/Mesh-Austausch und UI-Meldungen; die Factory erzeugt nur die neue Extrusionsgeometrie.
+- Unit-Tests prüfen beide Modi, endliche Positionen/Normalen, Bounding-Volumen, Sollabmessungen und ungültige Parameter. Die bestehende Browser-Regression führt zusätzlich den integrierten Profi-CAD-Funktionstest für Abrunden und Abfasen aus.
+- Die Extraktion ist implementiert. Ein erfolgreicher GitHub-CI-Lauf auf dem neuen Commit muss noch bestätigt werden.
