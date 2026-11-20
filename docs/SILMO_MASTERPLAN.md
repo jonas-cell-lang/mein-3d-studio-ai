@@ -439,3 +439,4 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Der Kontur-Editor kann ein ausgewähltes Innenloch vollständig entfernen, ohne die Aussenkontur oder andere Innenlöcher zu verändern.
 - Die Aussenkontur ist gegen versehentliches Entfernen geschützt. Nach dem Entfernen wird der Körper mit den verbleibenden Konturen neu aufgebaut und vor dem Commit validiert.
 - Browser-Regression prüft das Entfernen des einzigen Innenlochs und die erhaltene gültige Grundgeometrie.
+- Validierung auf Test-Head `9e714d46e3da9bda5c9b140ec9e26ef4ded20236`: Code Checks Run `44774341591`, Browser-Regression Run `44774342170` und isolierter OCCT-/WebWorker-Test Run `44774343771` erfolgreich.
