@@ -721,22 +721,6 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
   }
 
-  function addRoundedRectPath(path,width,height,radius,offsetX=0,offsetY=0,reverse=false){
-    const hw=width/2,hh=height/2,r=Math.min(Math.max(0.01,radius),hw,hh);
-    if(!reverse){
-      path.moveTo(offsetX-hw+r,offsetY-hh);path.lineTo(offsetX+hw-r,offsetY-hh);path.quadraticCurveTo(offsetX+hw,offsetY-hh,offsetX+hw,offsetY-hh+r);
-      path.lineTo(offsetX+hw,offsetY+hh-r);path.quadraticCurveTo(offsetX+hw,offsetY+hh,offsetX+hw-r,offsetY+hh);
-      path.lineTo(offsetX-hw+r,offsetY+hh);path.quadraticCurveTo(offsetX-hw,offsetY+hh,offsetX-hw,offsetY+hh-r);
-      path.lineTo(offsetX-hw,offsetY-hh+r);path.quadraticCurveTo(offsetX-hw,offsetY-hh,offsetX-hw+r,offsetY-hh);
-    }else{
-      path.moveTo(offsetX-hw+r,offsetY-hh);path.quadraticCurveTo(offsetX-hw,offsetY-hh,offsetX-hw,offsetY-hh+r);
-      path.lineTo(offsetX-hw,offsetY+hh-r);path.quadraticCurveTo(offsetX-hw,offsetY+hh,offsetX-hw+r,offsetY+hh);
-      path.lineTo(offsetX+hw-r,offsetY+hh);path.quadraticCurveTo(offsetX+hw,offsetY+hh,offsetX+hw,offsetY+hh-r);
-      path.lineTo(offsetX+hw,offsetY-hh+r);path.quadraticCurveTo(offsetX+hw,offsetY-hh,offsetX+hw-r,offsetY-hh);
-      path.lineTo(offsetX-hw+r,offsetY-hh);
-    }
-  }
-
   function createObject(type) {
     recordHistory();
     const geometry = window.SILMOPrimitiveGeometry.createPrimitiveGeometry(type);
@@ -2012,7 +1996,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const path=new THREE.Shape();
         const radiusMM=Number(document.getElementById('sketchCornerRadiusMM').value);
         const radius=Math.max(0,Math.min(mmToWorldUnits(radiusMM),sketchDraft.width/2,sketchDraft.depth/2));
-        addRoundedRectPath(path,sketchDraft.width,sketchDraft.depth,radius,sketchDraft.centerX,sketchDraft.centerY);
+        window.SILMOSketchGeometry.addRoundedRectPath(path,sketchDraft.width,sketchDraft.depth,radius,sketchDraft.centerX,sketchDraft.centerY);
         points=path.getPoints(10).map(point=>new THREE.Vector3(point.x,point.y,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS));
       } else {
         const halfW = sketchDraft.width / 2, halfD = sketchDraft.depth / 2;
@@ -2658,22 +2642,13 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         label = 'Freiform-Skizze';
       } else {
         const dims = sketchDimensionsFromInputs();
-        const shape = new THREE.Shape();
-        if (tool === 'circle') {
-          shape.absarc(0, 0, dims.width / 2, 0, Math.PI * 2, false);
-        } else if (tool === 'ellipse') {
-          shape.absellipse(0, 0, dims.width / 2, dims.depth / 2, 0, Math.PI * 2, false, 0);
-        } else if (tool === 'triangle') {
-          const x = dims.width / 2, y = dims.depth / 2;
-          shape.moveTo(-x, -y); shape.lineTo(x, -y); shape.lineTo(0, y); shape.closePath();
-        } else if(tool==='roundedRectangle') {
+        let cornerRadius = 0;
+        if (tool === 'roundedRectangle') {
           const radiusMM=Number(document.getElementById('sketchCornerRadiusMM').value);
           if(!Number.isFinite(radiusMM)||radiusMM<0||radiusMM>worldUnitsToMm(Math.min(dims.width,dims.depth))/2) throw new Error('Der Eckenradius muss zwischen 0 und der halben kleineren Seitenlänge liegen.');
-          addRoundedRectPath(shape,dims.width,dims.depth,mmToWorldUnits(radiusMM));
-        } else {
-          const x = dims.width / 2, y = dims.depth / 2;
-          shape.moveTo(-x, -y); shape.lineTo(x, -y); shape.lineTo(x, y); shape.lineTo(-x, y); shape.closePath();
+          cornerRadius = mmToWorldUnits(radiusMM);
         }
+        const shape = window.SILMOSketchGeometry.createParametricProfile(tool, dims, cornerRadius);
         geometry = window.SILMOSketchGeometry.createExtrusionGeometry(shape, { depth: dims.height, bevelEnabled: false, curveSegments: 64 });
         const profileOutline=shape.getPoints(32);if(profileOutline.length>1&&profileOutline[0].distanceTo(profileOutline[profileOutline.length-1])<window.SILMOTolerances.SKETCH_PROFILE_CLOSURE_WORLD_UNITS)profileOutline.pop();
         meshPosition.set(sketchDraft.centerX, sketchDraft.centerY, 0);
