@@ -104,7 +104,7 @@
     if (!sketch || typeof sketch !== 'object' || Array.isArray(sketch)) throw new Error('Ungültige Skizzen-Metadaten.');
     if (sketch.type === 'freeform2d' && sketch.holes != null &&
         (!Array.isArray(sketch.holes) || sketch.holes.length > 100 ||
-          !sketch.holes.every(ring => Array.isArray(ring) && ring.length >= 3 && ring.length <= 5000 &&
+          !sketch.holes.every(ring => Array.isArray(ring) && ring.length >= 3 && ring.length <= 1000 &&
             ring.every(point => Array.isArray(point) && point.length === 2 &&
               point.every(value => Number.isFinite(value) && Math.abs(value) <= 10000))))) {
       throw new Error('Ungültige oder zu umfangreiche Skizzen-Innenkonturen.');
