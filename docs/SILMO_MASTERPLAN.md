@@ -294,3 +294,9 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Playwright-Browser-Regression prüft die Mindestwand von 0,8 mm an der Grenze (0,8 mm akzeptiert; 0,799 mm abgewiesen).
 - Sie prüft auch die Mindestkonturfläche von 0,01 mm² (exakte Grenze akzeptiert; 0,009801 mm² abgewiesen).
 - Zusätzlich bleiben bestehende Tests für Aussparungen an der Aussenkante, überlappende Innenlöcher und selbstschneidende Aussenkonturen aktiv.
+
+
+### 6.16 Korrektur des numerischen Flächen-Grenzfalls
+- Der Browser-Testlauf vom 20.11.2026 deckte auf, dass eine mathematisch exakt 0,01 mm² grosse Kontur durch binäre Gleitkomma-Rundung knapp unter dem gespeicherten Grenzwert landen und abgewiesen werden konnte.
+- Die Mindestflächenvergleiche verwenden nun einen separaten numerischen Spielraum von `1e-12 mm²`; die fachliche Mindestfläche bleibt 0,01 mm².
+- Die Browser-Regression prüft weiterhin die exakte Grenze und eine deutlich kleinere Kontur von 0,009801 mm².
