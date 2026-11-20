@@ -1221,3 +1221,11 @@ Vor Beginn einer neuen Aufgabe:
 - Die Aussenkontur kann über diese Aktion nicht entfernt werden.
 - Alle übrigen Konturen bleiben erhalten; die Geometrie wird vor dem Austausch neu aufgebaut und geprüft.
 - Browser-Test erstellt eine Skizze mit einem Loch, entfernt das Loch und prüft, dass der Körper ohne Öffnung weiterhin eine gültige Geometrie besitzt.
+
+
+## Ergänzung – Topologische Validierung von Skizzen-Innenlöchern (20.11.2026)
+- Das Projekt-Schema prüft gespeicherte Freiform-Innenlöcher auf gültige einfache Ringe.
+- Für Projekte mit Innenlöchern ist eine gültige Aussenkontur erforderlich.
+- Jedes Loch muss vollständig innerhalb der Aussenkontur liegen und darf diese nicht berühren oder kreuzen.
+- Innenlöcher dürfen sich weder überschneiden noch berühren oder ineinander liegen.
+- Die Prüfungen sind unabhängig von Three.js und schützen bereits beim Import vor strukturell ungültigen Konturdaten.
