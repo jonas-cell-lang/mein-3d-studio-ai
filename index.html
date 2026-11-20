@@ -2402,6 +2402,15 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const chamferOK=p2.userData.edgeTreatment?.type==='chamfer'&&p2.geometry.attributes.position.count>0;
     return {dimensionOK,dimensionsMM,filletOK,chamferOK,loftOK,hollowLoftOK,sweepOK,objectDelta:objects.length-before,loftVertices:loft.geometry.attributes.position.count,hollowLoftVertices:hollowLoft.geometry.attributes.position.count,sweepVertices:sweep.geometry.attributes.position.count};
   };
+  window.__silmoTestInsertDeleteSketchContourPoint=()=>{
+    const result=window.__silmoImageStudioCreateFromPoints([[0,0],[40,0],[40,30],[0,30]],10,[[[10,10],[10,20],[20,20],[20,10]]]);
+    if(!result.ok)throw new Error(result.message);
+    const obj=selected;loadSelectedSketchPoints();document.getElementById('sketchContourIndex').value='1';loadSelectedSketchPoints();
+    document.getElementById('sketchPointIndex').value='0';insertSelectedSketchPoint();
+    const afterInsert=obj.userData.sketch.holes[0].length;
+    deleteSelectedSketchPoint();
+    return {afterInsert,afterDelete:obj.userData.sketch.holes[0].length,holeCount:obj.userData.sketch.holes.length,vertices:obj.geometry.attributes.position.count};
+  };
   window.__silmoTestUpdateLoftFromSources=()=>{
     const make=(label,x,z,size)=>{const shape=new THREE.Shape();shape.moveTo(-size,-size);shape.lineTo(size,-size);shape.lineTo(size,size);shape.lineTo(-size,size);shape.closePath();const outline=shape.getPoints(16).slice(0,-1).map(point=>[point.x,point.y]);const geometry=new THREE.ExtrudeGeometry(shape,{depth:0.2,bevelEnabled:false});const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:'#4b91ed'}));mesh.position.set(x,0,z);mesh.userData={label,baseDimensions:{x:size*2,y:size*2,z:0.2},percent:{x:100,y:100,z:100},sketch:{type:'rectangle',outlinePoints:outline,extrusionMM:2},sketchOutline:outline};scene.add(mesh);objects.push(mesh);return mesh;};
     const a=make('Loft-Quelle A',-1,0,0.8),b=make('Loft-Quelle B',1,1,0.5);
@@ -2579,16 +2588,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     document.getElementById('sketchPointXMM').value=(worldUnitsToMm(outline[index][0])).toFixed(2);
     document.getElementById('sketchPointYMM').value=(worldUnitsToMm(outline[index][1])).toFixed(2);
   }
-  function applySelectedSketchPoint(){
-    const obj=selectedCadObject(),meta=obj.userData.sketch;
-    if(!meta||!Number.isFinite(meta.extrusionMM))throw new Error('Bitte einen extrudierten 2D-Skizzenkörper mit Kontur auswählen.');
-    if(obj.userData.edgeTreatment)throw new Error('Die Kontur eines bereits abgerundeten oder abgefasten Körpers kann mit diesem Editor noch nicht bearbeitet werden.');
-    const rings=selectedSketchContourRings(obj),ringIndex=Number(document.getElementById('sketchContourIndex').value)||0;
-    const index=Number(document.getElementById('sketchPointIndex').value),xMM=Number(document.getElementById('sketchPointXMM').value),yMM=Number(document.getElementById('sketchPointYMM').value);
-    if(!Number.isInteger(ringIndex)||ringIndex<0||ringIndex>=rings.length||!Number.isInteger(index)||index<0||index>=rings[ringIndex].length)throw new Error('Ungültige Kontur- oder Punkt-Auswahl.');
-    if(!Number.isFinite(xMM)||!Number.isFinite(yMM)||Math.abs(xMM)>2000||Math.abs(yMM)>2000)throw new Error('Punktkoordinaten müssen zwischen −2000 und 2000 mm liegen.');
-    const updatedRings=rings.map(ring=>ring.map(point=>[point[0],point[1]]));
-    updatedRings[ringIndex][index]=[mmToWorldUnits(xMM),mmToWorldUnits(yMM)];
+  function rebuildSelectedSketchContours(obj,updatedRings,ringIndex,pointIndex,actionLabel='Kontur geändert'){
+    const meta=obj.userData.sketch;
+    if(!Array.isArray(updatedRings[0])||updatedRings[0].length<3||updatedRings.some(ring=>ring.length<3||ring.length>1000))throw new Error('Jede Kontur braucht 3 bis 1000 Punkte.');
     const vectors=updatedRings.map(ring=>ring.map(point=>new THREE.Vector2(point[0],point[1])));
     for(const ring of vectors){
       let area=0;for(let i=0;i<ring.length;i++){const a=ring[i],b=ring[(i+1)%ring.length];area+=a.x*b.y-b.x*a.y;}
@@ -2601,28 +2603,59 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       holes.forEach((hole,holeIndex)=>validateSketchHole(outer,hole,holes.filter((_,i)=>i!==holeIndex)));
     }
     const shape=new THREE.Shape();shape.moveTo(vectors[0][0].x,vectors[0][0].y);vectors[0].slice(1).forEach(point=>shape.lineTo(point.x,point.y));shape.closePath();
-    const holeMetadata=[];
-    vectors.slice(1).forEach(ring=>{
-      const path=new THREE.Path();path.moveTo(ring[0].x,ring[0].y);ring.slice(1).forEach(point=>path.lineTo(point.x,point.y));path.closePath();shape.holes.push(path);
-      holeMetadata.push(ring.map(point=>[point.x,point.y]));
-    });
+    vectors.slice(1).forEach(ring=>{const path=new THREE.Path();path.moveTo(ring[0].x,ring[0].y);ring.slice(1).forEach(point=>path.lineTo(point.x,point.y));path.closePath();shape.holes.push(path);});
     const localExtrusionMM=meta.extrusionMM/Math.max(Math.abs(obj.scale.z),1e-12);
     const geometry=window.SILMOSketchGeometry.createExtrusionGeometry(shape,{depth:mmToWorldUnits(localExtrusionMM),bevelEnabled:false,curveSegments:32});
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
     if(![size.x,size.y,size.z].every(value=>Number.isFinite(value)&&value>CSG_EPSILON)){geometry.dispose();throw new Error('Die geänderten Konturen erzeugen keine gültige 3D-Geometrie.');}
     recordHistory();obj.geometry.dispose();obj.geometry=geometry;
-    obj.userData.sketchOutline=updatedRings[0];meta.outlinePoints=updatedRings[0];meta.holes=holeMetadata;
+    obj.userData.sketchOutline=updatedRings[0].map(point=>point.slice());meta.outlinePoints=updatedRings[0].map(point=>point.slice());
+    meta.holes=updatedRings.slice(1).map(ring=>ring.map(point=>point.slice()));
     meta.widthMM=worldUnitsToMm(size.x*Math.abs(obj.scale.x));meta.depthMM=worldUnitsToMm(size.y*Math.abs(obj.scale.y));
     const ringArea=ring=>Math.abs(ring.reduce((sum,point,i)=>sum+point.x*ring[(i+1)%ring.length].y-ring[(i+1)%ring.length].x*point.y,0))/2;
     meta.areaMM2=worldUnits2ToMm2((ringArea(vectors[0])-vectors.slice(1).reduce((sum,ring)=>sum+ringArea(ring),0))*Math.abs(obj.scale.x*obj.scale.y));
-    meta.perimeterMM=vectors[0].reduce((sum,point,i)=>{
-      const next=vectors[0][(i+1)%vectors[0].length];
-      return sum+worldUnitsToMm(Math.hypot((next.x-point.x)*obj.scale.x,(next.y-point.y)*obj.scale.y));
-    },0);
+    meta.perimeterMM=vectors[0].reduce((sum,point,i)=>{const next=vectors[0][(i+1)%vectors[0].length];return sum+worldUnitsToMm(Math.hypot((next.x-point.x)*obj.scale.x,(next.y-point.y)*obj.scale.y));},0);
     obj.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
-    updateObjects();showProperties();updateMoveGizmo();status.textContent=(ringIndex===0?'Aussenkontur':'Innenloch '+ringIndex)+' – Punkt '+(index+1)+' geändert. Alle Öffnungen wurden erhalten.';
+    updateObjects();showProperties();updateMoveGizmo();status.textContent=actionLabel+'. Alle '+(vectors.length-1)+' Innenöffnung(en) bleiben erhalten.';
     loadSelectedSketchPoints();
+    document.getElementById('sketchContourIndex').value=String(ringIndex);
+    loadSelectedSketchPoints();
+    document.getElementById('sketchPointIndex').value=String(Math.min(pointIndex,updatedRings[ringIndex].length-1));
+    loadSelectedSketchPoint();
+  }
+  function applySelectedSketchPoint(){
+    const obj=selectedCadObject(),meta=obj.userData.sketch;
+    if(!meta||!Number.isFinite(meta.extrusionMM))throw new Error('Bitte einen extrudierten 2D-Skizzenkörper mit Kontur auswählen.');
+    if(obj.userData.edgeTreatment)throw new Error('Die Kontur eines bereits abgerundeten oder abgefasten Körpers kann mit diesem Editor noch nicht bearbeitet werden.');
+    const rings=selectedSketchContourRings(obj),ringIndex=Number(document.getElementById('sketchContourIndex').value)||0;
+    const index=Number(document.getElementById('sketchPointIndex').value),xMM=Number(document.getElementById('sketchPointXMM').value),yMM=Number(document.getElementById('sketchPointYMM').value);
+    if(!Number.isInteger(ringIndex)||ringIndex<0||ringIndex>=rings.length||!Number.isInteger(index)||index<0||index>=rings[ringIndex].length)throw new Error('Ungültige Kontur- oder Punkt-Auswahl.');
+    if(!Number.isFinite(xMM)||!Number.isFinite(yMM)||Math.abs(xMM)>2000||Math.abs(yMM)>2000)throw new Error('Punktkoordinaten müssen zwischen −2000 und 2000 mm liegen.');
+    const updatedRings=rings.map(ring=>ring.map(point=>[point[0],point[1]]));
+    updatedRings[ringIndex][index]=[mmToWorldUnits(xMM),mmToWorldUnits(yMM)];
+    rebuildSelectedSketchContours(obj,updatedRings,ringIndex,index,'Konturpunkt '+(index+1)+' geändert');
+  }
+  function insertSelectedSketchPoint(){
+    const obj=selectedCadObject();
+    if(!obj.userData.sketch||obj.userData.edgeTreatment)throw new Error('Punkte können nur an einer unveränderten Skizzenextrusion eingefügt werden.');
+    const rings=selectedSketchContourRings(obj).map(ring=>ring.map(point=>point.slice()));
+    const ringIndex=Number(document.getElementById('sketchContourIndex').value)||0,index=Number(document.getElementById('sketchPointIndex').value);
+    if(!rings[ringIndex]||!Number.isInteger(index)||index<0||index>=rings[ringIndex].length)throw new Error('Ungültige Kontur- oder Punkt-Auswahl.');
+    if(rings[ringIndex].length>=1000)throw new Error('Diese Kontur hat bereits die maximal erlaubten 1000 Punkte.');
+    const current=rings[ringIndex][index],next=rings[ringIndex][(index+1)%rings[ringIndex].length];
+    rings[ringIndex].splice(index+1,0,[(current[0]+next[0])/2,(current[1]+next[1])/2]);
+    rebuildSelectedSketchContours(obj,rings,ringIndex,index+1,'Neuer Konturpunkt eingefügt');
+  }
+  function deleteSelectedSketchPoint(){
+    const obj=selectedCadObject();
+    if(!obj.userData.sketch||obj.userData.edgeTreatment)throw new Error('Punkte können nur an einer unveränderten Skizzenextrusion entfernt werden.');
+    const rings=selectedSketchContourRings(obj).map(ring=>ring.map(point=>point.slice()));
+    const ringIndex=Number(document.getElementById('sketchContourIndex').value)||0,index=Number(document.getElementById('sketchPointIndex').value);
+    if(!rings[ringIndex]||!Number.isInteger(index)||index<0||index>=rings[ringIndex].length)throw new Error('Ungültige Kontur- oder Punkt-Auswahl.');
+    if(rings[ringIndex].length<=3)throw new Error('Eine geschlossene Kontur muss mindestens drei Punkte behalten.');
+    rings[ringIndex].splice(index,1);
+    rebuildSelectedSketchContours(obj,rings,ringIndex,Math.min(index,rings[ringIndex].length-1),'Konturpunkt entfernt');
   }
   function createEdgeTreatment(mode){
     const obj=selectedCadObject(),outline=obj.userData.sketchOutline,meta=obj.userData.sketch;
@@ -2953,6 +2986,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   document.getElementById('sketchContourIndex').addEventListener('change',()=>{try{loadSelectedSketchPoints();}catch(e){status.textContent=e.message;}});
   document.getElementById('sketchPointIndex').addEventListener('change',()=>{try{loadSelectedSketchPoint();}catch(e){status.textContent=e.message;}});
   document.getElementById('applySketchPoint').addEventListener('click',()=>{try{applySelectedSketchPoint();}catch(e){status.textContent='Punkt konnte nicht übernommen werden: '+e.message;}});
+  document.getElementById('insertSketchPoint').addEventListener('click',()=>{try{insertSelectedSketchPoint();}catch(e){status.textContent='Punkt konnte nicht eingefügt werden: '+e.message;}});
+  document.getElementById('deleteSketchPoint').addEventListener('click',()=>{try{deleteSelectedSketchPoint();}catch(e){status.textContent='Punkt konnte nicht entfernt werden: '+e.message;}});
   document.getElementById('applyEdgeFillet').addEventListener('click',()=>{try{createEdgeTreatment('fillet');}catch(e){status.textContent='Abrundung nicht möglich: '+e.message;}});
   document.getElementById('applyEdgeChamfer').addEventListener('click',()=>{try{createEdgeTreatment('chamfer');}catch(e){status.textContent='Fase nicht möglich: '+e.message;}});
   document.getElementById('createLoft').addEventListener('click',()=>{try{createLoftFromSelection();}catch(e){status.textContent='Loft nicht möglich: '+e.message;}});
