@@ -205,6 +205,17 @@ test('Loft-Kontur wird gleichmässig abgetastet und ungültige Konturen abgewies
   const sampled = sketchGeometry.resampleClosedOutline(outline, 32, 0.001);
   assert.equal(sampled.length, 32);
   assert.ok(sampled.every(point => Number.isFinite(point.x) && Number.isFinite(point.y)));
+  const sampleDistances = sampled.map((point, index) =>
+    point.distanceTo(sampled[(index + 1) % sampled.length]));
+  assert.ok(sampleDistances.every(distance => Math.abs(distance - 0.25) < 1e-9),
+    'Die Abstände entlang des geschlossenen Umfangs müssen gleichmässig sein');
+  const reversedSamples = sketchGeometry.resampleClosedOutline(outline.slice().reverse(), 32, 0.001);
+  const rotatedSamples = sketchGeometry.resampleClosedOutline([...outline.slice(1), outline[0]], 32, 0.001);
+  const pointKey = point => point.toArray().map(value => value.toFixed(8)).join(',');
+  assert.deepEqual(reversedSamples.map(pointKey).sort(), sampled.map(pointKey).sort(),
+    'Die abgetastete Punktmenge darf nicht von der Umlaufrichtung abhängen');
+  assert.deepEqual(rotatedSamples.map(pointKey).sort(), sampled.map(pointKey).sort(),
+    'Die abgetastete Punktmenge darf nicht vom Startpunkt abhängen');
   const explicitlyClosed = sketchGeometry.resampleClosedOutline([...outline, [0, 0]], 32, 0.001);
   assert.deepEqual(explicitlyClosed.map(point => point.toArray()), sampled.map(point => point.toArray()));
   assert.throws(() => sketchGeometry.resampleClosedOutline([[0, 0], [0, 0], [0, 0]], 32, 0.001), /ungültig/);
