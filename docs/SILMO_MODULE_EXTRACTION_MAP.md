@@ -16,6 +16,7 @@
 | `src/stl-io.js` | STL-Dateien importieren und als ASCII-STL exportieren; Einheitenumrechnung und temporäre Exportgeometrien verwalten | Factory erhält Three.js und Einheiten-API; App-Zustand wird über Objekt-/Status-Callbacks angebunden |
 | `src/csg.js` | BSP-basierte Boolesche Geometrieoperationen (Verbindung und Differenz) | Factory erhält `THREE` und `SILMOTolerances`; stellt `window.SILMOCSG.combineMeshes` bereit |
 | `src/primitive-geometry.js` | Erzeugung der sechs vorhandenen Grundkörper inklusive Z-Höhenorientierung und Bounding Box | Factory erhält `THREE`; stellt `window.SILMOPrimitiveGeometry.createPrimitiveGeometry(type)` bereit |
+| `src/sketch-geometry.js` | Erzeugung und Fertigstellung der Extrusionsgeometrie aus einem 2D-Skizzenprofil | Factory erhält `THREE`; stellt `window.SILMOSketchGeometry.createExtrusionGeometry(shape, options)` bereit |
 | `src/developer-diagnostics.js` | Diagnosefenster, Laufzeit- und Bedienprotokoll | Eigenständige DOM-/Browser-IIFE; bleibt im Dokumentkopf |
 | `src/tool-navigation.js` | Hauptnavigation, Werkzeugbereiche und Unterreiter organisieren | Eigenständige DOM-IIFE; wird vor Three.js ausgeführt |
 | `src/tutorial.js` | Geführter Lernkurs und Erfolgskontrolle | Eigenständige DOM-IIFE; nutzt vorhandene `window`-Test-/App-Schnittstellen |
@@ -35,7 +36,8 @@ Das verbleibende Inline-CAD-Skript hält weiterhin den zentralen Laufzeitzustand
 - Zustandsaufnahme und Anbindung der Undo-/Redo-History über `src/history.js`
 - Transformationen, Gizmos, Ausrichtung und Gruppierung
 - Boolesche Geometrieoperationen und BSP-CSG
-- Skizzen, Extrusion, Kontur- und Pfadwerkzeuge
+- Skizzenaufnahme, Constraints, Profilaufbau, Metadaten und Modell-Commit bleiben im Hauptskript; die beiden regulären 2D-Skizzen-Extrusionspfade verwenden jetzt `src/sketch-geometry.js`
+- Kontur- und Pfadwerkzeuge
 - STL-Datei-Auswahl, Drag-and-drop und Web-Link-Interaktion; der eigentliche STL-Import/-Export ist in `src/stl-io.js` ausgelagert
 - DOM-Ereignisse und Statusmeldungen
 

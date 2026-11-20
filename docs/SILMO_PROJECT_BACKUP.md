@@ -1110,3 +1110,12 @@ Vor Beginn einer neuen Aufgabe:
 - OCCT-Prototyp-Run `44761699676` ist erfolgreich: 40-Bohrungs-Musterplatte, analytisches Volumen, ein Solid und Tessellierung; die Boolean-Berechnung dauerte im GitHub-Runner rund 353 ms.
 - Chromium-WebWorker-Smoke-Test: zwölf sequenzielle Durchgangsbohrungen, Volumen 5811,504440784614 mm³ gegenüber Soll 5811,504440784613 mm³, genau ein Solid und ein verwendbares Mesh.
 - Der CAD-Kern bleibt isolierte Forschung und ist nicht in die Produktions-App integriert. PR #70 bleibt Draft; kein Merge, kein Deployment und CHF 0.00.
+
+
+## Ergänzung – Skizzenextrusions-Modul (20.11.2026)
+- `src/sketch-geometry.js` übernimmt die Erstellung der Extrusionsgeometrie aus einem bereits aufgebauten Three.js-2D-Profil sowie die Berechnung von Normalen, Bounding Box und Bounding Sphere.
+- Die reguläre Freiform-Extrusion (inklusive echter Innenlöcher) und die Extrusion der parametrischen 2D-Skizzen verwenden diese Factory.
+- Skizzeneingabe, Profilaufbau, Masse, Constraints, Positionierung, Druckbettprüfung, Metadaten, Material, Undo-History und Szene-Commit bleiben im Hauptskript.
+- Neue Tests prüfen 4×3×2-Quader mit Volumen 24, eine Innenloch-Extrusion mit Volumen 22, Kreisprofil, Geometrieinstanzen und Fehlerfall.
+- Auf Commit `4f6b1be0983651f590977a10ab48e34b3146d551` sind 41/41 Unit-Tests, die vollständige Browser-Regression sowie der isolierte OCCT-/WebWorker-Test erfolgreich.
+- PR #70 bleibt Draft und ungemergt. Kein Deployment. Kosten: CHF 0.00.

@@ -324,3 +324,13 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die neue Datei ist in der Script-Reihenfolge, den Unit-Tests, den Pages-Paketprüfungen und den Browser-Regressionen registriert.
 - Auf Commit `1880cc057d8c332d13cbf50691bb3864a3461bea` sind 37/37 Unit-Tests und der vollständige SILMO-Browserlauf erfolgreich. Der isolierte OCCT-Prototyp mit 40-Bohrungs-Musterplatte und der 12-Bohrungs-WebWorker-Test ist ebenfalls erfolgreich.
 - Die Extraktion ändert keine Produktversion; Build-Metadaten bleiben v94. Kein Merge und kein Deployment.
+
+
+### 6.20 Skizzen-Extrusionsgeometrie isoliert (20.11.2026)
+- Die gemeinsame Erzeugung und Fertigstellung der Three.js-Extrusionsgeometrie liegt jetzt in `src/sketch-geometry.js`.
+- Die reguläre Freiform-Skizze inklusive Innenlöchern und die parametrischen 2D-Profile (Kreis, Ellipse, Dreieck, abgerundetes Rechteck und Rechteck) verwenden die neue Factory.
+- Skizzeneingabe, Constraints, Abmessungsvalidierung, Profilaufbau, Positionierung, Druckbettprüfung, Metadaten, Material, History und Modell-Commit bleiben bewusst im Hauptskript. Die Extraktion verändert daher keine Bedien- oder Zustandslogik.
+- `tests/sketch-geometry.test.cjs` prüft Quaderabmessungen und Volumen, ein echtes Innenloch mit analytischem Volumen, Kreisextrusion, unabhängige Geometrieinstanzen und kontrollierte Ablehnung eines fehlenden Profils.
+- Das neue Modul ist in Script-Reihenfolge, Pages-Paket, Code-Checks und Browser-Regression registriert.
+- Commit `4f6b1be0983651f590977a10ab48e34b3146d551`: 41/41 Unit-Tests bestanden; vollständige Browser-Regression und isolierter OCCT-/WebWorker-Test erfolgreich.
+- Kein Versionssprung: App-Metadaten bleiben v94. Kein Merge und kein Deployment.
