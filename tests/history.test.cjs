@@ -137,3 +137,38 @@ test('Ein fehlgeschlagenes Undo mit ebenfalls fehlschlagender Rücksicherung erh
   assert.equal(value, 2);
   history.dispose();
 });
+
+
+test('Undo und Redo blockieren verschachtelte Verlaufsaktionen während restoreState', () => {
+  let value = 0;
+  let history;
+  let nestedResults = [];
+  history = createHistory({
+    captureState: () => ({ value }),
+    restoreState: snapshot => {
+      value = snapshot.value;
+      nestedResults.push({
+        undo: history.undo(),
+        redo: history.redo(),
+        record: history.record()
+      });
+    },
+    disposeState: () => {}
+  });
+
+  history.record();
+  value = 1;
+  history.record();
+  value = 2;
+
+  assert.equal(history.undo(), true);
+  assert.equal(value, 1);
+  assert.deepEqual(nestedResults, [{ undo: false, redo: false, record: false }]);
+  assert.deepEqual(history.getStats(), { undoCount: 1, redoCount: 1, limit: 40, disposed: false });
+
+  assert.equal(history.redo(), true);
+  assert.equal(value, 2);
+  assert.deepEqual(nestedResults[1], { undo: false, redo: false, record: false });
+  assert.deepEqual(history.getStats(), { undoCount: 2, redoCount: 0, limit: 40, disposed: false });
+  history.dispose();
+});
