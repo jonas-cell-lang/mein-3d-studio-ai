@@ -353,3 +353,49 @@ test('CSG-Abziehen mit gespiegeltem Werkzeug erhält Volumen und positive Aussen
     base.material.dispose(); tool.material.dispose();
   }
 });
+
+
+test('CSG-Vereinigung bei reiner Kantenberührung erhält beide Volumen', () => {
+  const base = box();
+  const tool = box([2, 2, 0]);
+  const result = combineMeshes(base, tool, 'union');
+  try {
+    assert.ok(signedVolume(result) > 0 && Math.abs(signedVolume(result) - 16) < 1e-5,
+      'Kantenberührung darf das Gesamtvolumen von 16 nicht verändern');
+  } finally {
+    result.dispose();
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
+
+test('CSG-Vereinigung bei reiner Punktberührung erhält beide Volumen', () => {
+  const base = box();
+  const tool = box([2, 2, 2]);
+  const result = combineMeshes(base, tool, 'union');
+  try {
+    assert.ok(signedVolume(result) > 0 && Math.abs(signedVolume(result) - 16) < 1e-5,
+      'Punktberührung darf das Gesamtvolumen von 16 nicht verändern');
+  } finally {
+    result.dispose();
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
+
+test('CSG-Abziehen bei reiner Flächenberührung verändert den Basiskörper nicht', () => {
+  const base = box();
+  const tool = box([2, 0, 0]);
+  const result = combineMeshes(base, tool, 'subtract');
+  try {
+    assert.ok(signedVolume(result) > 0 && Math.abs(signedVolume(result) - 8) < 1e-5,
+      'Eine nur anliegende Fläche darf kein Volumen aus dem Basiskörper entfernen');
+    const b = bounds(result);
+    assert.deepEqual(b.min.map(v => Number(v.toFixed(5))), [-1, -1, -1]);
+    assert.deepEqual(b.max.map(v => Number(v.toFixed(5))), [1, 1, 1]);
+  } finally {
+    result.dispose();
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
