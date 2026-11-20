@@ -88,14 +88,14 @@
       else if (edge.count > 2) nonManifoldEdgeCount++;
       else if (edge.directionBalance !== 0) inconsistentEdgeCount++;
     }
-    const isClosedManifold = boundaryEdgeCount === 0 && nonManifoldEdgeCount === 0 &&
+    const isClosedEdgeManifold = boundaryEdgeCount === 0 && nonManifoldEdgeCount === 0 &&
       inconsistentEdgeCount === 0 && duplicateTriangleCount === 0 && collapsedTriangleCount === 0;
-    const invertedWinding = isClosedManifold && Math.abs(signedVolumeMM3) > 1e-12 ? signedVolumeMM3 < 0 : null;
+    const invertedWinding = isClosedEdgeManifold && Math.abs(signedVolumeMM3) > 1e-12 ? signedVolumeMM3 < 0 : null;
     return Object.freeze({
       analyzed: true, triangleCount, weldedVertexCount: vertexCoordinates.length / 3,
       uniqueEdgeCount: edges.size, boundaryEdgeCount, nonManifoldEdgeCount,
       inconsistentEdgeCount, duplicateTriangleCount, collapsedTriangleCount,
-      isClosedManifold, invertedWinding, signedVolumeMM3, weldToleranceMM
+      isClosedEdgeManifold, invertedWinding, signedVolumeMM3, weldToleranceMM
     });
   }
 
@@ -215,10 +215,10 @@
           if (typeof deps.onImported === 'function') deps.onImported(mesh);
           let diagnosticMessage = '';
           if (stlDiagnostics.analyzed) {
-            if (stlDiagnostics.isClosedManifold) {
+            if (stlDiagnostics.isClosedEdgeManifold) {
               diagnosticMessage = stlDiagnostics.invertedWinding
-                ? ' Topologie: geschlossen, aber Dreiecksorientierung ist umgekehrt.'
-                : ' Topologie: geschlossenes Netz.';
+                ? ' Topologie: geschlossenes Dreiecksnetz, aber negatives orientiertes Gesamtvolumen.'
+                : ' Topologie: geschlossenes Dreiecksnetz (Kantenprüfung).';
             } else {
               const issues = [];
               if (stlDiagnostics.boundaryEdgeCount) issues.push(stlDiagnostics.boundaryEdgeCount + ' offene Kanten');
