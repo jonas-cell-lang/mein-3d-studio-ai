@@ -265,7 +265,7 @@ test('STL-Import begrenzt die Dreiecksanzahl zusätzlich zur Dateigrösse', () =
     }).importSTLFile({ name: 'huge.stl', type: 'model/stl', size: 100, buffer: new ArrayBuffer(84) });
     assert.equal(state.objects.length, 0);
     assert.equal(disposed, true);
-    assert.match(state.status, /zu umfangreich/);
+    assert.match(state.status, /500000 Dreiecken/);
   });
 });
 
