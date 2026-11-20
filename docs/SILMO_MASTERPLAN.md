@@ -506,3 +506,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Browser- und OCCT-/WebWorker-Regressionen waren auf dem unmittelbar vorherigen Commit `bc70ea3fb1c35619de705da8926c3dcd7932458f` erfolgreich; der neue Commit ergänzt ausschliesslich einen Node-Test und Dokumentation, ohne App-Laufzeitcode zu ändern.
 - Der Test deckt einen einzelnen grösseren Projektkörper ab. Er ersetzt weder Browser-RAM-/Frame-Zeit-Messungen noch einen Mehrkörper-Langzeittest.
 
+
+
+### 6.40 Kantenbearbeitung: unabhängige Konturrichtung (20.11.2026)
+- Die Skizzen-Kantenbearbeitung wird zusätzlich mit identischer Aussenkontur in beiden Umlaufrichtungen geprüft.
+- Für Abrundung und Fase müssen die erzeugten Körper bei umgekehrter Konturrichtung dieselben Aussenabmessungen und dasselbe Volumen behalten.
+- Der neue Regressionstest ergänzt die vorhandenen Prüfungen für gültige konkave Konturen, explizit geschlossene Ringe, Nullkanten, überlappende Nachbarkanten und Selbstüberschneidungen.
+- Auf Commit `7f9e0e1b6f36303ff3c6ae65479782d4e6378876` bestanden alle 90/90 Unit-Tests. Code Checks Run 44784501133 waren erfolgreich; Syntax-, Manifest-/HTML-ID-, History-Benchmark- und lokaler Pages-Paketcheck ebenfalls erfolgreich.
+- Browser-Interaktion und isolierter OCCT-/WebWorker-Prototyp waren unmittelbar zuvor auf dem unveränderten Laufzeitcode-Stand `da469d13f60f75583a1fcd6be9ff66ddc977ce6d` erfolgreich (Runs 44783707413 und 44783707750). Der neue Commit ändert nur Regressionstest und Dokumentation, nicht den Anwendungscode.
