@@ -540,3 +540,5 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Pfadkurven begrenzen ihre Eingabe auf 1000 Punkte. Rohrgeometrien begrenzen die Segmentzahlen und zusätzlich die daraus resultierende Vertex-Obergrenze auf 250'000.
 - Neue Unit-Tests prüfen die Grenzwerte knapp oberhalb der Limits und stellen sicher, dass ungültig grosse Eingaben kontrolliert abgewiesen werden.
 - Die Änderungen sind auf dem Entwicklungszweig enthalten; CI-Ergebnisse für den aktuellen Test- und Dokumentationsstand sind noch abzuwarten.
+
+- Nach dem ersten CI-Lauf wurde ausschliesslich die erwartete Fehlermeldung sprachlich kompatibel zur bestehenden Regression gehalten; die Grenzprüfungen selbst waren bereits erfolgreich. Der abschliessende CI-Lauf auf dem korrigierten Stand ist abzuwarten.
