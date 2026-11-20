@@ -4,6 +4,7 @@ const THREE = require('three');
 
 globalThis.THREE = THREE;
 const sketchGeometry = require('../src/sketch-geometry.js');
+const tolerances = require('../src/tolerances.js');
 
 function meshVolume(geometry) {
   const positions = geometry.attributes.position;
@@ -177,4 +178,40 @@ test('CAD-Pfadfactory erzeugt ein begrenztes Rohr mit korrektem Radius', () => {
 test('CAD-Pfadfactory lehnt ungültige Rohrparameter ab', () => {
   assert.throws(() => sketchGeometry.createPathTubeGeometry([[0, 0, 0], [0, 0, 1]], 'line2d', 0, 24), /gültig und positiv/);
   assert.throws(() => sketchGeometry.createPathTubeGeometry([[0, 0, 0], [0, 0, 1]], 'line2d', 1, 24, 2), /gültig und positiv/);
+});
+
+test('Hohlrahmen-Geometrie erhält Aussenmasse, Wandstärke und Sollvolumen', () => {
+  const outline = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+  const thickness = 0.14, height = 1.2;
+  const geometry = sketchGeometry.createContourFrameGeometry(outline, thickness, height, tolerances, 1e-9);
+  try {
+    const size = geometry.boundingBox.getSize(new THREE.Vector3());
+    assert.ok(Math.abs(size.x - 2) < 1e-6);
+    assert.ok(Math.abs(size.y - 2) < 1e-6);
+    assert.ok(Math.abs(size.z - height) < 1e-6);
+    const expectedVolume = (4 - Math.pow(2 - 2 * thickness, 2)) * height;
+    assert.ok(Math.abs(meshVolume(geometry) - expectedVolume) < 1e-5);
+  } finally {
+    geometry.dispose();
+  }
+});
+
+test('Hohlrahmen-Geometrie unterstützt beide Konturrichtungen', () => {
+  const ccw = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+  const cw = ccw.slice().reverse();
+  const first = sketchGeometry.createContourFrameGeometry(ccw, 0.1, 0.5, tolerances);
+  const second = sketchGeometry.createContourFrameGeometry(cw, 0.1, 0.5, tolerances);
+  try {
+    assert.ok(Math.abs(meshVolume(first) - meshVolume(second)) < 1e-6);
+    assert.deepEqual(first.boundingBox.getSize(new THREE.Vector3()).toArray(), second.boundingBox.getSize(new THREE.Vector3()).toArray());
+  } finally {
+    first.dispose();
+    second.dispose();
+  }
+});
+
+test('Hohlrahmen-Geometrie weist ungültige und zu enge Konturen kontrolliert zurück', () => {
+  assert.throws(() => sketchGeometry.createContourFrameGeometry([[0, 0], [1, 0]], 0.1, 1, tolerances), /gültige Kontur/);
+  assert.throws(() => sketchGeometry.createContourFrameGeometry([[0, 0], [1, 0], [0, 1]], 0, 1, tolerances), /positive Wandstärke/);
+  assert.throws(() => sketchGeometry.createContourFrameGeometry([[-1, -1], [1, -1], [1, 1], [-1, 1]], 1.2, 1, tolerances), /zu eng|überschneidet/);
 });
