@@ -1206,3 +1206,11 @@ Vor Beginn einer neuen Aufgabe:
 - Fehlende Quellobjekte, unvollständige Lochpaare, ungültige Profile und gesperrte Loft-Körper werden vor dem Austausch abgewiesen. Die alte Geometrie bleibt bestehen, wenn die Neuerzeugung scheitert.
 - Der Workflow ist manuell und kein Live-Update. Vollständige Feature-Abhängigkeitsverwaltung und automatische Aktualisierung bleiben offen.
 - Automatischer Browser-Test verschiebt ein Quellprofil und prüft, dass der Loft-Körper eine entsprechend veränderte Geometrie erhält.
+
+
+## Ergänzung – Konturpunkte einfügen und entfernen (20.11.2026)
+- Der Profi-CAD-Konturpunkt-Editor kann auf der ausgewählten Kante einen Mittelpunkt einfügen oder den ausgewählten Punkt entfernen.
+- Die Auswahl funktioniert für Aussenkontur und alle gespeicherten Innenlöcher.
+- Eine Kontur kann nie unter drei Punkte fallen; pro Kontur gilt ein Maximum von 1000 Punkten.
+- Nach jedem Vorgang wird die gesamte Skizzenextrusion mit allen Innenlöchern validiert und neu aufgebaut. Die History wird erst vor dem Austausch der gültigen Geometrie erfasst.
+- Browser-Test prüft 4 → 5 → 4 Punkte an einer Innenkontur und kontrolliert, dass die echte Öffnung erhalten bleibt.
