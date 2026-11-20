@@ -226,7 +226,7 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - Die benannten Toleranzen sind dokumentiert. Zusätzlich wurden Kontur-Hohlrahmen, editierte Skizzenkonturen, Pfadrichtungen und Profilumfang mit getrennten Konstanten versehen; die numerischen Altwerte blieben unverändert. Das vollständige Toleranzinventar und Grenzfalltests für alle Klassen bleiben offen.
 - Projektdatei-I/O ist aus dem Hauptskript ausgelagert. Der atomare Wechsel auf das neue Modell wird durch Browser-Regressionen abgesichert.
 - Der aktuelle Entwicklungszweig ist `phase1/history-foundation`; PR 69 und PR 70 bleiben Draft und ungemergt. Es erfolgt kein Produktionsdeployment vor der ausdrücklichen Fertigstellung und Freigabe.
-- Für Code-Commit `717ff6c1eea5eb7bda4f5d7e26cf8e3bcdc6e3f2` waren Code-Checks und vollständige Browser-Tests erfolgreich. Für die anschliessende Projektmetadaten-Validierung auf Commit `0f32a9ca60adb78a0510a2facac1236aa03176a0` sind die Code-Checks erfolgreich; der zugehörige Browserlauf ist noch in Prüfung.
+- Für Code-Commit `0f32a9ca60adb78a0510a2facac1236aa03176a0` waren Code-Checks und vollständige Browser-Tests erfolgreich. Der Stand enthält zusätzlich die geprüfte Hohlrahmen-Metadatenvalidierung für Projektimporte.
 
 **Nächste Schritte:** Zuerst die noch offenen Einheiten-/Toleranz-Aufrufstellen anhand des Quellcodes inventarisieren und fachlich getrennt migrieren. Danach weitere kritische Import-/Export- und Projektdatei-Grenzfälle ergänzen. Anschliessend die nächste Modulgrenze aus der Abhängigkeitsmatrix auswählen und mit kleinem Diff extrahieren. Phase 1 gilt erst als abgeschlossen, wenn alle festgelegten Abnahmekriterien nachweisbar erfüllt sind.
 
