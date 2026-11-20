@@ -181,3 +181,22 @@ Es werden hier bewusst keine neuen globalen Zahlenwerte festgelegt. Die bestehen
 - [Technische Bestandsaufnahme v90](SILMO_CURRENT_STATE_AUDIT.md)
 - [Funktions- und Abhängigkeitsmatrix](SILMO_FUNCTION_DEPENDENCY_MATRIX.md)
 - [Masterplan](SILMO_MASTERPLAN.md)
+
+
+### 3.3 Skizzen- und Kontur-Interaktionsschwellen
+
+Die folgende Gruppe wurde beim weiteren Audit in den CAD-Skizzenfunktionen gefunden. Die bisherigen Zahlenwerte bleiben unverändert; die Konstantennamen unterscheiden Eingabeabstand, Konturabschluss, Vorschau und mathematische Degenerationsgrenzen.
+
+| API-Konstante | Wert | Dimension / Zweck |
+|---|---:|---|
+| `SKETCH_POLYLINE_SAMPLE_MIN_DISTANCE_WORLD_UNITS` | 0,015 | Welteinheiten; Mindestabstand für neu aufgenommene Punkte bei interaktiver Skizzenlinien-Eingabe |
+| `SKETCH_POLYLINE_MIN_LENGTH_WORLD_UNITS` | 0,02 | Welteinheiten; Mindestlänge einer fertigen Skizzenlinie/-kurve |
+| `SKETCH_DRAW_POINT_MIN_DISTANCE_WORLD_UNITS` | 0,02 | Welteinheiten; Mindestabstand aufeinanderfolgender Punkte beim interaktiven Zeichnen |
+| `SKETCH_PREVIEW_OFFSET_WORLD_UNITS` | 0,025 | Welteinheiten; Z-Versatz für die 2D-Skizzenvorschau, keine Modelliertoleranz |
+| `CLICK_CONTOUR_CLOSE_DISTANCE_WORLD_UNITS` | 0,025 | Welteinheiten; Abstand zum ersten Punkt, ab dem eine Klickkontur geschlossen wird |
+| `CLICK_CONTOUR_POINT_MIN_DISTANCE_WORLD_UNITS` | 0,01 | Welteinheiten; Mindestabstand zwischen aufgenommenen Klickkonturpunkten |
+| `CLICK_CONTOUR_STRAIGHTEN_MIN_DISTANCE_WORLD_UNITS` | 0,0001 | Welteinheiten; ignoriert nahezu nullgrosse Schritte beim 45°-Ausrichten von Konturpunkten |
+| `SKETCH_POLYLINE_DEGENERATE_LENGTH_SQUARED_WORLD_UNITS2` | 1e-12 | Welteinheiten²; Nenner-Fallback bei nahezu punktförmigen Segmenten der RDP-Skizzenvereinfachung |
+| `FREEFORM_MIN_AREA_WORLD_UNITS2` | 0,0001 | Welteinheiten²; Mindestfläche einer geschlossenen Freiform vor Extrusion |
+
+Diese Werte sind keine globalen CAD-Genauigkeitsversprechen. Insbesondere Vorschauversatz, Punktaufnahme und Konturabschluss sind Bedien-/Darstellungsregeln und bleiben getrennt von CSG- und Druckbett-Toleranzen.
