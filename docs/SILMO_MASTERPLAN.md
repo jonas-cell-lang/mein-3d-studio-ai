@@ -662,3 +662,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Diagnose ist bewusst konservativ: Überlappende Begrenzungsboxen können auch bei tatsächlich getrennten oder sich schneidenden Geometrien vorkommen. Daraus folgt keine vollständige geometrische Kollisionsprüfung.
 - Auf Commit `d95c9679b03eaa1b76e16acdba744e6a6923c735` bestanden die Code-Checks (120/120 Unit-Tests), der isolierte OCCT-WebWorker-Prototyp und der vollständige Browser-Interaktionstest.
 - Der bestandene Browser-Test umfasst reale CAD-Interaktionen sowie Projekt-Wiederöffnung und anschliessenden STL-Export. Diese Prüfungen sind wichtige Regressionstests, aber kein allgemeiner Beweis für Fehlerfreiheit oder Druckbarkeit jedes Modells.
+
+
+### 6.58 History: verschachtelte Undo-/Redo-Aufrufe verhindern (20.11.2026)
+- Während restoreState ausgeführt wird, sind Undo, Redo und record jetzt gegen erneute, verschachtelte Verlaufsaktionen geschützt. apply prüft dafür zusätzlich den bestehenden applying-Status.
+- Der Regressionstest löst während eines Undo- und eines Redo-Wiederherstellungsvorgangs erneut Undo, Redo und record aus. Alle drei verschachtelten Aktionen müssen kontrolliert false zurückgeben; die äusseren Undo-/Redo-Schritte müssen ihre erwarteten Zustände und Stack-Zähler behalten.
+- Auf Commit 21d8d1995dd9051e39b755bdd088c912b785336c bestanden 122/122 Unit-Tests.
+- Der isolierte OCCT-WebWorker-Prototyp auf demselben Commit wurde erfolgreich abgeschlossen. Der vollständige Browser-Interaktionstest lief zum Zeitpunkt dieses Eintrags noch und wird erst nach erfolgreichem Abschluss als bestanden gewertet.
+- Die Änderung verhindert Reentrancy während der Wiederherstellung. Sie ist keine allgemeine Garantie gegen Fehler in beliebigen benutzerdefinierten Capture-, Restore- oder Dispose-Callbacks.
