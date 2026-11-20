@@ -211,7 +211,7 @@ test('Loft-Kontur wird gleichmässig abgetastet und ungültige Konturen abgewies
   assert.throws(() => sketchGeometry.resampleClosedOutline([[0, 0], [1, 0], [1, 1]], 10001, 0.001), /begrenzte positive Abtastung/);
   assert.throws(() => sketchGeometry.resampleClosedOutline(outline, 32, 0), /begrenzte positive Abtastung/);
   assert.throws(() => sketchGeometry.resampleClosedOutline(outline, 32, Infinity), /begrenzte positive Abtastung/);
-  assert.throws(() => sketchGeometry.resampleClosedOutline([[0, 0], [1, 0], [1, 1], [0, 0]], 32, 0.001), /Nullkanten/);
+  assert.throws(() => sketchGeometry.resampleClosedOutline([[0, 0], [1, 0], [1, 0], [1, 1]], 32, 0.001), /Nullkanten/);
   assert.throws(() => sketchGeometry.createLoftGeometry([new THREE.Vector3()], []), /gleich viele gültige/);
 });
 
