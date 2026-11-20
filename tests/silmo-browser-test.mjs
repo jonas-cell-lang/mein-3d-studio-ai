@@ -404,6 +404,22 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   });
   await page.waitForFunction(()=>/entartetes Dreieck/.test(document.querySelector('#status')?.textContent||''),null,{timeout:5000});
   assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeDegenerateImport,'STL mit Nullflächen-Dreieck wurde importiert');
+  // Binäre STL-Dateien mit NaN-Koordinaten müssen vor dem Modellaufbau abgewiesen werden.
+  const modelCountBeforeNonFiniteImport=await page.locator('#objects .object-row').count();
+  await page.locator('#stlDropZone').evaluate(zone=>{
+    const buffer=new ArrayBuffer(134);
+    const view=new DataView(buffer);
+    view.setUint32(80,1,true);
+    const values=[0,0,1, 0,0,0, 10,0,0, 0,10,0];
+    values.forEach((value,index)=>view.setFloat32(84+index*4,value,true));
+    view.setFloat32(84+4*4,NaN,true);
+    const transfer=new DataTransfer();
+    transfer.items.add(new File([buffer],'non-finite-test.stl',{type:'model/stl'}));
+    zone.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+    zone.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+  });
+  await page.waitForFunction(()=>/vollständigen, gültigen Dreiecke/.test(document.querySelector('#status')?.textContent||''),null,{timeout:5000});
+  assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeNonFiniteImport,'STL mit nicht endlichen Koordinaten hat den Modellbestand verändert');
   const modelCountBeforeInvalidImport=await page.locator('#objects .object-row').count();
   await page.locator('#stlDropZone').evaluate(zone=>{
     const transfer=new DataTransfer();
