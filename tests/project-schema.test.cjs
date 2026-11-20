@@ -90,15 +90,18 @@ test('Loft-Metadaten mit Innenkonturen werden validiert und sind projektfähig',
   assert.throws(() => schema.validateProjectEnvelope(invalidReference), /Loft-Metadaten/);
 });
 
-test('Freiform-Skizzen speichern nur begrenzte und gültige Innenkonturen', () => {
+test('Freiform-Skizzen validieren einfache, begrenzte und innenliegende Lochkonturen', () => {
   const project=validProject();
-  project.objects.push({sketch:{type:'freeform2d',holes:[
-    [[-1,-1],[-1,1],[1,1],[1,-1]],
-    [[3,-1],[3,1],[5,1],[5,-1]]
-  ]}});
+  project.objects.push({
+    sketchOutline:[[-10,-10],[10,-10],[10,10],[-10,10]],
+    sketch:{type:'freeform2d',holes:[
+      [[-8,-2],[-8,2],[-4,2],[-4,-2]],
+      [[2,-2],[2,2],[6,2],[6,-2]]
+    ]}
+  });
   assert.equal(schema.validateProjectEnvelope(project),project);
   const tooMany=structuredClone(project);
-  tooMany.objects[0].sketch.holes=Array(101).fill([[-1,-1],[-1,1],[1,1]]);
+  tooMany.objects[0].sketch.holes=Array(101).fill([[-8,-2],[-8,2],[-4,2],[-4,-2]]);
   assert.throws(()=>schema.validateProjectEnvelope(tooMany),/Innenkonturen/);
   const invalidPoint=structuredClone(project);
   invalidPoint.objects[0].sketch.holes[0][0][0]=Infinity;
@@ -106,6 +109,40 @@ test('Freiform-Skizzen speichern nur begrenzte und gültige Innenkonturen', () =
   const tooManyPoints=structuredClone(project);
   tooManyPoints.objects[0].sketch.holes[0]=Array(1001).fill([0,0]);
   assert.throws(()=>schema.validateProjectEnvelope(tooManyPoints),/Innenkonturen/);
+  const missingOuter=structuredClone(project);
+  delete missingOuter.objects[0].sketchOutline;
+  assert.throws(()=>schema.validateProjectEnvelope(missingOuter),/Innenkonturen/);
+});
+
+test('Projektimport weist selbstüberschneidende oder entartete Skizzenringe ab', () => {
+  const base={sketchOutline:[[-10,-10],[10,-10],[10,10],[-10,10]],sketch:{type:'freeform2d',holes:[]}};
+  const cases=[
+    {label:'Selbstüberschneidung',hole:[[-5,-5],[5,5],[-5,5],[5,-5]]},
+    {label:'Nullfläche',hole:[[0,0],[1,1],[2,2]]},
+    {label:'Doppelte Nachbarpunkte',hole:[[0,0],[0,0],[1,1],[1,0]]},
+    {label:'Ausserhalb',hole:[[11,0],[12,0],[12,1],[11,1]]},
+    {label:'Aussenrand berührt',hole:[[-10,-2],[-8,-2],[-8,2],[-10,2]]},
+    {label:'Aussenkontur kreuzt',hole:[[-11,-1],[0,-1],[0,1],[-11,1]]}
+  ];
+  for(const item of cases){
+    const project=validProject();
+    project.objects.push({...structuredClone(base),sketch:{...base.sketch,holes:[item.hole]}});
+    assert.throws(()=>schema.validateProjectEnvelope(project),/Innenkontur|Innenkonturen/,item.label);
+  }
+});
+
+test('Projektimport weist überlappende, berührende und ineinander liegende Löcher ab', () => {
+  const base={sketchOutline:[[-10,-10],[10,-10],[10,10],[-10,10]],sketch:{type:'freeform2d',holes:[]}};
+  const cases=[
+    [[[-5,-2],[-5,2],[-1,2],[-1,-2]],[[-3,-2],[-3,2],[1,2],[1,-2]]],
+    [[[-5,-2],[-5,2],[-1,2],[-1,-2]],[[-1,-2],[-1,2],[3,2],[3,-2]]],
+    [[[-6,-3],[-6,3],[2,3],[2,-3]],[[-4,-1],[-4,1],[0,1],[0,-1]]]
+  ];
+  for(const holes of cases){
+    const project=validProject();
+    project.objects.push({...structuredClone(base),sketch:{...base.sketch,holes}});
+    assert.throws(()=>schema.validateProjectEnvelope(project),/Innenkonturen/);
+  }
 });
 
 test('Projektobjekt-IDs bleiben eindeutig und sicher', () => {
