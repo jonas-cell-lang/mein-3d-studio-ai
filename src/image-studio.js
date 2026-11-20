@@ -1,6 +1,8 @@
 
 /* SILMO Image Studio Phase 1 – isolierter 2D-Arbeitsbereich */
 (() => {
+  const tolerances = window.SILMOTolerances;
+  if (!tolerances) throw new Error('SILMO Image Studio benötigt die Toleranz-API.');
   const $ = id => document.getElementById(id);
   const workspace = $('imageStudioWorkspace');
   const canvas = $('imageStudioCanvas');
