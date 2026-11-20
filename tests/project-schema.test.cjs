@@ -87,6 +87,12 @@ test('Serialisierte Mesh-Geometrie wird vor dem Wiederaufbau strukturell geprüf
   outOfRange.index.array = [0,1,3];
   assert.throws(() => schema.validateSerializedGeometry(outOfRange), /Ungültige Modell-Indizes/);
 
+  const tooLargeForIndexType = structuredClone(valid);
+  tooLargeForIndexType.attributes.position.array = Array.from({ length: 257 }, (_, i) => [i, 0, 0]).flat();
+  tooLargeForIndexType.attributes.normal.array = Array.from({ length: 257 }, () => [0, 0, 1]).flat();
+  tooLargeForIndexType.index = { arrayType: 'Uint8Array', array: [0, 1, 256] };
+  assert.throws(() => schema.validateSerializedGeometry(tooLargeForIndexType), /Ungültige Modell-Indizes/);
+
   const mismatchedAttributes = structuredClone(valid);
   mismatchedAttributes.attributes.normal.array.splice(-3);
   assert.throws(() => schema.validateSerializedGeometry(mismatchedAttributes), /unterschiedliche Punktanzahlen/);
