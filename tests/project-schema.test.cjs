@@ -90,6 +90,24 @@ test('Loft-Metadaten mit Innenkonturen werden validiert und sind projektfähig',
   assert.throws(() => schema.validateProjectEnvelope(invalidReference), /Loft-Metadaten/);
 });
 
+test('Freiform-Skizzen speichern nur begrenzte und gültige Innenkonturen', () => {
+  const project=validProject();
+  project.objects.push({sketch:{type:'freeform2d',holes:[
+    [[-1,-1],[-1,1],[1,1],[1,-1]],
+    [[3,-1],[3,1],[5,1],[5,-1]]
+  ]}});
+  assert.equal(schema.validateProjectEnvelope(project),project);
+  const tooMany=structuredClone(project);
+  tooMany.objects[0].sketch.holes=Array(101).fill([[-1,-1],[-1,1],[1,1]]);
+  assert.throws(()=>schema.validateProjectEnvelope(tooMany),/Innenkonturen/);
+  const invalidPoint=structuredClone(project);
+  invalidPoint.objects[0].sketch.holes[0][0][0]=Infinity;
+  assert.throws(()=>schema.validateProjectEnvelope(invalidPoint),/Innenkonturen/);
+  const tooManyPoints=structuredClone(project);
+  tooManyPoints.objects[0].sketch.holes[0]=Array(1001).fill([0,0]);
+  assert.throws(()=>schema.validateProjectEnvelope(tooManyPoints),/Innenkonturen/);
+});
+
 test('Projektobjekt-IDs bleiben eindeutig und sicher', () => {
   const project = validProject();
   project.objects.push({ objectId: 'profile-a' }, { objectId: 'profile-b' });
