@@ -121,16 +121,16 @@ test('Projektdatei-Export validiert den Inhalt vor dem Download', () => {
 
 test('Projektdatei-Export lädt kein Projekt herunter, das das Importlimit überschreitet', () => {
   withBrowserGlobals(downloads => {
-    const { state, deps } = makeProjectDependencies({
-      getObjects: () => Array.from({ length: 101 }, () => ({
-        uuid: 'object-id', userData: {}, position: new THREE.Vector3(),
-        rotation: new THREE.Euler(), scale: new THREE.Vector3(1, 1, 1),
-        material: new THREE.MeshStandardMaterial(), geometry: new THREE.BoxGeometry()
-      }))
-    });
+    const oversizedObjects = Array.from({ length: 101 }, (_, index) => ({
+      uuid: 'object-' + index, userData: {}, position: new THREE.Vector3(),
+      rotation: new THREE.Euler(), scale: new THREE.Vector3(1, 1, 1),
+      material: new THREE.MeshStandardMaterial(), geometry: new THREE.BoxGeometry()
+    }));
+    const { state, deps } = makeProjectDependencies({ getObjects: () => oversizedObjects });
     projectIO.createProjectIO(deps).saveProject();
     assert.equal(downloads.length, 0);
     assert.match(state.status, /nicht gespeichert/);
+    oversizedObjects.forEach(object => { object.geometry.dispose(); object.material.dispose(); });
   });
 });
 
@@ -265,7 +265,7 @@ test('STL-Import begrenzt die Dreiecksanzahl zusätzlich zur Dateigrösse', () =
     }).importSTLFile({ name: 'huge.stl', type: 'model/stl', size: 100, buffer: new ArrayBuffer(84) });
     assert.equal(state.objects.length, 0);
     assert.equal(disposed, true);
-    assert.match(state.status, /zu umfangreichen/);
+    assert.match(state.status, /zu umfangreich/);
   });
 });
 
