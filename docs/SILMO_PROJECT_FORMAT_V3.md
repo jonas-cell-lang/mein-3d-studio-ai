@@ -43,6 +43,8 @@ Eine Änderung dieser Semantik erfordert eine neue Projektformatversion und eine
 - Alle Geometrieattribute müssen dieselbe Punktanzahl besitzen; Attributtypen, Arraylängen, endliche Werte und Grössenlimits werden geprüft.
 - Indizes müssen einen unterstützten Integer-Typ, gültige Vertex-Verweise und vollständige Dreiergruppen für Dreiecke enthalten.
 - Nicht-indizierte Mesh-Geometrie muss ebenfalls aus vollständigen Dreiecken bestehen.
+- Konturrahmen-Metadaten werden auf die tatsächlich unterstützten Eingabebereiche begrenzt: Wandstärke 0,2–100 mm und Rahmenhöhe 0,2–2000 mm. Der frühere Feldname `caseWallFrame` wird dabei ebenfalls geprüft.
+- Ein fehlgeschlagener Geometrie-Wiederaufbau gibt bereits angelegte `BufferGeometry`-Ressourcen frei.
 - Fehlende oder unbekannte Versionen werden mit einer verständlichen Meldung abgelehnt.
 - Bei einer nicht unterstützten Version bleibt das aktuell geöffnete Projekt unverändert.
 - Das Speichern schreibt weiterhin Version 3.
