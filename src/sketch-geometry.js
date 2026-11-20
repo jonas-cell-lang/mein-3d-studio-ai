@@ -71,8 +71,11 @@
 
 
   function resampleClosedOutline(points, count = 64, minimumPerimeter = 1e-8) {
-    if (!Array.isArray(points) || points.length < 3 || !Number.isInteger(count) || count < 3) {
-      throw new TypeError('Für ein Loft wird eine geschlossene Kontur mit mindestens drei Punkten benötigt.');
+    const maximumOutlinePoints = 10000, maximumSamples = 10000;
+    if (!Array.isArray(points) || points.length < 3 || points.length > maximumOutlinePoints ||
+        !Number.isInteger(count) || count < 3 || count > maximumSamples ||
+        !Number.isFinite(minimumPerimeter) || minimumPerimeter <= 0) {
+      throw new TypeError('Für ein Loft wird eine gültige geschlossene Kontur sowie eine begrenzte positive Abtastung benötigt.');
     }
     const pts = points.map(point => {
       if (!Array.isArray(point) || point.length < 2 || !Number.isFinite(point[0]) || !Number.isFinite(point[1])) {
@@ -80,23 +83,30 @@
       }
       return new THREE.Vector2(point[0], point[1]);
     });
+    const samePoint = (a, b) => a.x === b.x && a.y === b.y;
+    if (pts.length > 3 && samePoint(pts[0], pts[pts.length - 1])) pts.pop();
+    if (pts.length < 3 || pts.some((point, index) => samePoint(point, pts[(index + 1) % pts.length]))) {
+      throw new Error('Profilkontur ist ungültig: Nullkanten werden nicht unterstützt.');
+    }
     const lengths = [];
     let total = 0;
     for (let i = 0; i < pts.length; i++) {
       const length = pts[i].distanceTo(pts[(i + 1) % pts.length]);
+      if (!Number.isFinite(length) || length <= 0) throw new Error('Profilkontur ist ungültig.');
       lengths.push(length);
       total += length;
     }
     if (!Number.isFinite(total) || total < minimumPerimeter) throw new Error('Profilkontur ist ungültig.');
     const result = [];
+    let segment = 0, segmentStart = 0;
     for (let k = 0; k < count; k++) {
-      let target = total * k / count, segment = 0;
-      while (segment < lengths.length - 1 && target > lengths[segment]) {
-        target -= lengths[segment];
+      const target = total * k / count;
+      while (segment < lengths.length - 1 && target > segmentStart + lengths[segment]) {
+        segmentStart += lengths[segment];
         segment++;
       }
       const a = pts[segment], b = pts[(segment + 1) % pts.length];
-      const t = lengths[segment] > 0 ? target / lengths[segment] : 0;
+      const t = Math.max(0, Math.min(1, (target - segmentStart) / lengths[segment]));
       result.push(a.clone().lerp(b, t));
     }
     return result;
