@@ -2527,6 +2527,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const factors=[values[0]/(worldUnitsToMm(old.x*Math.abs(obj.scale.x))),values[1]/(worldUnitsToMm(old.y*Math.abs(obj.scale.y))),values[2]/(worldUnitsToMm(old.z*Math.abs(obj.scale.z)))];
     if(factors.some(v=>!Number.isFinite(v)||v<=0||v>20000))throw new Error('Die gewünschte Skalierung ist ausserhalb des gültigen Bereichs.');
     recordHistory();obj.geometry.scale(...factors);obj.geometry.computeVertexNormals();obj.geometry.computeBoundingBox();obj.geometry.computeBoundingSphere();
+    const scaleStoredRing=ring=>Array.isArray(ring)?ring.map(point=>[point[0]*factors[0],point[1]*factors[1]]):ring;
+    if(Array.isArray(obj.userData.sketchOutline))obj.userData.sketchOutline=scaleStoredRing(obj.userData.sketchOutline);
+    if(Array.isArray(obj.userData.sketch.outlinePoints))obj.userData.sketch.outlinePoints=scaleStoredRing(obj.userData.sketch.outlinePoints);
+    if(Array.isArray(obj.userData.sketch.holes))obj.userData.sketch.holes=obj.userData.sketch.holes.map(scaleStoredRing);
     obj.userData.baseDimensions={x:mmToWorldUnits(values[0]),y:mmToWorldUnits(values[1]),z:mmToWorldUnits(values[2])};
     obj.userData.sketch.widthMM=values[0];obj.userData.sketch.depthMM=values[1];obj.userData.sketch.extrusionMM=values[2];
     updateObjects();showProperties();updateMoveGizmo();status.textContent='Skizzenmasse aktualisiert: '+values.map(v=>v.toFixed(1)).join(' × ')+' mm.';
@@ -2587,16 +2591,19 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const path=new THREE.Path();path.moveTo(ring[0].x,ring[0].y);ring.slice(1).forEach(point=>path.lineTo(point.x,point.y));path.closePath();shape.holes.push(path);
       holeMetadata.push(ring.map(point=>[point.x,point.y]));
     });
-    const geometry=window.SILMOSketchGeometry.createExtrusionGeometry(shape,{depth:mmToWorldUnits(meta.extrusionMM),bevelEnabled:false,curveSegments:32});
+    const localExtrusionMM=meta.extrusionMM/Math.max(Math.abs(obj.scale.z),1e-12);\n    const geometry=window.SILMOSketchGeometry.createExtrusionGeometry(shape,{depth:mmToWorldUnits(localExtrusionMM),bevelEnabled:false,curveSegments:32});
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
     if(![size.x,size.y,size.z].every(value=>Number.isFinite(value)&&value>CSG_EPSILON)){geometry.dispose();throw new Error('Die geänderten Konturen erzeugen keine gültige 3D-Geometrie.');}
     recordHistory();obj.geometry.dispose();obj.geometry=geometry;
     obj.userData.sketchOutline=updatedRings[0];meta.outlinePoints=updatedRings[0];meta.holes=holeMetadata;
-    meta.widthMM=worldUnitsToMm(size.x);meta.depthMM=worldUnitsToMm(size.y);
+    meta.widthMM=worldUnitsToMm(size.x*Math.abs(obj.scale.x));meta.depthMM=worldUnitsToMm(size.y*Math.abs(obj.scale.y));
     const ringArea=ring=>Math.abs(ring.reduce((sum,point,i)=>sum+point.x*ring[(i+1)%ring.length].y-ring[(i+1)%ring.length].x*point.y,0))/2;
-    meta.areaMM2=worldUnits2ToMm2(ringArea(vectors[0])-vectors.slice(1).reduce((sum,ring)=>sum+ringArea(ring),0));
-    meta.perimeterMM=worldUnitsToMm(vectors[0].reduce((sum,point,i)=>sum+point.distanceTo(vectors[0][(i+1)%vectors[0].length]),0));
+    meta.areaMM2=worldUnits2ToMm2((ringArea(vectors[0])-vectors.slice(1).reduce((sum,ring)=>sum+ringArea(ring),0))*Math.abs(obj.scale.x*obj.scale.y));
+    meta.perimeterMM=vectors[0].reduce((sum,point,i)=>{
+      const next=vectors[0][(i+1)%vectors[0].length];
+      return sum+worldUnitsToMm(Math.hypot((next.x-point.x)*obj.scale.x,(next.y-point.y)*obj.scale.y));
+    },0);
     obj.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
     updateObjects();showProperties();updateMoveGizmo();status.textContent=(ringIndex===0?'Aussenkontur':'Innenloch '+ringIndex)+' – Punkt '+(index+1)+' geändert. Alle Öffnungen wurden erhalten.';
     loadSelectedSketchPoints();
