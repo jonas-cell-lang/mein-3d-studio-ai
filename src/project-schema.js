@@ -78,7 +78,7 @@
 
   function validateContourFrameMetadata(object) {
     if (!object || typeof object !== 'object' || Array.isArray(object)) return;
-    const frame = object.contourFrame || object.caseWallFrame;
+    const frame = object.contourFrame ?? object.caseWallFrame;
     if (frame == null) return;
     if (!frame || typeof frame !== 'object' || Array.isArray(frame) ||
         !Number.isFinite(frame.wallThicknessMM) || frame.wallThicknessMM < 0.2 || frame.wallThicknessMM > 100 ||
