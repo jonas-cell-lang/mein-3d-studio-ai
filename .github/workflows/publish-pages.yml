@@ -129,6 +129,7 @@ jobs:
               "src/image-studio.js",
               "src/tool-navigation.js",
               "src/primitive-geometry.js",
+              "src/sketch-geometry.js",
               "vendor/three/three.min.js",
               "vendor/three/STLLoader.js",
               "vendor/three/STLExporter.js",
