@@ -106,6 +106,32 @@
     vertices.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
   }
 
+
+  function createPathCurve(pathPoints, type) {
+    if (!Array.isArray(pathPoints) || pathPoints.length < 2 ||
+        !pathPoints.every(point => Array.isArray(point) && point.length >= 3 && point.slice(0, 3).every(Number.isFinite))) {
+      throw new TypeError('Ein Pfad benötigt mindestens zwei gültige 3D-Punkte.');
+    }
+    const points = pathPoints.map(point => new THREE.Vector3(point[0], point[1], point[2]));
+    return type === 'line2d'
+      ? new THREE.LineCurve3(points[0], points[points.length - 1])
+      : new THREE.CatmullRomCurve3(points);
+  }
+
+  function createPathTubeGeometry(pathPoints, type, radius, tubularSegments, radialSegments = 8) {
+    if (!Number.isFinite(radius) || radius <= 0 ||
+        !Number.isInteger(tubularSegments) || tubularSegments < 1 ||
+        !Number.isInteger(radialSegments) || radialSegments < 3) {
+      throw new TypeError('Pfadradius und Segmentzahlen müssen gültig und positiv sein.');
+    }
+    const curve = createPathCurve(pathPoints, type);
+    const geometry = new THREE.TubeGeometry(curve, tubularSegments, radius, radialSegments, false);
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    return { curve, geometry };
+  }
+
   function createLoftGeometry(ringA, ringB) {
     if (!Array.isArray(ringA) || !Array.isArray(ringB) || ringA.length < 3 || ringA.length !== ringB.length ||
         !ringA.every(point => point && Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z)) ||
@@ -166,5 +192,5 @@
     return geometry;
   }
 
-  return Object.freeze({ createExtrusionGeometry, createParametricProfile, addRoundedRectPath, resampleClosedOutline, createLoftGeometry, createSweepGeometry });
+  return Object.freeze({ createExtrusionGeometry, createParametricProfile, addRoundedRectPath, resampleClosedOutline, createLoftGeometry, createSweepGeometry, createPathCurve, createPathTubeGeometry });
 });
