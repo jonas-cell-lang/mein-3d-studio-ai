@@ -278,3 +278,22 @@ test('CSG prüft Indexbereiche bei indizierten Meshes', () => {
     base.material.dispose(); tool.material.dispose();
   }
 });
+
+test('CSG erhält die Aussenorientierung bei gespiegelten Mesh-Transformationen', () => {
+  const base = box();
+  const tool = box([1, 0, 0]);
+  tool.scale.x = -1;
+  tool.updateMatrixWorld(true);
+  const result = combineMeshes(base, tool, 'union');
+  try {
+    assert.ok(Math.abs(Math.abs(signedVolume(result)) - 12) < 1e-5,
+      'Gespiegelte Eingabe muss dieselbe Vereinigungsmenge mit Volumen 12 ergeben');
+    const b = bounds(result);
+    assert.deepEqual(b.min.map(v => Number(v.toFixed(5))), [-1, -1, -1]);
+    assert.deepEqual(b.max.map(v => Number(v.toFixed(5))), [2, 1, 1]);
+  } finally {
+    result.dispose();
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
