@@ -170,3 +170,48 @@ test('CSG-Vereinigung identischer Körper verdoppelt das Volumen nicht', () => {
     tool.material.dispose();
   }
 });
+
+
+test('CSG behandelt zwei nur an einer Fläche anliegende Würfel ohne Volumenverlust', () => {
+  const base = box();
+  const tool = box([2, 0, 0]);
+  const result = combineMeshes(base, tool, 'union');
+  try {
+    assert.ok(Math.abs(Math.abs(signedVolume(result)) - 16) < 1e-5,
+      'Die gemeinsame Fläche darf kein Volumen erzeugen oder entfernen');
+    const b = bounds(result);
+    assert.deepEqual(b.min.map(v => Number(v.toFixed(5))), [-1, -1, -1]);
+    assert.deepEqual(b.max.map(v => Number(v.toFixed(5))), [3, 1, 1]);
+  } finally {
+    result.dispose();
+    base.geometry.dispose();
+    tool.geometry.dispose();
+    base.material.dispose();
+    tool.material.dispose();
+  }
+});
+
+test('CSG berücksichtigt Rotation und Skalierung beider Eingabekörper', () => {
+  const base = box([0, 0, 0], [2, 2, 2]);
+  const tool = box([0, 1, 0], [2, 2, 2]);
+  base.rotation.z = Math.PI / 2;
+  tool.rotation.z = Math.PI / 2;
+  base.scale.set(2, 1, 1);
+  tool.scale.set(2, 1, 1);
+  base.updateMatrixWorld(true);
+  tool.updateMatrixWorld(true);
+  const result = combineMeshes(base, tool, 'union');
+  try {
+    assert.ok(Math.abs(Math.abs(signedVolume(result)) - 24) < 1e-4,
+      'Vereinigungsvolumen muss nach der Skalierung 24 Kubikeinheiten betragen');
+    const b = bounds(result);
+    assert.deepEqual(b.min.map(v => Number(v.toFixed(4))), [-2, -1, -1]);
+    assert.deepEqual(b.max.map(v => Number(v.toFixed(4))), [2, 2, 1]);
+  } finally {
+    result.dispose();
+    base.geometry.dispose();
+    tool.geometry.dispose();
+    base.material.dispose();
+    tool.material.dispose();
+  }
+});
