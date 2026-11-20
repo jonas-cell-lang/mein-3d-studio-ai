@@ -32,15 +32,15 @@
 | Grundlage | Im Audit bestätigter Ist-Zustand | Daraus folgender Architekturbedarf |
 |---|---|---|
 | Anwendungseintritt | Hauptsächlich eine index.html mit eingebettetem CSS/JavaScript | Modulgrenzen schrittweise herauslösen; Anwendung lauffähig halten |
-| Rendering | Three.js r128 aus lokal bereitgestellten, gepinnten Dateien | Rendering als eigene Schicht erhalten; Abhängigkeiten später lokal verwalten |
+| Rendering | Three.js r128 aus lokal bereitgestellten, gepinnten Dateien | Rendering als eigene Schicht erhalten; lokale Runtime-Version reproduzierbar halten |
 | Modellrepräsentation | Aktive Objekte sind Three.js-Meshes mit BufferGeometry | Exakte Geometrie und triangulierte Darstellung trennen |
 | Boolesche Geometrie | Eigener BSP-basierter CSG-Algorithmus | Vergleichstestkorpus erstellen; keinen ungetesteten Austausch vornehmen |
-| Einheiten | 1 Three.js-Einheit = 10 mm (der Code teilt Millimeterwerte durch 10, um interne Koordinaten zu erhalten); Umrechnung an mehreren Stellen | Zentrale Unit-/Tolerance-API definieren; bisherige Umrechnung zunächst unverändert lassen |
+| Einheiten | 1 Three.js-Einheit = 10 mm; zentrale `src/units.js`-API für Längen, Flächen und Volumen | Restliche direkte Umrechnungsstellen inventarisieren; bestehende Semantik unverändert halten |
 | Projektformat | JSON v3 mit eingebetteten Geometriedaten, Transformationen und Metadaten | Validatoren und Fixtures vorhanden; Migrationen erst mit realen Altformaten ergänzen |
-| Undo/Redo in `src/history.js`, snapshotbasiert mit Restore-/Dispose-Schutz und Material-Arrays | Unit-Tests plus Node-Benchmark für 1/10/50 Objekte | Browser-RAM/Frame-Zeit und grosse reale Meshes fehlen; inkrementelle/befehlsbasierte History bleibt offen |
+| Undo/Redo | `src/history.js`, snapshotbasiert mit Restore-/Dispose-Schutz und Material-Arrays | Unit-Tests plus Node-Benchmark für 1/10/50 Objekte | Browser-RAM/Frame-Zeit und grosse reale Meshes fehlen; inkrementelle/befehlsbasierte History bleibt offen |
 | Tests | Playwright-Browserregression plus Node-Unit-Tests; aktueller Testquellstand: 23 Unit-Testfälle und 9 Browser-Testblöcke mit zusammen ungefähr 505 Assertion-Aufrufen | Geometrische Sollwerte, grosse reale CAD-Modelle und Browser-Leistungsmessungen ergänzen |
 | Abhängigkeiten | `package.json`/Lockdatei, Three.js 0.128.0 gepinnt und lokale Runtime-Vorbereitung; keine CDN-Laufzeitabhängigkeit | Reproduzierbaren Build und Pages-Paketprüfung erhalten |
-| Bildverarbeitung | Lokale Browser-Konturerkennung | Foto-zu-3D getrennt erforschen; Ergebnisse editierbar halten |
+| Bildverarbeitung | Lokale Browser-Konturerkennung; Bildraster- und Modellmass-Prüfungen sind getrennt | Foto-zu-3D getrennt erforschen; Ergebnisse editierbar halten |
 
 ## 3. Datenflussübersicht – bestätigte und offene Beziehungen
 
