@@ -2467,10 +2467,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     if(!Number.isFinite(radiusMM)||radiusMM<0.1||radiusMM>20)throw new Error('Radius/Fasenbreite muss zwischen 0,1 und 20 mm liegen.');
     const maxAllowed=Math.min(meta.widthMM||2000,meta.depthMM||2000,meta.extrusionMM)/2;
     if(radiusMM>=maxAllowed)throw new Error('Der Wert ist zu gross für diese Skizze. Verwende weniger als '+maxAllowed.toFixed(1)+' mm.');
-    const shape=new THREE.Shape();shape.moveTo(outline[0][0],outline[0][1]);outline.slice(1).forEach(p=>shape.lineTo(p[0],p[1]));shape.closePath();
     const bevel=mmToWorldUnits(radiusMM);
-    const geometry=new THREE.ExtrudeGeometry(shape,{depth:mmToWorldUnits(meta.extrusionMM),bevelEnabled:true,bevelSegments:mode==='fillet'?8:1,bevelSize:bevel,bevelThickness:bevel,curveSegments:32});
-    geometry.translate(0,0,bevel);geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    const geometry=window.SILMOSketchGeometry.createEdgeTreatmentGeometry(
+      outline,mmToWorldUnits(meta.extrusionMM),bevel,mode
+    );
     recordHistory();obj.geometry.dispose();obj.geometry=geometry;
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);obj.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
     obj.userData.edgeTreatment={type:mode,radiusMM};obj.userData.label=(obj.userData.label||'Skizze')+(mode==='fillet'?' – abgerundet':' – abgefast');
