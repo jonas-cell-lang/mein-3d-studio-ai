@@ -100,16 +100,16 @@
     for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){
       const a=polygon[i],b=polygon[j];
       if(((a[1]>point[1])!==(b[1]>point[1])) &&
-        point[0]<(b[0]-a[0])*(point[1]-a[1])/(b[1]-a[1]||1e-12)+a[0]) inside=!inside;
+        point[0]<(b[0]-a[0])*(point[1]-a[1])/(b[1]-a[1]||tolerances.IMAGE_POLYGON_RAY_DENOMINATOR_FALLBACK_PX)+a[0]) inside=!inside;
     }
     return inside;
   }
 
   function segmentDistance(a,b,c,d) {
     const orient=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);
-    const on=(p,q,r)=>Math.min(p[0],q[0])-1e-8<=r[0]&&r[0]<=Math.max(p[0],q[0])+1e-8&&Math.min(p[1],q[1])-1e-8<=r[1]&&r[1]<=Math.max(p[1],q[1])+1e-8;
+    const on=(p,q,r)=>Math.min(p[0],q[0])-tolerances.IMAGE_SEGMENT_BOUNDS_EPSILON_PX<=r[0]&&r[0]<=Math.max(p[0],q[0]) + tolerances.IMAGE_SEGMENT_BOUNDS_EPSILON_PX&&Math.min(p[1],q[1])-tolerances.IMAGE_SEGMENT_BOUNDS_EPSILON_PX<=r[1]&&r[1]<=Math.max(p[1],q[1]) + tolerances.IMAGE_SEGMENT_BOUNDS_EPSILON_PX;
     const o1=orient(a,b,c),o2=orient(a,b,d),o3=orient(c,d,a),o4=orient(c,d,b);
-    if((o1*o2<0&&o3*o4<0)||(Math.abs(o1)<1e-8&&on(a,b,c))||(Math.abs(o2)<1e-8&&on(a,b,d))||(Math.abs(o3)<1e-8&&on(c,d,a))||(Math.abs(o4)<1e-8&&on(c,d,b)))return 0;
+    if((o1*o2<0&&o3*o4<0)||(Math.abs(o1)<tolerances.IMAGE_SEGMENT_ORIENTATION_EPSILON_PX2&&on(a,b,c))||(Math.abs(o2)<tolerances.IMAGE_SEGMENT_ORIENTATION_EPSILON_PX2&&on(a,b,d))||(Math.abs(o3)<tolerances.IMAGE_SEGMENT_ORIENTATION_EPSILON_PX2&&on(c,d,a))||(Math.abs(o4)<tolerances.IMAGE_SEGMENT_ORIENTATION_EPSILON_PX2&&on(c,d,b)))return 0;
     const pointDistance=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]);
     const pointSegment=(p,x,y)=>{const dx=y[0]-x[0],dy=y[1]-x[1],t=Math.max(0,Math.min(1,((p[0]-x[0])*dx+(p[1]-x[1])*dy)/(dx*dx+dy*dy||1)));return Math.hypot(p[0]-x[0]-t*dx,p[1]-x[1]-t*dy);};
     return Math.min(pointSegment(a,c,d),pointSegment(b,c,d),pointSegment(c,a,b),pointSegment(d,a,b),pointDistance(a,c),pointDistance(a,d),pointDistance(b,c),pointDistance(b,d));
@@ -119,10 +119,10 @@
     const n=poly.length;
     for(let i=0;i<n;i++){
       const a=poly[i],b=poly[(i+1)%n];
-      if(Math.hypot(a[0]-b[0],a[1]-b[1])<1e-5)return false;
+      if(Math.hypot(a[0]-b[0],a[1]-b[1])<tolerances.IMAGE_POLYGON_MIN_EDGE_PX)return false;
       for(let j=i+1;j<n;j++){
         if(j===i||j===(i+1)%n||i===(j+1)%n)continue;
-        if(segmentDistance(a,b,poly[j],poly[(j+1)%n])<1e-7)return false;
+        if(segmentDistance(a,b,poly[j],poly[(j+1)%n])<tolerances.IMAGE_POLYGON_MIN_NONADJACENT_GAP_PX)return false;
       }
     }
     return true;
@@ -142,8 +142,8 @@
       if(!polygonIsSimple(hole)){rejected.push('ungültige Kontur');continue;}
       const samples=hole.flatMap((p,i)=>{const q=hole[(i+1)%hole.length];return [p,[(p[0]+q[0])/2,(p[1]+q[1])/2]];});
       if(!samples.every(p=>pointInPolygon(p,outer))){rejected.push('ausserhalb der Aussenkontur');continue;}
-      if(minimumPolygonGap(outer,hole)<minWallMM-1e-6){rejected.push('Wand zur Aussenkante zu dünn');continue;}
-      if(accepted.some(other=>minimumPolygonGap(other,hole)<minWallMM-1e-6||pointInPolygon(hole[0],other)||pointInPolygon(other[0],hole))){rejected.push('Innenlöcher überlappen oder liegen zu nahe');continue;}
+      if(minimumPolygonGap(outer,hole)<minWallMM-tolerances.IMAGE_MIN_WALL_COMPARISON_EPSILON_MM){rejected.push('Wand zur Aussenkante zu dünn');continue;}
+      if(accepted.some(other=>minimumPolygonGap(other,hole)<minWallMM-tolerances.IMAGE_MIN_WALL_COMPARISON_EPSILON_MM||pointInPolygon(hole[0],other)||pointInPolygon(other[0],hole))){rejected.push('Innenlöcher überlappen oder liegen zu nahe');continue;}
       accepted.push(hole);
     }
     return {ok:true,holes:accepted,rejected:rejected.length,reasons:rejected,minWallMM};
