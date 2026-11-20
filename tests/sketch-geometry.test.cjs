@@ -274,6 +274,39 @@ test('CAD-Pfadfactory lehnt ungültige Rohrparameter ab', () => {
   assert.throws(() => sketchGeometry.createPathTubeGeometry([[0, 0, 0], [0, 0, 1]], 'line2d', 1, 24, 2), /gültig und positiv/);
 });
 
+test('Loft begrenzt Ringpunkte, Innenringe und die gesamte Profilpunktzahl', () => {
+  const point = index => new THREE.Vector3(Math.cos(index * Math.PI * 2 / 513), Math.sin(index * Math.PI * 2 / 513), 0);
+  const oversized = Array.from({ length: 513 }, (_, index) => point(index));
+  const valid = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0)];
+  assert.throws(() => sketchGeometry.createLoftGeometry(oversized, oversized), /gültige/);
+  assert.throws(() => sketchGeometry.createLoftGeometry(valid, valid, {
+    holesA: Array.from({ length: 65 }, () => valid), holesB: Array.from({ length: 65 }, () => valid)
+  }), /Punkt- und Ringgrenzen/);
+  const manyPoints = Array.from({ length: 512 }, (_, index) => point(index));
+  const manyHolesA = Array.from({ length: 4 }, (_, hole) =>
+    Array.from({ length: 512 }, (_, index) => new THREE.Vector3(Math.cos(index * Math.PI * 2 / 512) * (0.1 + hole * 0.01), Math.sin(index * Math.PI * 2 / 512) * (0.1 + hole * 0.01), 0)));
+  assert.throws(() => sketchGeometry.createLoftGeometry(manyPoints, manyPoints, {
+    holesA: manyHolesA, holesB: manyHolesA
+  }), /Punkt- und Ringgrenzen/);
+});
+
+test('Rohr- und Pfadfunktionen begrenzen Eingabepunkte und Segmentaufwand', () => {
+  const tooManyPathPoints = Array.from({ length: 1001 }, (_, index) => [index, 0, 0]);
+  assert.throws(() => sketchGeometry.createPathCurve(tooManyPathPoints, 'curve2d'), /mindestens zwei/);
+  assert.throws(() => sketchGeometry.createPathTubeGeometry([[0, 0, 0], [0, 0, 1]], 'line2d', 1, 10001, 8), /gültig und positiv/);
+  assert.throws(() => sketchGeometry.createPathTubeGeometry([[0, 0, 0], [0, 0, 1]], 'line2d', 1, 10000, 256), /gültig und positiv/);
+});
+
+test('Sweep begrenzt Profil- und Pfadkomplexität', () => {
+  const path = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 1)];
+  const oversizedOutline = Array.from({ length: 257 }, (_, index) => [
+    Math.cos(index * Math.PI * 2 / 257), Math.sin(index * Math.PI * 2 / 257)
+  ]);
+  const oversizedPath = Array.from({ length: 257 }, (_, index) => new THREE.Vector3(0, 0, index));
+  assert.throws(() => sketchGeometry.createSweepGeometry(oversizedOutline, path), /gültiges geschlossenes Profil/);
+  assert.throws(() => sketchGeometry.createSweepGeometry([[0, 0], [1, 0], [0, 1]], oversizedPath), /gültiges geschlossenes Profil/);
+});
+
 test('Hohlrahmen-Geometrie erhält Aussenmasse, Wandstärke und Sollvolumen', () => {
   const outline = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
   const thickness = 0.14, height = 1.2;
