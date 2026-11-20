@@ -380,26 +380,26 @@
     const cross = (a, b, c) =>
       (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
     const onSegment = (point, a, b) =>
-      Math.abs(cross(a, b, point)) <= 1e-12 &&
-      point[0] >= Math.min(a[0], b[0]) - 1e-12 &&
-      point[0] <= Math.max(a[0], b[0]) + 1e-12 &&
-      point[1] >= Math.min(a[1], b[1]) - 1e-12 &&
-      point[1] <= Math.max(a[1], b[1]) + 1e-12;
+      Math.abs(cross(a, b, point)) <= TOLERANCES.SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2 &&
+      point[0] >= Math.min(a[0], b[0]) - TOLERANCES.SKETCH_GEOMETRY_BOUNDS_EPSILON_WORLD_UNITS &&
+      point[0] <= Math.max(a[0], b[0]) + TOLERANCES.SKETCH_GEOMETRY_BOUNDS_EPSILON_WORLD_UNITS &&
+      point[1] >= Math.min(a[1], b[1]) - TOLERANCES.SKETCH_GEOMETRY_BOUNDS_EPSILON_WORLD_UNITS &&
+      point[1] <= Math.max(a[1], b[1]) + TOLERANCES.SKETCH_GEOMETRY_BOUNDS_EPSILON_WORLD_UNITS;
     const intersects = (a, b, c, d) => {
       const abC = cross(a, b, c), abD = cross(a, b, d);
       const cdA = cross(c, d, a), cdB = cross(c, d, b);
-      if (((abC > 1e-12 && abD < -1e-12) || (abC < -1e-12 && abD > 1e-12)) &&
-          ((cdA > 1e-12 && cdB < -1e-12) || (cdA < -1e-12 && cdB > 1e-12))) return true;
-      return (Math.abs(abC) <= 1e-12 && onSegment(c, a, b)) ||
-        (Math.abs(abD) <= 1e-12 && onSegment(d, a, b)) ||
-        (Math.abs(cdA) <= 1e-12 && onSegment(a, c, d)) ||
-        (Math.abs(cdB) <= 1e-12 && onSegment(b, c, d));
+      if (((abC > TOLERANCES.SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2 && abD < -TOLERANCES.SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2) || (abC < -TOLERANCES.SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2 && abD > TOLERANCES.SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2)) &&
+          ((cdA > TOLERANCES.SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2 && cdB < -TOLERANCES.SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2) || (cdA < -TOLERANCES.SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2 && cdB > TOLERANCES.SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2))) return true;
+      return (Math.abs(abC) <= TOLERANCES.SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2 && onSegment(c, a, b)) ||
+        (Math.abs(abD) <= TOLERANCES.SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2 && onSegment(d, a, b)) ||
+        (Math.abs(cdA) <= TOLERANCES.SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2 && onSegment(a, c, d)) ||
+        (Math.abs(cdB) <= TOLERANCES.SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2 && onSegment(b, c, d));
     };
     for (let i = 0; i < points.length; i++) {
       const previous = points[(i + points.length - 1) % points.length];
       const current = points[i];
       const next = points[(i + 1) % points.length];
-      if (Math.abs(cross(previous, current, next)) <= 1e-12 &&
+      if (Math.abs(cross(previous, current, next)) <= TOLERANCES.SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2 &&
           (onSegment(previous, current, next) || onSegment(next, previous, current))) {
         throw new TypeError('Kantenbearbeitung unterstützt keine überlappenden benachbarten Konturkanten.');
       }
@@ -417,7 +417,7 @@
       const next = points[(index + 1) % points.length];
       return sum + point[0] * next[1] - next[0] * point[1];
     }, 0);
-    if (!Number.isFinite(twiceArea) || Math.abs(twiceArea) <= 1e-12) {
+    if (!Number.isFinite(twiceArea) || Math.abs(twiceArea) <= TOLERANCES.SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2) {
       throw new TypeError('Kantenbearbeitung benötigt eine Kontur mit einer Fläche grösser null.');
     }
     const shape = new THREE.Shape();
