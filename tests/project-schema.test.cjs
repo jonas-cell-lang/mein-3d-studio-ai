@@ -48,6 +48,8 @@ test('Hohlrahmen-Metadaten müssen innerhalb der unterstützten CAD-Eingabeberei
   assert.equal(schema.validateProjectEnvelope(valid), valid);
 
   for (const frame of [
+    0,
+    '',
     { wallThicknessMM: 0, wallHeightMM: 12 },
     { wallThicknessMM: 100.1, wallHeightMM: 12 },
     { wallThicknessMM: 1.4, wallHeightMM: 0 },
