@@ -240,6 +240,14 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - Der Browser-Testhelfer verwendet Playwright 1.65.1; die App-Runtime selbst hängt nicht von Playwright ab.
 
 
+### 6.9 STL-Import/-Export als eigenes Modul
+- `src/stl-io.js` kapselt STL-Dateiparsing und ASCII-STL-Export über eine Factory-Schnittstelle.
+- Die Einheitenumrechnung verwendet die zentrale `SILMOUnits`-API: STL-Koordinaten werden beim Import als mm interpretiert und beim Export vollständig in mm umgerechnet.
+- Der Import prüft Dateityp, Dateigrösse, Positionsattribut, Punktanzahl und endliche Koordinaten; Fehler geben nicht übernommene Geometrie- und Materialressourcen frei.
+- Der Export arbeitet ausschliesslich auf Geometriekopien und entsorgt diese nach dem Export, ohne das sichtbare Modell zu verändern.
+- Dateiauswahl, Drag-and-drop und Web-Link-Interaktion bleiben im Hauptskript; Objekt- und Statusänderungen werden über Callbacks angebunden.
+- Code- und Browser-Regressionsläufe müssen Import, Mehrfachimport, Export, mm-Skalierung und Roundtrip weiterhin prüfen.
+
 Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Paket wird in die Produktionsanwendung eingebunden, bevor die offenen technischen und rechtlichen Abnahmepunkte geklärt sind.
 
 **Erfolg bedeutet nicht möglichst viele Werkzeuge. Erfolg bedeutet, dass SILMO komplexe 3D-Aufgaben präzise, stabil und verständlich erledigt.**
