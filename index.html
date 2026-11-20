@@ -2405,7 +2405,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   window.__silmoTestEditSketchHolePoint=()=>{
     const result=window.__silmoImageStudioCreateFromPoints([[0,0],[40,0],[40,30],[0,30]],10,[[[10,10],[10,20],[20,20],[20,10]]]);
     if(!result.ok)throw new Error(result.message);
-    const obj=selected,oldHolePoint=obj.userData.sketch.holes[0][0].slice();
+    const obj=selected;
+    document.getElementById('editSketchWidthMM').value='80';
+    document.getElementById('editSketchDepthMM').value='60';
+    document.getElementById('editSketchHeightMM').value='20';
+    applySelectedSketchDimensions();
+    const oldHolePoint=obj.userData.sketch.holes[0][0].slice();
     loadSelectedSketchPoints();
     document.getElementById('sketchContourIndex').value='1';loadSelectedSketchPoints();
     document.getElementById('sketchPointIndex').value='0';
