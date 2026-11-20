@@ -3,8 +3,9 @@ const assert = require('node:assert/strict');
 const THREE = require('three');
 
 globalThis.THREE = THREE;
-const sketchGeometry = require('../src/sketch-geometry.js');
 const tolerances = require('../src/tolerances.js');
+globalThis.SILMOTolerances = tolerances;
+const sketchGeometry = require('../src/sketch-geometry.js');
 
 function meshVolume(geometry) {
   const positions = geometry.attributes.position;
