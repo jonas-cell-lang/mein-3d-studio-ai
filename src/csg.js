@@ -118,6 +118,7 @@
     }
     const world = mesh.matrixWorld;
     if (!world.elements.every(Number.isFinite)) throw new TypeError('CSG-Transformation enthält ungültige Werte.');
+    const reverseWinding = world.determinant() < 0;
     const polygons = [];
     const vertex = new THREE.Vector3();
     for (let i = 0; i < elementCount; i += 3) {
@@ -139,6 +140,7 @@
         }
         verts.push(new CSGVertex(vertex));
       }
+      if (reverseWinding) [verts[1], verts[2]] = [verts[2], verts[1]];
       const cross = verts[1].pos.clone().sub(verts[0].pos).cross(verts[2].pos.clone().sub(verts[0].pos));
       if (cross.lengthSq() > CSG_EPSILON * CSG_EPSILON) polygons.push(new CSGPolygon(verts));
     }
