@@ -2354,8 +2354,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   function cadPathCurve(obj){
     const data=obj?.userData?.sketch;
     if(!data||!Array.isArray(data.pathPoints)||data.pathPoints.length<2)throw new Error('Auswahl braucht eine gespeicherte Linien- oder Kurvenbahn.');
-    const points=data.pathPoints.map(p=>new THREE.Vector3(p[0],p[1],p[2]));
-    return data.type==='line2d'?new THREE.LineCurve3(points[0],points[points.length-1]):new THREE.CatmullRomCurve3(points);
+    return window.SILMOSketchGeometry.createPathCurve(data.pathPoints,data.type);
   }
   function cadPathWorldPoints(obj){
     const data=obj?.userData?.sketch;
@@ -2407,11 +2406,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const curve=cadPathCurve(obj),current=worldUnitsToMm(curve.getLength());
     if(current<0.001)throw new Error('Pfad ist zu kurz.');
     const factor=target/current,scaled=data.pathPoints.map(p=>p.map(v=>v*factor));
-    const points=scaled.map(p=>new THREE.Vector3(p[0],p[1],p[2]));
-    const nextCurve=data.type==='line2d'?new THREE.LineCurve3(points[0],points[points.length-1]):new THREE.CatmullRomCurve3(points);
     const diameter=Number(data.diameterMM||1.2);
-    const geometry=new THREE.TubeGeometry(nextCurve,data.type==='line2d'?24:Math.max(24,Math.min(300,points.length*12)),mmToWorldUnits(diameter)/2,8,false);
-    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    const pathResult=window.SILMOSketchGeometry.createPathTubeGeometry(scaled,data.type,mmToWorldUnits(diameter)/2,data.type==='line2d'?24:Math.max(24,Math.min(300,scaled.length*12)),8);
+    const geometry=pathResult.geometry;
     recordHistory();obj.geometry.dispose();obj.geometry=geometry;data.pathPoints=scaled;data.lengthMM=target;
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);obj.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
     updateObjects();showProperties();updateMoveGizmo();status.textContent='Pfadlänge exakt auf '+target.toFixed(1)+' mm gesetzt.';
@@ -2554,10 +2551,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         }
         const points = sketchDraft.points.map(point => point.clone());
         if (points.length < 2) throw new Error('Eine Linie oder Kurve braucht mindestens zwei Punkte.');
-        const curve = tool === 'line2d' ? new THREE.LineCurve3(points[0], points[points.length - 1]) : new THREE.CatmullRomCurve3(points);
-        const radius = mmToWorldUnits(diameterMM) / 2;
-        geometry = new THREE.TubeGeometry(curve, tool === 'line2d' ? 24 : Math.max(24, Math.min(300, points.length * 4)), radius, 8, false);
-        geometry.computeBoundingBox();
+        const pathData=points.map(point=>[point.x,point.y,point.z]);
+        const pathResult=window.SILMOSketchGeometry.createPathTubeGeometry(pathData,tool,mmToWorldUnits(diameterMM)/2,tool==='line2d'?24:Math.max(24,Math.min(300,points.length*4)),8);
+        const curve=pathResult.curve;
+        geometry=pathResult.geometry;
         const center = geometry.boundingBox.getCenter(new THREE.Vector3());
         geometry.translate(-center.x, -center.y, -center.z);
         meshPosition.copy(center);
