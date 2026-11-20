@@ -25,6 +25,7 @@ npm test
 - Boolescher Durchbruch mit bekanntem Volumen
 - Platte mit vier Durchgangslöchern
 - Zwölf nacheinander ausgeführte Durchgangsbohrungen mit analytischem Volumenvergleich und anschliessender Tessellierung
+- Grössere Musterplatte 80 × 50 × 4 mm mit 40 Bohrungen; analytischer Volumenvergleich, Ein-Körper-Prüfung und Tessellierung
 - Dünne 1,2-mm-Platte mit Durchgangsloch und analytischem Volumenvergleich
 - Boolesche Ergebnisse mit Compound-Wurzel: enthaltene Solid-Körper werden gezählt, statt den Wurzeltyp fälschlich mit einem einzelnen Solid gleichzusetzen
 - Fillet und Topologieabfragen
@@ -35,7 +36,7 @@ npm test
 
 ## Grenzen dieses ersten Prototyps
 
-- Chromium-Web-Worker-Smoke-Test bestanden: Quader 10 × 20 × 30 mm, Volumen 6000 mm³ und verwendbares Mesh mit 12 Dreiecken
+- Chromium-Web-Worker-Test prüft Quader 10 × 20 × 30 mm und 12-Bohrungs-Boolean mit Volumen, Solid-Anzahl und Tessellierung
 - Noch kein Safari-/WebKit-Test
 - Noch kein Vergleichslauf mit Replicad, moket-io/occt-wasm oder OpenGeometry
 - Noch keine Last-/Langzeitmessung
