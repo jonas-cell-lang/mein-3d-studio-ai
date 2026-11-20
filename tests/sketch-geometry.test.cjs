@@ -215,3 +215,40 @@ test('Hohlrahmen-Geometrie weist ungültige und zu enge Konturen kontrolliert zu
   assert.throws(() => sketchGeometry.createContourFrameGeometry([[0, 0], [1, 0], [0, 1]], 0, 1, tolerances), /positive Wandstärke/);
   assert.throws(() => sketchGeometry.createContourFrameGeometry([[-1, -1], [1, -1], [1, 1], [-1, 1]], 1.2, 1, tolerances), /zu eng|überschneidet/);
 });
+
+
+test('Kantenbearbeitung erzeugt abgerundete und abgefaste Skizzengeometrie', () => {
+  const outline = [[-2, -1.5], [2, -1.5], [2, 1.5], [-2, 1.5]];
+  const fillet = sketchGeometry.createEdgeTreatmentGeometry(outline, 2, 0.1, 'fillet');
+  const chamfer = sketchGeometry.createEdgeTreatmentGeometry(outline, 2, 0.1, 'chamfer');
+  try {
+    for (const geometry of [fillet, chamfer]) {
+      assert.ok(geometry.attributes.position.count > 0);
+      assert.ok(geometry.attributes.normal);
+      assert.ok(geometry.boundingBox && geometry.boundingSphere);
+      assert.ok(meshVolume(geometry) > 0);
+      for (const value of geometry.attributes.position.array) assert.ok(Number.isFinite(value));
+      for (const value of geometry.attributes.normal.array) assert.ok(Number.isFinite(value));
+    }
+    const filletSize = fillet.boundingBox.getSize(new THREE.Vector3());
+    const chamferSize = chamfer.boundingBox.getSize(new THREE.Vector3());
+    assert.ok(Math.abs(filletSize.x - 4.2) < 1e-5);
+    assert.ok(Math.abs(filletSize.y - 3.2) < 1e-5);
+    assert.ok(Math.abs(filletSize.z - 2.2) < 1e-5);
+    assert.deepEqual(chamferSize.toArray(), filletSize.toArray());
+    assert.ok(fillet.attributes.position.count > chamfer.attributes.position.count,
+      'Abrundung muss mehr Segmente als eine einfache Fase verwenden');
+  } finally {
+    fillet.dispose();
+    chamfer.dispose();
+  }
+});
+
+test('Kantenbearbeitung weist ungültige Konturen und Parameter kontrolliert ab', () => {
+  const outline = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+  assert.throws(() => sketchGeometry.createEdgeTreatmentGeometry([], 1, 0.1, 'fillet'), /gültige Kontur/);
+  assert.throws(() => sketchGeometry.createEdgeTreatmentGeometry([[0, 0], [1, 0]], 1, 0.1, 'fillet'), /gültige Kontur/);
+  assert.throws(() => sketchGeometry.createEdgeTreatmentGeometry(outline, 0, 0.1, 'fillet'), /positive Tiefe/);
+  assert.throws(() => sketchGeometry.createEdgeTreatmentGeometry(outline, 1, 0, 'fillet'), /positive Tiefe/);
+  assert.throws(() => sketchGeometry.createEdgeTreatmentGeometry(outline, 1, 0.1, 'unknown'), /gültigen Modus/);
+});
