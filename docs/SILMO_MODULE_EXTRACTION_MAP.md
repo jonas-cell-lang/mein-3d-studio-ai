@@ -131,3 +131,14 @@ Der BSP-CSG-Kern ist als `src/csg.js` ausgelagert. Der vollständige Browserlauf
 - Grenzen: Innenkonturen sind separate Skizzenobjekte; eine einzelne Skizze mit mehreren bearbeitbaren Insel-/Lochkonturen ist noch nicht Teil der Zeichenoberfläche.
 
 - Objekt-UUIDs werden im Projektformat gesichert und beim Wiederaufbau wieder gesetzt. So bleiben die im Loft gespeicherten Quellprofil-Verweise über Speichern/Öffnen hinweg gültig; doppelte oder ungültige Objektkennungen werden abgewiesen.
+
+
+## 11. Innenkonturen in einer einzelnen Freiform-Skizze (20.11.2026)
+- `src/tool-navigation.js` ergänzt einen eigenen Modus zum Zeichnen von Innenlöchern nach Abschluss der Aussenkontur.
+- `index.html` hält Aussenkontur, fertige Innenringe und den gerade gezeichneten Innenring in einem `sketchDraft` zusammen. Die Vorschau zeigt alle Ringe.
+- Ein Innenloch kann Punkt für Punkt gezeichnet, mit Rückgängig korrigiert oder vor Abschluss abgebrochen werden, ohne bereits fertige Innenlöcher zu verlieren.
+- Validierung prüft Punktanzahl, Mindestabstände, Fläche, Selbstüberschneidung, vollständige Lage innerhalb der Aussenkontur sowie Berührungen/Überlappungen zwischen Löchern.
+- Die vorhandene `THREE.Shape.holes`-Extrusion erzeugt tatsächliche Öffnungen; es wird keine zweite Geometrie-Engine eingeführt.
+- `src/project-io.js` speichert jetzt zusätzlich die editierbaren Skizzen-Metadaten. `src/project-schema.js` begrenzt die Anzahl und Punktzahl der gespeicherten Innenringe; alte v3-Projekte ohne dieses optionale Feld bleiben kompatibel.
+- Browser-Regression prüft eine Freiform mit echtem Innenloch, Ablehnung eines ausserhalb liegenden Lochs und den Projekt-Roundtrip der Skizzen-Metadaten.
+- Grenze: Bereits extrudierte Körper besitzen noch keinen assoziativen Skizzen-Feature-Editor; das Bearbeiten erfolgt im offenen Skizzenentwurf vor dem Erzeugen des 3D-Körpers.
