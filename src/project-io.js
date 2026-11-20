@@ -36,6 +36,7 @@
             unionParts: Array.isArray(obj.userData.unionParts) ? obj.userData.unionParts : null,
             sketchOutline: Array.isArray(obj.userData.sketchOutline) ? obj.userData.sketchOutline : null,
             contourFrame: obj.userData.contourFrame || null,
+            loft: obj.userData.loft || null,
             geometry: projectGeometry.serializeGeometry(obj.geometry)
           }))
         };
@@ -105,7 +106,12 @@
                 groupId: typeof item.groupId === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(item.groupId) ? item.groupId : null,
                 unionParts: Array.isArray(item.unionParts) && item.unionParts.length >= 2 && item.unionParts.length <= 100 ? item.unionParts.map(part => JSON.parse(JSON.stringify(part))) : null,
                 sketchOutline: (Array.isArray(item.sketchOutline) ? item.sketchOutline : item.caseOutline) && (Array.isArray(item.sketchOutline) ? item.sketchOutline : item.caseOutline).length >= 3 && (Array.isArray(item.sketchOutline) ? item.sketchOutline : item.caseOutline).length <= 240 && (Array.isArray(item.sketchOutline) ? item.sketchOutline : item.caseOutline).every(point => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite)) ? (Array.isArray(item.sketchOutline) ? item.sketchOutline : item.caseOutline).map(point => [point[0],point[1]]) : null,
-                contourFrame: (item.contourFrame || item.caseWallFrame) && Number.isFinite((item.contourFrame || item.caseWallFrame).wallThicknessMM) && Number.isFinite((item.contourFrame || item.caseWallFrame).wallHeightMM) ? {wallThicknessMM:(item.contourFrame || item.caseWallFrame).wallThicknessMM,wallHeightMM:(item.contourFrame || item.caseWallFrame).wallHeightMM} : null
+                contourFrame: (item.contourFrame || item.caseWallFrame) && Number.isFinite((item.contourFrame || item.caseWallFrame).wallThicknessMM) && Number.isFinite((item.contourFrame || item.caseWallFrame).wallHeightMM) ? {wallThicknessMM:(item.contourFrame || item.caseWallFrame).wallThicknessMM,wallHeightMM:(item.contourFrame || item.caseWallFrame).wallHeightMM} : null,
+                loft: item.loft ? {
+                  sourceA: item.loft.sourceA, sourceB: item.loft.sourceB, sections: item.loft.sections,
+                  innerContourCount: item.loft.innerContourCount,
+                  sourceHoles: item.loft.sourceHoles.map(pair => ({ a: pair.a, b: pair.b }))
+                } : null
               };
               if (Array.isArray(item.unionParts)) {
                 if (item.unionParts.length < 2 || item.unionParts.length > 100) throw new Error('Ungültige Anzahl ursprünglicher Formteile.');
