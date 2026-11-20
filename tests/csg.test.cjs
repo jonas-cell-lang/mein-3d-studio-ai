@@ -399,3 +399,38 @@ test('CSG-Abziehen bei reiner Flächenberührung verändert den Basiskörper nic
     base.material.dispose(); tool.material.dispose();
   }
 });
+
+
+test('CSG-Vereinigung erhält zwei Körper mit kleinem Spalt oberhalb der Geometrietoleranz', () => {
+  const base = box();
+  const gap = 5e-5;
+  const tool = box([2 + gap, 0, 0]);
+  const result = combineMeshes(base, tool, 'union');
+  try {
+    assert.ok(signedVolume(result) > 0 && Math.abs(signedVolume(result) - 16) < 1e-5,
+      'Ein Spalt von 0.00005 Einheiten muss beide getrennten Volumen erhalten');
+    const b = bounds(result);
+    assert.ok(Math.abs(b.max[0] - (3 + gap)) < 1e-5,
+      'Die äussere Grenze des zweiten Körpers muss erhalten bleiben');
+  } finally {
+    result.dispose();
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
+
+test('CSG-Abziehen verarbeitet eine kleine Überlappung oberhalb der Geometrietoleranz', () => {
+  const base = box();
+  const overlap = 5e-5;
+  const tool = box([2 - overlap, 0, 0]);
+  const result = combineMeshes(base, tool, 'subtract');
+  try {
+    const expected = 8 - (4 * overlap);
+    assert.ok(signedVolume(result) > 0 && Math.abs(signedVolume(result) - expected) < 2e-5,
+      'Die kleine Überlappung muss abgezogen werden; erwartet: ' + expected + ', erhalten: ' + signedVolume(result));
+  } finally {
+    result.dispose();
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
