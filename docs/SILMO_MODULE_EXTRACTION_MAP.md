@@ -110,3 +110,12 @@ Der BSP-CSG-Kern ist als `src/csg.js` ausgelagert. Der vollständige Browserlauf
 
 - `src/sketch-geometry.js` enthält zusätzlich die reine Geometrieerzeugung für Skizzen-Abrundungen und -Fasen. Auswahl, Eingabevalidierung, History und UI bleiben im Hauptskript.
 - Der Kantenbearbeitungs-Unit-Test prüft Fillet-/Chamfer-Modus, Abmessungen, Normalen, Bounding-Daten und ungültige Eingaben.
+
+
+## 9. Loft-Geometrie erweitert (20.11.2026)
+- `createLoftGeometry` unterstützt jetzt beliebig im 3D-Raum orientierte, jeweils planare Endprofile statt nur XY-Kappen.
+- Mehrere paarweise zugeordnete Innenkonturen können über `holesA` und `holesB` übergeben werden. Die Triangulation der Endflächen berücksichtigt diese Innenkonturen; die Innenwände werden als eigene Mantelflächen verbunden.
+- Profilstartpunkt und Laufrichtung werden standardmässig anhand der zentrierten Konturform auf möglichst geringe Verdrehung ausgerichtet. Mit `alignProfiles: false` lässt sich die ursprüngliche Punktkorrespondenz beibehalten.
+- Nicht planare oder entartete Endprofile und unpassende Innenkonturen werden abgewiesen. Planaritäts- und Mindestnormalentoleranz liegen zentral in `src/tolerances.js`.
+- Unit- und Browser-Regressionen ergänzen geneigte Profile, umgekehrte Punktreihenfolgen, Hohl-Loft mit analytischem Volumen sowie ungültige Profile.
+- Hinweis: Die Geometrie-Factory kann Innenkonturen verarbeiten; der aktuelle App-Dialog übergibt weiterhin nur eine gespeicherte Aussenkontur. Die UI-/Projektmetadaten-Unterstützung für mehrere Skizzen-Innenkonturen ist ein separater nächster Schritt.
