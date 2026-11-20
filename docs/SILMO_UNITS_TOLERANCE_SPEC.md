@@ -79,11 +79,11 @@ Die folgenden Werte wurden direkt im aktuellen `index.html` geprüft. Sie werden
 
 | API-Konstante | Wert | Dimension / Zweck |
 |---|---:|---|
-| `IMAGE_POLYGON_RAY_DENOMINATOR_FALLBACK_PX` | `1e-12` | Pixel-Differenz; Fallback bei nahezu horizontaler Polygonkante im Punkt-in-Polygon-Test |
-| `IMAGE_SEGMENT_BOUNDS_EPSILON_PX` | `1e-8` | Pixel; Einschlussrand für Punkt-auf-Segment-Prüfung |
-| `IMAGE_SEGMENT_ORIENTATION_EPSILON_PX2` | `1e-8` | Pixel²; Kollinearitätsgrenze des 2D-Kreuzprodukts |
-| `IMAGE_POLYGON_MIN_EDGE_PX` | `1e-5` | Pixel; Mindestlänge einer Polygonkante |
-| `IMAGE_POLYGON_MIN_NONADJACENT_GAP_PX` | `1e-7` | Pixel; Mindestabstand nicht benachbarter Polygonsegmente |
+| `IMAGE_POLYGON_RAY_DENOMINATOR_FALLBACK_MM` | `1e-12` | Pixel-Differenz; Fallback bei nahezu horizontaler Polygonkante im Punkt-in-Polygon-Test |
+| `IMAGE_SEGMENT_BOUNDS_EPSILON_MM` | `1e-8` | Pixel; Einschlussrand für Punkt-auf-Segment-Prüfung |
+| `IMAGE_SEGMENT_ORIENTATION_EPSILON_MM2` | `1e-8` | Pixel²; Kollinearitätsgrenze des 2D-Kreuzprodukts |
+| `IMAGE_POLYGON_MIN_EDGE_MM` | `1e-5` | Pixel; Mindestlänge einer Polygonkante |
+| `IMAGE_POLYGON_MIN_NONADJACENT_GAP_MM` | `1e-7` | Pixel; Mindestabstand nicht benachbarter Polygonsegmente |
 | `IMAGE_MIN_WALL_COMPARISON_EPSILON_MM` | `1e-6` | Millimeter; Vergleichsrand bei der Prüfung der Mindestwand zwischen Konturen |
 | `TUTORIAL_POSITION_CHANGE_WORLD_UNITS` | `1e-5` | interne Welteinheiten; erkennt Positionsänderungen für die Lernkurs-Erfolgskontrolle |
 
