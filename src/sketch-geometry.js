@@ -274,5 +274,43 @@
     return geometry;
   }
 
-  return Object.freeze({ createExtrusionGeometry, createParametricProfile, addRoundedRectPath, resampleClosedOutline, createLoftGeometry, createSweepGeometry, createPathCurve, createPathTubeGeometry, createContourFrameGeometry });
+
+  function createEdgeTreatmentGeometry(outline, depth, bevel, mode) {
+    if (!Array.isArray(outline) || outline.length < 3 ||
+        !outline.every(point => Array.isArray(point) && point.length >= 2 &&
+          Number.isFinite(point[0]) && Number.isFinite(point[1])) ||
+        !Number.isFinite(depth) || depth <= 0 ||
+        !Number.isFinite(bevel) || bevel <= 0 ||
+        (mode !== 'fillet' && mode !== 'chamfer')) {
+      throw new TypeError('Kantenbearbeitung benötigt eine gültige Kontur, positive Tiefe und Fasenbreite sowie einen gültigen Modus.');
+    }
+    const shape = new THREE.Shape();
+    shape.moveTo(outline[0][0], outline[0][1]);
+    outline.slice(1).forEach(point => shape.lineTo(point[0], point[1]));
+    shape.closePath();
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+      depth,
+      bevelEnabled: true,
+      bevelSegments: mode === 'fillet' ? 8 : 1,
+      bevelSize: bevel,
+      bevelThickness: bevel,
+      curveSegments: 32
+    });
+    try {
+      geometry.translate(0, 0, bevel);
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      if (!geometry.boundingBox || geometry.boundingBox.isEmpty() ||
+          !geometry.attributes.position || geometry.attributes.position.count < 3) {
+        throw new Error('Kantenbearbeitung konnte keine gültige Geometrie erzeugen.');
+      }
+      return geometry;
+    } catch (error) {
+      geometry.dispose();
+      throw error;
+    }
+  }
+
+  return Object.freeze({ createExtrusionGeometry, createParametricProfile, addRoundedRectPath, resampleClosedOutline, createLoftGeometry, createSweepGeometry, createPathCurve, createPathTubeGeometry, createContourFrameGeometry, createEdgeTreatmentGeometry });
 });
