@@ -1136,3 +1136,9 @@ Vor Beginn einer neuen Aufgabe:
 - Bekannte Loft-Grenzen bleiben dokumentiert: Die Kappentriangulation arbeitet in XY-Weltprojektion und ist nicht für beliebig geneigte Profile oder Innenlöcher abgesichert. Die optimale Zuordnung der Kontur-Startpunkte ist noch offen.
 - Code-Head `9bf75280747d879f5980df6c9cc45b5da199fea1`: 48/48 Unit-Tests, Browser-Regression und isolierter OCCT-/WebWorker-Test erfolgreich.
 - Keine Versionsänderung, kein Merge, kein Deployment; Kosten CHF 0.00.
+
+
+## Ergänzung – CAD-Pfadkurven und Pfadrohre (20.11.2026)
+- Das Geometriemodul erzeugt nun auch gerade 2D-Pfadkurven, Catmull-Rom-Kurven und die zugehörigen Rohrgeometrien.
+- Die App verwendet die gemeinsame Factory bei Skizzenanlage und Pfadlängenänderung. Pfadbearbeitung, mm-Konvertierung, History, Objektverwaltung und UI bleiben im Hauptskript.
+- Tests prüfen Pfadlänge, Linien-/Kurvenverhalten, Rohrabmessungen und Parameterfehler.

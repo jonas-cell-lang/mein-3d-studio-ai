@@ -353,3 +353,10 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Neue Tests prüfen analytische Sollvolumen (Loft 8, Sweep 12), Bounding-Box-Abmessungen, endliche Koordinaten und kontrollierte Fehlerfälle.
 - Bekannte Loft-Grenzen: Endkappen verwenden weiterhin XY-Projektion der Weltkoordinaten; arbitrary geneigte Profile und Innenkonturen sind noch nicht robust. Die Zuordnung von Startpunkt und Laufrichtung zweier Profile ist ebenfalls noch nicht optimiert.
 - Auf Code-Head `9bf75280747d879f5980df6c9cc45b5da199fea1`: 48/48 Unit-Tests, Browser-Regression und OCCT-WebWorker-Test erfolgreich.
+
+
+### 6.23 CAD-Pfadkurven und Pfadrohre ausgelagert (20.11.2026)
+- Gerade 2D-Pfade und Catmull-Rom-Kurven werden zentral durch `createPathCurve` erzeugt.
+- Die Rohrgeometrie für Linien und Kurven wird durch `createPathTubeGeometry` erzeugt und berechnet Normalen, Bounding Box und Bounding Sphere.
+- Die Factory wird bei der Skizzenanlage, Pfadlängenänderung und Kurvenlängenabfrage verwendet.
+- Neue Tests prüfen Linien-/Kurvensemantik, Sollradius und Rohrabmessungen sowie ungültige Parameter.
