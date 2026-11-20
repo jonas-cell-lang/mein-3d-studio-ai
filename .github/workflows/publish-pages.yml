@@ -117,6 +117,7 @@ jobs:
 
           required = (
               "src/units.js",
+              "src/history.js",
               "src/tolerances.js",
               "src/csg.js",
               "src/project-schema.js",
