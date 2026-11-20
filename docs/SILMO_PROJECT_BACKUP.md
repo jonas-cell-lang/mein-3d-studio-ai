@@ -922,3 +922,13 @@ Vor Beginn einer neuen Aufgabe:
 - Der Toleranz-Audit umfasst nun zusätzlich Pixel-/Pixel²-Schwellen der Bildkonturprüfung, Mindestwandvergleich in mm und die Positionsänderungsprüfung des Lernkurses. Die Werte sind getrennt benannt und durch Unit-Tests abgesichert; ihre bisherigen Zahlenwerte wurden nicht verändert.
 - Dokumentationsstand wurde danach auf Commit `88473a6b28d68d0dd4085800503e18eb050364c1` aktualisiert.
 - PR 69 und PR 70 bleiben Drafts. Kein Merge nach `main`, kein Live-Deployment, keine Ausgaben.
+
+
+## Ergänzung – Projektimport-Ressourcen und abschliessende CI am 20.11.2026
+
+- `src/project-geometry.js` gibt eine teilweise aufgebaute `BufferGeometry` bei jedem Fehler während der Wiederherstellung frei, bevor der Fehler weitergereicht wird.
+- `tests/project-geometry.test.cjs` simuliert einen Fehler beim Setzen des Normalenattributs und prüft, dass die bereits angelegte Geometrie genau einmal entsorgt wird.
+- Für Commit `717ff6c1eea5eb7bda4f5d7e26cf8e3bcdc6e3f2` waren Code-Checks und vollständige Chromium-/Playwright-Browser-Regression erfolgreich.
+- Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44735662941
+- Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44735662796
+- Kein Merge nach `main`, kein Live-Deployment, keine kostenpflichtigen Dienste; Kostenlimit CHF 0.00.
