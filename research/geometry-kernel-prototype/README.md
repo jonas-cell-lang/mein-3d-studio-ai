@@ -24,6 +24,9 @@ npm test
 - Analytischer Quader und Bounding Box
 - Boolescher Durchbruch mit bekanntem Volumen
 - Platte mit vier Durchgangslöchern
+- Zwölf nacheinander ausgeführte Durchgangsbohrungen mit analytischem Volumenvergleich und anschliessender Tessellierung
+- Dünne 1,2-mm-Platte mit Durchgangsloch und analytischem Volumenvergleich
+- Boolesche Ergebnisse mit Compound-Wurzel: enthaltene Solid-Körper werden gezählt, statt den Wurzeltyp fälschlich mit einem einzelnen Solid gleichzusetzen
 - Fillet und Topologieabfragen
 - Tessellierung
 - STEP-Export und -Import mit Volumenvergleich
@@ -32,7 +35,7 @@ npm test
 
 ## Grenzen dieses ersten Prototyps
 
-- Noch kein Browser-/Worker-Test
+- Chromium-Web-Worker-Smoke-Test bestanden: Quader 10 × 20 × 30 mm, Volumen 6000 mm³ und verwendbares Mesh mit 12 Dreiecken
 - Noch kein Safari-/WebKit-Test
 - Noch kein Vergleichslauf mit Replicad, moket-io/occt-wasm oder OpenGeometry
 - Noch keine Last-/Langzeitmessung
