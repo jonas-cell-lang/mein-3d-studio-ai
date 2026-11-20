@@ -248,6 +248,13 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - Dateiauswahl, Drag-and-drop und Web-Link-Interaktion bleiben im Hauptskript; Objekt- und Statusänderungen werden über Callbacks angebunden.
 - Code- und Browser-Regressionsläufe prüfen Import, Mehrfachimport, Export, mm-Skalierung und Roundtrip; der vollständige Browserlauf war auf Commit `1e69a14ee41043d76fe95886b2e75938f791e2f9` erfolgreich. Ein zusätzlicher negativer STL-Importtest prüft, dass eine beschädigte Datei abgewiesen wird, keine vorhandenen Modelle verändert und keinen unerwarteten Konsolenfehler erzeugt. Der Test war auf Commit `f1d97ad7f03ca6fc9efd126e704b6bbd74b2f33d` im vollständigen Browserlauf erfolgreich.
 
+### 6.10 Erste reproduzierbare History-Leistungsbaseline
+- `scripts/benchmark-history.mjs` misst die snapshotbasierte Undo-/Redo-Verwaltung mit 1, 10 und 50 Objekten, je 999 Vertices und fünf gespeicherten Zuständen.
+- Erfasst werden Median der Snapshot-Aufnahme, Undo-/Redo-Zeit sowie Node-Speicherwerte vor Snapshots, nach Snapshots und nach Freigabe/GC.
+- Der Benchmark läuft als `npm run benchmark:history` in den Code-Checks.
+- Die Messung ist zunächst informativ und verwendet keine maschinenabhängigen Pass/Fail-Grenzwerte. Sie ist eine isolierte History-Baseline, keine vollständige Browser-/CAD-Leistungsmessung.
+- Offene nächste Schritte: grössere reale Meshes, Browser-RAM/Frame-Zeit, Projektöffnung, Boolesche Operationen und interaktive Bildkonturerkennung messen.
+
 Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Paket wird in die Produktionsanwendung eingebunden, bevor die offenen technischen und rechtlichen Abnahmepunkte geklärt sind.
 
 **Erfolg bedeutet nicht möglichst viele Werkzeuge. Erfolg bedeutet, dass SILMO komplexe 3D-Aufgaben präzise, stabil und verständlich erledigt.**
