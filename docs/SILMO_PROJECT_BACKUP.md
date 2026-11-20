@@ -962,3 +962,9 @@ Vor Beginn einer neuen Aufgabe:
 - Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44736758290
 - Der STL-Browserlauf prüft Dateiimport per Drop, Web-Link-Import sowie Export/erneuten Export nach Projekt-Wiederöffnung.
 - Kein Merge nach `main`, kein Live-Deployment, keine Kosten.
+
+
+## Ergänzung – STL-Fehlerfalltest am 20.11.2026
+
+- Die Browser-Regression enthält jetzt zusätzlich einen ungültigen STL-Importfall. Er prüft, dass ein beschädigter STL-Upload abgewiesen wird und die bereits vorhandenen Modelle unverändert erhalten bleiben.
+- Dieser zusätzliche Browser-Test ist im aktuellen Branch enthalten; ein eigener neuer Actions-Lauf dafür ist noch nicht sichtbar.
