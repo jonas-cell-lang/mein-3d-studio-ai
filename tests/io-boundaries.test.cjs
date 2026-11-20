@@ -547,3 +547,28 @@ test('STL-Topologie akzeptiert zwei räumlich getrennte geschlossene Körper', (
   assert.equal(result.isClosedEdgeManifold, true);
   geometry.dispose();
 });
+
+
+test('STL-Topologie erkennt zwei Würfel mit gemeinsamer Kante', () => {
+  const touching = cubeTriangles.concat(cubeTriangles.map(triangle =>
+    triangle.map(([x, y, z]) => [x + 10, y + 10, z])
+  ));
+  const geometry = makeGeometryFromTriangles(touching);
+  const result = stlDiagnostics.analyzeSTLGeometry(geometry);
+  assert.ok(result.nonManifoldEdgeCount > 0,
+    'Die gemeinsame Kante muss als nicht-manifold erkannt werden');
+  assert.equal(result.isClosedEdgeManifold, false);
+  geometry.dispose();
+});
+
+test('STL-Topologie erkennt zwei Würfel mit gemeinsamer Fläche', () => {
+  const touching = cubeTriangles.concat(cubeTriangles.map(triangle =>
+    triangle.map(([x, y, z]) => [x + 10, y, z])
+  ));
+  const geometry = makeGeometryFromTriangles(touching);
+  const result = stlDiagnostics.analyzeSTLGeometry(geometry);
+  assert.ok(result.nonManifoldEdgeCount > 0 || result.duplicateTriangleCount > 0,
+    'Die gemeinsame Fläche muss als überlagerte oder nicht-manifold Topologie erkannt werden');
+  assert.equal(result.isClosedEdgeManifold, false);
+  geometry.dispose();
+});
