@@ -34,6 +34,7 @@
     const cells = new Map();
     const vertexCoordinates = [];
     const edges = new Map();
+    const vertexLinks = new Map();
     const faces = new Set();
     let duplicateTriangleCount = 0;
     let collapsedTriangleCount = 0;
@@ -70,6 +71,16 @@
       if (edge) { edge.count++; edge.directionBalance += direction; }
       else edges.set(key, { count: 1, directionBalance: direction });
     }
+    function addVertexLink(vertex, a, b) {
+      if (!vertexLinks.has(vertex)) vertexLinks.set(vertex, new Map());
+      const link = vertexLinks.get(vertex);
+      if (!link.has(a)) link.set(a, { degree: 0, adjacent: new Set() });
+      if (!link.has(b)) link.set(b, { degree: 0, adjacent: new Set() });
+      link.get(a).degree++;
+      link.get(b).degree++;
+      link.get(a).adjacent.add(b);
+      link.get(b).adjacent.add(a);
+    }
     for (let i = 0; i < position.count; i += 3) {
       const points = [
         [position.getX(i), position.getY(i), position.getZ(i)],
@@ -86,6 +97,9 @@
       if (faces.has(faceKey)) duplicateTriangleCount++;
       else faces.add(faceKey);
       addEdge(ids[0], ids[1]); addEdge(ids[1], ids[2]); addEdge(ids[2], ids[0]);
+      addVertexLink(ids[0], ids[1], ids[2]);
+      addVertexLink(ids[1], ids[2], ids[0]);
+      addVertexLink(ids[2], ids[0], ids[1]);
       const a = points[0], b = points[1], d = points[2];
       signedVolumeMM3 += (
         a[0] * (b[1] * d[2] - b[2] * d[1]) +
@@ -99,14 +113,36 @@
       else if (edge.count > 2) nonManifoldEdgeCount++;
       else if (edge.directionBalance !== 0) inconsistentEdgeCount++;
     }
+    // Bei einem geschlossenen 2-Manifold muss der Link jedes Vertex genau
+    // einen zusammenhängenden Zyklus bilden. Das erkennt z.B. zwei nur an
+    // einem Punkt verbundene geschlossene Körper.
+    let nonManifoldVertexCount = 0;
+    for (const link of vertexLinks.values()) {
+      const neighbors = Array.from(link.keys());
+      if (neighbors.some(neighbor => link.get(neighbor).degree !== 2)) {
+        nonManifoldVertexCount++;
+        continue;
+      }
+      const visited = new Set();
+      const stack = neighbors.length ? [neighbors[0]] : [];
+      while (stack.length) {
+        const current = stack.pop();
+        if (visited.has(current)) continue;
+        visited.add(current);
+        for (const neighbor of link.get(current).adjacent) {
+          if (!visited.has(neighbor)) stack.push(neighbor);
+        }
+      }
+      if (visited.size !== neighbors.length) nonManifoldVertexCount++;
+    }
     const isClosedEdgeManifold = boundaryEdgeCount === 0 && nonManifoldEdgeCount === 0 &&
-      inconsistentEdgeCount === 0 && duplicateTriangleCount === 0 && collapsedTriangleCount === 0 &&
-      degenerateTriangleCount === 0;
+      nonManifoldVertexCount === 0 && inconsistentEdgeCount === 0 &&
+      duplicateTriangleCount === 0 && collapsedTriangleCount === 0 && degenerateTriangleCount === 0;
     const invertedWinding = isClosedEdgeManifold && Math.abs(signedVolumeMM3) > 1e-12 ? signedVolumeMM3 < 0 : null;
     return Object.freeze({
       analyzed: true, triangleCount, weldedVertexCount: vertexCoordinates.length / 3,
       uniqueEdgeCount: edges.size, boundaryEdgeCount, nonManifoldEdgeCount,
-      inconsistentEdgeCount, duplicateTriangleCount, collapsedTriangleCount, degenerateTriangleCount,
+      inconsistentEdgeCount, nonManifoldVertexCount, duplicateTriangleCount, collapsedTriangleCount, degenerateTriangleCount,
       isClosedEdgeManifold, invertedWinding, signedVolumeMM3, weldToleranceMM
     });
   }
@@ -236,7 +272,9 @@
               if (stlDiagnostics.boundaryEdgeCount) issues.push(stlDiagnostics.boundaryEdgeCount + ' offene Kanten');
               if (stlDiagnostics.nonManifoldEdgeCount) issues.push(stlDiagnostics.nonManifoldEdgeCount + ' nicht-manifold Kanten');
               if (stlDiagnostics.inconsistentEdgeCount) issues.push(stlDiagnostics.inconsistentEdgeCount + ' widersprüchlich orientierte Kanten');
+              if (stlDiagnostics.nonManifoldVertexCount) issues.push(stlDiagnostics.nonManifoldVertexCount + ' nicht-manifold Eckpunkte');
               if (stlDiagnostics.duplicateTriangleCount) issues.push(stlDiagnostics.duplicateTriangleCount + ' doppelte Dreiecke');
+              if (stlDiagnostics.degenerateTriangleCount) issues.push(stlDiagnostics.degenerateTriangleCount + ' flächenlose Dreiecke');
               if (stlDiagnostics.collapsedTriangleCount) issues.push(stlDiagnostics.collapsedTriangleCount + ' durch Toleranz zusammengefallene Dreiecke');
               diagnosticMessage = ' Topologie-Warnung: ' + issues.join(', ') + '.';
             }
