@@ -132,9 +132,10 @@ test('Serialisierte Mesh-Geometrie wird vor dem Wiederaufbau strukturell geprüf
 test('Projektimport begrenzt die gesamte Geometrie über alle Objekte und Union-Teile', () => {
   const largeGeometry = {
     attributes: {
-      position: { arrayType: 'Float32Array', array: Array(750000).fill(0), itemSize: 3, normalized: false },
-      normal: { arrayType: 'Float32Array', array: Array(750000).fill(0), itemSize: 3, normalized: false }
-    }
+      position: { arrayType: 'Float32Array', array: Array(749997).fill(0), itemSize: 3, normalized: false },
+      normal: { arrayType: 'Float32Array', array: Array(749997).fill(0), itemSize: 3, normalized: false }
+    },
+    index: { arrayType: 'Uint8Array', array: [0, 1, 2, 3, 4, 5] }
   };
   const project = validProject();
   project.objects = Array.from({ length: 10 }, () => ({ geometry: largeGeometry }));
