@@ -5,7 +5,7 @@ const require = createRequire(import.meta.url);
 const THREE = require('three');
 const { createHistory } = require('../src/history.js');
 
-const VERTICES_PER_OBJECT = 1000;
+const VERTICES_PER_OBJECT = 999;
 const RECORDS_PER_SCENARIO = 5;
 
 function makeObject(index) {
