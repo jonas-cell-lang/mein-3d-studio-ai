@@ -129,3 +129,5 @@ Der BSP-CSG-Kern ist als `src/csg.js` ausgelagert. Der vollständige Browserlauf
 - `src/project-schema.js` validiert Sections, Referenzen, Innenkonturanzahl und Quellpaare.
 - Browser-Test deckt vier Profile, echtes Hohl-Loft-Mesh, Projekt-Download und Import in eine frische Browserinstanz ab.
 - Grenzen: Innenkonturen sind separate Skizzenobjekte; eine einzelne Skizze mit mehreren bearbeitbaren Insel-/Lochkonturen ist noch nicht Teil der Zeichenoberfläche.
+
+- Objekt-UUIDs werden im Projektformat gesichert und beim Wiederaufbau wieder gesetzt. So bleiben die im Loft gespeicherten Quellprofil-Verweise über Speichern/Öffnen hinweg gültig; doppelte oder ungültige Objektkennungen werden abgewiesen.
