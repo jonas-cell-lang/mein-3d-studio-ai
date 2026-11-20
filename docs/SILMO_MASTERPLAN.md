@@ -532,3 +532,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Auf Commit `4299ae265b9d9bcccfcb90def0eb43a8fcb91102` bestanden alle 90/90 Unit-Tests; der Code-Check-Workflow hat den Unit-Test-Schritt erfolgreich abgeschlossen.
 
 **Nachtrag zu Abschnitt 6.41:** Auf Commit `5b5ac584d9e8525827934feb31977d73b6271d08` waren Code Checks, Browser-Interaktion und isolierter OCCT-/WebWorker-Prototyp erfolgreich (Runs 44785871641, 44785871362 und 44785871326). Die vorherigen fehlgeschlagenen Code-Checks auf `5e08409` betrafen einen fehlerhaft konstruierten Nullkanten-Testfall; nach Korrektur auf `5b5ac58` bestanden 90/90 Tests.
+
+
+### 6.43 Begrenzung der Loft-, Sweep- und Rohrkomplexität (20.11.2026)
+- Loft-Profile begrenzen einzelne Ringe auf 512 Punkte, Innenringe auf 64 Paare und alle Profilpunkte zusammen auf 4096. Das schützt insbesondere die kombinatorische Profil-Ausrichtung vor übermässigem Rechenaufwand.
+- Sweep begrenzt Aussenprofile und Pfade jeweils auf 256 Punkte. Die Optionen können die sicherheitsrelevanten Werte für Pfad, Schrittzahl und Abschrägung nicht mehr überschreiben.
+- Pfadkurven begrenzen ihre Eingabe auf 1000 Punkte. Rohrgeometrien begrenzen die Segmentzahlen und zusätzlich die daraus resultierende Vertex-Obergrenze auf 250'000.
+- Neue Unit-Tests prüfen die Grenzwerte knapp oberhalb der Limits und stellen sicher, dass ungültig grosse Eingaben kontrolliert abgewiesen werden.
+- Die Änderungen sind auf dem Entwicklungszweig enthalten; CI-Ergebnisse für den aktuellen Test- und Dokumentationsstand sind noch abzuwarten.
