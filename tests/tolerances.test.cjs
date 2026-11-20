@@ -23,6 +23,13 @@ test('Toleranzwerte behalten die im Audit belegten Werte', () => {
   assert.equal(tolerances.PROFILE_MIN_SOURCE_DIMENSION_WORLD_UNITS, 1e-6);
   assert.equal(tolerances.SKETCH_PROFILE_CLOSURE_WORLD_UNITS, 1e-7);
   assert.equal(tolerances.SKETCH_RAY_PARALLEL_DENOMINATOR_MIN, 1e-6);
+  assert.equal(tolerances.IMAGE_POLYGON_RAY_DENOMINATOR_FALLBACK_PX, 1e-12);
+  assert.equal(tolerances.IMAGE_SEGMENT_BOUNDS_EPSILON_PX, 1e-8);
+  assert.equal(tolerances.IMAGE_SEGMENT_ORIENTATION_EPSILON_PX2, 1e-8);
+  assert.equal(tolerances.IMAGE_POLYGON_MIN_EDGE_PX, 1e-5);
+  assert.equal(tolerances.IMAGE_POLYGON_MIN_NONADJACENT_GAP_PX, 1e-7);
+  assert.equal(tolerances.IMAGE_MIN_WALL_COMPARISON_EPSILON_MM, 1e-6);
+  assert.equal(tolerances.TUTORIAL_POSITION_CHANGE_WORLD_UNITS, 1e-5);
 });
 
 test('Toleranz-API ist unveränderlich', () => {
