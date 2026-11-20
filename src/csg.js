@@ -131,6 +131,9 @@
   }
 
   function combineMeshes(base, tool, operation) {
+    if (operation !== 'union' && operation !== 'subtract') {
+      throw new Error('Unbekannte CSG-Operation: ' + String(operation));
+    }
     const a = new CSGNode(polygonsFromMesh(base));
     const b = new CSGNode(polygonsFromMesh(tool));
     if (operation === 'union') {
