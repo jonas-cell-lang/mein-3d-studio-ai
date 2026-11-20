@@ -1091,3 +1091,13 @@ Vor Beginn einer neuen Aufgabe:
 - Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44754049101
 - Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44754049089
 - PR #70 bleibt Draft. Kein Merge nach `main`, kein Live-Deployment und keine kostenpflichtigen Dienste; Kostenlimit CHF 0.00.
+
+
+## Ergänzung – projektweite Geometrie-Obergrenze (20.11.2026)
+
+- Die bisherige Schema-Prüfung begrenzte die Geometriedaten pro einzelnes Mesh, nicht aber die Summe über alle Projektobjekte und verbundene Union-Teile.
+- `src/project-schema.js` validiert Geometrien nun bereits beim Prüfen des Projektumschlags und zählt Positions-/Normal-/weitere Attributwerte sowie Indizes projektweit.
+- Die neue Obergrenze beträgt 15'000'000 numerische Geometriewerte pro Projekt. Sie verhindert, dass bis zu 100 Objekte jeweils das individuelle Mesh-Limit ausschöpfen und zusammen einen unverhältnismässig grossen Import erzeugen.
+- Der Grenzfalltest prüft 15'000'000 Werte als akzeptierte Grenze und weist einen zusätzlichen Mesh-Anteil innerhalb eines Union-Teils ab.
+- Noch ausstehend: Code-Checks und vollständiger Browserlauf auf dem neuen Commit; bis dahin gilt die Änderung als implementiert, aber noch nicht verifiziert.
+- Kein Merge, kein Deployment; CHF 0.00.
