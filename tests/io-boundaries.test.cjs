@@ -499,3 +499,23 @@ test('Projektdatei öffnet ein grosses indiziertes Mesh verlustfrei über den vo
   });
 });
 
+
+
+test('STL-Topologie weist nicht endliche Koordinaten kontrolliert zurück', () => {
+  const geometry = makeGeometryFromTriangles([[[0,0,0],[10,0,0],[0,10,0]]]);
+  geometry.getAttribute('position').array[0] = Number.NaN;
+  assert.throws(
+    () => stlDiagnostics.analyzeSTLGeometry(geometry),
+    /ausschliesslich endliche XYZ-Koordinaten/
+  );
+  geometry.dispose();
+});
+
+test('STL-Topologie erkennt kollineare Dreiecke mit drei verschiedenen Eckpunkten', () => {
+  const geometry = makeGeometryFromTriangles([[[0,0,0],[10,0,0],[5,0,0]]]);
+  const result = stlDiagnostics.analyzeSTLGeometry(geometry);
+  assert.equal(result.collapsedTriangleCount, 0);
+  assert.equal(result.degenerateTriangleCount, 1);
+  assert.equal(result.isClosedEdgeManifold, false);
+  geometry.dispose();
+});
