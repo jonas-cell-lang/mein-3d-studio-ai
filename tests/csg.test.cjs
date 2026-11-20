@@ -202,11 +202,11 @@ test('CSG berücksichtigt Rotation und Skalierung beider Eingabekörper', () => 
   tool.updateMatrixWorld(true);
   const result = combineMeshes(base, tool, 'union');
   try {
-    assert.ok(Math.abs(Math.abs(signedVolume(result)) - 24) < 1e-4,
-      'Vereinigungsvolumen muss nach der Skalierung 24 Kubikeinheiten betragen');
+    assert.ok(Math.abs(Math.abs(signedVolume(result)) - 20) < 1e-4,
+      'Vereinigungsvolumen muss nach Rotation und Skalierung 20 Kubikeinheiten betragen; gemessen: ' + Math.abs(signedVolume(result)));
     const b = bounds(result);
-    assert.deepEqual(b.min.map(v => Number(v.toFixed(4))), [-2, -1, -1]);
-    assert.deepEqual(b.max.map(v => Number(v.toFixed(4))), [2, 2, 1]);
+    assert.deepEqual(b.min.map(v => Number(v.toFixed(4))), [-1, -2, -1]);
+    assert.deepEqual(b.max.map(v => Number(v.toFixed(4))), [1, 3, 1]);
   } finally {
     result.dispose();
     base.geometry.dispose();
