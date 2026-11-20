@@ -470,3 +470,63 @@ test('CSG-Abziehen eines dünnen inneren Schlitzes erhält das erwartete Restvol
     base.material.dispose(); tool.material.dispose();
   }
 });
+
+
+globalThis.SILMOUnits = require('../src/units.js');
+globalThis.SILMOTolerances = require('../src/tolerances.js');
+const stlIO = require('../src/stl-io.js');
+
+function analyzeAsSTL(geometry) {
+  const millimetreGeometry = geometry.clone();
+  try {
+    millimetreGeometry.scale(10, 10, 10);
+    return stlIO.createSTLIO({
+      getObjects: () => [],
+      addObject: () => {},
+      selectObject: () => {},
+      setStatus: () => {}
+    }).analyzeSTLGeometry(millimetreGeometry);
+  } finally {
+    millimetreGeometry.dispose();
+  }
+}
+
+test('CSG-Differenz erzeugt ein geschlossenes, konsistent orientiertes Dreiecksnetz', () => {
+  const base = box();
+  const tool = box([1, 0, 0]);
+  const result = combineMeshes(base, tool, 'subtract');
+  try {
+    const diagnostics = analyzeAsSTL(result);
+    assert.equal(diagnostics.analyzed, true);
+    assert.equal(diagnostics.isClosedEdgeManifold, true,
+      'Differenz darf keine offenen, nicht-manifold oder widersprüchlich orientierten Kanten enthalten: ' +
+      JSON.stringify(diagnostics));
+    assert.equal(diagnostics.invertedWinding, false);
+    assert.equal(diagnostics.duplicateTriangleCount, 0);
+    assert.equal(diagnostics.collapsedTriangleCount, 0);
+  } finally {
+    result.dispose();
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
+
+test('CSG-Vereinigung erzeugt ein geschlossenes, konsistent orientiertes Dreiecksnetz', () => {
+  const base = box();
+  const tool = box([1, 0, 0]);
+  const result = combineMeshes(base, tool, 'union');
+  try {
+    const diagnostics = analyzeAsSTL(result);
+    assert.equal(diagnostics.analyzed, true);
+    assert.equal(diagnostics.isClosedEdgeManifold, true,
+      'Vereinigung darf keine offenen, nicht-manifold oder widersprüchlich orientierten Kanten enthalten: ' +
+      JSON.stringify(diagnostics));
+    assert.equal(diagnostics.invertedWinding, false);
+    assert.equal(diagnostics.duplicateTriangleCount, 0);
+    assert.equal(diagnostics.collapsedTriangleCount, 0);
+  } finally {
+    result.dispose();
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
