@@ -24,6 +24,7 @@
           bedDepthMM: deps.getBedDepthMM(),
           uniform: deps.getUniform(),
           objects: deps.getObjects().map(obj => ({
+            objectId: obj.uuid,
             label: obj.userData.label || 'Objekt',
             position: obj.position.toArray(),
             rotation: obj.rotation.toArray(),
@@ -82,6 +83,7 @@
             });
             try {
               const mesh = new THREE.Mesh(geometry, material);
+              if (typeof item.objectId === 'string') mesh.uuid = item.objectId;
               const position = Array.isArray(item.position) ? item.position : [0, 0, 0];
               const rotation = Array.isArray(item.rotation) ? item.rotation : [0, 0, 0];
               const scale = Array.isArray(item.scale) ? item.scale : [1, 1, 1];
