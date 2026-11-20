@@ -88,7 +88,8 @@
             if (geometry) geometry.dispose();
             if (material) material.dispose();
           }
-          console.error(error);
+          // Eine fehlerhafte Benutzereingabe ist ein erwartbarer Importfehler, kein Laufzeitabsturz.
+          console.warn('STL-Import abgewiesen:', error);
           deps.setStatus('STL-Datei konnte nicht gelesen werden: ' + (error.message || 'Datei prüfen.'));
         }
       };
