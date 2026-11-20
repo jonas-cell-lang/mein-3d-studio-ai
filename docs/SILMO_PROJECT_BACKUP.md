@@ -1071,3 +1071,10 @@ Vor Beginn einer neuen Aufgabe:
 - Die Quellcode-Aufrufstellen bestätigen, dass Punkt-in-Polygon- und Segmentabstandsprüfungen nur auf bereits in reale Millimeter abgebildete Konturen angewendet werden.
 - Fünf Toleranznamen wurden deshalb von irreführenden Pixel-/Pixel²-Endungen auf mm-/mm²-Endungen korrigiert. Die Zahlenwerte und das Laufzeitverhalten blieben unverändert.
 - Die Bildraster-Erkennung bleibt weiterhin im Pixelraum; die Druckkonturprüfung bleibt im Modellmassraum.
+
+
+## Ergänzung – vollständige Regression nach Bildflächen- und Einheitenkorrektur am 20.11.2026
+
+- Der Code-Check und der vollständige Playwright-Browserlauf sind auf Code-Commit `e96d550896e7b18e0ea912a13a8b22b7a93fd4ca` erfolgreich.
+- Der Lauf enthält die numerisch robuste Mindestflächenprüfung (0,01 mm² mit separatem 1e-12-mm²-Vergleichsspielraum) und die korrekt als mm/mm² benannten Punkt-in-Polygon-/Segmenttoleranzen.
+- Ein weiterer Code-Check auf dem nachfolgenden Dokumentationsstand `8df0875ca835099f3a9034150e09a263c439e7df` ist ebenfalls erfolgreich; der dazugehörige Browserlauf läuft noch. Die Programmdateien sind seit `e96d...` unverändert.
