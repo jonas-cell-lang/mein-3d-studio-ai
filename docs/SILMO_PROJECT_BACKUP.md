@@ -1151,3 +1151,10 @@ Vor Beginn einer neuen Aufgabe:
 - Die UI-/Modellzuständigkeiten bleiben im Hauptskript. Ein Mindestabstandscheck weist zu grosse Wandstärken zurück, die zuvor über den Kollapspunkt der Innenkontur hinauslaufen konnten.
 - Tests decken Volumen, Abmessungen, beide Konturrichtungen und ungültige Wandstärken ab.
 - Code-Head `208815fd7d101f1af4520d2834c8437a9ea8bad4`: 54/54 Unit-Tests, Browser-Regression und OCCT-/WebWorker-Test erfolgreich.
+
+
+## Ergänzung – Kantenbearbeitung und Toleranz-Audit (20.11.2026)
+- Die Geometrieerzeugung für Abrunden und Abfasen wurde nach `src/sketch-geometry.js` ausgelagert; App-Auswahl, Eingabeprüfung, History und UI verbleiben in `index.html`.
+- Unit-Tests für beide Modi prüfen endliche Mesh-Daten, Normalen, Bounding-Box/-Sphere, Sollabmessungen und ungültige Parameter.
+- Der Toleranz-Audit umfasst 45 benannte Werte. Ein neuer Quellcode-Test prüft, dass jede Konstante in mindestens einem Laufzeitmodul verwendet wird; Lernkurs-Schwellen werden dazu korrekt in `src/tutorial.js` gesucht.
+- Die neuen Prüfungen sind implementiert; CI-Erfolg ist noch nicht bestätigt.
