@@ -412,5 +412,5 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Der bestehende Konturpunkt-Editor erhält eine Konturauswahl: Aussenkontur oder eines der gespeicherten Innenlöcher.
 - Punktkoordinaten lassen sich nach dem Erzeugen des 3D-Körpers ändern. Beim Neuaufbau der Extrusion bleiben sämtliche anderen Ringe erhalten und werden als echte Öffnungen neu erzeugt.
 - Änderungen werden auf degenerierte Ringe, zu kurze Kanten und ungültige Lage/Überschneidung der Innenlöcher geprüft, bevor die alte Geometrie ersetzt wird.
-- Browser-Regression prüft das Verschieben eines Innenloch-Punktes an einem bereits erzeugten Körper.
+- Browser-Regression prüft das Verschieben eines Innenloch- und Aussenkontur-Punktes an einem bereits erzeugten Körper. Zusätzlich werden die Konturkoordinaten beim Ändern der Gesamtmasse mitskaliert; Innenlochfläche und Aussenkontur bleiben synchron.
 - Noch nicht unterstützt: Konturbearbeitung an bereits abgerundeten/abgefasten Körpern; parametrische Abhängigkeiten und interaktive direkte Manipulation im 3D-Viewport.
