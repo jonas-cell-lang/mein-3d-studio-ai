@@ -547,7 +547,7 @@ test('STL-Topologie akzeptiert zwei räumlich getrennte geschlossene Körper', (
   assert.equal(result.isClosedEdgeManifold, true);
   assert.equal(result.componentCount, 2);
   assert.equal(result.invertedWinding, false);
-  assert.equal(result.mixedWinding, false);
+  assert.equal(result.disconnectedWindingConflict, false);
   geometry.dispose();
 });
 
@@ -560,7 +560,7 @@ test('STL-Topologie erkennt getrennte Körper mit gemischter Orientierung auch b
   assert.equal(result.isClosedEdgeManifold, true);
   assert.equal(result.componentCount, 2);
   assert.equal(result.invertedComponentCount, 1);
-  assert.equal(result.mixedWinding, true);
+  assert.equal(result.disconnectedWindingConflict, true);
   assert.equal(result.invertedWinding, null,
     'Bei gemischter Orientierung darf keine einheitliche Gesamtorientierung behauptet werden');
   assert.ok(Math.abs(result.signedVolumeMM3) < 1e-5,
