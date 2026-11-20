@@ -8,7 +8,9 @@
   // universelle Modelliertoleranz und dürfen nicht miteinander vermischt werden.
   return Object.freeze({
     CSG_GEOMETRY_WORLD_UNITS: 1e-5,
+    CSG_LINE_DIRECTION_QUANTUM: 1e-8,
     STL_VERTEX_WELD_WORLD_UNITS: 1e-5,
+    STL_SIGNED_VOLUME_EPSILON_MM3: 1e-12,
     ALIGNMENT_OVERLAP_WORLD_UNITS: 1e-7,
     ALIGNMENT_CHANGE_WORLD_UNITS: 1e-8,
     SKETCH_SIMPLIFICATION_MIN_MM: 0.01,
