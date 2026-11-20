@@ -19,7 +19,7 @@
 | `src/tutorial.js` | Geführter Lernkurs und Erfolgskontrolle | Eigenständige DOM-IIFE; nutzt vorhandene `window`-Test-/App-Schnittstellen |
 | `src/image-studio.js` | 2D-Bildbereich, Konturerkennung und Übergabe an CAD | Eigenständige DOM-/Canvas-IIFE; Übergabe über `window.__silmoImageStudioCreateFromPoints` |
 
-Der Undo-/Redo-Stack ist jetzt ebenfalls ausgelagert. Die Snapshots selbst bleiben vorerst vollständige Kopien der bestehenden Mesh-Geometrien und Materialien; eine befehlsbasierte Historie und echte Speicher-/Leistungs-Baselines sind noch offen.
+Der Undo-/Redo-Stack ist in `src/history.js` ausgelagert. Die Snapshots bleiben vorerst vollständige Kopien der bestehenden Mesh-Geometrien und Materialien; eine befehlsbasierte Historie und echte Speicher-/Leistungs-Baselines sind noch offen.
 
 Die ausgelagerten Dateien werden in ihrer bisherigen Ausführungsreihenfolge geladen. Die lokalen Pages-Prüfungen vergleichen die vorhandenen Dateien und die Browser-Tests blockieren externe HTTPS-Zugriffe.
 
@@ -29,7 +29,7 @@ Das verbleibende Inline-CAD-Skript hält weiterhin den zentralen Laufzeitzustand
 
 - Three.js-Szene, Kamera, Renderer und Animationsschleife
 - Modellobjektliste, Auswahl und Mehrfachauswahl
-- Undo/Redo und Zustandsaufnahme
+- Zustandsaufnahme und Anbindung der Undo-/Redo-History über `src/history.js`
 - Transformationen, Gizmos, Ausrichtung und Gruppierung
 - Boolesche Geometrieoperationen und BSP-CSG
 - Skizzen, Extrusion, Kontur- und Pfadwerkzeuge
