@@ -12,10 +12,13 @@
       throw new Error('Geometriedaten fehlen oder sind ungültig.');
     }
 
-    const allowedArrays = new Set([
-      'Float32Array', 'Float64Array', 'Uint8Array', 'Uint16Array', 'Uint32Array',
-      'Int8Array', 'Int16Array', 'Int32Array'
-    ]);
+    const attributeTypeRanges = Object.freeze({
+      Float32Array: [-3.402823466e38, 3.402823466e38],
+      Float64Array: [-Number.MAX_VALUE, Number.MAX_VALUE],
+      Uint8Array: [0, 0xff], Uint16Array: [0, 0xffff], Uint32Array: [0, 0xffffffff],
+      Int8Array: [-0x80, 0x7f], Int16Array: [-0x8000, 0x7fff], Int32Array: [-0x80000000, 0x7fffffff]
+    });
+    const allowedArrays = new Set(Object.keys(attributeTypeRanges));
     const indexTypeMaximums = Object.freeze({ Uint8Array: 0xff, Uint16Array: 0xffff, Uint32Array: 0xffffffff });
     const names = Object.keys(data.attributes);
     if (!names.length) throw new Error('Geometrie enthält keine Attribute.');
@@ -27,13 +30,15 @@
           !item || typeof item !== 'object' || !Array.isArray(item.array)) {
         throw new Error('Ungültiges Geometrieattribut.');
       }
+      const valueRange = attributeTypeRanges[item.arrayType];
       if (name === 'position' && item.itemSize !== 3) {
         throw new Error('Positionsdaten müssen das itemSize 3 haben.');
       }
-      if (!allowedArrays.has(item.arrayType) ||
+      if (!allowedArrays.has(item.arrayType) || !valueRange ||
           !Number.isInteger(item.itemSize) || item.itemSize < 1 || item.itemSize > 4 ||
           item.array.length === 0 || item.array.length % item.itemSize !== 0 ||
-          item.array.some(value => !Number.isFinite(value) || Math.abs(value) > 1e7)) {
+          item.array.some(value => !Number.isFinite(value) || Math.abs(value) > 1e7 ||
+            value < valueRange[0] || value > valueRange[1])) {
         throw new Error('Ungültige oder zu grosse Geometriedaten.');
       }
       totalValues += item.array.length;
