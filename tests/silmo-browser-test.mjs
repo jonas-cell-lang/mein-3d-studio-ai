@@ -1159,6 +1159,27 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const relationTest=await page.evaluate(()=>window.__silmoTestRunSketchRelations());
   for (const key of ['parallelOK','perpendicularOK','tangentOK','concentricOK','lengthOK','distanceOK']) assert.equal(relationTest[key],true,'Skizzenbedingung/Bemaßung '+key+' funktioniert nicht');
 
+  // Hohl-Loft-Metadaten müssen Speichern und erneutes Öffnen überstehen.
+  await page.locator('[data-tab="print"]').click();
+  const hollowLoftDownloadPromise=page.waitForEvent('download');
+  await page.locator('#saveProjectButton').click();
+  const hollowLoftDownload=await hollowLoftDownloadPromise;
+  const hollowLoftSavedPath=await hollowLoftDownload.path();
+  const hollowLoftProject=JSON.parse(readFileSync(hollowLoftSavedPath,'utf8'));
+  const savedHollowLoft=hollowLoftProject.objects.find(item=>item.loft?.innerContourCount===1);
+  assert.ok(savedHollowLoft,'Projektdatei speichert keine Hohl-Loft-Metadaten');
+  assert.equal(savedHollowLoft.loft.sourceHoles.length,1,'Innenkontur-Zuordnung fehlt in der Projektdatei');
+  const hollowLoftRoundTripPage=await browser.newPage();
+  await hollowLoftRoundTripPage.goto(page.url());
+  await hollowLoftRoundTripPage.waitForFunction(()=>typeof window.SILMOProjectSchema?.validateProjectEnvelope==='function',null,{timeout:15000});
+  await hollowLoftRoundTripPage.locator('[data-tab="print"]').click();
+  await hollowLoftRoundTripPage.locator('#projectFileInput').setInputFiles(hollowLoftSavedPath);
+  await hollowLoftRoundTripPage.waitForFunction(()=>window.__silmoLoftMetadataSnapshot?.().some(item=>item.innerContourCount===1&&item.sourceHoleCount===1),null,{timeout:15000});
+  const restoredHollowLoft=await hollowLoftRoundTripPage.evaluate(()=>window.__silmoLoftMetadataSnapshot());
+  assert.ok(restoredHollowLoft.some(item=>item.innerContourCount===1&&item.sourceHoleCount===1),
+    'Projektimport stellt die Hohl-Loft-Zuordnung nicht wieder her');
+  await hollowLoftRoundTripPage.close();
+  await page.locator('[data-tab="draw"]').click();
 
   // SILMO Image Studio Phase 1: separater Arbeitsbereich, Import, Rotation,
   // persistente Vorlagendaten und Übergabe an die bestehende CAD-Freiform.
