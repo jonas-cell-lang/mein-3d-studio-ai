@@ -288,3 +288,9 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Mindestabstände für die Bereinigung benachbarter Freiformpunkte und für die Herz-Konturklassifikation sind zentral benannt.
 - Die Werte 0,005 und 1e-5 Welteinheiten bleiben unverändert und werden durch Unit-Tests gesichert.
 - Der spezielle Herz-Konturpfad bleibt getrennt von der allgemeinen Bildkonturerkennung; diese Benennung ändert keine Erkennungslogik.
+
+
+### 6.15 Grenzfalltests für Bildkontur-Druckbarkeit
+- Die Playwright-Browser-Regression prüft die Mindestwand von 0,8 mm an der Grenze (0,8 mm akzeptiert; 0,799 mm abgewiesen).
+- Sie prüft auch die Mindestkonturfläche von 0,01 mm² (exakte Grenze akzeptiert; 0,009801 mm² abgewiesen).
+- Zusätzlich bleiben bestehende Tests für Aussparungen an der Aussenkante, überlappende Innenlöcher und selbstschneidende Aussenkonturen aktiv.
