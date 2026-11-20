@@ -117,14 +117,14 @@
   function sketchSegmentsIntersect(a, b, c, d) {
     const abC = sketchCross(a, b, c), abD = sketchCross(a, b, d);
     const cdA = sketchCross(c, d, a), cdB = sketchCross(c, d, b);
-    if (((abC > tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && abD < -tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM) ||
-         (abC < -tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && abD > tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM)) &&
-        ((cdA > tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && cdB < -tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM) ||
-         (cdA < -tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && cdB > tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM))) return true;
-    return (Math.abs(abC) <= tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && sketchPointOnSegment(c, a, b)) ||
-      (Math.abs(abD) <= tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && sketchPointOnSegment(d, a, b)) ||
-      (Math.abs(cdA) <= tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && sketchPointOnSegment(a, c, d)) ||
-      (Math.abs(cdB) <= tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && sketchPointOnSegment(b, c, d));
+    if (((abC > tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && abD < -tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2) ||
+         (abC < -tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && abD > tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2)) &&
+        ((cdA > tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && cdB < -tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2) ||
+         (cdA < -tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && cdB > tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2))) return true;
+    return (Math.abs(abC) <= tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && sketchPointOnSegment(c, a, b)) ||
+      (Math.abs(abD) <= tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && sketchPointOnSegment(d, a, b)) ||
+      (Math.abs(cdA) <= tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && sketchPointOnSegment(a, c, d)) ||
+      (Math.abs(cdB) <= tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && sketchPointOnSegment(b, c, d));
   }
 
   function sketchRingArea(ring) {
