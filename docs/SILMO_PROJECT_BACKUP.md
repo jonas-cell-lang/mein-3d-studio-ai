@@ -1101,3 +1101,12 @@ Vor Beginn einer neuen Aufgabe:
 - Der Grenzfalltest prüft 15'000'000 Werte als akzeptierte Grenze und weist einen zusätzlichen Mesh-Anteil innerhalb eines Union-Teils ab.
 - Noch ausstehend: Code-Checks und vollständiger Browserlauf auf dem neuen Commit; bis dahin gilt die Änderung als implementiert, aber noch nicht verifiziert.
 - Kein Merge, kein Deployment; CHF 0.00.
+
+
+## Ergänzung – Grundkörper-Modul und erweiterte OCCT-Prüfung (20.11.2026)
+- Die reine Geometrieerzeugung der sechs Grundkörper ist in `src/primitive-geometry.js` ausgelagert. Objektanlage, Materialien, Auswahl und App-Zustand verbleiben im CAD-Hauptskript.
+- Die Unit-Tests prüfen die mathematischen Bounding-Box-Abmessungen von Würfel, Kugel, Zylinder, Kegel, Sechskant-Prisma und Torus sowie den bisherigen Fallback.
+- Auf Code-Commit `1880cc057d8c332d13cbf50691bb3864a3461bea` sind 37/37 Unit-Tests erfolgreich; die vollständige SILMO-Browser-Regression ist ebenfalls erfolgreich.
+- OCCT-Prototyp-Run `44761699676` ist erfolgreich: 40-Bohrungs-Musterplatte, analytisches Volumen, ein Solid und Tessellierung; die Boolean-Berechnung dauerte im GitHub-Runner rund 353 ms.
+- Chromium-WebWorker-Smoke-Test: zwölf sequenzielle Durchgangsbohrungen, Volumen 5811,504440784614 mm³ gegenüber Soll 5811,504440784613 mm³, genau ein Solid und ein verwendbares Mesh.
+- Der CAD-Kern bleibt isolierte Forschung und ist nicht in die Produktions-App integriert. PR #70 bleibt Draft; kein Merge, kein Deployment und CHF 0.00.

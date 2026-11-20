@@ -314,3 +314,13 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die projektweite Obergrenze beträgt 15'000'000 numerische Geometriewerte. Der Grenzfalltest akzeptiert exakt 15'000'000 Werte und weist einen zusätzlichen Geometrieanteil in einem Union-Teil ab.
 - Diese zusätzliche Schutzgrenze ändert keine Geometriekoordinaten und keine bestehende Modellierungsfunktion; sie begrenzt ausschliesslich die Datenmenge beim Projektimport.
 - Status: Implementiert auf Commit `dcc8246a53d00f4a569ea61e99bd5fa5dfde3d03`; Code- und Browser-CI für diesen Commit müssen noch erfolgreich nachgewiesen werden.
+
+
+### 6.19 Grundkörper-Geometrie isoliert und mathematisch geprüft (20.11.2026)
+- Die reine Three.js-Geometrieerzeugung der sechs bestehenden Grundkörper wurde aus `index.html` nach `src/primitive-geometry.js` ausgelagert.
+- Die Zuständigkeiten für History, Material, Position, Objektliste, Auswahl und UI bleiben weiterhin im Hauptskript; das neue Modul erzeugt nur die Geometrie und berechnet ihre Bounding Box.
+- Die bisherigen Formen, Segmentzahlen, Abmessungen, Z-Höhenorientierung und der Würfel-Fallback für unbekannte Typen bleiben erhalten.
+- `tests/primitive-geometry.test.cjs` prüft Sollabmessungen für Würfel, Kugel, Zylinder, Kegel, Sechskant-Prisma und Torus sowie den Fallback und unabhängige Geometrieinstanzen.
+- Die neue Datei ist in der Script-Reihenfolge, den Unit-Tests, den Pages-Paketprüfungen und den Browser-Regressionen registriert.
+- Auf Commit `1880cc057d8c332d13cbf50691bb3864a3461bea` sind 37/37 Unit-Tests und der vollständige SILMO-Browserlauf erfolgreich. Der isolierte OCCT-Prototyp mit 40-Bohrungs-Musterplatte und der 12-Bohrungs-WebWorker-Test ist ebenfalls erfolgreich.
+- Die Extraktion ändert keine Produktversion; Build-Metadaten bleiben v94. Kein Merge und kein Deployment.
