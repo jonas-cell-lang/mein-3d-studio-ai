@@ -377,3 +377,12 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Das Hauptskript behält die Eingabegrenzen, Auswahl, History, Material-/Mesh-Austausch und UI-Meldungen; die Factory erzeugt nur die neue Extrusionsgeometrie.
 - Unit-Tests prüfen beide Modi, endliche Positionen/Normalen, Bounding-Volumen, Sollabmessungen und ungültige Parameter. Die bestehende Browser-Regression führt zusätzlich den integrierten Profi-CAD-Funktionstest für Abrunden und Abfasen aus.
 - Die Extraktion ist implementiert. Ein erfolgreicher GitHub-CI-Lauf auf dem neuen Commit muss noch bestätigt werden.
+
+
+### 6.26 Loft-Factory für geneigte und hohle Profile (20.11.2026)
+- Die Loft-Factory wurde von reiner XY-Kappung auf ebene 3D-Endprofile mit lokaler 2D-Projektion erweitert.
+- Die Triangulation kann mehrere Innenkonturen berücksichtigen und verbindet deren Mantelflächen zwischen beiden Profilen.
+- Startpunkt und Laufrichtung der zweiten Profilkontur werden standardmässig anhand der zentrierten Konturform ausgerichtet; `alignProfiles: false` deaktiviert diese Anpassung.
+- Zentrale Planaritäts- und Normalentoleranzen sind ergänzt. Nicht planare/entartete Profile und nicht paarweise passende Innenkonturen werden kontrolliert abgewiesen.
+- Unit- und Browsertests decken geneigte Profile, umgekehrte Punktreihenfolgen, Hohlkörper-Volumen und ungültige Eingaben ab.
+- **Grenze:** Die Geometrie-API unterstützt Innenkonturen; die bestehende App-Auswahl und Projektmetadaten liefern derzeit noch keine mehreren Konturen pro Skizze.
