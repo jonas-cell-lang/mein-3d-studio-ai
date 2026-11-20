@@ -2518,7 +2518,6 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const rb=window.SILMOSketchGeometry.resampleClosedOutline(b.userData.sketchOutline,64,window.SILMOTolerances.PROFILE_MIN_PERIMETER_WORLD_UNITS).map(p=>b.localToWorld(new THREE.Vector3(p.x,p.y,0)));
     const geometry=window.SILMOSketchGeometry.createLoftGeometry(ra,rb);
     const loftSize=new THREE.Vector3();geometry.boundingBox.getSize(loftSize);
-    const loftSize=new THREE.Vector3();geometry.boundingBox.getSize(loftSize);
     recordHistory();const mesh=new THREE.Mesh(geometry,a.material.clone());mesh.userData={label:'Loft-Körper',baseDimensions:{x:loftSize.x,y:loftSize.y,z:loftSize.z},percent:{x:100,y:100,z:100},loft:{sourceA:a.uuid,sourceB:b.uuid,sections:2}};
     scene.add(mesh);objects.push(mesh);selectObject(mesh);updateObjects();showProperties();updateMoveGizmo();
     status.textContent='Loft erstellt: zwei Skizzenprofile wurden zu einem Körper verbunden.';
