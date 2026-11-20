@@ -29,7 +29,7 @@ Das wird im Code konkret bestätigt:
 |---|---:|---|
 | CSG | `CSG_EPSILON = 1e-5` (Zeile 1362) | BSP-Klassifikation, Ebenen-Schnitt und Filterung degenerierter Dreiecke; Koordinaten sind interne Three.js-Koordinaten. Entspricht bei der aktuellen Skala 0,0001 mm. |
 | Skizzenvereinfachung | Standard `toleranceMM = 0.5`; intern `max(0.001, toleranceMM / MM_PER_UNIT)` (Zeilen 3007–3011) | Fachliche Vereinfachungstoleranz in mm mit interner Untergrenze 0,001 Welteinheiten (= 0,01 mm). |
-| Druckbettprüfung | `bedTolerance = 1e-5` (Zeilen 3776–3780) | Wird direkt mit internen Weltkoordinaten verglichen; bei aktueller Skala entspricht dies 0,0001 mm. |
+| Druckbettprüfung | `PRINT_BED_BOUNDS_WORLD_UNITS = 1e-4` | Wird direkt mit internen Weltkoordinaten verglichen; bei aktueller Skala entspricht dies 0,001 mm. |
 | Geometrie-/Skizzenvergleiche | Mehrere Schwellen wie `1e-7`, `1e-6`, `0.01`, `0.02` (u. a. Zeilen 2058–2091, 3207–3227, 3477–3571) | Nicht pauschal als Modelliertoleranz interpretieren. Jede Stelle braucht eine eigene fachliche Zuordnung. |
 
 Die Werte dürfen nicht zu einer einzigen globalen Toleranz zusammengezogen werden. Einige sind geometrische Grenzwerte, andere dienen Vergleich, Vereinfachung, Kamera-/Interaktionsverhalten oder Darstellungsabständen.
@@ -211,3 +211,12 @@ Diese Werte sind keine globalen CAD-Genauigkeitsversprechen. Insbesondere Vorsch
 | `IMAGE_MIN_WALL_THICKNESS_MM` | 0,8 | mm; Mindestmaterialstärke zwischen Aussparungen sowie zwischen Aussparung und Aussenkante |
 
 Die Flächenschwelle in `polygonIsSimple` wird ausschliesslich innerhalb von `validatePrintableContours` auf bereits auf reale Modellmasse abgebildete Konturen angewendet. Sie ist deshalb als `IMAGE_MIN_SIMPLE_POLYGON_AREA_MM2` mit 0,01 mm² benannt und getestet.
+
+
+### 3.5 Präzisierung der getrennten Druckbettgrenzen
+
+Die Quellcodeprüfung unterscheidet zwei verschiedene Grenzen:
+- Skizzenkontur innerhalb der Druckplatte: `SKETCH_BED_BOUNDS_WORLD_UNITS = 1e-5` Welteinheiten.
+- Prüfung der fertigen Modell-Bounding-Box: `PRINT_BED_BOUNDS_WORLD_UNITS = 1e-4` Welteinheiten (= 0,001 mm).
+
+Die frühere Zeile in Abschnitt 1.2 hatte den Wert der Skizzenprüfung fälschlich der fertigen Druckbettprüfung zugeordnet. Die Tabelle ist korrigiert; die Zahlenwerte im Programm wurden nicht verändert.
