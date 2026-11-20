@@ -434,3 +434,39 @@ test('CSG-Abziehen verarbeitet eine kleine Überlappung oberhalb der Geometrieto
     base.material.dispose(); tool.material.dispose();
   }
 });
+
+
+test('CSG-Abziehen eines fast gleich grossen Innenkörpers erhält die dünne Wand', () => {
+  const base = box();
+  const innerSize = 1.9995;
+  const tool = box([0, 0, 0], [innerSize, innerSize, innerSize]);
+  const result = combineMeshes(base, tool, 'subtract');
+  try {
+    const expected = 8 - Math.pow(innerSize, 3);
+    assert.ok(signedVolume(result) > 0 && Math.abs(signedVolume(result) - expected) < 2e-5,
+      'Die dünne Aussenwand muss erhalten bleiben; erwartet: ' + expected + ', erhalten: ' + signedVolume(result));
+    const b = bounds(result);
+    assert.deepEqual(b.min.map(v => Number(v.toFixed(5))), [-1, -1, -1]);
+    assert.deepEqual(b.max.map(v => Number(v.toFixed(5))), [1, 1, 1]);
+  } finally {
+    result.dispose();
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
+
+test('CSG-Abziehen eines dünnen inneren Schlitzes erhält das erwartete Restvolumen', () => {
+  const base = box();
+  const slitWidth = 5e-4;
+  const tool = box([0, 0, 0], [slitWidth, 1, 1]);
+  const result = combineMeshes(base, tool, 'subtract');
+  try {
+    const expected = 8 - slitWidth;
+    assert.ok(signedVolume(result) > 0 && Math.abs(signedVolume(result) - expected) < 2e-5,
+      'Der schmale Schlitz muss korrekt abgezogen werden; erwartet: ' + expected + ', erhalten: ' + signedVolume(result));
+  } finally {
+    result.dispose();
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
