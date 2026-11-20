@@ -587,3 +587,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Beide Abstände liegen oberhalb der aktuellen CSG-Geometrietoleranz von 0.00001 Welteinheiten und prüfen, ob kleine, aber unterscheidbare Abstände nicht versehentlich als koplanar behandelt werden.
 - Die Ergebnisse der automatischen CI-Prüfungen sind zum Zeitpunkt dieses Eintrags noch ausstehend.
 - Teständerung enthalten in Commit `0bdd912c6795aff7ae1e74534ba87099a2be8fad`.
+
+
+### 6.49 Boolesche Geometrie: dünne Wände und schmale Aussparungen (20.11.2026)
+- Neuer Regressionstest: Ein fast gleich grosser Innenwürfel wird aus einem Aussenwürfel entfernt. Die verbleibende dünne Wand wird über das erwartete Restvolumen und die äusseren Grenzen geprüft.
+- Neuer Regressionstest: Ein schmaler Schlitz mit 0.0005 Welteinheiten Breite wird aus einem Würfel entfernt; das Restvolumen muss stimmen.
+- Diese Tests prüfen gezielt, ob kleine, aber deutlich über der CSG-Toleranz liegende Wand- und Schnittgeometrie erhalten bleibt.
+- Ein korrektes Volumen allein ist kein Nachweis für vollständige STL-Manifold-Qualität; spätere Prüfungen müssen Kanteninzidenz, offene Kanten und Normalenorientierung ergänzen.
+- Teständerung enthalten in Commit `a04a3beff8d2d523aa30b1a387a9a630ed092672`; CI-Prüfungen ausstehend.
