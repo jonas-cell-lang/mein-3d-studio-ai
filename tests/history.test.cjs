@@ -58,13 +58,14 @@ test('Das Verlaufslimit gibt den ältesten Snapshot frei', () => {
   model.history.record();
   model.value = 2;
   model.history.record();
+  model.value = 3;
 
   assert.equal(model.history.getStats().undoCount, 2);
   assert.equal(model.disposed.length, 1);
   assert.equal(model.history.undo(), true);
-  assert.equal(model.value, 1);
+  assert.equal(model.value, 2);
   assert.equal(model.history.undo(), true);
-  assert.equal(model.value, 0);
+  assert.equal(model.value, 1);
   assert.equal(model.history.undo(), false);
 });
 
