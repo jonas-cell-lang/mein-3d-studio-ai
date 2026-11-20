@@ -360,7 +360,7 @@ test('STL-Topologie erkennt einen geschlossenen 10-mm-Würfel mit korrektem Volu
   assert.equal(result.nonManifoldEdgeCount, 0);
   assert.equal(result.inconsistentEdgeCount, 0);
   assert.equal(result.duplicateTriangleCount, 0);
-  assert.equal(result.isClosedManifold, true);
+  assert.equal(result.isClosedEdgeManifold, true);
   assert.equal(result.invertedWinding, false);
   assert.ok(Math.abs(result.signedVolumeMM3 - 1000) < 1e-5);
   geometry.dispose();
@@ -369,7 +369,7 @@ test('STL-Topologie erkennt einen geschlossenen 10-mm-Würfel mit korrektem Volu
 test('STL-Topologie meldet offene Dreiecksnetze, blockiert sie aber nicht', () => {
   const geometry = makeGeometryFromTriangles([[[0,0,0],[10,0,0],[0,10,0]]]);
   const result = stlDiagnostics.analyzeSTLGeometry(geometry);
-  assert.equal(result.isClosedManifold, false);
+  assert.equal(result.isClosedEdgeManifold, false);
   assert.equal(result.boundaryEdgeCount, 3);
   assert.equal(result.nonManifoldEdgeCount, 0);
   geometry.dispose();
@@ -379,7 +379,7 @@ test('STL-Topologie erkennt doppelte Dreiecke', () => {
   const geometry = makeGeometryFromTriangles([...cubeTriangles, cubeTriangles[0]]);
   const result = stlDiagnostics.analyzeSTLGeometry(geometry);
   assert.equal(result.duplicateTriangleCount, 1);
-  assert.equal(result.isClosedManifold, false);
+  assert.equal(result.isClosedEdgeManifold, false);
   geometry.dispose();
 });
 
@@ -391,7 +391,7 @@ test('STL-Topologie erkennt nicht-manifold Kanten mit mehr als zwei Flächen', (
   ]);
   const result = stlDiagnostics.analyzeSTLGeometry(geometry);
   assert.ok(result.nonManifoldEdgeCount >= 1);
-  assert.equal(result.isClosedManifold, false);
+  assert.equal(result.isClosedEdgeManifold, false);
   geometry.dispose();
 });
 
@@ -401,7 +401,7 @@ test('STL-Topologie erkennt lokal widersprüchliche Dreiecksorientierung', () =>
   const geometry = makeGeometryFromTriangles(altered);
   const result = stlDiagnostics.analyzeSTLGeometry(geometry);
   assert.ok(result.inconsistentEdgeCount > 0);
-  assert.equal(result.isClosedManifold, false);
+  assert.equal(result.isClosedEdgeManifold, false);
   geometry.dispose();
 });
 
@@ -409,7 +409,7 @@ test('STL-Topologie erkennt global umgekehrte Orientierung eines geschlossenen K
   const reversed = cubeTriangles.map(triangle => [triangle[0], triangle[2], triangle[1]]);
   const geometry = makeGeometryFromTriangles(reversed);
   const result = stlDiagnostics.analyzeSTLGeometry(geometry);
-  assert.equal(result.isClosedManifold, true);
+  assert.equal(result.isClosedEdgeManifold, true);
   assert.equal(result.invertedWinding, true);
   assert.ok(result.signedVolumeMM3 < 0);
   geometry.dispose();
