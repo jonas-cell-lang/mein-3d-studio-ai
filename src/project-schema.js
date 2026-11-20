@@ -87,6 +87,25 @@
     }
   }
 
+  const MAX_PROJECT_GEOMETRY_VALUES = 15000000;
+
+  function validateProjectGeometryBudget(objects) {
+    let totalValues = 0;
+    function visit(object) {
+      if (!object || typeof object !== 'object' || Array.isArray(object)) return;
+      if (object.geometry != null) {
+        const geometry = validateSerializedGeometry(object.geometry);
+        for (const attribute of Object.values(geometry.attributes)) totalValues += attribute.array.length;
+        if (geometry.index) totalValues += geometry.index.array.length;
+        if (totalValues > MAX_PROJECT_GEOMETRY_VALUES) {
+          throw new Error('Das Projekt enthält insgesamt zu viele Geometriedaten für einen sicheren Import.');
+        }
+      }
+      if (Array.isArray(object.unionParts)) object.unionParts.forEach(visit);
+    }
+    objects.forEach(visit);
+  }
+
   function validateProjectEnvelope(project) {
     if (!project || typeof project !== 'object' || Array.isArray(project)) {
       throw new Error('Projektdatei ist kein gültiges JSON-Objekt.');
@@ -104,6 +123,7 @@
       throw new Error('Die Projektdatei enthält eine ungültige Objektliste (maximal 100 Objekte).');
     }
     project.objects.forEach(validateContourFrameMetadata);
+    validateProjectGeometryBudget(project.objects);
     return project;
   }
 
