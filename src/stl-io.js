@@ -40,6 +40,11 @@
     let collapsedTriangleCount = 0;
     let degenerateTriangleCount = 0;
     let signedVolumeMM3 = 0;
+    // Ein fester lokaler Bezugspunkt verhindert Auslöschung bei weit vom
+    // Ursprung entfernten Modellen mit kleinen Abmessungen.
+    const volumeOrigin = [
+      position.getX(0), position.getY(0), position.getZ(0)
+    ];
     const cellKey = (x, y, z) => x + ',' + y + ',' + z;
     function vertexId(x, y, z) {
       const cx = Math.floor(x / weldToleranceMM);
@@ -100,7 +105,9 @@
       addVertexLink(ids[0], ids[1], ids[2]);
       addVertexLink(ids[1], ids[2], ids[0]);
       addVertexLink(ids[2], ids[0], ids[1]);
-      const a = points[0], b = points[1], d = points[2];
+      const a = points[0].map((value, axis) => value - volumeOrigin[axis]);
+      const b = points[1].map((value, axis) => value - volumeOrigin[axis]);
+      const d = points[2].map((value, axis) => value - volumeOrigin[axis]);
       signedVolumeMM3 += (
         a[0] * (b[1] * d[2] - b[2] * d[1]) +
         a[1] * (b[2] * d[0] - b[0] * d[2]) +
