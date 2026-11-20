@@ -456,3 +456,10 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Das Punktbudget begrenzt die quadratischen Segmentvergleiche bei manipulierten Projektdateien und verhindert unbeschränkt grosse Import-Prüfaufwände.
 - Direkte Modulprüfung auf dem aktuellen Code-Stand: gültige Mehrfachlöcher akzeptiert; Selbstüberschneidung, Nullfläche, Randberührung, Aussenkontur-Kreuzung, Überlappung, Verschachtelung und fehlende Aussenkontur abgewiesen; Punktbudget knapp darunter akzeptiert und darüber abgewiesen.
 - GitHub Actions hat für diese API-Commits bislang keine zugehörigen Runs bzw. Statuschecks zurückgegeben. Die Modulprüfungen sind daher kein Ersatz für einen bestätigten CI-Lauf.
+
+
+### 6.35 Eindeutige Quellprofile für gespeicherte Loft-Features (20.11.2026)
+- Das Projekt-Schema prüft zusätzlich, dass Aussenprofile und alle gepaarten Innenprofile eines Loft-Features unterschiedliche UUIDs besitzen.
+- Doppelte Verweise auf dasselbe Quellobjekt werden abgewiesen, da sie die Profilpaarung und spätere Aktualisierung mehrdeutig machen würden.
+- Die Existenz der Quellobjekte wird weiterhin nicht erzwungen: Ein Benutzer darf Quellskizzen löschen; das Loft bleibt dann als Geometrie erhalten, kann aber nicht mehr aus fehlenden Quellen aktualisiert werden.
+- Unit-Tests prüfen gültige eindeutige Zuordnungen sowie wiederverwendete Aussen- und Innenprofil-IDs.
