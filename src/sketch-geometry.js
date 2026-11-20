@@ -69,5 +69,102 @@
     return geometry;
   }
 
-  return Object.freeze({ createExtrusionGeometry, createParametricProfile, addRoundedRectPath });
+
+  function resampleClosedOutline(points, count = 64, minimumPerimeter = 1e-8) {
+    if (!Array.isArray(points) || points.length < 3 || !Number.isInteger(count) || count < 3) {
+      throw new TypeError('Für ein Loft wird eine geschlossene Kontur mit mindestens drei Punkten benötigt.');
+    }
+    const pts = points.map(point => {
+      if (!Array.isArray(point) || point.length < 2 || !Number.isFinite(point[0]) || !Number.isFinite(point[1])) {
+        throw new TypeError('Die Loft-Kontur enthält ungültige Punkte.');
+      }
+      return new THREE.Vector2(point[0], point[1]);
+    });
+    const lengths = [];
+    let total = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const length = pts[i].distanceTo(pts[(i + 1) % pts.length]);
+      lengths.push(length);
+      total += length;
+    }
+    if (!Number.isFinite(total) || total < minimumPerimeter) throw new Error('Profilkontur ist ungültig.');
+    const result = [];
+    for (let k = 0; k < count; k++) {
+      let target = total * k / count, segment = 0;
+      while (segment < lengths.length - 1 && target > lengths[segment]) {
+        target -= lengths[segment];
+        segment++;
+      }
+      const a = pts[segment], b = pts[(segment + 1) % pts.length];
+      const t = lengths[segment] > 0 ? target / lengths[segment] : 0;
+      result.push(a.clone().lerp(b, t));
+    }
+    return result;
+  }
+
+  function appendTriangle(vertices, a, b, c) {
+    vertices.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
+  }
+
+  function createLoftGeometry(ringA, ringB) {
+    if (!Array.isArray(ringA) || !Array.isArray(ringB) || ringA.length < 3 || ringA.length !== ringB.length ||
+        !ringA.every(point => point && Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z)) ||
+        !ringB.every(point => point && Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z))) {
+      throw new TypeError('Loft-Ringe müssen gleich viele gültige 3D-Punkte enthalten.');
+    }
+    const vertices = [];
+    for (let i = 0; i < ringA.length; i++) {
+      const next = (i + 1) % ringA.length;
+      appendTriangle(vertices, ringA[i], ringA[next], ringB[i]);
+      appendTriangle(vertices, ringA[next], ringB[next], ringB[i]);
+    }
+    const cap = (ring, reverse) => {
+      const contour = ring.map(point => new THREE.Vector2(point.x, point.y));
+      const triangles = THREE.ShapeUtils.triangulateShape(contour, []);
+      triangles.forEach(triangle => {
+        const ids = reverse ? [triangle[2], triangle[1], triangle[0]] : triangle;
+        appendTriangle(vertices, ring[ids[0]], ring[ids[1]], ring[ids[2]]);
+      });
+    };
+    cap(ringA, true);
+    cap(ringB, false);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    if (!geometry.boundingBox || geometry.boundingBox.isEmpty()) {
+      geometry.dispose();
+      throw new Error('Loft konnte keine gültige Geometrie erzeugen.');
+    }
+    return geometry;
+  }
+
+  function createSweepGeometry(outline, pathPoints, options = {}) {
+    if (!Array.isArray(outline) || outline.length < 3 ||
+        !outline.every(point => Array.isArray(point) && Number.isFinite(point[0]) && Number.isFinite(point[1])) ||
+        !Array.isArray(pathPoints) || pathPoints.length < 2 ||
+        !pathPoints.every(point => point && Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z))) {
+      throw new TypeError('Sweep benötigt ein gültiges geschlossenes Profil und mindestens zwei 3D-Pfadpunkte.');
+    }
+    const shape = new THREE.Shape();
+    shape.moveTo(outline[0][0], outline[0][1]);
+    outline.slice(1).forEach(point => shape.lineTo(point[0], point[1]));
+    shape.closePath();
+    const curve = new THREE.CatmullRomCurve3(pathPoints);
+    const geometry = createExtrusionGeometry(shape, {
+      steps: Math.max(48, pathPoints.length * 16),
+      bevelEnabled: false,
+      extrudePath: curve,
+      curveSegments: 24,
+      ...options
+    });
+    if (!geometry.boundingBox || geometry.boundingBox.isEmpty()) {
+      geometry.dispose();
+      throw new Error('Sweep konnte keine gültige Geometrie erzeugen.');
+    }
+    return geometry;
+  }
+
+  return Object.freeze({ createExtrusionGeometry, createParametricProfile, addRoundedRectPath, resampleClosedOutline, createLoftGeometry, createSweepGeometry });
 });
