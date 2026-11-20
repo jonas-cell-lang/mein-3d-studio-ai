@@ -571,3 +571,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Eine Differenz mit negativ skalierter/gespiegelter Werkzeuggeometrie muss das analytische Restvolumen 4 und positive Aussenorientierung liefern.
 - Diese Fälle erweitern die Prüfung von Fehlerbehandlung und Spiegelung. Sie ersetzen keine systematische Prüfung aller koplanaren, tangierenden und fast deckungsgleichen Flächen.
 - Tests hinzugefügt auf Commit `b7358420ec5778d3dda66f578c49a0fda9446c45`; CI-Ergebnis für diesen Commit steht noch aus.
+
+
+### 6.47 Boolesche Geometrie: Kanten-, Punkt- und tangentiale Flächenberührung (20.11.2026)
+- Ergänzt wurden Regressionstests für zwei getrennte Würfel mit reiner Kantenberührung und reiner Punktberührung bei Vereinigung.
+- Zusätzlich wird geprüft, dass eine Differenz bei bloss gemeinsamer Fläche das Volumen des Basiskörpers nicht verändert.
+- Die Tests kontrollieren signiertes Volumen und bei der tangentialen Differenz zusätzlich die Begrenzungsbox.
+- Diese Tests untersuchen degenerierte Kontaktfälle des BSP-CSG-Verfahrens. Ein bestandener Volumentest allein beweist noch keine vollständige Wasserdichtigkeit oder fehlerfreie STL-Manifold-Topologie.
+- Teständerung enthalten in Commit `6f50e30124b5171485198e2e4a003c29129a4ac0`; CI steht aus.
