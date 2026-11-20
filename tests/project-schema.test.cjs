@@ -63,6 +63,33 @@ test('Hohlrahmen-Metadaten müssen innerhalb der unterstützten CAD-Eingabeberei
   }
 });
 
+test('Loft-Metadaten mit Innenkonturen werden validiert und sind projektfähig', () => {
+  const project = validProject();
+  project.objects.push({
+    loft: {
+      sourceA: 'outer-profile-a', sourceB: 'outer-profile-b', sections: 2,
+      innerContourCount: 2,
+      sourceHoles: [
+        { a: 'hole-a1', b: 'hole-b1' },
+        { a: 'hole-a2', b: 'hole-b2' }
+      ]
+    }
+  });
+  assert.equal(schema.validateProjectEnvelope(project), project);
+
+  const invalidCount = structuredClone(project);
+  invalidCount.objects[0].loft.innerContourCount = 9;
+  assert.throws(() => schema.validateProjectEnvelope(invalidCount), /Loft-Metadaten/);
+
+  const missingPair = structuredClone(project);
+  missingPair.objects[0].loft.sourceHoles.pop();
+  assert.throws(() => schema.validateProjectEnvelope(missingPair), /Loft-Metadaten/);
+
+  const invalidReference = structuredClone(project);
+  invalidReference.objects[0].loft.sourceHoles[0].a = '../outside';
+  assert.throws(() => schema.validateProjectEnvelope(invalidReference), /Loft-Metadaten/);
+});
+
 test('falsche App-Kennung und ungültige Objektlisten werden abgelehnt', () => {
   assert.throws(() => schema.validateProjectEnvelope({ ...validProject(), app: 'Andere App' }), /keine gültige SILMO-Projektdatei/);
   assert.throws(() => schema.validateProjectEnvelope({ ...validProject(), objects: null }), /ungültige Objektliste/);
