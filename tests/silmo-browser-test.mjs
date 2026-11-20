@@ -466,6 +466,24 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   });
   await page.waitForFunction(()=>Number(window.__silmoImportRevision||0)>2,null,{timeout:5000});
   assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeBinaryImport+1,'Gültige binäre STL-Datei wurde nicht importiert');
+  const cubeFixture = readFileSync(new URL('./fixtures/stl/cube-10mm.stl', import.meta.url), 'utf8');
+  await page.locator('#stlDropZone').evaluate((zone,stl)=>{
+    const transfer=new DataTransfer();
+    transfer.items.add(new File([stl],'cube-10mm.stl',{type:'model/stl'}));
+    zone.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+    zone.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+  },cubeFixture);
+  await page.waitForFunction(()=>Number(window.__silmoImportRevision||0)>3&&/Topologie: geschlossenes Netz/.test(document.querySelector('#status')?.textContent||''),null,{timeout:5000});
+  assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeBinaryImport+2,'Reale ASCII-STL-Würfelreferenz wurde nicht importiert');
+  const openFixture = readFileSync(new URL('./fixtures/stl/open-triangle.stl', import.meta.url), 'utf8');
+  await page.locator('#stlDropZone').evaluate((zone,stl)=>{
+    const transfer=new DataTransfer();
+    transfer.items.add(new File([stl],'open-triangle.stl',{type:'model/stl'}));
+    zone.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+    zone.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+  },openFixture);
+  await page.waitForFunction(()=>Number(window.__silmoImportRevision||0)>4&&/3 offene Kanten/.test(document.querySelector('#status')?.textContent||''),null,{timeout:5000});
+  assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeBinaryImport+3,'Offene STL-Referenz wurde nicht importiert oder ihre Topologiewarnung fehlt');
   await page.waitForFunction(()=>document.querySelector('#tutorialNext')?.disabled===false,null,{timeout:5000});
   assert.match(await page.locator('#tutorialFeedback').innerText(),/Erfolgskontrolle bestanden/,'Aufgabe 26 erkennt Speichern, Export und STL-Import nicht');
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(0)),true,'Tutorial kann nach dem Aufgabe-13-Test nicht zur ersten Aufgabe zurückkehren');
