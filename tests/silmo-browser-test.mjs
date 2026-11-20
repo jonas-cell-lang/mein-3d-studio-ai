@@ -1179,6 +1179,38 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(restoredHollowLoft.some(item=>item.innerContourCount===1&&item.sourceHoleCount===1&&item.sourceReferencesResolve),
     'Projektimport stellt die Hohl-Loft-Zuordnung oder Quellprofil-IDs nicht wieder her');
   await hollowLoftRoundTripPage.close();
+
+  // Eine einzelne Freiform-Skizze erhält echte Innenlöcher samt editierbaren Konturdaten.
+  const sketchHolePage=await browser.newPage({viewport:{width:1280,height:900},acceptDownloads:true});
+  await sketchHolePage.goto(page.url(),{waitUntil:'domcontentloaded'});
+  await sketchHolePage.waitForSelector('#viewport canvas',{timeout:20000});
+  const sketchHoleResult=await sketchHolePage.evaluate(()=>window.__silmoImageStudioCreateFromPoints(
+    [[0,0],[40,0],[40,30],[0,30]],10,
+    [[[10,10],[10,20],[20,20],[20,10]]]
+  ));
+  assert.equal(sketchHoleResult.ok,true,'Freiform mit Innenloch konnte nicht erstellt werden: '+(sketchHoleResult.message||''));
+  const sketchHoleSnapshot=await sketchHolePage.evaluate(()=>window.__silmoSketchHoleMetadataSnapshot());
+  assert.ok(sketchHoleSnapshot.some(item=>item.holeCount===1&&item.outerPointCount>=3),'Einzelne Skizze speichert die Innenkontur nicht');
+  const invalidSketchHole=await sketchHolePage.evaluate(()=>window.__silmoImageStudioCreateFromPoints(
+    [[0,0],[40,0],[40,30],[0,30]],10,
+    [[[50,50],[50,55],[55,55],[55,50]]]
+  ));
+  assert.equal(invalidSketchHole.ok,false,'Innenloch ausserhalb der Aussenkontur wurde akzeptiert');
+  await sketchHolePage.locator('[data-tab="print"]').click();
+  const sketchHoleDownloadPromise=sketchHolePage.waitForEvent('download',{timeout:10000});
+  await sketchHolePage.locator('#saveProjectButton').click();
+  const sketchHoleDownload=await sketchHoleDownloadPromise;
+  const sketchHolePath=await sketchHoleDownload.path();
+  const sketchHoleProject=JSON.parse(readFileSync(sketchHolePath,'utf8'));
+  assert.ok(sketchHoleProject.objects.some(item=>item.sketch?.type==='freeform2d'&&item.sketch.holes?.length===1),
+    'Projektdatei speichert die editierbaren Innenkonturen nicht');
+  const sketchHoleReload=await browser.newPage({viewport:{width:1280,height:900}});
+  await sketchHoleReload.goto(page.url(),{waitUntil:'domcontentloaded'});
+  await sketchHoleReload.waitForSelector('#viewport canvas',{timeout:20000});
+  await sketchHoleReload.locator('#projectFileInput').setInputFiles(sketchHolePath);
+  await sketchHoleReload.waitForFunction(()=>window.__silmoSketchHoleMetadataSnapshot?.().some(item=>item.holeCount===1),null,{timeout:15000});
+  await sketchHoleReload.close();
+  await sketchHolePage.close();
   await page.locator('[data-tab="draw"]').click();
 
   // SILMO Image Studio Phase 1: separater Arbeitsbereich, Import, Rotation,
