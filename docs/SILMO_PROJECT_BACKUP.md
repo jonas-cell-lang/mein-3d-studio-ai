@@ -1014,3 +1014,11 @@ Vor Beginn einer neuen Aufgabe:
 - Betroffen sind Punktaufnahme, Mindestlinienlänge, Zeichenpunktabstand, Vorschauversatz, Klickkonturabschluss, Klickkonturpunktabstand, minimale Straightening-Bewegung, RDP-Degenerationsnenner und Mindestfläche einer Freiform.
 - Alle numerischen Werte bleiben unverändert; Aufrufstellen verwenden jetzt die zentrale API. Die Unit-Tests sichern die Werte.
 - Spezifikation und Masterplan wurden ergänzt. Der neue Stand benötigt noch den automatischen Code- und Browser-Regressionslauf.
+
+
+## Ergänzung – Bild-Studio-Druckbarkeitsgrenzen am 20.11.2026
+
+- Die Bildkomponenten-Mindestgrösse (dimensionsloser Bildflächenanteil), die Mindestfläche real abgebildeter Konturen (mm²) und die Mindestwandstärke (mm) wurden in `src/tolerances.js` benannt und in `src/image-studio.js` auf die zentrale API umgestellt.
+- Die bisherigen Werte 0,000025, 0,01 mm² und 0,8 mm bleiben unverändert. Unit-Tests sichern die Werte.
+- Die gemischte Flächenschwelle in `polygonIsSimple` wurde bewusst nicht migriert: die Funktion wird in mehreren Koordinatenräumen genutzt und muss zuerst sauber getrennt werden.
+- Der neue Stand benötigt noch den automatischen Code- und Browser-Regressionsnachweis.
