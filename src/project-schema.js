@@ -87,6 +87,20 @@
     }
   }
 
+  function validateLoftMetadata(object) {
+    if (!object || typeof object !== 'object' || Array.isArray(object) || object.loft == null) return;
+    const loft = object.loft;
+    const validId = value => typeof value === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(value);
+    if (!loft || typeof loft !== 'object' || Array.isArray(loft) ||
+        loft.sections !== 2 || !validId(loft.sourceA) || !validId(loft.sourceB) ||
+        !Number.isInteger(loft.innerContourCount) || loft.innerContourCount < 0 || loft.innerContourCount > 8 ||
+        !Array.isArray(loft.sourceHoles) || loft.sourceHoles.length !== loft.innerContourCount ||
+        !loft.sourceHoles.every(pair => pair && typeof pair === 'object' && !Array.isArray(pair) &&
+          validId(pair.a) && validId(pair.b))) {
+      throw new Error('Ungültige Loft-Metadaten oder Innenkontur-Zuordnung.');
+    }
+  }
+
   const MAX_PROJECT_GEOMETRY_VALUES = 15000000;
 
   function validateProjectGeometryBudget(objects) {
@@ -122,7 +136,7 @@
     if (!Array.isArray(project.objects) || project.objects.length > 100) {
       throw new Error('Die Projektdatei enthält eine ungültige Objektliste (maximal 100 Objekte).');
     }
-    project.objects.forEach(validateContourFrameMetadata);
+    project.objects.forEach(object => { validateContourFrameMetadata(object); validateLoftMetadata(object); });
     validateProjectGeometryBudget(project.objects);
     return project;
   }
