@@ -579,3 +579,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Tests kontrollieren signiertes Volumen und bei der tangentialen Differenz zusätzlich die Begrenzungsbox.
 - Diese Tests untersuchen degenerierte Kontaktfälle des BSP-CSG-Verfahrens. Ein bestandener Volumentest allein beweist noch keine vollständige Wasserdichtigkeit oder fehlerfreie STL-Manifold-Topologie.
 - Teständerung enthalten in Commit `6f50e30124b5171485198e2e4a003c29129a4ac0`; CI steht aus.
+
+
+### 6.48 Boolesche Geometrie: kleine Spalte und Überlappungen nahe der Toleranz (20.11.2026)
+- Ergänzt wurde ein Union-Test für zwei Würfel mit einem Spalt von 0.00005 Welteinheiten.
+- Ergänzt wurde ein Subtract-Test für eine Überlappung von 0.00005 Welteinheiten; das erwartete Restvolumen wird aus der tatsächlichen Überlappungsfläche berechnet.
+- Beide Abstände liegen oberhalb der aktuellen CSG-Geometrietoleranz von 0.00001 Welteinheiten und prüfen, ob kleine, aber unterscheidbare Abstände nicht versehentlich als koplanar behandelt werden.
+- Die Ergebnisse der automatischen CI-Prüfungen sind zum Zeitpunkt dieses Eintrags noch ausstehend.
+- Teständerung enthalten in Commit `0bdd912c6795aff7ae1e74534ba87099a2be8fad`.
