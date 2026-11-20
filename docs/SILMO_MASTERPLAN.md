@@ -448,3 +448,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Prüfung ist bewusst im Projekt-Schema implementiert und benötigt beim Import keine Three.js-Geometrieerzeugung.
 - Tests decken gültige Mehrfachlöcher sowie Selbstüberschneidung, Nullfläche, doppelte Nachbarpunkte, fehlende Aussenkontur, ausserhalb liegende Löcher, Randberührung, Kreuzungen, Überlappung, Berührung und Verschachtelung ab.
 - Die Geometrie- und Browserregressionen bleiben zusätzlich erforderlich; Schema-Prüfung allein ersetzt keine geometrische Druckbarkeitsprüfung.
+
+
+### 6.34 Sichere Laufzeitgrenzen für die Skizzen-Topologieprüfung (20.11.2026)
+- Die Topologieprüfung begrenzt die Summe aus Aussen- und Innenkonturpunkten pro Skizzenobjekt auf 5000 Punkte; zusätzlich bleiben maximal 100 Innenlöcher und 1000 Punkte pro Ring zulässig.
+- Ringpaar-Prüfungen verwenden zunächst überlappende Bounding-Boxen. Räumlich getrennte Löcher müssen dadurch nicht mit jedem einzelnen Segment des anderen Rings verglichen werden.
+- Das Punktbudget begrenzt die quadratischen Segmentvergleiche bei manipulierten Projektdateien und verhindert unbeschränkt grosse Import-Prüfaufwände.
+- Direkte Modulprüfung auf dem aktuellen Code-Stand: gültige Mehrfachlöcher akzeptiert; Selbstüberschneidung, Nullfläche, Randberührung, Aussenkontur-Kreuzung, Überlappung, Verschachtelung und fehlende Aussenkontur abgewiesen; Punktbudget knapp darunter akzeptiert und darüber abgewiesen.
+- GitHub Actions hat für diese API-Commits bislang keine zugehörigen Runs bzw. Statuschecks zurückgegeben. Die Modulprüfungen sind daher kein Ersatz für einen bestätigten CI-Lauf.
