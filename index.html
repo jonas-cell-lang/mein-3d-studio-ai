@@ -2249,7 +2249,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const u=cross(new THREE.Vector2(q2.x-q1.x,q2.y-q1.y),e2)/den;
         hit=q1.clone().addScaledVector(e1,u);
       }
-      if(hit.distanceTo(p)>offset*8+0.02)throw new Error('Die Kontur ist für diese Wandstärke zu eng. Verringere die Wandstärke.');
+      if(hit.distanceTo(p)>offset*window.SILMOTolerances.CONTOUR_FRAME_MITER_LIMIT_FACTOR+window.SILMOTolerances.CONTOUR_FRAME_MITER_ALLOWANCE_WORLD_UNITS)throw new Error('Die Kontur ist für diese Wandstärke zu eng. Verringere die Wandstärke.');
       inner.push(hit);
     }
     const innerArea=signedArea(inner);
