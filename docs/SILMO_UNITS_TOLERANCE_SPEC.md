@@ -75,6 +75,20 @@ Die folgenden Werte wurden direkt im aktuellen `index.html` geprüft. Sie werden
 - Vor jeder Änderung muss die jeweilige Schwelle mit positiven und negativen Grenzfällen im Browser oder als mathematischer Unit-Test abgesichert sein.
 
 
+### 3.2 Bildkontur- und Lernkurs-Schwellen
+
+| API-Konstante | Wert | Dimension / Zweck |
+|---|---:|---|
+| `IMAGE_POLYGON_RAY_DENOMINATOR_FALLBACK_PX` | `1e-12` | Pixel-Differenz; Fallback bei nahezu horizontaler Polygonkante im Punkt-in-Polygon-Test |
+| `IMAGE_SEGMENT_BOUNDS_EPSILON_PX` | `1e-8` | Pixel; Einschlussrand für Punkt-auf-Segment-Prüfung |
+| `IMAGE_SEGMENT_ORIENTATION_EPSILON_PX2` | `1e-8` | Pixel²; Kollinearitätsgrenze des 2D-Kreuzprodukts |
+| `IMAGE_POLYGON_MIN_EDGE_PX` | `1e-5` | Pixel; Mindestlänge einer Polygonkante |
+| `IMAGE_POLYGON_MIN_NONADJACENT_GAP_PX` | `1e-7` | Pixel; Mindestabstand nicht benachbarter Polygonsegmente |
+| `IMAGE_MIN_WALL_COMPARISON_EPSILON_MM` | `1e-6` | Millimeter; Vergleichsrand bei der Prüfung der Mindestwand zwischen Konturen |
+| `TUTORIAL_POSITION_CHANGE_WORLD_UNITS` | `1e-5` | interne Welteinheiten; erkennt Positionsänderungen für die Lernkurs-Erfolgskontrolle |
+
+Die Bildkontur-Schwellen sind bewusst nicht als CAD-Weltkoordinaten benannt. Pixelraum, Pixel² und Millimeter bleiben getrennt. Der Lernkurswert prüft eine Interaktionsänderung und ist keine Fertigungstoleranz.
+
 ### 3.1 Weitere einzeln benannte Kontur- und Skizzenschwellen
 
 | Rastergrenzen | `GRID_BOUNDARY_EPSILON_WORLD_UNITS` | `1e-8` | interne Welteinheiten; nur Einschluss des letzten Rasterpunkts an der Bettkante |
