@@ -44,12 +44,11 @@ test('Eine neue Änderung leert den Redo-Verlauf und gibt dessen Snapshots frei'
   model.history.record();
   model.value = 1;
   assert.equal(model.history.undo(), true);
-  const redoSnapshotId = model.disposed.at(-1) === undefined ? null : model.disposed.at(-1);
+  const disposedBeforeNewChange = model.disposed.length;
 
   model.history.record();
   assert.equal(model.history.getStats().redoCount, 0);
-  assert.equal(model.disposed.length, 1);
-  assert.notEqual(redoSnapshotId, null);
+  assert.equal(model.disposed.length, disposedBeforeNewChange + 1);
 });
 
 test('Das Verlaufslimit gibt den ältesten Snapshot frei', () => {
