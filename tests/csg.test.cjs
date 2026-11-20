@@ -530,3 +530,38 @@ test('CSG-Vereinigung erzeugt ein geschlossenes, konsistent orientiertes Dreieck
     base.material.dispose(); tool.material.dispose();
   }
 });
+
+
+test('CSG-Differenz einer dünnwandigen Hohlform bleibt topologisch geschlossen', () => {
+  const base = box();
+  const innerSize = 1.9995;
+  const tool = box([0, 0, 0], [innerSize, innerSize, innerSize]);
+  const result = combineMeshes(base, tool, 'subtract');
+  try {
+    const diagnostics = analyzeAsSTL(result);
+    assert.equal(diagnostics.isClosedEdgeManifold, true,
+      'Dünne Wand muss ein geschlossenes Netz ergeben: ' + JSON.stringify(diagnostics));
+    assert.equal(diagnostics.invertedWinding, false);
+  } finally {
+    result.dispose();
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
+
+test('CSG-Differenz eines schmalen durchgehenden Schlitzes bleibt topologisch geschlossen', () => {
+  const base = box();
+  const slitWidth = 5e-4;
+  const tool = box([0, 0, 0], [slitWidth, 1, 1]);
+  const result = combineMeshes(base, tool, 'subtract');
+  try {
+    const diagnostics = analyzeAsSTL(result);
+    assert.equal(diagnostics.isClosedEdgeManifold, true,
+      'Schmaler Schlitz muss ein geschlossenes Netz ergeben: ' + JSON.stringify(diagnostics));
+    assert.equal(diagnostics.invertedWinding, false);
+  } finally {
+    result.dispose();
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
