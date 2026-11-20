@@ -611,3 +611,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die CSG-Ausgabe gruppiert jetzt kollineare Polygonkanten und fügt gemeinsame Zwischenpunkte vor der Triangulierung in die Polygonränder ein. Die Polygone werden anschliessend über einen Mittelpunkt trianguliert.
 - Nach dieser Änderung bestehen alle 110 Unit-Tests einschliesslich der beiden geschlossenen CSG-Topologieprüfungen.
 - Code-Check-Commit `dcd6863410dbb1a1cac3af50f85be8a7db35709a`: 110/110 Tests erfolgreich. Browser- und OCCT-Workflows sind separat noch zu bestätigen.
+
+
+### 6.52 Topologie-Grenzfälle: dünne Wand und schmaler Schlitz (20.11.2026)
+- Ergänzend zu den allgemeinen CSG-Manifold-Tests werden nun auch eine dünne Hohlwand (Innenmass 1.9995 bei Aussenmass 2) und ein schmaler durchgehender Schlitz (Breite 0.0005) mit der vorhandenen STL-Topologieanalyse geprüft.
+- Für beide Ergebnisse wird ein geschlossenes Edge-Manifold-Netz und keine umgekehrte Gesamtorientierung verlangt.
+- Code-Checks auf Commit `960cf8600e59f5265a301facac83653df1309f8f`: 112/112 Unit-Tests erfolgreich.
+- Isolierter OCCT-WebWorker-Prototyp auf demselben Commit: erfolgreich.
+- Browser-Interaktionstest auf diesem Commit: beim letzten Statusabruf noch in Bearbeitung; daher nicht als bestanden dokumentiert.
