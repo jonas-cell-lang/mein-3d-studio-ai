@@ -1121,9 +1121,9 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(pointEditTest.widthMM>21.9&&pointEditTest.widthMM<22.1,'Geometrie wurde nach Punktänderung nicht neu aufgebaut');
   assert.ok(pointEditTest.vertices>0,'Punktbearbeitung erzeugt keine 3D-Geometrie');
   const proCadTest=await page.evaluate(()=>window.__silmoTestRunProCad());
-  for (const key of ['dimensionOK','filletOK','chamferOK','loftOK','sweepOK']) assert.equal(proCadTest[key],true,'Professionelle CAD-Funktion '+key+' funktioniert nicht');
+  for (const key of ['dimensionOK','filletOK','chamferOK','loftOK','hollowLoftOK','sweepOK']) assert.equal(proCadTest[key],true,'Professionelle CAD-Funktion '+key+' funktioniert nicht');
   for (const [axis,expected] of Object.entries({x:30,y:25,z:4})) assert.ok(Math.abs(proCadTest.dimensionsMM[axis]-expected)<0.01,'Skizzen-Extrusion hat falsche '+axis.toUpperCase()+'-Abmessung: '+proCadTest.dimensionsMM[axis]+' mm statt '+expected+' mm');
-  assert.ok(proCadTest.loftVertices>0&&proCadTest.sweepVertices>0,'Loft/Sweep erzeugt keine Geometrie');
+  assert.ok(proCadTest.loftVertices>0&&proCadTest.hollowLoftVertices>0&&proCadTest.sweepVertices>0,'Loft/Hohl-Loft/Sweep erzeugt keine Geometrie');
   const loftTopologyTest = await page.evaluate(() => {
     const makeRing = (radius, z, reverse = false) => {
       const points = [
