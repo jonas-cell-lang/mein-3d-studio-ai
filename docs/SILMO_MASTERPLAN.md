@@ -253,6 +253,7 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - Erfasst werden Median der Snapshot-Aufnahme, Undo-/Redo-Zeit sowie Node-Speicherwerte vor Snapshots, nach Snapshots und nach Freigabe/GC.
 - Der Benchmark läuft als `npm run benchmark:history` in den Code-Checks.
 - Die Messung ist zunächst informativ und verwendet keine maschinenabhängigen Pass/Fail-Grenzwerte. Sie ist eine isolierte History-Baseline, keine vollständige Browser-/CAD-Leistungsmessung.
+- Nach dem Leeren der History werden mehrere GC-/Event-Loop-Durchläufe abgewartet; zusätzlich wird geprüft und protokolliert, dass Undo-/Redo-Stacks danach leer sind.
 - Offene nächste Schritte: grössere reale Meshes, Browser-RAM/Frame-Zeit, Projektöffnung, Boolesche Operationen und interaktive Bildkonturerkennung messen.
 
 Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Paket wird in die Produktionsanwendung eingebunden, bevor die offenen technischen und rechtlichen Abnahmepunkte geklärt sind.
