@@ -151,3 +151,30 @@ test('Sweep lehnt offene oder ungültige Eingaben kontrolliert ab', () => {
   assert.throws(() => sketchGeometry.createSweepGeometry([[0, 0], [1, 0]], [new THREE.Vector3(), new THREE.Vector3(0, 0, 1)]), /gültiges geschlossenes Profil/);
   assert.throws(() => sketchGeometry.createSweepGeometry([[0, 0], [1, 0], [0, 1]], [new THREE.Vector3()]), /mindestens zwei/);
 });
+
+test('CAD-Pfadfactory erhält Linien- und Kurvensemantik', () => {
+  const line = sketchGeometry.createPathCurve([[0, 0, 0], [1, 9, 0], [3, 0, 0]], 'line2d');
+  assert.ok(Math.abs(line.getLength() - 3) < 1e-9);
+  const curve = sketchGeometry.createPathCurve([[0, 0, 0], [1, 1, 0], [2, 0, 0]], 'curve2d');
+  assert.ok(curve.getLength() > 2);
+  assert.throws(() => sketchGeometry.createPathCurve([[0, 0, 0]], 'line2d'), /mindestens zwei/);
+});
+
+test('CAD-Pfadfactory erzeugt ein begrenztes Rohr mit korrektem Radius', () => {
+  const result = sketchGeometry.createPathTubeGeometry([[0, 0, 0], [0, 0, 3]], 'line2d', 0.25, 24, 12);
+  try {
+    const size = result.geometry.boundingBox.getSize(new THREE.Vector3());
+    assert.ok(Math.abs(size.x - 0.5) < 1e-5);
+    assert.ok(Math.abs(size.y - 0.5) < 1e-5);
+    assert.ok(Math.abs(size.z - 3) < 1e-5);
+    assert.ok(Math.abs(result.curve.getLength() - 3) < 1e-9);
+    assert.ok(result.geometry.attributes.normal);
+  } finally {
+    result.geometry.dispose();
+  }
+});
+
+test('CAD-Pfadfactory lehnt ungültige Rohrparameter ab', () => {
+  assert.throws(() => sketchGeometry.createPathTubeGeometry([[0, 0, 0], [0, 0, 1]], 'line2d', 0, 24), /gültig und positiv/);
+  assert.throws(() => sketchGeometry.createPathTubeGeometry([[0, 0, 0], [0, 0, 1]], 'line2d', 1, 24, 2), /gültig und positiv/);
+});
