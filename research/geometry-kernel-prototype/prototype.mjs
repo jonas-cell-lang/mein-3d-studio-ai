@@ -17,6 +17,9 @@ const time = async (name, fn) => {
   timings[name] = Number((performance.now() - t0).toFixed(3));
   return result;
 };
+const solidCount = (shape) => kernel.getShapeType(shape) === "solid"
+  ? 1
+  : kernel.subShapeCount(shape, "solid");
 
 try {
   const box = await time("box", () => kernel.makeBox(40, 30, 20));
@@ -53,13 +56,8 @@ try {
   }
   closeTo(kernel.getVolume(twelveHolePlate), 6000 - 60 * Math.PI,
     "40x30x5 plate after twelve sequential radius-1 through-holes");
-  console.log("Boolean solid diagnostics:", JSON.stringify({
-    singleCut: kernel.isSolid(drilled),
-    fourHolePlate: kernel.isSolid(fourHolePlate),
-    twelveHolePlate: kernel.isSolid(twelveHolePlate)
-  }));
-  assert.equal(kernel.isSolid(twelveHolePlate), true,
-    "repeated boolean cuts must preserve a solid");
+  assert.equal(solidCount(twelveHolePlate), 1,
+    "repeated boolean cuts must preserve exactly one solid body");
   const repeatedCutMesh = kernel.tessellate(twelveHolePlate);
   assert.ok(repeatedCutMesh.triangleCount > 0,
     "repeated boolean result must remain tessellatable");
@@ -70,8 +68,8 @@ try {
   const thinPlateWithHole = await time("thin-wall-cut", () => kernel.cut(thinPlate, thinPlateCutter));
   closeTo(kernel.getVolume(thinPlateWithHole), 40 * 30 * 1.2 - Math.PI * 0.25 * 1.2,
     "1.2 mm thin plate with radius-0.5 through-hole");
-  assert.equal(kernel.isSolid(thinPlateWithHole), true,
-    "thin-plate boolean result must remain a solid");
+  assert.equal(solidCount(thinPlateWithHole), 1,
+    "thin-plate boolean result must contain exactly one solid body");
 
   const filletBase = kernel.makeBox(20, 20, 20);
   const edges = kernel.getSubShapes(filletBase, "edge");
@@ -120,6 +118,7 @@ try {
       "plate with four through-holes",
       "twelve sequential through-hole booleans with analytic volume and tessellation",
       "thin-plate through-hole with analytic volume",
+      "boolean results retain one solid body, including compound-root results",
       "fillet and topological sub-shape queries",
       "mesh tessellation",
       "STEP export/import round trip",
