@@ -78,6 +78,64 @@ assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.seria
 assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.restoreObjectForUnion), 'function', 'Union-Wiederherstellung ist nicht verfügbar');
 assert.equal(await page.evaluate(() => typeof window.SILMOProjectIO?.createProjectIO), 'function', 'Projektdatei-I/O-Modul ist nicht verfügbar');
 assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), 'function', 'BSP-CSG-Modul ist nicht verfügbar');
+
+  // Reale Browser-Runtime: grosses Mesh im Projektformat serialisieren und wiederherstellen.
+  // Die Laufzeit wird protokolliert, aber nicht mit maschinenabhängigen Grenzwerten bewertet.
+  const browserGeometryRoundtrip = await page.evaluate(() => {
+    const vertexCount = 24999;
+    const positions = new Float32Array(vertexCount * 3);
+    const normals = new Float32Array(vertexCount * 3);
+    const uvs = new Float32Array(vertexCount * 2);
+    const indices = new Uint32Array(vertexCount);
+    for (let i = 0; i < vertexCount; i++) {
+      const angle = (i / vertexCount) * Math.PI * 2;
+      const radius = 10 + (i % 97) * 0.01;
+      positions[i * 3] = Math.cos(angle) * radius;
+      positions[i * 3 + 1] = Math.sin(angle) * radius;
+      positions[i * 3 + 2] = (i % 251) * 0.02;
+      normals[i * 3] = Math.cos(angle);
+      normals[i * 3 + 1] = Math.sin(angle);
+      uvs[i * 2] = i / vertexCount;
+      uvs[i * 2 + 1] = (i % 127) / 126;
+      indices[i] = i;
+    }
+    const source = new THREE.BufferGeometry();
+    source.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    source.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    source.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    source.setIndex(new THREE.BufferAttribute(indices, 1));
+    const start = performance.now();
+    const serialized = window.SILMOProjectGeometry.serializeGeometry(source);
+    const serializedAt = performance.now();
+    const restored = window.SILMOProjectGeometry.restoreGeometry(serialized);
+    const restoredAt = performance.now();
+    const exact = (actual, expected) => actual.length === expected.length &&
+      actual.every((value, index) => value === expected[index]);
+    const result = {
+      vertexCount: restored.attributes.position.count,
+      indexCount: restored.index.count,
+      positionsExact: exact(restored.attributes.position.array, positions),
+      normalsExact: exact(restored.attributes.normal.array, normals),
+      uvsExact: exact(restored.attributes.uv.array, uvs),
+      indicesExact: exact(restored.index.array, indices),
+      hasFiniteBounds: Boolean(restored.boundingBox && restored.boundingSphere &&
+        Number.isFinite(restored.boundingSphere.radius) && restored.boundingSphere.radius > 0),
+      serializeMs: Number((serializedAt - start).toFixed(2)),
+      restoreMs: Number((restoredAt - serializedAt).toFixed(2))
+    };
+    source.dispose();
+    restored.dispose();
+    return result;
+  });
+  assert.equal(browserGeometryRoundtrip.vertexCount, 24999, 'Browser-Roundtrip verliert Mesh-Vertices');
+  assert.equal(browserGeometryRoundtrip.indexCount, 24999, 'Browser-Roundtrip verliert Mesh-Indizes');
+  assert.equal(browserGeometryRoundtrip.positionsExact, true, 'Browser-Roundtrip verändert Positionen');
+  assert.equal(browserGeometryRoundtrip.normalsExact, true, 'Browser-Roundtrip verändert Normalen');
+  assert.equal(browserGeometryRoundtrip.uvsExact, true, 'Browser-Roundtrip verändert UV-Koordinaten');
+  assert.equal(browserGeometryRoundtrip.indicesExact, true, 'Browser-Roundtrip verändert Indizes');
+  assert.equal(browserGeometryRoundtrip.hasFiniteBounds, true, 'Browser-Roundtrip erzeugt ungültige Begrenzungen');
+  console.log('SILMO browser geometry roundtrip:', JSON.stringify(browserGeometryRoundtrip));
+
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
