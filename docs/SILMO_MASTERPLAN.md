@@ -514,3 +514,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Der neue Regressionstest ergänzt die vorhandenen Prüfungen für gültige konkave Konturen, explizit geschlossene Ringe, Nullkanten, überlappende Nachbarkanten und Selbstüberschneidungen.
 - Auf Commit `7f9e0e1b6f36303ff3c6ae65479782d4e6378876` bestanden alle 90/90 Unit-Tests. Code Checks Run 44784501133 waren erfolgreich; Syntax-, Manifest-/HTML-ID-, History-Benchmark- und lokaler Pages-Paketcheck ebenfalls erfolgreich.
 - Browser-Interaktion und isolierter OCCT-/WebWorker-Prototyp waren unmittelbar zuvor auf dem unveränderten Laufzeitcode-Stand `da469d13f60f75583a1fcd6be9ff66ddc977ce6d` erfolgreich (Runs 44783707413 und 44783707750). Der neue Commit ändert nur Regressionstest und Dokumentation, nicht den Anwendungscode.
+
+
+### 6.41 Loft-Kontur-Abtastung: Eingabegrenzen und Nullkanten (20.11.2026)
+- `resampleClosedOutline` begrenzt die Kontur auf maximal 10'000 Punkte und die erzeugte Abtastung auf maximal 10'000 Samples, damit fehlerhafte Aufrufparameter keine unkontrolliert grossen Ergebnisarrays anfordern.
+- Die Mindest-Umfangstoleranz muss endlich und positiv sein.
+- Explizit wiederholte Schluss-Punkte werden normalisiert; Nullkanten innerhalb der Kontur werden kontrolliert abgewiesen.
+- Die Segmentposition wird während der gleichmässigen Abtastung fortlaufend weitergeführt, statt für jeden Samplepunkt erneut bei Segment 0 zu beginnen.
+- Regressionstests decken die normale Abtastung, explizit geschlossene Konturen, Nullkanten sowie ungültige und zu grosse Abtastparameter ab. Die CI-Ergebnisse für die neuen Commits sind noch abzuwarten.
