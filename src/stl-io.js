@@ -38,7 +38,7 @@
           const position = geometry && geometry.attributes && geometry.attributes.position;
           if (!position || position.itemSize !== 3 || position.count < 3 ||
               position.array.length % 3 !== 0 ||
-              !Array.from(position.array).every(Number.isFinite)) {
+              !position.array.every(Number.isFinite)) {
             throw new Error('Die STL-Datei enthält keine gültigen 3D-Punkte.');
           }
           geometry.computeVertexNormals();
