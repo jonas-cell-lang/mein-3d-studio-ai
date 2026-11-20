@@ -912,3 +912,13 @@ Vor Beginn einer neuen Aufgabe:
 - Weitere bestehende Schwellen für Rastergrenzen, Gruppenrotation, Profilquellabmessungen, Profil-Schliessung und Strahl-/Skizzenebenen-Berechnung wurden einzeln benannt und durch Unit-Tests abgesichert; die Zahlenwerte wurden nicht verändert.
 - Die folgenden Änderungen müssen nach dem letzten Toleranz-Audit erneut durch Code- und Browser-CI laufen.
 - Keine Änderung an `main`, kein Live-Deployment, keine kostenpflichtigen Dienste; Kostenlimit CHF 0.00.
+
+
+## Ergänzung – CI-Nachweis und Bildkontur-Audit am 20.11.2026
+
+- Auf Commit `ef35d6f5fa8b9409fd8a271d0e9baa5d89a9ef7c` waren sowohl die Code-Checks als auch die vollständige Playwright-Browser-Regression erfolgreich.
+- Die Code-Checks führten `node --test tests/*.test.cjs`, Inline-JavaScript-Syntaxprüfung, Manifest-/HTML-ID-Prüfung und lokalen Pages-Paket-Test aus.
+- Die Browser-Regression startete SILMO mit lokaler Three.js-Runtime und führte `tests/silmo-browser-test.mjs` in Chromium erfolgreich aus.
+- Der Toleranz-Audit umfasst nun zusätzlich Pixel-/Pixel²-Schwellen der Bildkonturprüfung, Mindestwandvergleich in mm und die Positionsänderungsprüfung des Lernkurses. Die Werte sind getrennt benannt und durch Unit-Tests abgesichert; ihre bisherigen Zahlenwerte wurden nicht verändert.
+- Dokumentationsstand wurde danach auf Commit `88473a6b28d68d0dd4085800503e18eb050364c1` aktualisiert.
+- PR 69 und PR 70 bleiben Drafts. Kein Merge nach `main`, kein Live-Deployment, keine Ausgaben.
