@@ -504,6 +504,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 
 <script src="./src/tool-navigation.js"></script>
 <script src="./vendor/three/three.min.js"></script>
+<script src="./src/primitive-geometry.js"></script>
 <script src="./vendor/three/STLLoader.js"></script>
 <script src="./vendor/three/STLExporter.js"></script>
 <script src="./src/units.js"></script>
@@ -737,19 +738,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 
   function createObject(type) {
     recordHistory();
-    let geometry;
-    if (type === 'Würfel') geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
-    else if (type === 'Kugel') geometry = new THREE.SphereGeometry(0.8, 32, 24);
-    else if (type === 'Zylinder') geometry = new THREE.CylinderGeometry(0.7, 0.7, 1.5, 32);
-    else if (type === 'Kegel') geometry = new THREE.ConeGeometry(0.8, 1.5, 48);
-    else if (type === 'Sechskant-Prisma') geometry = new THREE.CylinderGeometry(0.85, 0.85, 1.5, 6);
-    else if (type === 'Ring / Torus') geometry = new THREE.TorusGeometry(0.65, 0.18, 16, 48);
-    else geometry = new THREE.BoxGeometry(1, 1, 1);
-
-    // Three.js-Standardformen haben ihre Höhe entlang Y. Wir drehen sie,
-    // damit die Höhe in dieser App entlang Z verläuft.
-    if (type !== 'Ring / Torus') geometry.rotateX(Math.PI / 2);
-    geometry.computeBoundingBox();
+    const geometry = window.SILMOPrimitiveGeometry.createPrimitiveGeometry(type);
 
     const material = new THREE.MeshStandardMaterial({
       color: new THREE.Color().setHSL(Math.random(), 0.65, 0.55),
