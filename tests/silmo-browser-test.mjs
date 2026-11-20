@@ -172,15 +172,29 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     const safeHole=[[10,10],[15,10],[15,15],[10,15]];
     const edgeHole=[[0.2,10],[4,10],[4,14],[0.2,14]];
     const overlapHole=[[14,10],[19,10],[19,15],[14,15]];
+    const exactWallHole=[[0.8,10],[4.8,10],[4.8,14],[0.8,14]];
+    const underWallHole=[[0.799,10],[4.799,10],[4.799,14],[0.799,14]];
+    const exactAreaHole=[[10,10],[10.1,10],[10.1,10.1],[10,10.1]];
+    const underAreaHole=[[10,10],[10.099,10],[10.099,10.099],[10,10.099]];
     const valid=window.__silmoImageStudioValidateForPrintTest(outer,[safeHole]);
     const edge=window.__silmoImageStudioValidateForPrintTest(outer,[edgeHole]);
     const overlap=window.__silmoImageStudioValidateForPrintTest(outer,[safeHole,overlapHole]);
+    const exactWall=window.__silmoImageStudioValidateForPrintTest(outer,[exactWallHole]);
+    const underWall=window.__silmoImageStudioValidateForPrintTest(outer,[underWallHole]);
+    const exactArea=window.__silmoImageStudioValidateForPrintTest(outer,[exactAreaHole]);
+    const underArea=window.__silmoImageStudioValidateForPrintTest(outer,[underAreaHole]);
     const crossed=window.__silmoImageStudioValidateForPrintTest([[0,0],[40,30],[0,30],[40,0]],[safeHole]);
-    return {valid:valid.holes.length,edge:edge.holes.length,overlap:overlap.holes.length,crossed:crossed.ok};
+    return {valid:valid.holes.length,edge:edge.holes.length,overlap:overlap.holes.length,
+      exactWall:exactWall.holes.length,underWall:underWall.holes.length,
+      exactArea:exactArea.holes.length,underArea:underArea.holes.length,crossed:crossed.ok};
   });
   assert.equal(printGeometryChecks.valid,1,'Eine ausreichend grosse und korrekt platzierte Aussparung wird nicht übernommen');
   assert.equal(printGeometryChecks.edge,0,'Eine zu nahe an der Aussenkante liegende Aussparung wird nicht ausgeschlossen');
   assert.equal(printGeometryChecks.overlap,1,'Überlappende Innenlöcher werden nicht zuverlässig gefiltert');
+  assert.equal(printGeometryChecks.exactWall,1,'Eine Aussparung mit exakt 0,8 mm Mindestwand wird fälschlich abgewiesen');
+  assert.equal(printGeometryChecks.underWall,0,'Eine Aussparung mit weniger als 0,8 mm Mindestwand wird fälschlich akzeptiert');
+  assert.equal(printGeometryChecks.exactArea,1,'Eine Kontur mit exakt 0,01 mm² Mindestfläche wird fälschlich abgewiesen');
+  assert.equal(printGeometryChecks.underArea,0,'Eine Kontur unter 0,01 mm² wird fälschlich akzeptiert');
   assert.equal(printGeometryChecks.crossed,false,'Eine selbstschneidende Aussenkontur wird nicht zurückgewiesen');
 
 
