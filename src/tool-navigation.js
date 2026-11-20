@@ -218,7 +218,11 @@
   const editNote=document.createElement('p');editNote.className='cad-pro-note';editNote.textContent='Wähle einen zuvor extrudierten Skizzenkörper. Die Geometrie wird angepasst; Position und Drehung bleiben erhalten.';proGroup.appendChild(editNote);
   const pointDivider=document.createElement('div');pointDivider.className='cad-pro-divider';proGroup.appendChild(pointDivider);
   const pointHeading=document.createElement('h3');pointHeading.textContent='Einzelne Skizzenpunkte bearbeiten';proGroup.appendChild(pointHeading);
-  const pointHelp=document.createElement('p');pointHelp.className='cad-pro-note';pointHelp.textContent='Lade die Kontur eines ausgewählten Skizzenkörpers. Wähle einen Punkt und ändere seine X-/Y-Koordinate millimetergenau. Die Extrusion wird danach neu aufgebaut.';proGroup.appendChild(pointHelp);
+  const pointHelp=document.createElement('p');pointHelp.className='cad-pro-note';pointHelp.textContent='Lade die Aussenkontur oder eines der Innenlöcher eines ausgewählten Skizzenkörpers. Wähle einen Punkt und ändere seine X-/Y-Koordinate millimetergenau. Alle übrigen Konturen bleiben erhalten.';proGroup.appendChild(pointHelp);
+  const contourSelectWrap=document.createElement('div');contourSelectWrap.className='field';
+  const contourSelectLabel=document.createElement('label');contourSelectLabel.htmlFor='sketchContourIndex';contourSelectLabel.textContent='Kontur';
+  const contourSelect=document.createElement('select');contourSelect.id='sketchContourIndex';contourSelect.innerHTML='<option value="0">Aussenkontur</option>';
+  contourSelectWrap.append(contourSelectLabel,contourSelect);proGroup.appendChild(contourSelectWrap);
   const pointSelectWrap=document.createElement('div');pointSelectWrap.className='field';
   const pointSelectLabel=document.createElement('label');pointSelectLabel.htmlFor='sketchPointIndex';pointSelectLabel.textContent='Konturpunkt';
   const pointSelect=document.createElement('select');pointSelect.id='sketchPointIndex';pointSelect.innerHTML='<option value="0">Punkt 1</option>';
