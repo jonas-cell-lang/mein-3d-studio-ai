@@ -264,3 +264,10 @@ Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPS
 - Der Unit-Test liest deshalb jetzt zusätzlich `src/tutorial.js` und weist künftig jede Toleranzkonstante zurück, die in keinem der geprüften Laufzeitmodule verwendet wird.
 - Alle 45 Konstanten sind zusätzlich weiterhin einzeln mit ihrem dokumentierten Zahlenwert abgesichert. Dieser Audit ändert keine Toleranzwerte und führt keine pauschale Vereinheitlichung durch.
 - Die neuen Prüfungen sind implementiert; ihr erfolgreicher CI-Lauf muss noch bestätigt werden.
+
+
+### 3.11 Loft-Toleranzen (20.11.2026)
+- `LOFT_PROFILE_PLANARITY_WORLD_UNITS = 1e-6` begrenzt die Abweichung eines Endprofils von seiner berechneten Ebene.
+- `LOFT_PROFILE_MIN_NORMAL_WORLD_UNITS = 1e-9` schützt die Ebenennormalenberechnung vor entarteten Konturen.
+- Beide Werte werden von `src/sketch-geometry.js` verwendet und sind in `tests/tolerances.test.cjs` einzeln festgeschrieben.
+- Die Toleranzen sind bewusst dimensionsbezogen und verändern keine bestehenden Bild-, Druck- oder Skizzenwerte.
