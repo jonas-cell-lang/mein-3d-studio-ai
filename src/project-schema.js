@@ -100,6 +100,7 @@
 
   const SKETCH_RING_COORDINATE_LIMIT = 10000;
   const SKETCH_RING_MIN_AREA = 1e-12;
+  const MAX_SKETCH_CONTOUR_POINTS = 5000;
 
   function sketchCross(a, b, c) {
     return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
@@ -162,7 +163,19 @@
     return inside ? 1 : -1;
   }
 
+  function sketchRingBounds(ring) {
+    return ring.reduce((bounds, point) => ({
+      minX: Math.min(bounds.minX, point[0]), maxX: Math.max(bounds.maxX, point[0]),
+      minY: Math.min(bounds.minY, point[1]), maxY: Math.max(bounds.maxY, point[1])
+    }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity });
+  }
+
+  function sketchBoundsOverlap(a, b) {
+    return a.minX <= b.maxX && a.maxX >= b.minX && a.minY <= b.maxY && a.maxY >= b.minY;
+  }
+
   function sketchRingsIntersect(a, b) {
+    if (!sketchBoundsOverlap(sketchRingBounds(a), sketchRingBounds(b))) return false;
     for (let i = 0; i < a.length; i++) for (let j = 0; j < b.length; j++) {
       if (sketchSegmentsIntersect(a[i], a[(i + 1) % a.length], b[j], b[(j + 1) % b.length])) return true;
     }
@@ -176,7 +189,9 @@
     if (sketch.type !== 'freeform2d' || sketch.holes == null) return;
     const holes = sketch.holes;
     const outer = object.sketchOutline;
-    if (!Array.isArray(holes) || holes.length > 100 ||
+    const totalContourPoints = (Array.isArray(outer) ? outer.length : 0) +
+      (Array.isArray(holes) ? holes.reduce((sum, ring) => sum + (Array.isArray(ring) ? ring.length : 0), 0) : 0);
+    if (!Array.isArray(holes) || holes.length > 100 || totalContourPoints > MAX_SKETCH_CONTOUR_POINTS ||
         !holes.every(validateSketchRing) ||
         (holes.length > 0 && !validateSketchRing(outer))) {
       throw new Error('Ungültige oder zu umfangreiche Skizzen-Innenkonturen.');
