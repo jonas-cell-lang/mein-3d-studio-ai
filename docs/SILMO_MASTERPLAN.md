@@ -670,3 +670,10 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Auf Commit 21d8d1995dd9051e39b755bdd088c912b785336c bestanden 122/122 Unit-Tests.
 - Der isolierte OCCT-WebWorker-Prototyp auf demselben Commit wurde erfolgreich abgeschlossen. Der vollständige Browser-Interaktionstest lief zum Zeitpunkt dieses Eintrags noch und wird erst nach erfolgreichem Abschluss als bestanden gewertet.
 - Die Änderung verhindert Reentrancy während der Wiederherstellung. Sie ist keine allgemeine Garantie gegen Fehler in beliebigen benutzerdefinierten Capture-, Restore- oder Dispose-Callbacks.
+
+
+### 6.59 History: Clear/Dispose während Wiederherstellung schützen (20.11.2026)
+- `clear()` und `dispose()` brechen während einer laufenden `restoreState`-Anwendung kontrolliert ab. Dadurch können Callback-seitige verschachtelte Aufrufe die gerade verwendeten Undo-/Redo-Snapshots nicht vorzeitig freigeben oder die History mitten in `apply()` als disposed markieren.
+- Der Regressionstest ruft beide Methoden während Undo und Redo aus `restoreState` heraus auf und kontrolliert Zwischenzustand, Stack-Zähler sowie anschliessende Nutzbarkeit von Undo/Redo. Die reguläre `dispose()`-Funktion wird nach Abschluss weiterhin ausgeführt.
+- Auf Commit `27e338be7706f4a1a244661acc2f6aeb04b66a05` bestanden 123/123 Unit-Tests; Code-Checks, Browser-Interaktion und isolierter OCCT-WebWorker-Prototyp waren erfolgreich.
+- Der Schutz gilt für synchrone, während `restoreState` ausgeführte Reentrancy. Asynchrone Callbacks oder Fehler innerhalb benutzerdefinierter `disposeState`-Funktionen sind damit nicht allgemein abgesichert.
