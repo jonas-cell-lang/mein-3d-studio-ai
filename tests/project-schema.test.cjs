@@ -129,6 +129,21 @@ test('Serialisierte Mesh-Geometrie wird vor dem Wiederaufbau strukturell geprüf
   assert.throws(() => schema.validateSerializedGeometry(nonFinite), /Ungültige oder zu grosse Geometriedaten/);
 });
 
+test('nicht-indizierte Meshes müssen aus vollständigen Dreiecken bestehen', () => {
+  const valid = {
+    attributes: {
+      position: { arrayType: 'Float32Array', array: [0,0,0, 1,0,0, 0,1,0], itemSize: 3, normalized: false },
+      normal: { arrayType: 'Float32Array', array: [0,0,1, 0,0,1, 0,0,1], itemSize: 3, normalized: false }
+    }
+  };
+  assert.equal(schema.validateSerializedGeometry(valid), valid);
+
+  const incomplete = structuredClone(valid);
+  incomplete.attributes.position.array.push(1, 1, 0);
+  incomplete.attributes.normal.array.push(0, 0, 1);
+  assert.throws(() => schema.validateSerializedGeometry(incomplete), /keine vollständigen Dreiecke/);
+});
+
 test('Geometrie in beiden v3-Fixtures hat endliche Positionswerte und gültige Indizes', () => {
   for (const name of ['project-v3-minimal.json', 'project-v3-advanced.json']) {
     const fixture = readFixture(name);
