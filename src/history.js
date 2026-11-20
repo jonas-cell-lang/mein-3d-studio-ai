@@ -71,12 +71,13 @@
     }
 
     function clear() {
+      if (applying) return;
       clearStack(undoStack);
       clearStack(redoStack);
     }
 
     function dispose() {
-      if (disposed) return;
+      if (disposed || applying) return;
       clear();
       disposed = true;
     }
