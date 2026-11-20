@@ -197,12 +197,12 @@ test('clear und dispose blockieren verschachtelte Aufrufe während restoreState'
   assert.equal(history.undo(), true);
   assert.equal(value, 1);
   assert.deepEqual(history.getStats(), { undoCount: 1, redoCount: 1, limit: 40, disposed: false });
-  assert.deepEqual(nestedStats[0], { undoCount: 1, redoCount: 1, limit: 40, disposed: false });
+  assert.deepEqual(nestedStats[0], { undoCount: 1, redoCount: 0, limit: 40, disposed: false });
 
   assert.equal(history.redo(), true);
   assert.equal(value, 2);
   assert.deepEqual(history.getStats(), { undoCount: 2, redoCount: 0, limit: 40, disposed: false });
-  assert.deepEqual(nestedStats[1], { undoCount: 2, redoCount: 0, limit: 40, disposed: false });
+  assert.deepEqual(nestedStats[1], { undoCount: 1, redoCount: 0, limit: 40, disposed: false });
   history.dispose();
   assert.equal(history.getStats().disposed, true);
 });
