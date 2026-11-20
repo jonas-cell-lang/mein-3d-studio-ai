@@ -172,3 +172,37 @@ test('Undo und Redo blockieren verschachtelte Verlaufsaktionen während restoreS
   assert.deepEqual(history.getStats(), { undoCount: 2, redoCount: 0, limit: 40, disposed: false });
   history.dispose();
 });
+
+
+test('clear und dispose blockieren verschachtelte Aufrufe während restoreState', () => {
+  let value = 0;
+  let history;
+  const nestedStats = [];
+  history = createHistory({
+    captureState: () => ({ value }),
+    restoreState: snapshot => {
+      value = snapshot.value;
+      history.clear();
+      history.dispose();
+      nestedStats.push(history.getStats());
+    },
+    disposeState: () => {}
+  });
+
+  history.record();
+  value = 1;
+  history.record();
+  value = 2;
+
+  assert.equal(history.undo(), true);
+  assert.equal(value, 1);
+  assert.deepEqual(history.getStats(), { undoCount: 1, redoCount: 1, limit: 40, disposed: false });
+  assert.deepEqual(nestedStats[0], { undoCount: 1, redoCount: 1, limit: 40, disposed: false });
+
+  assert.equal(history.redo(), true);
+  assert.equal(value, 2);
+  assert.deepEqual(history.getStats(), { undoCount: 2, redoCount: 0, limit: 40, disposed: false });
+  assert.deepEqual(nestedStats[1], { undoCount: 2, redoCount: 0, limit: 40, disposed: false });
+  history.dispose();
+  assert.equal(history.getStats().disposed, true);
+});
