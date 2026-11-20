@@ -13,6 +13,7 @@
 | `src/project-geometry.js` | BufferGeometry serialisieren/wiederherstellen; Union-Formteile speichern/wiederherstellen | Factory erhält `THREE` und `SILMOProjectSchema`; stellt `window.SILMOProjectGeometry` bereit |
 | `src/project-io.js` | Projektdateien speichern und öffnen; alle Objekte vor dem Ersetzen des aktuellen Modells aufbauen | Factory erhält Three.js, Schema und Projektgeometrie; der App-Zustand wird über explizite Getter-/Commit-/UI-Callbacks angebunden |
 | `src/history.js` | Undo-/Redo-Stack, Begrenzung, Redo-Verwerfung und Snapshot-Freigabe | Factory erhält `captureState`, `restoreState` und `disposeState`; Three.js und DOM bleiben ausserhalb des Moduls |
+| `src/stl-io.js` | STL-Dateien importieren und als ASCII-STL exportieren; Einheitenumrechnung und temporäre Exportgeometrien verwalten | Factory erhält Three.js und Einheiten-API; App-Zustand wird über Objekt-/Status-Callbacks angebunden |
 | `src/csg.js` | BSP-basierte Boolesche Geometrieoperationen (Verbindung und Differenz) | Factory erhält `THREE` und `SILMOTolerances`; stellt `window.SILMOCSG.combineMeshes` bereit |
 | `src/developer-diagnostics.js` | Diagnosefenster, Laufzeit- und Bedienprotokoll | Eigenständige DOM-/Browser-IIFE; bleibt im Dokumentkopf |
 | `src/tool-navigation.js` | Hauptnavigation, Werkzeugbereiche und Unterreiter organisieren | Eigenständige DOM-IIFE; wird vor Three.js ausgeführt |
@@ -33,7 +34,7 @@ Das verbleibende Inline-CAD-Skript hält weiterhin den zentralen Laufzeitzustand
 - Transformationen, Gizmos, Ausrichtung und Gruppierung
 - Boolesche Geometrieoperationen und BSP-CSG
 - Skizzen, Extrusion, Kontur- und Pfadwerkzeuge
-- STL-Import/-Export und andere dateiformatbezogene Abläufe (Projektdatei-Speichern/-Öffnen ist bereits in `src/project-io.js` ausgelagert)
+- STL-Datei-Auswahl, Drag-and-drop und Web-Link-Interaktion; der eigentliche STL-Import/-Export ist in `src/stl-io.js` ausgelagert
 - DOM-Ereignisse und Statusmeldungen
 
 Diese Bereiche sollten nicht als grosse Textblöcke verschoben werden. Zuerst müssen ihre Daten- und Seiteneffekt-Abhängigkeiten als explizite Schnittstellen sichtbar werden.
@@ -53,6 +54,8 @@ Die App übergibt eine Factory-Abhängigkeit mit klaren Funktionen:
 Die Browser-Regression prüft weiterhin Speichern, Wiederöffnen, Objektanzahl und die Zurückweisung fehlerhafter Geometrie. Zusätzlich bestätigt sie, dass `SILMOProjectIO.createProjectIO` verfügbar ist.
 
 ## 4. Weitere spätere Kandidaten
+
+Der STL-Import/-Export ist jetzt als `src/stl-io.js` ausgelagert. Dateiauswahl, Drag-and-drop und Web-Link-Interaktion bleiben im Hauptskript; Geometrieparsing, mm-/Welteinheiten-Konvertierung, Exportkopien und Statusmeldungen laufen über explizite Callbacks.
 
 Der BSP-CSG-Kern ist als `src/csg.js` ausgelagert. Der vollständige Browserlauf hat sowohl die bestehende Union-Prüfung als auch die neue Differenz-Prüfung erfolgreich bestanden.
 
