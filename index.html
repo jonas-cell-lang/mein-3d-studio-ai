@@ -2478,18 +2478,29 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     status.textContent=(mode==='fillet'?'Kanten abgerundet':'Kanten abgefast')+' – '+radiusMM.toFixed(1)+' mm. Dies betrifft die Kanten der extrudierten Skizze.';
   }
   function createLoftFromSelection(){
-    const pair=selectedObjects.length===2?selectedObjects.slice():(selected?[selected]:[]);
-    if(pair.length!==2)throw new Error('Für Loft müssen genau zwei Skizzenprofile ausgewählt sein.');
-    const [a,b]=pair;
-    if(!Array.isArray(a.userData.sketchOutline)||!Array.isArray(b.userData.sketchOutline))throw new Error('Beide ausgewählten Objekte brauchen eine gespeicherte geschlossene Skizzenkontur.');
-    a.updateMatrixWorld(true);b.updateMatrixWorld(true);
-    const ra=window.SILMOSketchGeometry.resampleClosedOutline(a.userData.sketchOutline,64,window.SILMOTolerances.PROFILE_MIN_PERIMETER_WORLD_UNITS).map(p=>a.localToWorld(new THREE.Vector3(p.x,p.y,0)));
-    const rb=window.SILMOSketchGeometry.resampleClosedOutline(b.userData.sketchOutline,64,window.SILMOTolerances.PROFILE_MIN_PERIMETER_WORLD_UNITS).map(p=>b.localToWorld(new THREE.Vector3(p.x,p.y,0)));
-    const geometry=window.SILMOSketchGeometry.createLoftGeometry(ra,rb);
+    const selection=selectedObjects.length?selectedObjects.slice():(selected?[selected]:[]);
+    if(selection.length<2||selection.length>18||(selection.length-2)%2!==0)throw new Error('Für Loft wähle zwei Aussenprofile. Für Innenlöcher ergänze je Loch zwei weitere Profile: Aussen A, Aussen B, Loch A, Loch B usw.');
+    if(!selection.every(obj=>Array.isArray(obj.userData.sketchOutline)&&obj.userData.sketchOutline.length>=3))throw new Error('Alle ausgewählten Loft-Profile brauchen eine gespeicherte geschlossene Skizzenkontur.');
+    const [a,b]=selection;
+    const worldRing=obj=>{
+      obj.updateMatrixWorld(true);
+      return window.SILMOSketchGeometry.resampleClosedOutline(obj.userData.sketchOutline,64,window.SILMOTolerances.PROFILE_MIN_PERIMETER_WORLD_UNITS)
+        .map(point=>obj.localToWorld(new THREE.Vector3(point.x,point.y,0)));
+    };
+    const outerA=worldRing(a),outerB=worldRing(b),holesA=[],holesB=[],holeSources=[];
+    for(let index=2;index<selection.length;index+=2){
+      holesA.push(worldRing(selection[index]));
+      holesB.push(worldRing(selection[index+1]));
+      holeSources.push({a:selection[index].uuid,b:selection[index+1].uuid});
+    }
+    const geometry=window.SILMOSketchGeometry.createLoftGeometry(outerA,outerB,{holesA,holesB});
     const loftSize=new THREE.Vector3();geometry.boundingBox.getSize(loftSize);
-    recordHistory();const mesh=new THREE.Mesh(geometry,a.material.clone());mesh.userData={label:'Loft-Körper',baseDimensions:{x:loftSize.x,y:loftSize.y,z:loftSize.z},percent:{x:100,y:100,z:100},loft:{sourceA:a.uuid,sourceB:b.uuid,sections:2}};
+    recordHistory();const mesh=new THREE.Mesh(geometry,a.material.clone());
+    mesh.userData={label:holesA.length?'Loft-Körper mit Innenlöchern':'Loft-Körper',baseDimensions:{x:loftSize.x,y:loftSize.y,z:loftSize.z},percent:{x:100,y:100,z:100},loft:{sourceA:a.uuid,sourceB:b.uuid,sections:2,innerContourCount:holesA.length,sourceHoles:holeSources}};
     scene.add(mesh);objects.push(mesh);selectObject(mesh);updateObjects();showProperties();updateMoveGizmo();
-    status.textContent='Loft erstellt: zwei Skizzenprofile wurden zu einem Körper verbunden.';
+    status.textContent=holesA.length
+      ? 'Hohl-Loft erstellt: '+holesA.length+' Innenkontur(en) wurden als echte Öffnungen verbunden.'
+      : 'Loft erstellt: zwei Skizzenprofile wurden zu einem Körper verbunden.';
   }
   function createSweepFromSelection(){
     const pair=selectedObjects.length===2?selectedObjects.slice():[];
