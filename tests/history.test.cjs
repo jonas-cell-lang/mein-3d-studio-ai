@@ -206,3 +206,41 @@ test('clear und dispose blockieren verschachtelte Aufrufe während restoreState'
   history.dispose();
   assert.equal(history.getStats().disposed, true);
 });
+
+
+test('Fehlgeschlagenes captureState verändert keine History-Stacks', () => {
+  let value = 0;
+  let failCapture = false;
+  const history = createHistory({
+    captureState: () => {
+      if (failCapture) throw new Error('simulierter Snapshot-Aufnahmefehler');
+      return { value };
+    },
+    restoreState: snapshot => { value = snapshot.value; },
+    disposeState: () => {}
+  });
+
+  history.record();
+  value = 1;
+  history.record();
+  value = 2;
+
+  failCapture = true;
+  assert.throws(() => history.record(), /Snapshot-Aufnahmefehler/);
+  assert.deepEqual(history.getStats(), { undoCount: 2, redoCount: 0, limit: 40, disposed: false });
+  assert.throws(() => history.undo(), /Snapshot-Aufnahmefehler/);
+  assert.deepEqual(history.getStats(), { undoCount: 2, redoCount: 0, limit: 40, disposed: false });
+
+  failCapture = false;
+  assert.equal(history.undo(), true);
+  assert.equal(value, 1);
+  assert.deepEqual(history.getStats(), { undoCount: 1, redoCount: 1, limit: 40, disposed: false });
+
+  failCapture = true;
+  assert.throws(() => history.redo(), /Snapshot-Aufnahmefehler/);
+  assert.deepEqual(history.getStats(), { undoCount: 1, redoCount: 1, limit: 40, disposed: false });
+  failCapture = false;
+  assert.equal(history.redo(), true);
+  assert.equal(value, 2);
+  history.dispose();
+});
