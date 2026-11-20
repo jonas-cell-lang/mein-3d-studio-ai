@@ -374,13 +374,6 @@
         (Math.abs(cdA) <= 1e-12 && onSegment(a, c, d)) ||
         (Math.abs(cdB) <= 1e-12 && onSegment(b, c, d));
     };
-    const twiceArea = points.reduce((sum, point, index) => {
-      const next = points[(index + 1) % points.length];
-      return sum + point[0] * next[1] - next[0] * point[1];
-    }, 0);
-    if (!Number.isFinite(twiceArea) || Math.abs(twiceArea) <= 1e-12) {
-      throw new TypeError('Kantenbearbeitung benötigt eine Kontur mit einer Fläche grösser null.');
-    }
     for (let i = 0; i < points.length; i++) {
       const a = points[i], b = points[(i + 1) % points.length];
       for (let j = i + 1; j < points.length; j++) {
@@ -389,6 +382,13 @@
           throw new TypeError('Kantenbearbeitung benötigt eine einfache, nicht selbstüberschneidende Kontur.');
         }
       }
+    }
+    const twiceArea = points.reduce((sum, point, index) => {
+      const next = points[(index + 1) % points.length];
+      return sum + point[0] * next[1] - next[0] * point[1];
+    }, 0);
+    if (!Number.isFinite(twiceArea) || Math.abs(twiceArea) <= 1e-12) {
+      throw new TypeError('Kantenbearbeitung benötigt eine Kontur mit einer Fläche grösser null.');
     }
     const shape = new THREE.Shape();
     shape.moveTo(points[0][0], points[0][1]);
