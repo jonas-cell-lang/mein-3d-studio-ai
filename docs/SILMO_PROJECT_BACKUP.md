@@ -1188,3 +1188,12 @@ Vor Beginn einer neuen Aufgabe:
 - Das Projektschema prüft die Metadaten und begrenzt Innenringe auf maximal 1000 Punkte sowie maximal 100 Innenringe.
 - Tests: Code-Checks einschliesslich Unit-/Schema-Tests erfolgreich (Run 44771243349). Browser-Regression für Innenlochzeichnung und Projekt-Roundtrip läuft noch; OCCT-Prototyp ist unabhängig davon.
 - Noch nicht umgesetzt: nachträgliche assoziative Bearbeitung eines bereits erzeugten 3D-Körpers; der Skizzenentwurf kann vor dem Erzeugen des Körpers bearbeitet werden.
+
+
+## Ergänzung – Kontur-Feature nachträglich bearbeiten (20.11.2026)
+- Der Konturpunkt-Editor unterstützt jetzt die Auswahl zwischen Aussenkontur und gespeicherten Innenlöchern.
+- Ein Punkt eines Innenlochs kann nach der Extrusion verschoben werden. Die Geometrie wird mit allen Ringen neu aufgebaut; bestehende Öffnungen bleiben echte Öffnungen.
+- Validierung prüft Mindestfläche, Kantenabstand, Innenlage, Selbstüberschneidung und Überschneidung mit anderen Innenlöchern, bevor die bisherige Geometrie ersetzt wird.
+- History/Undo wird vor dem Austausch der Geometrie erfasst.
+- Kantenbearbeitete Körper sind vorerst von diesem direkten Neuaufbau ausgeschlossen, damit eine Punktänderung nicht unbemerkt Abrundungen oder Fasen entfernt.
+- Automatischer Browser-Test verschiebt einen Innenloch-Punkt an einem extrudierten Körper und prüft, dass das Loch erhalten bleibt.
