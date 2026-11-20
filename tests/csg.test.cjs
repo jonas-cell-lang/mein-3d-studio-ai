@@ -316,3 +316,40 @@ test('CSG erhält die Aussenorientierung auch bei einem gespiegelten Basiskörpe
     base.material.dispose(); tool.material.dispose();
   }
 });
+
+
+test('CSG weist eine vollständig leere Differenz identischer Körper kontrolliert zurück', () => {
+  const base = box();
+  const tool = box();
+  const basePositionCount = base.geometry.getAttribute('position').count;
+  const toolPositionCount = tool.geometry.getAttribute('position').count;
+  try {
+    assert.throws(() => combineMeshes(base, tool, 'subtract'), /Ergebnis ist leer/);
+    assert.equal(base.geometry.getAttribute('position').count, basePositionCount,
+      'Basisgeometrie bleibt nach leerem Ergebnis unverändert');
+    assert.equal(tool.geometry.getAttribute('position').count, toolPositionCount,
+      'Werkzeuggeometrie bleibt nach leerem Ergebnis unverändert');
+  } finally {
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
+
+test('CSG-Abziehen mit gespiegeltem Werkzeug erhält Volumen und positive Aussenorientierung', () => {
+  const base = box();
+  const tool = box([1, 0, 0]);
+  tool.scale.x = -1;
+  tool.updateMatrixWorld(true);
+  const result = combineMeshes(base, tool, 'subtract');
+  try {
+    assert.ok(signedVolume(result) > 0 && Math.abs(signedVolume(result) - 4) < 1e-5,
+      'Gespiegeltes Werkzeug muss eine positiv orientierte Differenz mit Volumen 4 ergeben');
+    const b = bounds(result);
+    assert.deepEqual(b.min.map(v => Number(v.toFixed(5))), [-1, -1, -1]);
+    assert.deepEqual(b.max.map(v => Number(v.toFixed(5))), [0, 1, 1]);
+  } finally {
+    result.dispose();
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
