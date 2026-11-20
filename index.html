@@ -1996,7 +1996,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     clearSketchPreview();
     if (['line3d','line2d','curve2d'].includes(sketchDraft.type)) {
       if (!Array.isArray(sketchDraft.points) || sketchDraft.points.length < 2) return;
-      const points = sketchDraft.points.map(point => new THREE.Vector3(point.x, point.y, point.z + (sketchDraft.type === 'line3d' ? 0 : 0.025)));
+      const points = sketchDraft.points.map(point => new THREE.Vector3(point.x, point.y, point.z + (sketchDraft.type === 'line3d' ? 0 : window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS)));
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
       sketchPreview = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: sketchDraft.type === 'line3d' ? 0xffd166 : 0x53d8e8, depthTest: false }));
     } else if (sketchDraft.type === 'freeform2d') {
@@ -2015,7 +2015,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           points.push(new THREE.Vector3(
             sketchDraft.centerX + Math.cos(angle) * radiusX,
             sketchDraft.centerY + Math.sin(angle) * radiusY,
-            0.025
+            window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS
           ));
         }
       } else if(activeTool==='roundedRectangle') {
@@ -2027,14 +2027,14 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       } else {
         const halfW = sketchDraft.width / 2, halfD = sketchDraft.depth / 2;
         points = activeTool === 'triangle' ? [
-          new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY-halfD,0.025),
-          new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY-halfD,0.025),
-          new THREE.Vector3(sketchDraft.centerX,sketchDraft.centerY+halfD,0.025)
+          new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY-halfD,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS),
+          new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY-halfD,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS),
+          new THREE.Vector3(sketchDraft.centerX,sketchDraft.centerY+halfD,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS)
         ] : [
-          new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY-halfD,0.025),
-          new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY-halfD,0.025),
-          new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY+halfD,0.025),
-          new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY+halfD,0.025)
+          new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY-halfD,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS),
+          new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY-halfD,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS),
+          new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY+halfD,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS),
+          new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY+halfD,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS)
         ];
       }
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
