@@ -424,3 +424,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Browser-Regression verändert die Position eines Quellprofils und prüft, dass der ausgewählte Loft-Körper eine neue Bounding-Box erhält.
 - Grenze: Die Aktualisierung erfolgt bewusst manuell über die Schaltfläche; automatische Live-Neuberechnung bei jeder Quelländerung und vollständige Feature-Abhängigkeitsverwaltung bleiben offen.
 - Validierung auf Test-Head `1915a52be5661aee7cf0d3f94635c4f7c16eaf16`: Code Checks Run `44773232840`, Browser-Regression Run `44773232809` und isolierter OCCT-/WebWorker-Test Run `44773232778` erfolgreich.
+
+
+### 6.31 Konturpunkte nach der Extrusion einfügen und entfernen (20.11.2026)
+- Der Kontur-Editor kann einen Punkt mittig auf der ausgewählten Kante einfügen oder den ausgewählten Punkt entfernen.
+- Aussenkontur und jedes Innenloch sind getrennt bearbeitbar. Das Entfernen des letzten möglichen Eckpunkts wird verhindert; jede Kontur behält mindestens drei Punkte.
+- Die gemeinsame Geometrie-Neuerzeugung validiert Mindestfläche, Mindestkantenlänge, Selbstüberschneidung und Lage/Abstand aller Innenlöcher. Erst nach erfolgreicher Geometrieerzeugung wird die alte Geometrie ersetzt und History erfasst.
+- Browser-Regression prüft Einfügen und Entfernen eines Punktes in einer extrudierten Innenkontur, ohne die Öffnung zu verlieren.
+- Kantenbehandelte Körper bleiben von dieser direkten Konturbearbeitung ausgeschlossen.
