@@ -12,11 +12,14 @@
 | `src/project-schema.js` | Projekt-Hülle und serialisierte Geometrie validieren | Keine Three.js-Abhängigkeit |
 | `src/project-geometry.js` | BufferGeometry serialisieren/wiederherstellen; Union-Formteile speichern/wiederherstellen | Factory erhält `THREE` und `SILMOProjectSchema`; stellt `window.SILMOProjectGeometry` bereit |
 | `src/project-io.js` | Projektdateien speichern und öffnen; alle Objekte vor dem Ersetzen des aktuellen Modells aufbauen | Factory erhält Three.js, Schema und Projektgeometrie; der App-Zustand wird über explizite Getter-/Commit-/UI-Callbacks angebunden |
+| `src/history.js` | Undo-/Redo-Stack, Begrenzung, Redo-Verwerfung und Snapshot-Freigabe | Factory erhält `captureState`, `restoreState` und `disposeState`; Three.js und DOM bleiben ausserhalb des Moduls |
 | `src/csg.js` | BSP-basierte Boolesche Geometrieoperationen (Verbindung und Differenz) | Factory erhält `THREE` und `SILMOTolerances`; stellt `window.SILMOCSG.combineMeshes` bereit |
 | `src/developer-diagnostics.js` | Diagnosefenster, Laufzeit- und Bedienprotokoll | Eigenständige DOM-/Browser-IIFE; bleibt im Dokumentkopf |
 | `src/tool-navigation.js` | Hauptnavigation, Werkzeugbereiche und Unterreiter organisieren | Eigenständige DOM-IIFE; wird vor Three.js ausgeführt |
 | `src/tutorial.js` | Geführter Lernkurs und Erfolgskontrolle | Eigenständige DOM-IIFE; nutzt vorhandene `window`-Test-/App-Schnittstellen |
 | `src/image-studio.js` | 2D-Bildbereich, Konturerkennung und Übergabe an CAD | Eigenständige DOM-/Canvas-IIFE; Übergabe über `window.__silmoImageStudioCreateFromPoints` |
+
+Der Undo-/Redo-Stack ist jetzt ebenfalls ausgelagert. Die Snapshots selbst bleiben vorerst vollständige Kopien der bestehenden Mesh-Geometrien und Materialien; eine befehlsbasierte Historie und echte Speicher-/Leistungs-Baselines sind noch offen.
 
 Die ausgelagerten Dateien werden in ihrer bisherigen Ausführungsreihenfolge geladen. Die lokalen Pages-Prüfungen vergleichen die vorhandenen Dateien und die Browser-Tests blockieren externe HTTPS-Zugriffe.
 
