@@ -1022,3 +1022,11 @@ Vor Beginn einer neuen Aufgabe:
 - Die bisherigen Werte 0,000025, 0,01 mm² und 0,8 mm bleiben unverändert. Unit-Tests sichern die Werte.
 - Die gemischte Flächenschwelle in `polygonIsSimple` wurde bewusst nicht migriert: die Funktion wird in mehreren Koordinatenräumen genutzt und muss zuerst sauber getrennt werden.
 - Der neue Stand benötigt noch den automatischen Code- und Browser-Regressionsnachweis.
+
+
+## Ergänzung – Einheitenprüfung der Bildkonturfläche abgeschlossen am 20.11.2026
+
+- Alle Aufrufstellen von `polygonIsSimple` wurden geprüft. Die Funktion wird ausschliesslich von `validatePrintableContours` auf Konturen aufgerufen, die bereits in reale Millimeter abgebildet wurden.
+- Die bisherige Mindestfläche 0,01 wird deshalb korrekt als `IMAGE_MIN_SIMPLE_POLYGON_AREA_MM2` benannt und in `src/image-studio.js` verwendet.
+- Die neue Konstante wird durch `tests/tolerances.test.cjs` gesichert. Die zuvor offene mögliche Einheitenvermischung ist damit für diese Stelle geklärt.
+- Die abschliessende Code- und Browser-CI-Prüfung für den gesamten Audit-Stand steht noch aus.
