@@ -158,10 +158,26 @@
     // lokalen Vertex berechnet. Weit getrennte Körper beeinflussen dadurch
     // weder die numerische Stabilität noch die Orientierungserkennung anderer Körper.
     const componentVolumes = new Map();
+    const componentBounds = new Map();
     for (let i = 0; i < triangleVertexIds.length; i += 3) {
       const ids = [triangleVertexIds[i], triangleVertexIds[i + 1], triangleVertexIds[i + 2]];
       const root = findVertexRoot(ids[0]);
-      if (!componentVolumes.has(root)) componentVolumes.set(root, 0);
+      if (!componentVolumes.has(root)) {
+        componentVolumes.set(root, 0);
+        componentBounds.set(root, {
+          min: [Infinity, Infinity, Infinity],
+          max: [-Infinity, -Infinity, -Infinity]
+        });
+      }
+      const bounds = componentBounds.get(root);
+      for (const id of ids) {
+        const offset = id * 3;
+        for (let axis = 0; axis < 3; axis++) {
+          const coordinate = vertexCoordinates[offset + axis];
+          bounds.min[axis] = Math.min(bounds.min[axis], coordinate);
+          bounds.max[axis] = Math.max(bounds.max[axis], coordinate);
+        }
+      }
       const originOffset = root * 3;
       const aOffset = ids[0] * 3, bOffset = ids[1] * 3, cOffset = ids[2] * 3;
       const ax = vertexCoordinates[aOffset] - vertexCoordinates[originOffset];
@@ -181,23 +197,40 @@
       componentVolumes.set(root, componentVolumes.get(root) + volume);
     }
     let invertedComponentCount = 0, positiveComponentCount = 0;
-    for (const volume of componentVolumes.values()) {
+    const componentRecords = [];
+    for (const [root, volume] of componentVolumes) {
       signedVolumeMM3 += volume;
       if (volume < -1e-12) invertedComponentCount++;
       else if (volume > 1e-12) positiveComponentCount++;
+      componentRecords.push({ volume, bounds: componentBounds.get(root) });
     }
     const componentCount = componentVolumes.size;
-    const mixedWinding = isClosedEdgeManifold && invertedComponentCount > 0 && positiveComponentCount > 0;
-    const invertedWinding = isClosedEdgeManifold && componentCount > 0 &&
-      invertedComponentCount === componentCount ? true :
-      isClosedEdgeManifold && invertedComponentCount === 0 &&
-      positiveComponentCount === componentCount ? false : null;
+    // Eine negative innere Hüllfläche kann eine gültige Aussparung beschreiben.
+    // Nur entgegengesetzt orientierte, räumlich getrennte AABB-Komponenten
+    // werden deshalb als Konflikt markiert; ineinanderliegende Hüllen bleiben erlaubt.
+    let disconnectedWindingConflict = false;
+    for (let i = 0; i < componentRecords.length && !disconnectedWindingConflict; i++) {
+      for (let j = i + 1; j < componentRecords.length; j++) {
+        const a = componentRecords[i], b = componentRecords[j];
+        if (!((a.volume < -1e-12 && b.volume > 1e-12) ||
+              (a.volume > 1e-12 && b.volume < -1e-12))) continue;
+        const separated = a.bounds.max.some((value, axis) => value < b.bounds.min[axis]) ||
+          b.bounds.max.some((value, axis) => value < a.bounds.min[axis]);
+        if (separated) {
+          disconnectedWindingConflict = true;
+          break;
+        }
+      }
+    }
+    const mixedWinding = isClosedEdgeManifold && disconnectedWindingConflict;
+    const invertedWinding = isClosedEdgeManifold && !mixedWinding &&
+      Math.abs(signedVolumeMM3) > 1e-12 ? signedVolumeMM3 < 0 : null;
     return Object.freeze({
       analyzed: true, triangleCount, weldedVertexCount: vertexCoordinates.length / 3,
       uniqueEdgeCount: edges.size, boundaryEdgeCount, nonManifoldEdgeCount,
       inconsistentEdgeCount, nonManifoldVertexCount, duplicateTriangleCount, collapsedTriangleCount, degenerateTriangleCount,
-      isClosedEdgeManifold, invertedWinding, mixedWinding, componentCount,
-      invertedComponentCount, signedVolumeMM3, weldToleranceMM
+      isClosedEdgeManifold, invertedWinding, mixedWinding, disconnectedWindingConflict,
+      componentCount, invertedComponentCount, signedVolumeMM3, weldToleranceMM
     });
   }
 
@@ -318,8 +351,8 @@
           let diagnosticMessage = '';
           if (stlDiagnostics.analyzed) {
             if (stlDiagnostics.isClosedEdgeManifold) {
-              if (stlDiagnostics.mixedWinding) {
-                diagnosticMessage = ' Topologie: geschlossenes Dreiecksnetz, aber getrennte Komponenten haben gemischte Orientierung.';
+              if (stlDiagnostics.disconnectedWindingConflict) {
+                diagnosticMessage = ' Topologie: geschlossenes Dreiecksnetz, aber räumlich getrennte Körper haben widersprüchliche Orientierung.';
               } else if (stlDiagnostics.invertedWinding) {
                 diagnosticMessage = ' Topologie: geschlossenes Dreiecksnetz, aber die Komponenten sind umgekehrt orientiert.';
               } else {
