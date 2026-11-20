@@ -87,6 +87,17 @@
     }
   }
 
+  function validateProjectObjectIdentities(objects) {
+    const ids = new Set();
+    for (const object of objects) {
+      if (object?.objectId == null) continue;
+      if (typeof object.objectId !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(object.objectId) || ids.has(object.objectId)) {
+        throw new Error('Ungültige oder doppelte Objektkennung in der Projektdatei.');
+      }
+      ids.add(object.objectId);
+    }
+  }
+
   function validateLoftMetadata(object) {
     if (!object || typeof object !== 'object' || Array.isArray(object) || object.loft == null) return;
     const loft = object.loft;
@@ -136,6 +147,7 @@
     if (!Array.isArray(project.objects) || project.objects.length > 100) {
       throw new Error('Die Projektdatei enthält eine ungültige Objektliste (maximal 100 Objekte).');
     }
+    validateProjectObjectIdentities(project.objects);
     project.objects.forEach(object => { validateContourFrameMetadata(object); validateLoftMetadata(object); });
     validateProjectGeometryBudget(project.objects);
     return project;
