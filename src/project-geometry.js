@@ -33,8 +33,9 @@
     }
     const allowedArrays = { Float32Array, Float64Array, Uint8Array, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array };
     const geometry = new THREE.BufferGeometry();
-    let totalValues = 0;
-    Object.entries(data.attributes).forEach(([name, item]) => {
+    try {
+      let totalValues = 0;
+      Object.entries(data.attributes).forEach(([name, item]) => {
       if (!/^[a-zA-Z][a-zA-Z0-9_]{0,31}$/.test(name) || !item || !Array.isArray(item.array)) throw new Error('Ungültiges Geometrieattribut.');
       totalValues += item.array.length;
       if (totalValues > 1500000) throw new Error('Das Modell ist zu komplex für den sicheren Projektimport.');
@@ -52,8 +53,12 @@
     }
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
-    if (!geometry.attributes.normal) geometry.computeVertexNormals();
-    return geometry;
+      if (!geometry.attributes.normal) geometry.computeVertexNormals();
+      return geometry;
+    } catch (error) {
+      geometry.dispose();
+      throw error;
+    }
   }
 
   function serializeObjectForUnion(obj) {
