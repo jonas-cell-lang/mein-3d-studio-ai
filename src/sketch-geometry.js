@@ -244,7 +244,7 @@
         !holesB.every(validRing) ||
         ringA.length + ringB.length + holesA.reduce((sum, ring) => sum + (Array.isArray(ring) ? ring.length : 0), 0) +
           holesB.reduce((sum, ring) => sum + (Array.isArray(ring) ? ring.length : 0), 0) > maximumTotalProfilePoints) {
-      throw new TypeError('Loft-Innenkonturen müssen paarweise gültig sein und innerhalb der Punkt- und Ringgrenzen liegen.');
+      throw new TypeError('Loft-Innenkonturen müssen paarweise gültige Ringe mit gleicher Punktzahl enthalten und innerhalb der Punkt- und Ringgrenzen liegen.');
     }
     const alignRingPair = (a, b) => {
       const center = ring => ring.reduce((sum, point) => sum.add(point), new THREE.Vector3()).multiplyScalar(1 / ring.length);
