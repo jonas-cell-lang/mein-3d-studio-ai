@@ -2077,11 +2077,13 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     if (hole.some((point,index)=>Math.hypot(point.x-hole[(index+1)%hole.length].x,point.y-hole[(index+1)%hole.length].y)<window.SILMOTolerances.SKETCH_FREEFORM_MIN_POINT_SPACING_WORLD_UNITS)) throw new Error('Innenloch-Punkte liegen zu nahe beieinander.');
     if (Math.abs(area(hole)) < window.SILMOTolerances.FREEFORM_MIN_AREA_WORLD_UNITS2) throw new Error('Das Innenloch ist zu klein.');
     const orient=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
-    const onSegment=(a,b,p)=>Math.min(a.x,b.x)-1e-9<=p.x&&p.x<=Math.max(a.x,b.x)+1e-9&&Math.min(a.y,b.y)-1e-9<=p.y&&p.y<=Math.max(a.y,b.y)+1e-9;
+    const boundsEpsilon=window.SILMOTolerances.SKETCH_FREEFORM_BOUNDS_EPSILON_WORLD_UNITS;
+    const orientationEpsilon=window.SILMOTolerances.SKETCH_FREEFORM_ORIENTATION_EPSILON_WORLD_UNITS2;
+    const onSegment=(a,b,p)=>Math.min(a.x,b.x)-boundsEpsilon<=p.x&&p.x<=Math.max(a.x,b.x)+boundsEpsilon&&Math.min(a.y,b.y)-boundsEpsilon<=p.y&&p.y<=Math.max(a.y,b.y)+boundsEpsilon;
     const intersects=(a,b,c,d)=>{
       const o1=orient(a,b,c),o2=orient(a,b,d),o3=orient(c,d,a),o4=orient(c,d,b);
-      if (((o1>1e-9&&o2< -1e-9)||(o1< -1e-9&&o2>1e-9))&&((o3>1e-9&&o4< -1e-9)||(o3< -1e-9&&o4>1e-9))) return true;
-      return (Math.abs(o1)<=1e-9&&onSegment(a,b,c))||(Math.abs(o2)<=1e-9&&onSegment(a,b,d))||(Math.abs(o3)<=1e-9&&onSegment(c,d,a))||(Math.abs(o4)<=1e-9&&onSegment(c,d,b));
+      if (((o1>orientationEpsilon&&o2< -orientationEpsilon)||(o1< -orientationEpsilon&&o2>orientationEpsilon))&&((o3>orientationEpsilon&&o4< -orientationEpsilon)||(o3< -orientationEpsilon&&o4>orientationEpsilon))) return true;
+      return (Math.abs(o1)<=orientationEpsilon&&onSegment(a,b,c))||(Math.abs(o2)<=orientationEpsilon&&onSegment(a,b,d))||(Math.abs(o3)<=orientationEpsilon&&onSegment(c,d,a))||(Math.abs(o4)<=orientationEpsilon&&onSegment(c,d,b));
     };
     const inside=(p,ring)=>{let result=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){const a=ring[i],b=ring[j];if(((a.y>p.y)!==(b.y>p.y))&&(p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x))result=!result;}return result;};
     const selfCrosses=ring=>{for(let i=0;i<ring.length;i++)for(let j=i+1;j<ring.length;j++){if(j===i+1||(i===0&&j===ring.length-1))continue;if(intersects(ring[i],ring[(i+1)%ring.length],ring[j],ring[(j+1)%ring.length]))return true;}return false;};
