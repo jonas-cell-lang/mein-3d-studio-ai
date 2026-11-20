@@ -796,6 +796,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   function restoreState(state) {
     restoringHistory = true;
     const restoredObjects = [];
+    let committed = false;
     try {
       state.forEach(item => {
         const geometry = item.geometry.clone();
@@ -817,7 +818,15 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const previousObjects = objects.slice();
       previousObjects.forEach(obj => scene.remove(obj));
       objects.length = 0;
-      restoredObjects.forEach(obj => { scene.add(obj); objects.push(obj); });
+      try {
+        restoredObjects.forEach(obj => { scene.add(obj); objects.push(obj); });
+      } catch (error) {
+        restoredObjects.forEach(obj => scene.remove(obj));
+        objects.length = 0;
+        previousObjects.forEach(obj => { scene.add(obj); objects.push(obj); });
+        throw error;
+      }
+      committed = true;
       previousObjects.forEach(obj => {
         obj.geometry.dispose();
         (Array.isArray(obj.material) ? obj.material : [obj.material]).forEach(material => material.dispose());
@@ -830,10 +839,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       showProperties();
       updateMoveGizmo();
     } catch (error) {
-      restoredObjects.forEach(obj => {
-        obj.geometry.dispose();
-        (Array.isArray(obj.material) ? obj.material : [obj.material]).forEach(material => material.dispose());
-      });
+      if (!committed) {
+        restoredObjects.forEach(obj => {
+          obj.geometry.dispose();
+          (Array.isArray(obj.material) ? obj.material : [obj.material]).forEach(material => material.dispose());
+        });
+      }
       throw error;
     } finally {
       restoringHistory = false;
