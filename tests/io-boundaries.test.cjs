@@ -545,6 +545,26 @@ test('STL-Topologie akzeptiert zwei räumlich getrennte geschlossene Körper', (
   assert.equal(result.nonManifoldEdgeCount, 0);
   assert.equal(result.nonManifoldVertexCount, 0);
   assert.equal(result.isClosedEdgeManifold, true);
+  assert.equal(result.componentCount, 2);
+  assert.equal(result.invertedWinding, false);
+  assert.equal(result.mixedWinding, false);
+  geometry.dispose();
+});
+
+test('STL-Topologie erkennt getrennte Körper mit gemischter Orientierung auch bei aufhebendem Gesamtvolumen', () => {
+  const mixed = cubeTriangles.concat(cubeTriangles.map(triangle =>
+    triangle.map(([x, y, z]) => [x + 20, y, z]).reverse()
+  ));
+  const geometry = makeGeometryFromTriangles(mixed);
+  const result = stlDiagnostics.analyzeSTLGeometry(geometry);
+  assert.equal(result.isClosedEdgeManifold, true);
+  assert.equal(result.componentCount, 2);
+  assert.equal(result.invertedComponentCount, 1);
+  assert.equal(result.mixedWinding, true);
+  assert.equal(result.invertedWinding, null,
+    'Bei gemischter Orientierung darf keine einheitliche Gesamtorientierung behauptet werden');
+  assert.ok(Math.abs(result.signedVolumeMM3) < 1e-5,
+    'Die gleich grossen, entgegengesetzt orientierten Körper heben das Gesamtvolumen auf');
   geometry.dispose();
 });
 
