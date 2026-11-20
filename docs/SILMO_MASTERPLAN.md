@@ -564,3 +564,10 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 
 
 **Nachtrag zu Abschnitt 6.44/6.45:** Die beiden Spiegelungs-Regressionen prüfen jetzt ausdrücklich ein positives orientiertes Volumen und nicht nur dessen Absolutwert. Damit würde eine vollständig umgedrehte Dreiecksorientierung nicht mehr fälschlich als bestanden gelten. Die aktualisierten Tests sind auf Commit `1f7be71bfd114faeab237b79e33fcf1ce7277b4b` enthalten; CI steht noch aus.
+
+
+### 6.46 Boolesche Geometrie: leere Differenz und gespiegeltes Werkzeug (20.11.2026)
+- Ergänzt wurden zwei gezielte Regressionen: Die Differenz zweier identischer Körper muss als kontrolliert leeres Ergebnis abgelehnt werden; beide Eingabegeometrien müssen dabei unverändert bleiben.
+- Eine Differenz mit negativ skalierter/gespiegelter Werkzeuggeometrie muss das analytische Restvolumen 4 und positive Aussenorientierung liefern.
+- Diese Fälle erweitern die Prüfung von Fehlerbehandlung und Spiegelung. Sie ersetzen keine systematische Prüfung aller koplanaren, tangierenden und fast deckungsgleichen Flächen.
+- Tests hinzugefügt auf Commit `b7358420ec5778d3dda66f578c49a0fda9446c45`; CI-Ergebnis für diesen Commit steht noch aus.
