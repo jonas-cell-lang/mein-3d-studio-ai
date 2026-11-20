@@ -103,3 +103,37 @@ test('clear und dispose geben alle gehaltenen Snapshots frei', () => {
 test('Ungültige History-Callbacks werden abgelehnt', () => {
   assert.throws(() => createHistory({}), /benötigt captureState/);
 });
+
+test('Ein fehlgeschlagenes Undo mit ebenfalls fehlschlagender Rücksicherung erhält beide Verlaufspunkte', () => {
+  let value = 0;
+  let failRestores = true;
+  const history = createHistory({
+    captureState: () => ({ value }),
+    restoreState: snapshot => {
+      value = snapshot.value;
+      if (failRestores) throw new Error('simulierter Teil-Wiederherstellungsfehler');
+    },
+    disposeState: () => {}
+  });
+
+  history.record();
+  value = 1;
+  history.record();
+  value = 2;
+
+  assert.throws(() => history.undo(), error => {
+    assert.ok(error instanceof AggregateError);
+    assert.equal(error.errors.length, 2);
+    assert.match(error.message, /Rückkehr zum vorherigen Zustand/);
+    return true;
+  });
+  assert.equal(value, 2, 'Teilweise fehlgeschlagene Wiederherstellung darf den aktuellen Zustand nicht überschreiben');
+  assert.deepEqual(history.getStats(), { undoCount: 2, redoCount: 1, limit: 40, disposed: false });
+
+  failRestores = false;
+  assert.equal(history.undo(), true, 'Der ursprüngliche Undo-Punkt muss nach dem Fehler erneut verwendbar sein');
+  assert.equal(value, 1);
+  assert.equal(history.redo(), true, 'Der vor dem Fehler aktive Zustand muss über Redo erreichbar bleiben');
+  assert.equal(value, 2);
+  history.dispose();
+});
