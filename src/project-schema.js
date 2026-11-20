@@ -16,6 +16,7 @@
       'Float32Array', 'Float64Array', 'Uint8Array', 'Uint16Array', 'Uint32Array',
       'Int8Array', 'Int16Array', 'Int32Array'
     ]);
+    const indexTypeMaximums = Object.freeze({ Uint8Array: 0xff, Uint16Array: 0xffff, Uint32Array: 0xffffffff });
     const names = Object.keys(data.attributes);
     if (!names.length) throw new Error('Geometrie enthält keine Attribute.');
 
@@ -54,12 +55,14 @@
 
     if (data.index != null) {
       const index = data.index;
+      const maxIndexValue = index && indexTypeMaximums[index.arrayType];
       if (!index || typeof index !== 'object' || !Array.isArray(index.array) ||
           index.array.length < 3 || index.array.length > 4500000 ||
           index.array.length % 3 !== 0 ||
           !['Uint8Array', 'Uint16Array', 'Uint32Array'].includes(index.arrayType) ||
+          !Number.isInteger(maxIndexValue) ||
           !index.array.every(value => Number.isInteger(value) && value >= 0 && value < positionCount &&
-            value <= ({ Uint8Array: 0xff, Uint16Array: 0xffff, Uint32Array: 0xffffffff })[index.arrayType])) {
+            value <= maxIndexValue)) {
         throw new Error('Ungültige Modell-Indizes.');
       }
     } else if (positionCount % 3 !== 0) {
