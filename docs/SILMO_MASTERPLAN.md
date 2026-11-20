@@ -235,7 +235,7 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - Die App erstellt Mesh-/Material-Snapshots und übergibt Capture-, Restore- und Dispose-Funktionen an das unabhängige Modul.
 - Wiederherstellung baut die neuen Meshes und Materialien zuerst auf, bevor die bisherige Szene ersetzt wird; Material-Arrays werden unterstützt.
 - Unit-Tests decken Undo/Redo, Verlaufslimit, Snapshot-Freigabe, Clear/Dispose und fehlgeschlagene Wiederherstellung ab.
-- Weitere einzeln zugeordnete Schwellen für Rastergrenzen, Gruppenrotation, Profilquellabmessungen, Skizzenprofil-Schliessung, parallele Strahl-/Skizzenebenen-Berechnung, Bildkontur-Pixel-/Pixel²-Prüfungen und Lernkurs-Positionsänderungen sind in `src/tolerances.js` benannt und getestet.
+- Weitere einzeln zugeordnete Schwellen für Rastergrenzen, Gruppenrotation, Profilquellabmessungen, Skizzenprofil-Schliessung, parallele Strahl-/Skizzenebenen-Berechnung, Bildkontur-Prüfungen in Pixel/Pixel² und mm/mm² und Lernkurs-Positionsänderungen sind in `src/tolerances.js` benannt und getestet.
 - Die History bleibt snapshotbasiert. Eine inkrementelle/befehlsbasierte Historie und Speicher-/Leistungs-Baselines sind noch offen.
 - Der Browser-Testhelfer verwendet Playwright 1.65.1; die App-Runtime selbst hängt nicht von Playwright ab.
 
@@ -300,3 +300,9 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Der Browser-Testlauf vom 20.11.2026 deckte auf, dass eine mathematisch exakt 0,01 mm² grosse Kontur durch binäre Gleitkomma-Rundung knapp unter dem gespeicherten Grenzwert landen und abgewiesen werden konnte.
 - Die Mindestflächenvergleiche verwenden nun einen separaten numerischen Spielraum von `1e-12 mm²`; die fachliche Mindestfläche bleibt 0,01 mm².
 - Die Browser-Regression prüft weiterhin die exakte Grenze und eine deutlich kleinere Kontur von 0,009801 mm².
+
+
+### 6.17 Bildkontur-Einheiten im CAD-Prüfpfad präzisiert
+- Die Segment- und Punkt-in-Polygon-Prüfungen laufen ausschliesslich auf Konturen, die bereits auf reale Millimeter abgebildet wurden.
+- Fünf bisher mit `_PX` / `_PX2` bezeichnete Werte wurden deshalb dimensionsrichtig in `_MM` / `_MM2` umbenannt; Zahlenwerte und Verhalten blieben unverändert.
+- Die eigentliche Raster-/Bildkomponenten-Erkennung bleibt separat im Pixelraum.
