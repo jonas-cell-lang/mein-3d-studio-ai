@@ -1078,3 +1078,16 @@ Vor Beginn einer neuen Aufgabe:
 - Der Code-Check und der vollständige Playwright-Browserlauf sind auf Code-Commit `e96d550896e7b18e0ea912a13a8b22b7a93fd4ca` erfolgreich.
 - Der Lauf enthält die numerisch robuste Mindestflächenprüfung (0,01 mm² mit separatem 1e-12-mm²-Vergleichsspielraum) und die korrekt als mm/mm² benannten Punkt-in-Polygon-/Segmenttoleranzen.
 - Ein weiterer Code-Check auf dem nachfolgenden Dokumentationsstand `8df0875ca835099f3a9034150e09a263c439e7df` ist ebenfalls erfolgreich; der dazugehörige Browserlauf läuft noch. Die Programmdateien sind seit `e96d...` unverändert.
+
+
+## Ergänzung – zusätzliche STL- und Projektgeometrie-Regressionen am 20.11.2026
+
+- Der Browser-Test prüft jetzt zusätzlich eine binäre STL-Datei mit nicht endlichen Koordinaten (NaN). Der Import muss vor dem Modellaufbau abgewiesen werden; die Anzahl vorhandener Modelle muss unverändert bleiben.
+- Für Commit `690ff7c5d1bdec0645a6ffb8796bccd40d4be496` waren Code-Checks und vollständige Playwright-Browser-Regression erfolgreich.
+- Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44753695266
+- Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44753695318
+- `tests/project-schema.test.cjs` prüft zusätzlich, dass nicht-indizierte Meshes mit vollständigen Dreiecksgruppen akzeptiert und unvollständige Dreiecksgruppen abgewiesen werden.
+- Für Commit `414a79af11bd4554fef6f3049a8666dc25ea0c20` waren Code-Checks und vollständige Playwright-Browser-Regression erfolgreich.
+- Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44754049101
+- Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44754049089
+- PR #70 bleibt Draft. Kein Merge nach `main`, kein Live-Deployment und keine kostenpflichtigen Dienste; Kostenlimit CHF 0.00.
