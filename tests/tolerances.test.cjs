@@ -46,6 +46,7 @@ test('Toleranzwerte behalten die im Audit belegten Werte', () => {
   assert.equal(tolerances.IMAGE_MIN_COMPONENT_AREA_FRACTION, 0.000025);
   assert.equal(tolerances.IMAGE_MIN_PRINT_CONTOUR_AREA_MM2, 0.01);
   assert.equal(tolerances.IMAGE_MIN_SIMPLE_POLYGON_AREA_MM2, 0.01);
+  assert.equal(tolerances.IMAGE_MIN_AREA_COMPARISON_EPSILON_MM2, 1e-12);
   assert.equal(tolerances.IMAGE_MIN_WALL_THICKNESS_MM, 0.8);
 });
 
