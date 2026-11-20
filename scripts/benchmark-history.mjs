@@ -5,14 +5,13 @@ const require = createRequire(import.meta.url);
 const THREE = require('three');
 const { createHistory } = require('../src/history.js');
 
-const VERTICES_PER_OBJECT = 999;
 const RECORDS_PER_SCENARIO = 5;
 
-function makeObject(index) {
+function makeObject(index, verticesPerObject) {
   const geometry = new THREE.BufferGeometry();
-  const positions = new Float32Array(VERTICES_PER_OBJECT * 3);
-  for (let i = 0; i < VERTICES_PER_OBJECT; i++) {
-    const angle = (i / VERTICES_PER_OBJECT) * Math.PI * 2;
+  const positions = new Float32Array(verticesPerObject * 3);
+  for (let i = 0; i < verticesPerObject; i++) {
+    const angle = (i / verticesPerObject) * Math.PI * 2;
     positions[i * 3] = Math.cos(angle) * (1 + index * 0.001);
     positions[i * 3 + 1] = Math.sin(angle) * (1 + index * 0.001);
     positions[i * 3 + 2] = (i % 17) * 0.001;
@@ -70,8 +69,8 @@ async function collectGarbage() {
   }
 }
 
-async function runScenario(objectCount) {
-  let objects = Array.from({ length: objectCount }, (_, index) => makeObject(index));
+async function runScenario(objectCount, verticesPerObject) {
+  let objects = Array.from({ length: objectCount }, (_, index) => makeObject(index, verticesPerObject));
   const history = createHistory({
     limit: RECORDS_PER_SCENARIO,
     captureState: () => cloneState(objects),
@@ -119,7 +118,7 @@ async function runScenario(objectCount) {
   return {
     historyAfterDispose,
     objectCount,
-    verticesPerObject: VERTICES_PER_OBJECT,
+    verticesPerObject,
     snapshotsRecorded: RECORDS_PER_SCENARIO,
     recordMedianMs: Number(median(recordTimesMs).toFixed(3)),
     undoMs: Number(undoMs.toFixed(3)),
@@ -131,13 +130,13 @@ async function runScenario(objectCount) {
 }
 
 const results = [];
-for (const objectCount of [1, 10, 50]) {
-  results.push(await runScenario(objectCount));
+for (const [objectCount, verticesPerObject] of [[1, 999], [10, 999], [50, 999], [100, 9999]]) {
+  results.push(await runScenario(objectCount, verticesPerObject));
 }
 console.log(JSON.stringify({
   benchmark: 'SILMO snapshot-based Undo/Redo baseline',
   node: process.version,
   three: THREE.REVISION,
-  note: 'Informative baseline only; no machine-dependent pass/fail thresholds.',
+  note: 'Synthetic geometry stress baseline; includes a larger 100-object / 9,999-vertex scenario. Informative only; no machine-dependent pass/fail thresholds.',
   results
 }, null, 2));
