@@ -347,9 +347,22 @@
         (mode !== 'fillet' && mode !== 'chamfer')) {
       throw new TypeError('Kantenbearbeitung benötigt eine gültige Kontur, positive Tiefe und Fasenbreite sowie einen gültigen Modus.');
     }
+    const points = outline.map(point => [point[0], point[1]]);
+    const samePoint = (a, b) => a[0] === b[0] && a[1] === b[1];
+    if (points.length > 3 && samePoint(points[0], points[points.length - 1])) points.pop();
+    if (points.length < 3 || points.some((point, index) => samePoint(point, points[(index + 1) % points.length]))) {
+      throw new TypeError('Kantenbearbeitung benötigt mindestens drei unterschiedliche Konturpunkte ohne Nullkanten.');
+    }
+    const twiceArea = points.reduce((sum, point, index) => {
+      const next = points[(index + 1) % points.length];
+      return sum + point[0] * next[1] - next[0] * point[1];
+    }, 0);
+    if (!Number.isFinite(twiceArea) || Math.abs(twiceArea) <= 1e-12) {
+      throw new TypeError('Kantenbearbeitung benötigt eine Kontur mit einer Fläche grösser null.');
+    }
     const shape = new THREE.Shape();
-    shape.moveTo(outline[0][0], outline[0][1]);
-    outline.slice(1).forEach(point => shape.lineTo(point[0], point[1]));
+    shape.moveTo(points[0][0], points[0][1]);
+    points.slice(1).forEach(point => shape.lineTo(point[0], point[1]));
     shape.closePath();
     const geometry = new THREE.ExtrudeGeometry(shape, {
       depth,
