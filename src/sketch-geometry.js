@@ -1,8 +1,8 @@
 (function (root, factory) {
-  const api = factory(root.THREE);
+  const api = factory(root.THREE, root.SILMOTolerances);
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.SILMOSketchGeometry = api;
-})(globalThis, function (THREE) {
+})(globalThis, function (THREE, TOLERANCES = {}) {
   if (!THREE || !THREE.ExtrudeGeometry) {
     throw new Error('SILMO-Skizzengeometrie benötigt Three.js.');
   }
@@ -272,15 +272,15 @@
         normal.y += (a.z - b.z) * (a.x + b.x);
         normal.z += (a.x - b.x) * (a.y + b.y);
       }
-      if (normal.lengthSq() < 1e-18) throw new Error('Loft-Profil ist entartet und kann nicht gekappt werden.');
+      if (normal.lengthSq() < Math.pow(TOLERANCES.LOFT_PROFILE_MIN_NORMAL_WORLD_UNITS || 1e-9, 2)) throw new Error('Loft-Profil ist entartet und kann nicht gekappt werden.');
       normal.normalize();
       const u = outer[1].clone().sub(origin);
-      if (u.lengthSq() < 1e-18) throw new Error('Loft-Profil enthält aufeinanderfolgende identische Punkte.');
+      if (u.lengthSq() < Math.pow(TOLERANCES.LOFT_PROFILE_MIN_NORMAL_WORLD_UNITS || 1e-9, 2)) throw new Error('Loft-Profil enthält aufeinanderfolgende identische Punkte.');
       u.normalize();
       const v = new THREE.Vector3().crossVectors(normal, u).normalize();
       const project = ring => ring.map(point => {
         const delta = point.clone().sub(origin);
-        if (Math.abs(delta.dot(normal)) > 1e-6) throw new Error('Loft-Endprofile müssen jeweils planar sein.');
+        if (Math.abs(delta.dot(normal)) > (TOLERANCES.LOFT_PROFILE_PLANARITY_WORLD_UNITS || 1e-6)) throw new Error('Loft-Endprofile müssen jeweils planar sein.');
         return new THREE.Vector2(delta.dot(u), delta.dot(v));
       });
       const contours = [project(outer), ...holes.map(project)];
