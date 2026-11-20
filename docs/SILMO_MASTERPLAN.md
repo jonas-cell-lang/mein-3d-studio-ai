@@ -693,3 +693,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - tests/tolerances.test.cjs prüft beide Werte; der Laufzeit-Verwendungs-Audit stellt sicher, dass beide Konstanten tatsächlich verwendet werden.
 - Auf Commit 0c9e495c3df36a37482656bb70d38fc1f99eb37f bestanden die Code-Checks einschliesslich 124/124 Unit-Tests und der History-Benchmark (Run 44797636726), der isolierte OCCT-WebWorker-Prototyp (Run 44797641336) sowie der vollständige Browser-Interaktionstest (Run 44797641270).
 - Konsequenz: Die Snapshot-History bleibt vorerst bestehen. Vor einer Architekturänderung werden reale Browser-/CAD-Messungen und ein fairer Vergleich mit einer befehlsbasierten History benötigt.
+
+### 6.62 Projektimport: Skizzenring-Toleranzen nach Dimension getrennt (20.11.2026)
+- Die Projektformat-Validierung hatte denselben festen Wert 1e-12 sowohl für Koordinaten-/Segmentgrenzen als auch für Kreuzprodukt- und Flächenvergleiche verwendet. Diese dimensionsverschiedenen Vergleiche sind nun getrennt.
+- `src/tolerances.js` definiert `PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM`, `PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2` und `PROJECT_SKETCH_RING_MIN_EDGE_MM`. Alle drei behalten den bisherigen Zahlenwert 1e-12.
+- `src/project-schema.js` verwendet die zentrale Toleranz-API für Segmentbegrenzungen, Orientierungsprüfungen, Ringflächen und minimale Kantenlängen. Die bestehende Projektformat-Version 3 und die gespeicherten Daten werden dadurch nicht geändert.
+- Die Unit-Tests prüfen die drei Werte und beziehen `project-schema.js` in den Laufzeit-Verwendungs-Audit ein. Die Tests für gültige und ungültige gespeicherte Konturen bleiben bestehen.
+- Auf Commit 15a3523a0cacb42f8715b4080e039c455eaf340b bestanden 124/124 Unit-Tests, die History-Benchmark, Inline-JavaScript-Syntaxprüfung, Manifest-/HTML-ID-Prüfung und der lokale Pages-Pakettest. Browser-Interaktion und OCCT-WebWorker waren beim Dokumentationszeitpunkt noch in Bearbeitung.
+- Dies ist ein gezielter weiterer Schritt des Toleranz-Audits; das vollständige Inventar und die fachliche Prüfung aller verbleibenden Schwellen sind weiterhin offen.
