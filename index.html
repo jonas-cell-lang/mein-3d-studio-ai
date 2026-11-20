@@ -2157,7 +2157,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       }
       const points = sketchDraft?.type === 'freeform2d' ? sketchDraft.points : [];
       if (points.length >= 3) {
-        const distinct = points.filter((point, index) => index === 0 || point.distanceTo(points[index - 1]) > 0.005);
+        const distinct = points.filter((point, index) => index === 0 || point.distanceTo(points[index - 1]) > window.SILMOTolerances.SKETCH_FREEFORM_MIN_POINT_SPACING_WORLD_UNITS);
         if (distinct.length >= 3) {
           const cleaned = document.getElementById('sketchSmoothEnabled')?.checked
             ? simplifySketchPolyline(distinct, 0.5)
@@ -3474,9 +3474,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const clean=[];
     for(const point of points){
       const last=clean[clean.length-1];
-      if(!last||Math.hypot(point[0]-last[0],point[1]-last[1],point[2]-last[2])>1e-5)clean.push(point);
+      if(!last||Math.hypot(point[0]-last[0],point[1]-last[1],point[2]-last[2])>window.SILMOTolerances.HEART_OUTLINE_POINT_DEDUPLICATION_WORLD_UNITS)clean.push(point);
     }
-    if(clean.length>2&&Math.hypot(clean[0][0]-clean[clean.length-1][0],clean[0][1]-clean[clean.length-1][1],clean[0][2]-clean[clean.length-1][2])<1e-5)clean.pop();
+    if(clean.length>2&&Math.hypot(clean[0][0]-clean[clean.length-1][0],clean[0][1]-clean[clean.length-1][1],clean[0][2]-clean[clean.length-1][2])<window.SILMOTolerances.HEART_OUTLINE_POINT_DEDUPLICATION_WORLD_UNITS)clean.pop();
     if(clean.length<8)return {recognized:false,score:0,pointCount:clean.length,reason:'Zeichne eine zusammenhängende Herz-Umrandung mit mindestens acht Punkten.'};
     const spans=[0,1,2].map(axis=>Math.max(...clean.map(p=>p[axis]))-Math.min(...clean.map(p=>p[axis])));
     const pairs=[[0,1],[0,2],[1,2]].sort((a,b)=>spans[b[0]]*spans[b[1]]-spans[a[0]]*spans[a[1]]);
