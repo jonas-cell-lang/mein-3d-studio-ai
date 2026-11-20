@@ -114,6 +114,25 @@ test('Freiform-Skizzen validieren einfache, begrenzte und innenliegende Lochkont
   assert.throws(()=>schema.validateProjectEnvelope(missingOuter),/Innenkonturen/);
 });
 
+test('Skizzenkonturen haben ein gemeinsames sicheres Punktbudget', () => {
+  const project=validProject();
+  const circle=(cx,cy,r,count)=>Array.from({length:count},(_,i)=>[
+    cx+r*Math.cos(2*Math.PI*i/count),cy+r*Math.sin(2*Math.PI*i/count)
+  ]);
+  const outer=[[-100,-100],[100,-100],[100,100],[-100,100]];
+  const withinBudget={sketchOutline:outer,sketch:{type:'freeform2d',holes:[
+    circle(-60,0,5,830),circle(-30,0,5,830),circle(0,0,5,830),
+    circle(30,0,5,830),circle(60,0,5,830)
+  ]}};
+  project.objects.push(withinBudget);
+  assert.equal(schema.validateProjectEnvelope(project),project);
+  const overBudget=validProject();
+  overBudget.objects.push({...withinBudget,sketch:{...withinBudget.sketch,holes:[
+    ...withinBudget.sketch.holes,circle(80,0,5,830)
+  ]}});
+  assert.throws(()=>schema.validateProjectEnvelope(overBudget),/Innenkonturen/);
+});
+
 test('Projektimport weist selbstüberschneidende oder entartete Skizzenringe ab', () => {
   const base={sketchOutline:[[-10,-10],[10,-10],[10,10],[-10,10]],sketch:{type:'freeform2d',holes:[]}};
   const cases=[
