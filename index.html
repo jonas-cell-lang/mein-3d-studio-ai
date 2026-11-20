@@ -2072,8 +2072,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   function validateSketchHole(outer, hole, existingHoles = []) {
     const valid = ring => Array.isArray(ring) && ring.length >= 3 &&
       ring.every(point => point && Number.isFinite(point.x) && Number.isFinite(point.y));
-    if (!valid(outer) || !valid(hole) || hole.length > 1000) throw new Error('Innenkonturen brauchen 3 bis 500 gültige Punkte.');
+    if (!valid(outer) || !valid(hole) || hole.length > 1000) throw new Error('Innenkonturen brauchen 3 bis 1000 gültige Punkte.');
     const area = ring => ring.reduce((sum,p,i) => { const q=ring[(i+1)%ring.length]; return sum+p.x*q.y-q.x*p.y; },0)/2;
+    if (hole.some((point,index)=>Math.hypot(point.x-hole[(index+1)%hole.length].x,point.y-hole[(index+1)%hole.length].y)<window.SILMOTolerances.SKETCH_FREEFORM_MIN_POINT_SPACING_WORLD_UNITS)) throw new Error('Innenloch-Punkte liegen zu nahe beieinander.');
     if (Math.abs(area(hole)) < window.SILMOTolerances.FREEFORM_MIN_AREA_WORLD_UNITS2) throw new Error('Das Innenloch ist zu klein.');
     const orient=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
     const onSegment=(a,b,p)=>Math.min(a.x,b.x)-1e-9<=p.x&&p.x<=Math.max(a.x,b.x)+1e-9&&Math.min(a.y,b.y)-1e-9<=p.y&&p.y<=Math.max(a.y,b.y)+1e-9;
