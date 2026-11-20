@@ -106,3 +106,7 @@ Der BSP-CSG-Kern ist als `src/csg.js` ausgelagert. Der vollständige Browserlauf
 - Ein zusätzlicher Mindestabstandscheck verhindert, dass eine zu grosse Wandstärke bei einem kleinen Profil über die Innenkontur hinweg kollabiert und fälschlich wieder eine kleine gültige Kontur erzeugt.
 - Unit-Tests prüfen beide Konturrichtungen, Aussenabmessungen, analytisches Hohlrahmenvolumen und ungültige/zu grosse Wandstärken.
 - Code-Head `208815fd7d101f1af4520d2834c8437a9ea8bad4`: 54/54 Unit-Tests, Browser-Regression und OCCT-/WebWorker-Test erfolgreich.
+
+
+- `src/sketch-geometry.js` enthält zusätzlich die reine Geometrieerzeugung für Skizzen-Abrundungen und -Fasen. Auswahl, Eingabevalidierung, History und UI bleiben im Hauptskript.
+- Der Kantenbearbeitungs-Unit-Test prüft Fillet-/Chamfer-Modus, Abmessungen, Normalen, Bounding-Daten und ungültige Eingaben.
