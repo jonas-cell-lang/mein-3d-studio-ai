@@ -973,7 +973,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const primitiveBounds = (await page.evaluate(() => window.__silmoTutorialModelAudit())).slice(-3);
   const expectedPrimitiveBounds = [
     { label: 'Kegel', size: [16, 16, 15] },
-    { label: 'Sechskant-Prisma', size: [17, 2 * 8.5 * Math.cos(Math.PI / 6), 15] },
+    { label: 'Sechskant-Prisma', size: [2 * 8.5 * Math.cos(Math.PI / 6), 17, 15] },
     { label: 'Ring / Torus', size: [16.6, 16.6, 3.6] }
   ];
   for (let i = 0; i < expectedPrimitiveBounds.length; i++) {
