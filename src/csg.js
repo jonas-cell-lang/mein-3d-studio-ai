@@ -96,30 +96,74 @@
     }
   }
 
+  const MAX_INPUT_TRIANGLES = 25000;
+  const MAX_OUTPUT_TRIANGLES = 250000;
+  const MAX_ABSOLUTE_COORDINATE = 10000000;
+
   function polygonsFromMesh(mesh) {
+    if (!mesh || !mesh.isMesh || !mesh.geometry || !mesh.geometry.isBufferGeometry) {
+      throw new TypeError('CSG benötigt zwei gültige Meshes mit BufferGeometry.');
+    }
     mesh.updateMatrixWorld(true);
-    const geom = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
+    const geom = mesh.geometry;
     const pos = geom.getAttribute('position');
+    const index = geom.index;
+    const elementCount = index ? index.count : pos?.count;
+    if (!pos || pos.itemSize < 3 || !Number.isInteger(elementCount) || elementCount < 3 || elementCount % 3 !== 0) {
+      throw new TypeError('CSG benötigt vollständige Dreiecke und ein gültiges Positionsattribut.');
+    }
+    const triangleCount = elementCount / 3;
+    if (triangleCount > MAX_INPUT_TRIANGLES) {
+      throw new RangeError('CSG-Eingaben sind auf maximal ' + MAX_INPUT_TRIANGLES + ' Dreiecke pro Mesh begrenzt.');
+    }
     const world = mesh.matrixWorld;
+    if (!world.elements.every(Number.isFinite)) throw new TypeError('CSG-Transformation enthält ungültige Werte.');
     const polygons = [];
-    for (let i = 0; i + 2 < pos.count; i += 3) {
+    const vertex = new THREE.Vector3();
+    for (let i = 0; i < elementCount; i += 3) {
       const verts = [];
-      for (let j = 0; j < 3; j++) verts.push(new CSGVertex(new THREE.Vector3(pos.getX(i+j),pos.getY(i+j),pos.getZ(i+j)).applyMatrix4(world)));
+      for (let j = 0; j < 3; j++) {
+        const vertexIndex = index ? index.getX(i + j) : i + j;
+        if (!Number.isInteger(vertexIndex) || vertexIndex < 0 || vertexIndex >= pos.count) {
+          throw new TypeError('CSG-Index verweist ausserhalb des Positionsattributs.');
+        }
+        const x = pos.getX(vertexIndex), y = pos.getY(vertexIndex), z = pos.getZ(vertexIndex);
+        if (![x, y, z].every(Number.isFinite) ||
+            Math.max(Math.abs(x), Math.abs(y), Math.abs(z)) > MAX_ABSOLUTE_COORDINATE) {
+          throw new TypeError('CSG-Eingabe enthält ungültige oder zu grosse Koordinaten.');
+        }
+        vertex.set(x, y, z).applyMatrix4(world);
+        if (![vertex.x, vertex.y, vertex.z].every(Number.isFinite) ||
+            Math.max(Math.abs(vertex.x), Math.abs(vertex.y), Math.abs(vertex.z)) > MAX_ABSOLUTE_COORDINATE) {
+          throw new TypeError('CSG-Weltkoordinaten sind ungültig oder ausserhalb des erlaubten Bereichs.');
+        }
+        verts.push(new CSGVertex(vertex));
+      }
       const cross = verts[1].pos.clone().sub(verts[0].pos).cross(verts[2].pos.clone().sub(verts[0].pos));
       if (cross.lengthSq() > CSG_EPSILON * CSG_EPSILON) polygons.push(new CSGPolygon(verts));
     }
-    if (geom !== mesh.geometry) geom.dispose();
     if (!polygons.length) throw new Error('Eine Form enthält keine gültigen Dreiecke.');
     return polygons;
   }
 
   function geometryFromPolygons(polygons, localOffset) {
     const coords = [];
+    let outputTriangles = 0;
     polygons.forEach(poly => {
       if (poly.vertices.length < 3) return;
+      const triangleCount = poly.vertices.length - 2;
+      outputTriangles += triangleCount;
+      if (outputTriangles > MAX_OUTPUT_TRIANGLES) {
+        throw new RangeError('CSG-Ergebnis überschreitet die Grenze von ' + MAX_OUTPUT_TRIANGLES + ' Dreiecken.');
+      }
       for (let i = 2; i < poly.vertices.length; i++) {
         [poly.vertices[0], poly.vertices[i-1], poly.vertices[i]].forEach(v => {
-          const p = v.pos.clone().sub(localOffset); coords.push(p.x,p.y,p.z);
+          const p = v.pos.clone().sub(localOffset);
+          if (![p.x, p.y, p.z].every(Number.isFinite) ||
+              Math.max(Math.abs(p.x), Math.abs(p.y), Math.abs(p.z)) > MAX_ABSOLUTE_COORDINATE) {
+            throw new TypeError('CSG-Ergebnis enthält ungültige oder zu grosse Koordinaten.');
+          }
+          coords.push(p.x,p.y,p.z);
         });
       }
     });
