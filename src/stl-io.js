@@ -40,11 +40,11 @@
     let collapsedTriangleCount = 0;
     let degenerateTriangleCount = 0;
     let signedVolumeMM3 = 0;
-    // Ein fester lokaler Bezugspunkt verhindert Auslöschung bei weit vom
-    // Ursprung entfernten Modellen mit kleinen Abmessungen.
-    const volumeOrigin = [
-      position.getX(0), position.getY(0), position.getZ(0)
-    ];
+    const triangleVertexIds = [];
+    const vertexParents = [];
+    const vertexRanks = [];
+    // Komponenten werden über gemeinsam genutzte Dreieckskanten verbunden.
+    // So lässt sich die Orientierung jedes getrennten Körpers unabhängig prüfen.
     const cellKey = (x, y, z) => x + ',' + y + ',' + z;
     function vertexId(x, y, z) {
       const cx = Math.floor(x / weldToleranceMM);
@@ -63,10 +63,23 @@
       }
       const id = vertexCoordinates.length / 3;
       vertexCoordinates.push(x, y, z);
+      vertexParents[id] = id;
+      vertexRanks[id] = 0;
       const key = cellKey(cx, cy, cz);
       if (!cells.has(key)) cells.set(key, []);
       cells.get(key).push(id);
       return id;
+    }
+    function findVertexRoot(id) {
+      if (vertexParents[id] !== id) vertexParents[id] = findVertexRoot(vertexParents[id]);
+      return vertexParents[id];
+    }
+    function unionVertices(a, b) {
+      let rootA = findVertexRoot(a), rootB = findVertexRoot(b);
+      if (rootA === rootB) return;
+      if (vertexRanks[rootA] < vertexRanks[rootB]) [rootA, rootB] = [rootB, rootA];
+      vertexParents[rootB] = rootA;
+      if (vertexRanks[rootA] === vertexRanks[rootB]) vertexRanks[rootA]++;
     }
     function addEdge(from, to) {
       const low = Math.min(from, to), high = Math.max(from, to);
@@ -93,6 +106,10 @@
         [position.getX(i + 2), position.getY(i + 2), position.getZ(i + 2)]
       ];
       const ids = points.map(point => vertexId(point[0], point[1], point[2]));
+      triangleVertexIds.push(ids[0], ids[1], ids[2]);
+      unionVertices(ids[0], ids[1]);
+      unionVertices(ids[1], ids[2]);
+      unionVertices(ids[2], ids[0]);
       if (ids[0] === ids[1] || ids[1] === ids[2] || ids[2] === ids[0]) collapsedTriangleCount++;
       const abx = points[1][0] - points[0][0], aby = points[1][1] - points[0][1], abz = points[1][2] - points[0][2];
       const acx = points[2][0] - points[0][0], acy = points[2][1] - points[0][1], acz = points[2][2] - points[0][2];
@@ -105,14 +122,6 @@
       addVertexLink(ids[0], ids[1], ids[2]);
       addVertexLink(ids[1], ids[2], ids[0]);
       addVertexLink(ids[2], ids[0], ids[1]);
-      const a = points[0].map((value, axis) => value - volumeOrigin[axis]);
-      const b = points[1].map((value, axis) => value - volumeOrigin[axis]);
-      const d = points[2].map((value, axis) => value - volumeOrigin[axis]);
-      signedVolumeMM3 += (
-        a[0] * (b[1] * d[2] - b[2] * d[1]) +
-        a[1] * (b[2] * d[0] - b[0] * d[2]) +
-        a[2] * (b[0] * d[1] - b[1] * d[0])
-      ) / 6;
     }
     let boundaryEdgeCount = 0, nonManifoldEdgeCount = 0, inconsistentEdgeCount = 0;
     for (const edge of edges.values()) {
@@ -145,12 +154,50 @@
     const isClosedEdgeManifold = boundaryEdgeCount === 0 && nonManifoldEdgeCount === 0 &&
       nonManifoldVertexCount === 0 && inconsistentEdgeCount === 0 &&
       duplicateTriangleCount === 0 && collapsedTriangleCount === 0 && degenerateTriangleCount === 0;
-    const invertedWinding = isClosedEdgeManifold && Math.abs(signedVolumeMM3) > 1e-12 ? signedVolumeMM3 < 0 : null;
+    // Das Volumen wird je zusammenhängender Komponente relativ zu einem
+    // lokalen Vertex berechnet. Weit getrennte Körper beeinflussen dadurch
+    // weder die numerische Stabilität noch die Orientierungserkennung anderer Körper.
+    const componentVolumes = new Map();
+    for (let i = 0; i < triangleVertexIds.length; i += 3) {
+      const ids = [triangleVertexIds[i], triangleVertexIds[i + 1], triangleVertexIds[i + 2]];
+      const root = findVertexRoot(ids[0]);
+      if (!componentVolumes.has(root)) componentVolumes.set(root, 0);
+      const originOffset = root * 3;
+      const aOffset = ids[0] * 3, bOffset = ids[1] * 3, cOffset = ids[2] * 3;
+      const ax = vertexCoordinates[aOffset] - vertexCoordinates[originOffset];
+      const ay = vertexCoordinates[aOffset + 1] - vertexCoordinates[originOffset + 1];
+      const az = vertexCoordinates[aOffset + 2] - vertexCoordinates[originOffset + 2];
+      const bx = vertexCoordinates[bOffset] - vertexCoordinates[originOffset];
+      const by = vertexCoordinates[bOffset + 1] - vertexCoordinates[originOffset + 1];
+      const bz = vertexCoordinates[bOffset + 2] - vertexCoordinates[originOffset + 2];
+      const cx = vertexCoordinates[cOffset] - vertexCoordinates[originOffset];
+      const cy = vertexCoordinates[cOffset + 1] - vertexCoordinates[originOffset + 1];
+      const cz = vertexCoordinates[cOffset + 2] - vertexCoordinates[originOffset + 2];
+      const volume = (
+        ax * (by * cz - bz * cy) +
+        ay * (bz * cx - bx * cz) +
+        az * (bx * cy - by * cx)
+      ) / 6;
+      componentVolumes.set(root, componentVolumes.get(root) + volume);
+    }
+    let invertedComponentCount = 0, positiveComponentCount = 0;
+    for (const volume of componentVolumes.values()) {
+      signedVolumeMM3 += volume;
+      if (volume < -1e-12) invertedComponentCount++;
+      else if (volume > 1e-12) positiveComponentCount++;
+    }
+    const componentCount = componentVolumes.size;
+    const mixedWinding = isClosedEdgeManifold && invertedComponentCount > 0 && positiveComponentCount > 0;
+    const invertedWinding = isClosedEdgeManifold && componentCount > 0 &&
+      invertedComponentCount === componentCount ? true :
+      isClosedEdgeManifold && invertedComponentCount === 0 &&
+      positiveComponentCount === componentCount ? false : null;
     return Object.freeze({
       analyzed: true, triangleCount, weldedVertexCount: vertexCoordinates.length / 3,
       uniqueEdgeCount: edges.size, boundaryEdgeCount, nonManifoldEdgeCount,
       inconsistentEdgeCount, nonManifoldVertexCount, duplicateTriangleCount, collapsedTriangleCount, degenerateTriangleCount,
-      isClosedEdgeManifold, invertedWinding, signedVolumeMM3, weldToleranceMM
+      isClosedEdgeManifold, invertedWinding, mixedWinding, componentCount,
+      invertedComponentCount, signedVolumeMM3, weldToleranceMM
     });
   }
 
@@ -271,9 +318,13 @@
           let diagnosticMessage = '';
           if (stlDiagnostics.analyzed) {
             if (stlDiagnostics.isClosedEdgeManifold) {
-              diagnosticMessage = stlDiagnostics.invertedWinding
-                ? ' Topologie: geschlossenes Dreiecksnetz, aber negatives orientiertes Gesamtvolumen.'
-                : ' Topologie: geschlossenes Dreiecksnetz (Kantenprüfung).';
+              if (stlDiagnostics.mixedWinding) {
+                diagnosticMessage = ' Topologie: geschlossenes Dreiecksnetz, aber getrennte Komponenten haben gemischte Orientierung.';
+              } else if (stlDiagnostics.invertedWinding) {
+                diagnosticMessage = ' Topologie: geschlossenes Dreiecksnetz, aber die Komponenten sind umgekehrt orientiert.';
+              } else {
+                diagnosticMessage = ' Topologie: geschlossenes Dreiecksnetz (Kantenprüfung).';
+              }
             } else {
               const issues = [];
               if (stlDiagnostics.boundaryEdgeCount) issues.push(stlDiagnostics.boundaryEdgeCount + ' offene Kanten');
