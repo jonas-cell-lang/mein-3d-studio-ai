@@ -90,6 +90,18 @@ test('Loft-Metadaten mit Innenkonturen werden validiert und sind projektfähig',
   assert.throws(() => schema.validateProjectEnvelope(invalidReference), /Loft-Metadaten/);
 });
 
+test('Projektobjekt-IDs bleiben eindeutig und sicher', () => {
+  const project = validProject();
+  project.objects.push({ objectId: 'profile-a' }, { objectId: 'profile-b' });
+  assert.equal(schema.validateProjectEnvelope(project), project);
+  const duplicate = validProject();
+  duplicate.objects.push({ objectId: 'same-id' }, { objectId: 'same-id' });
+  assert.throws(() => schema.validateProjectEnvelope(duplicate), /doppelte Objektkennung/);
+  const malformed = validProject();
+  malformed.objects.push({ objectId: '../outside' });
+  assert.throws(() => schema.validateProjectEnvelope(malformed), /Objektkennung/);
+});
+
 test('falsche App-Kennung und ungültige Objektlisten werden abgelehnt', () => {
   assert.throws(() => schema.validateProjectEnvelope({ ...validProject(), app: 'Andere App' }), /keine gültige SILMO-Projektdatei/);
   assert.throws(() => schema.validateProjectEnvelope({ ...validProject(), objects: null }), /ungültige Objektliste/);
