@@ -48,7 +48,7 @@ try {
     [6, 15], [14, 15], [22, 15], [30, 15],
     [6, 23], [14, 23], [22, 23], [30, 23]
   ]) {
-    const cutter = kernel.translate(kernel.makeCylinder(1, 5), x, y, 0);
+    const cutter = kernel.translate(kernel.makeCylinder(1, 5.2), x, y, -0.1);
     twelveHolePlate = kernel.cut(twelveHolePlate, cutter);
   }
   closeTo(kernel.getVolume(twelveHolePlate), 6000 - 60 * Math.PI,
@@ -61,7 +61,7 @@ try {
 
   // Thin-wall check: a small through-hole in a 1.2 mm plate.
   const thinPlate = kernel.makeBox(40, 30, 1.2);
-  const thinPlateCutter = kernel.translate(kernel.makeCylinder(0.5, 1.2), 20, 15, 0);
+  const thinPlateCutter = kernel.translate(kernel.makeCylinder(0.5, 1.4), 20, 15, -0.1);
   const thinPlateWithHole = await time("thin-wall-cut", () => kernel.cut(thinPlate, thinPlateCutter));
   closeTo(kernel.getVolume(thinPlateWithHole), 40 * 30 * 1.2 - Math.PI * 0.25 * 1.2,
     "1.2 mm thin plate with radius-0.5 through-hole");
