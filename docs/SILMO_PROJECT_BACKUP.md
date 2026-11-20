@@ -1064,3 +1064,10 @@ Vor Beginn einer neuen Aufgabe:
 - Der Browser-Test deckte einen Gleitkomma-Grenzfall auf: eine mathematisch exakt 0,01 mm² grosse Kontur wurde durch binäre Rundung knapp unter dem Mindestwert eingeordnet.
 - Die Vergleiche verwenden jetzt `IMAGE_MIN_AREA_COMPARISON_EPSILON_MM2 = 1e-12`. Die fachliche Mindestfläche bleibt 0,01 mm²; 0,009801 mm² muss weiterhin abgewiesen werden.
 - Der korrigierte Stand muss den vollständigen Code- und Browser-Testlauf noch bestehen.
+
+
+## Ergänzung – Einheitenkorrektur der Bildkonturprüfung am 20.11.2026
+
+- Die Quellcode-Aufrufstellen bestätigen, dass Punkt-in-Polygon- und Segmentabstandsprüfungen nur auf bereits in reale Millimeter abgebildete Konturen angewendet werden.
+- Fünf Toleranznamen wurden deshalb von irreführenden Pixel-/Pixel²-Endungen auf mm-/mm²-Endungen korrigiert. Die Zahlenwerte und das Laufzeitverhalten blieben unverändert.
+- Die Bildraster-Erkennung bleibt weiterhin im Pixelraum; die Druckkonturprüfung bleibt im Modellmassraum.
