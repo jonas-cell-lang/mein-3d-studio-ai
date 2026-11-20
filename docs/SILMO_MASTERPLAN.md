@@ -396,3 +396,5 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Das Projektschema validiert die Loft-Referenzen, die Anzahl (0–8) und die paarweise Quellzuordnung.
 - Browser-Regression prüft den App-Workflow mit vier ausgewählten Profilen sowie Speichern und erneutes Öffnen einer Projektdatei.
 - **Noch offen:** Innenprofile müssen weiterhin als separate geschlossene Skizzenobjekte gezeichnet werden; eine direkte Lochzeichnung innerhalb eines einzigen Skizzenprofils und editierbare assoziative Loft-Features sind noch nicht umgesetzt.
+
+- Ergänzend werden Objekt-UUIDs im Projektformat gespeichert und beim Import wiederhergestellt, damit Loft-Quellprofilverweise nach einem Projekt-Roundtrip stabil bleiben. Das Schema weist ungültige oder doppelte gespeicherte Objektkennungen zurück.
