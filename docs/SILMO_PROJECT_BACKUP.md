@@ -1242,3 +1242,17 @@ Vor Beginn einer neuen Aufgabe:
 - Die Loft-Metadaten müssen unterschiedliche IDs für beide Aussenprofile und jedes Innenprofil-Paar enthalten.
 - Doppelte Profil-IDs werden bereits beim Projektimport abgewiesen.
 - Fehlende Quellobjekte bleiben als historische Referenzen erlaubt, damit bestehende Loft-Geometrie nicht beim Löschen der Ursprungsskizzen ungültig wird.
+
+
+## Ergänzung – Projektdatei-I/O absichern
+- Vor dem Download wird die erzeugte Projektstruktur mit dem Projekt-v3-Schema validiert.
+- JSON-Dateien über 25 MB werden nicht exportiert, weil der Import dieselbe Dateigrenze besitzt.
+- Importdateigrösse und FileReader-Fehler werden kontrolliert behandelt.
+- Der Modellbestand wird erst nach vollständigem Aufbau aller importierten Meshes ersetzt; bei einem Teilfehler werden vorbereitete Geometrien und Materialien freigegeben.
+- Isolierte Unit-Tests decken Save/Open, Roundtrip, ungültige Transformationen, Teilfehler und Importgrenzen ab.
+
+## Ergänzung – STL-I/O absichern
+- STL-Import ist zusätzlich zur 50-MB-Dateigrenze auf 500'000 Dreiecke und Koordinaten zwischen ±10'000'000 mm begrenzt.
+- STL-Export validiert Geometrieattribute, Dreiecksindizes, Positionen, Drehungen und Skalierungen; Nullskalierungen werden abgewiesen.
+- Die Umrechnung in mm erfolgt weiterhin auf temporären Kopien, nicht auf dem sichtbaren Modell.
+- Neue Unit-Tests prüfen Import-Skalierung/Zentrierung, vorhandene Modellbestände, beschädigte und übergrosse Dreiecksdateien sowie Export ohne Veränderung des Ursprungsmodells.
