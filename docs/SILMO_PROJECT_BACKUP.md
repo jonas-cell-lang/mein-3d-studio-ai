@@ -951,3 +951,14 @@ Vor Beginn einer neuen Aufgabe:
 - Import prüft Positionsdaten und entsorgt nicht übernommene Geometrie-/Materialressourcen bei Fehlern. Export arbeitet mit Kopien und entsorgt diese nach Abschluss.
 - Die Browser-Regression muss diesen Stand noch vollständig prüfen; bis dahin gilt die Auslagerung als implementiert, aber nicht abgenommen.
 - Kein Merge nach `main`, kein Live-Deployment, keine Kosten.
+
+
+## Ergänzung – STL-Adapter und erfolgreiche Gesamtregression am 20.11.2026
+
+- `src/stl-io.js` kapselt STL-Import und ASCII-STL-Export. Dateiauswahl, Drag-and-drop und Web-Link-Handling bleiben im CAD-Hauptskript; das Modul übernimmt Parsing, Positionsdatenprüfung, Einheitenumrechnung, Exportkopien und Ressourcenfreigabe.
+- Der neue Adapter ist in `index.html`, den Code-Asset-Prüfungen und dem Pages-Paketmanifest eingebunden.
+- Für Code-Commit `1e69a14ee41043d76fe95886b2e75938f791e2f9` waren Code-Checks und vollständige Playwright-Browser-Regression erfolgreich.
+- Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44736758062
+- Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44736758290
+- Der STL-Browserlauf prüft Dateiimport per Drop, Web-Link-Import sowie Export/erneuten Export nach Projekt-Wiederöffnung.
+- Kein Merge nach `main`, kein Live-Deployment, keine Kosten.
