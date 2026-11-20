@@ -619,3 +619,12 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Code-Checks auf Commit `960cf8600e59f5265a301facac83653df1309f8f`: 112/112 Unit-Tests erfolgreich.
 - Isolierter OCCT-WebWorker-Prototyp auf demselben Commit: erfolgreich.
 - Browser-Interaktionstest auf diesem Commit: beim letzten Statusabruf noch in Bearbeitung; daher nicht als bestanden dokumentiert.
+
+
+### 6.53 STL-Diagnose: ungültige und flächenlose Dreiecke (20.11.2026)
+- Die öffentliche STL-Topologieanalyse weist jetzt nicht-endliche XYZ-Koordinaten vor dem Weld-/Kantenaufbau mit einer klaren Fehlermeldung zurück.
+- Zusätzlich wird die geometrische Fläche jedes Dreiecks gegen die quadratische Verschweisstoleranz geprüft. Dadurch werden auch kollineare Dreiecke mit drei verschiedenen Eckpunkten als degeneriert erkannt.
+- Degenerierte Dreiecke fliessen ausdrücklich in `isClosedEdgeManifold` ein und können nicht mehr als geschlossenes, gültiges Netz gemeldet werden.
+- Neue Regressionstests decken NaN-Koordinaten und kollineare Dreiecke ab.
+- Code-Checks auf Commit `27202985272e3e9947c369c903208cfa0f5fba05`: 114/114 Unit-Tests erfolgreich.
+- Browser-Interaktion und OCCT-WebWorker liefen für diesen Commit beim Dokumentationszeitpunkt noch; Ergebnisse werden separat bestätigt.
