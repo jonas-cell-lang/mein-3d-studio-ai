@@ -654,3 +654,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Derselbe Test kehrt anschliessend die Dreiecksreihenfolge um und erwartet ungefähr -1000 mm³ sowie `invertedWinding === true`.
 - Auf Commit `9f9d770b8c01cb910db22037e260fa09f202269f` bestanden 119/119 Unit-Tests. Code-Checks, Browser-Interaktion und isolierter OCCT-/WebWorker-Prototyp waren erfolgreich.
 - Der Eintrag dokumentiert einen gezielten numerischen Grenzfall; er ist kein allgemeiner Nachweis für Druckbarkeit oder alle möglichen Mesh-Koordinatenbereiche.
+
+### 6.57 STL-Topologie: widersprüchliche Orientierung räumlich getrennter Körper (20.11.2026)
+- Die STL-Diagnose erkennt zusätzlich getrennte, räumlich separierte Körperkomponenten, deren Dreiecksorientierungen widersprüchlich sind.
+- Die Prüfung vergleicht die Begrenzungsboxen der Komponenten. Verschachtelte oder sich überlappende Begrenzungsboxen werden nicht allein wegen entgegengesetzter Vorzeichen als Konflikt gewertet; dadurch bleiben typische umgekehrt orientierte innere Hüllflächen geschlossener Hohlkörper zulässig.
+- Ein Regressionstest verwendet zwei gleich grosse, getrennte Würfel mit entgegengesetzter Orientierung. Obwohl sich ihre signierten Volumina im Gesamtwert aufheben, muss die Diagnose den Orientierungskonflikt erkennen.
+- Die Diagnose ist bewusst konservativ: Überlappende Begrenzungsboxen können auch bei tatsächlich getrennten oder sich schneidenden Geometrien vorkommen. Daraus folgt keine vollständige geometrische Kollisionsprüfung.
+- Auf Commit `d95c9679b03eaa1b76e16acdba744e6a6923c735` bestanden die Code-Checks (120/120 Unit-Tests), der isolierte OCCT-WebWorker-Prototyp und der vollständige Browser-Interaktionstest.
+- Der bestandene Browser-Test umfasst reale CAD-Interaktionen sowie Projekt-Wiederöffnung und anschliessenden STL-Export. Diese Prüfungen sind wichtige Regressionstests, aber kein allgemeiner Beweis für Fehlerfreiheit oder Druckbarkeit jedes Modells.
