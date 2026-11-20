@@ -646,3 +646,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Beide Fälle dürfen nicht als geschlossenes Edge-/Vertex-Manifold gemeldet werden.
 - Code-Checks auf Commit `fc518c038ec8e3230e92b95b908d13b1374f30b2`: 118/118 Unit-Tests erfolgreich, darunter beide neuen Kontaktfälle.
 - Browser-Interaktion und OCCT-WebWorker für diesen Commit sind noch in Bearbeitung; diese Ergebnisse werden separat bestätigt.
+
+### 6.56 STL-Volumenberechnung bei grossen Koordinaten stabilisiert (20.11.2026)
+- Die signierte Volumenberechnung in `analyzeSTLGeometry` verwendet jetzt einen lokalen Bezugspunkt aus dem ersten Mesh-Vertex. Vor der Berechnung des orientierten Volumens werden die Dreieckspunkte relativ zu diesem Ursprung ausgewertet.
+- Damit wird numerische Auslöschung bei kleinen Modellen verhindert, deren absolute Koordinaten weit vom Weltursprung entfernt liegen.
+- Der Regressionstest verschiebt einen geschlossenen Würfel mit 10 mm Kantenlänge in die Nähe von `[9000000, -9000000, 9000000]` und erwartet weiterhin ein geschlossenes Manifold sowie ein positives Volumen von ungefähr 1000 mm³.
+- Derselbe Test kehrt anschliessend die Dreiecksreihenfolge um und erwartet ungefähr -1000 mm³ sowie `invertedWinding === true`.
+- Auf Commit `9f9d770b8c01cb910db22037e260fa09f202269f` bestanden 119/119 Unit-Tests. Code-Checks, Browser-Interaktion und isolierter OCCT-/WebWorker-Prototyp waren erfolgreich.
+- Der Eintrag dokumentiert einen gezielten numerischen Grenzfall; er ist kein allgemeiner Nachweis für Druckbarkeit oder alle möglichen Mesh-Koordinatenbereiche.
