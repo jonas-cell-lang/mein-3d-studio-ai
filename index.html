@@ -2592,6 +2592,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       ? 'Hohl-Loft erstellt: '+holesA.length+' Innenkontur(en) wurden als echte Öffnungen verbunden.'
       : 'Loft erstellt: zwei Skizzenprofile wurden zu einem Körper verbunden.';
   }
+  window.__silmoSketchHoleMetadataSnapshot=()=>objects.filter(obj=>obj.userData?.sketch?.type==='freeform2d').map(obj=>({
+    holeCount:Array.isArray(obj.userData.sketch.holes)?obj.userData.sketch.holes.length:0,
+    outerPointCount:Array.isArray(obj.userData.sketchOutline)?obj.userData.sketchOutline.length:0
+  }));
   window.__silmoLoftMetadataSnapshot=()=>objects.filter(obj=>obj.userData?.loft).map(obj=>{
     const loft=obj.userData.loft;
     const sourceIds=[loft.sourceA,loft.sourceB,...(Array.isArray(loft.sourceHoles)?loft.sourceHoles.flatMap(pair=>[pair.a,pair.b]):[])];
