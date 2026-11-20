@@ -1196,4 +1196,4 @@ Vor Beginn einer neuen Aufgabe:
 - Validierung prüft Mindestfläche, Kantenabstand, Innenlage, Selbstüberschneidung und Überschneidung mit anderen Innenlöchern, bevor die bisherige Geometrie ersetzt wird.
 - History/Undo wird vor dem Austausch der Geometrie erfasst.
 - Kantenbearbeitete Körper sind vorerst von diesem direkten Neuaufbau ausgeschlossen, damit eine Punktänderung nicht unbemerkt Abrundungen oder Fasen entfernt.
-- Automatischer Browser-Test verschiebt einen Innenloch-Punkt an einem extrudierten Körper und prüft, dass das Loch erhalten bleibt.
+- Automatischer Browser-Test ändert nach der Extrusion zuerst die Gesamtmasse und verschiebt danach einen Innenloch- sowie einen Aussenkontur-Punkt. Die Öffnung muss dabei erhalten bleiben; gespeicherte Konturdaten werden gemeinsam mit der Geometrie skaliert.
