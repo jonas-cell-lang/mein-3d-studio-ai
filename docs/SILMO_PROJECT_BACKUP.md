@@ -992,3 +992,17 @@ Vor Beginn einer neuen Aufgabe:
 - Er misst 1, 10 und 50 Objekte mit je 999 Vertices, fünf Snapshots, Snapshot-Aufnahmezeit, Undo-/Redo-Zeit sowie Node-Speicherwerte vor/nach Snapshot und nach Freigabe/GC.
 - Der Benchmark ist bewusst informativ und verwendet keine maschinenabhängigen Schwellenwerte. Er ist eine isolierte History-Baseline, noch keine vollständige Browser-/CAD-Leistungsmessung.
 - Der neue Benchmark muss durch den nächsten Code-Check-Lauf ausgeführt und auf seine Messausgabe geprüft werden.
+
+
+## Ergänzung – reproduzierbare History-Baseline am 20.11.2026
+
+- `npm run benchmark:history` wurde in die Code-Checks aufgenommen. Der Benchmark verwendet Node v22.23.5 und Three.js r128, misst je 999 Vertices pro Objekt, fünf Snapshots und 1/10/50 Objekte.
+- Messung auf dem GitHub-Runner (nur Referenzwerte, keine Pass/Fail-Grenzen):
+  - 1 Objekt: Snapshot-Median 0,035 ms; Undo 0,192 ms; Redo 0,106 ms.
+  - 10 Objekte: Snapshot-Median 0,095 ms; Undo 0,277 ms; Redo 0,224 ms.
+  - 50 Objekte: Snapshot-Median 0,669 ms; Undo 1,429 ms; Redo 1,480 ms.
+- Bei 50 Objekten stiegen die ArrayBuffer-Werte während fünf Snapshots von rund 1,22 MB auf 7,21 MB und fielen nach History-Dispose und GC auf rund 20,8 KB zurück. Die History-Stacks waren danach leer und als disposed markiert.
+- Die Code-Checks inklusive Benchmark und die vollständige Playwright-Browser-Regression waren auf Commit `8ee614b10654e99b77d286c9bad66ae47e8342da` erfolgreich.
+- Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44738160483
+- Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44738160492
+- Dies ist eine erste isolierte Node-History-Baseline, keine Aussage über Browserleistung oder grosse CAD-Modelle.
