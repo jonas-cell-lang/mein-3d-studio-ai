@@ -269,3 +269,10 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Zahlenwerte wurden nicht verändert. Die Benennung hält Welteinheiten und Welteinheiten² getrennt und kennzeichnet den Vorschauversatz ausdrücklich als Darstellung.
 - `tests/tolerances.test.cjs` sichert alle neuen Werte; die betroffenen Aufrufstellen verwenden die zentrale API.
 - Offene Toleranzarbeit bleibt: weitere Aufrufstellen im Bild-Studio und in Modellierungsfunktionen systematisch inventarisieren; danach Grenzfalltests pro Funktionsfamilie ergänzen. Kein pauschales Ersetzen ähnlicher Zahlenwerte.
+
+
+### 6.12 Bild-Studio-Druckbarkeitsgrenzen
+- Der Mindestanteil einer erkannten Bildkomponente, die Mindestfläche real abgebildeter Konturen und die Mindestwandstärke sind in `src/tolerances.js` benannt.
+- `src/image-studio.js` nutzt diese Werte für die Bildkomponentenfilterung und die Druckbarkeitsprüfung. Die bestehenden Werte 0,000025, 0,01 mm² und 0,8 mm wurden nicht verändert.
+- Unit-Tests sichern die Werte; die Browser-Regression muss die automatische Konturerkennung, echte Innenlöcher und Druckbarkeitsvalidierung weiterhin bestehen.
+- Eine weitere gemischte Schwelle in `polygonIsSimple` bleibt offen, weil dieselbe Funktion Konturen vor und nach der Umrechnung auf reale Modellmasse prüft. Diese Schwelle wird erst migriert, wenn die Einheiten der beiden Aufrufpfade sauber getrennt sind.
