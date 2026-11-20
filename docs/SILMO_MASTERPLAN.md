@@ -440,3 +440,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Aussenkontur ist gegen versehentliches Entfernen geschützt. Nach dem Entfernen wird der Körper mit den verbleibenden Konturen neu aufgebaut und vor dem Commit validiert.
 - Browser-Regression prüft das Entfernen des einzigen Innenlochs und die erhaltene gültige Grundgeometrie.
 - Validierung auf Test-Head `9e714d46e3da9bda5c9b140ec9e26ef4ded20236`: Code Checks Run `44774341591`, Browser-Regression Run `44774342170` und isolierter OCCT-/WebWorker-Test Run `44774343771` erfolgreich.
+
+
+### 6.33 Topologieprüfung für gespeicherte Skizzen-Innenlöcher (20.11.2026)
+- Projektimport prüft bei Freiform-Skizzen mit Innenlöchern nicht mehr nur Array-Längen und endliche Koordinaten, sondern auch die Ringtopologie.
+- Die Aussenkontur und jedes Loch müssen einfache, geschlossene, nicht entartete 2D-Ringe sein. Jedes Loch muss strikt innerhalb der Aussenkontur liegen; Randberührung, Kantenkreuzung, Selbstüberschneidung, Überlappung und ineinander liegende Löcher werden abgewiesen.
+- Die Prüfung ist bewusst im Projekt-Schema implementiert und benötigt beim Import keine Three.js-Geometrieerzeugung.
+- Tests decken gültige Mehrfachlöcher sowie Selbstüberschneidung, Nullfläche, doppelte Nachbarpunkte, fehlende Aussenkontur, ausserhalb liegende Löcher, Randberührung, Kreuzungen, Überlappung, Berührung und Verschachtelung ab.
+- Die Geometrie- und Browserregressionen bleiben zusätzlich erforderlich; Schema-Prüfung allein ersetzt keine geometrische Druckbarkeitsprüfung.
