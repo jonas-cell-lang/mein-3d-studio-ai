@@ -72,3 +72,37 @@ test('Skizzenextrusion lehnt ein fehlendes Profil kontrolliert ab', () => {
   assert.throws(() => sketchGeometry.createExtrusionGeometry(null, { depth: 1 }), /gültiges 2D-Profil/);
   assert.equal(Object.isFrozen(sketchGeometry), true);
 });
+
+test('parametrische Skizzenprofile behalten ihre definierten Aussenabmessungen', () => {
+  const cases = [
+    ['rectangle', { width: 4, depth: 3 }, 0, [4, 3]],
+    ['circle', { width: 4, depth: 4 }, 0, [4, 4]],
+    ['ellipse', { width: 4, depth: 2 }, 0, [4, 2]],
+    ['triangle', { width: 4, depth: 3 }, 0, [4, 3]],
+    ['roundedRectangle', { width: 4, depth: 3 }, 0.5, [4, 3]]
+  ];
+  for (const [type, dimensions, radius, expected] of cases) {
+    const shape = sketchGeometry.createParametricProfile(type, dimensions, radius);
+    const geometry = sketchGeometry.createExtrusionGeometry(shape, { depth: 1, bevelEnabled: false });
+    try {
+      const size = geometry.boundingBox.getSize(new THREE.Vector3());
+      assert.ok(Math.abs(size.x - expected[0]) < 1e-6, type + ' Breite');
+      assert.ok(Math.abs(size.y - expected[1]) < 1e-6, type + ' Tiefe');
+      assert.ok(Math.abs(size.z - 1) < 1e-6, type + ' Höhe');
+      assert.ok(meshVolume(geometry) > 0, type + ' muss ein Volumen erzeugen');
+    } finally {
+      geometry.dispose();
+    }
+  }
+});
+
+test('abgerundetes Profil unterstützt die umgekehrte Konturrichtung für Innenkonturen', () => {
+  const hole = new THREE.Path();
+  sketchGeometry.addRoundedRectPath(hole, 2, 1, 0.2, 0, 0, true);
+  hole.closePath();
+  assert.ok(hole.getPoints(8).length >= 8);
+});
+
+test('parametrische Profile lehnen ungültige Abmessungen kontrolliert ab', () => {
+  assert.throws(() => sketchGeometry.createParametricProfile('rectangle', { width: 0, depth: 2 }), /positive Abmessungen/);
+});
