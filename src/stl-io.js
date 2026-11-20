@@ -7,13 +7,15 @@
 
   // Prüft die Dreiecks-Topologie, ohne die STL-Geometrie zu verändern.
   // STL-Koordinaten liegen an dieser Stelle noch in Millimetern vor.
+  const MAX_STL_DIAGNOSTIC_TRIANGLES = 100000;
+
   function analyzeSTLGeometry(geometry) {
     const position = geometry && geometry.attributes && geometry.attributes.position;
     if (!position || position.itemSize !== 3 || position.count < 3 || position.count % 3 !== 0) {
       throw new Error('Für die STL-Topologieprüfung werden vollständige Dreiecke benötigt.');
     }
     const triangleCount = position.count / 3;
-    const maxTriangles = tolerances.STL_DIAGNOSTIC_MAX_TRIANGLES;
+    const maxTriangles = MAX_STL_DIAGNOSTIC_TRIANGLES;
     if (!Number.isInteger(maxTriangles) || maxTriangles < 1) {
       throw new Error('Das STL-Diagnoselimit ist nicht korrekt konfiguriert.');
     }
