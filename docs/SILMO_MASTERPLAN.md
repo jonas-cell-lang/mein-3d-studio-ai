@@ -415,3 +415,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Browser-Regression prüft das Verschieben eines Innenloch- und Aussenkontur-Punktes an einem bereits erzeugten Körper. Zusätzlich werden die Konturkoordinaten beim Ändern der Gesamtmasse mitskaliert; Innenlochfläche und Aussenkontur bleiben synchron.
 - Noch nicht unterstützt: Konturbearbeitung an bereits abgerundeten/abgefasten Körpern; parametrische Abhängigkeiten und interaktive direkte Manipulation im 3D-Viewport.
 - Validierung auf Test-Head `065693f968f1b4e077cfaaa774cd36dda1b0d797`: Code Checks Run `44772620376`, Browser-Regression Run `44772620471` und isolierter OCCT-/WebWorker-Test Run `44772620241` erfolgreich. Der Browser-Test ändert auch die Gesamtmasse und bearbeitet danach Innen- und Aussenkontur; die Öffnung bleibt erhalten.
+
+
+### 6.30 Loft-Feature aus gespeicherten Quellprofilen aktualisieren (20.11.2026)
+- Ein ausgewählter Loft-Körper kann über „Aus Quellprofilen aktualisieren“ aus den gespeicherten UUID-Referenzen seiner Aussen- und Innenprofile neu aufgebaut werden.
+- Die Funktion übernimmt aktuelle Quellkonturen und Welttransformationen. Die neue Geometrie wird in den lokalen Koordinatenraum des Loft-Objekts zurücktransformiert; dessen Position, Drehung und Skalierung bleiben bestehen.
+- Fehlende Quellprofile, ungültige Konturen, unvollständige Innenprofil-Paare und gesperrte Loft-Körper werden kontrolliert abgewiesen. Die alte Geometrie wird erst nach erfolgreicher Neuerzeugung ersetzt.
+- Browser-Regression verändert die Position eines Quellprofils und prüft, dass der ausgewählte Loft-Körper eine neue Bounding-Box erhält.
+- Grenze: Die Aktualisierung erfolgt bewusst manuell über die Schaltfläche; automatische Live-Neuberechnung bei jeder Quelländerung und vollständige Feature-Abhängigkeitsverwaltung bleiben offen.
