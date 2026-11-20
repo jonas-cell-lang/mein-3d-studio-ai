@@ -214,34 +214,73 @@
     return { curve, geometry };
   }
 
-  function createLoftGeometry(ringA, ringB) {
-    if (!Array.isArray(ringA) || !Array.isArray(ringB) || ringA.length < 3 || ringA.length !== ringB.length ||
-        !ringA.every(point => point && Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z)) ||
-        !ringB.every(point => point && Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z))) {
+  function createLoftGeometry(ringA, ringB, options = {}) {
+    const validRing = ring => Array.isArray(ring) && ring.length >= 3 &&
+      ring.every(point => point && Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z));
+    if (!validRing(ringA) || !validRing(ringB) || ringA.length !== ringB.length ||
+        !options || typeof options !== 'object') {
       throw new TypeError('Loft-Ringe müssen gleich viele gültige 3D-Punkte enthalten.');
     }
-    const vertices = [];
-    for (let i = 0; i < ringA.length; i++) {
-      const next = (i + 1) % ringA.length;
-      appendTriangle(vertices, ringA[i], ringA[next], ringB[i]);
-      appendTriangle(vertices, ringA[next], ringB[next], ringB[i]);
+    const holesA = options.holesA || [], holesB = options.holesB || [];
+    if (!Array.isArray(holesA) || !Array.isArray(holesB) || holesA.length !== holesB.length ||
+        !holesA.every((ring, index) => validRing(ring) && ring.length === holesB[index]?.length) ||
+        !holesB.every(validRing)) {
+      throw new TypeError('Loft-Innenkonturen müssen paarweise gültige Ringe mit gleicher Punktzahl enthalten.');
     }
-    const cap = (ring, reverse) => {
-      const contour = ring.map(point => new THREE.Vector2(point.x, point.y));
-      const triangles = THREE.ShapeUtils.triangulateShape(contour, []);
+    const vertices = [];
+    const connect = (a, b) => {
+      for (let i = 0; i < a.length; i++) {
+        const next = (i + 1) % a.length;
+        appendTriangle(vertices, a[i], a[next], b[i]);
+        appendTriangle(vertices, a[next], b[next], b[i]);
+      }
+    };
+    connect(ringA, ringB);
+    holesA.forEach((hole, index) => connect(hole, holesB[index]));
+
+    const cap = (outer, holes, reverse) => {
+      const origin = outer[0];
+      let normal = new THREE.Vector3();
+      for (let i = 0; i < outer.length; i++) {
+        const a = outer[i], b = outer[(i + 1) % outer.length];
+        normal.x += (a.y - b.y) * (a.z + b.z);
+        normal.y += (a.z - b.z) * (a.x + b.x);
+        normal.z += (a.x - b.x) * (a.y + b.y);
+      }
+      if (normal.lengthSq() < 1e-18) throw new Error('Loft-Profil ist entartet und kann nicht gekappt werden.');
+      normal.normalize();
+      const u = outer[1].clone().sub(origin);
+      if (u.lengthSq() < 1e-18) throw new Error('Loft-Profil enthält aufeinanderfolgende identische Punkte.');
+      u.normalize();
+      const v = new THREE.Vector3().crossVectors(normal, u).normalize();
+      const project = ring => ring.map(point => {
+        const delta = point.clone().sub(origin);
+        if (Math.abs(delta.dot(normal)) > 1e-6) throw new Error('Loft-Endprofile müssen jeweils planar sein.');
+        return new THREE.Vector2(delta.dot(u), delta.dot(v));
+      });
+      const contours = [project(outer), ...holes.map(project)];
+      const flat = contours.flat();
+      const triangles = THREE.ShapeUtils.triangulateShape(contours[0], contours.slice(1));
+      if (!triangles.length) throw new Error('Loft-Profil konnte nicht trianguliert werden.');
+      const points = [outer, ...holes].flat();
       triangles.forEach(triangle => {
-        const ids = reverse ? [triangle[2], triangle[1], triangle[0]] : triangle;
-        appendTriangle(vertices, ring[ids[0]], ring[ids[1]], ring[ids[2]]);
+        let ids = triangle.slice();
+        const a = points[ids[0]], b = points[ids[1]], c = points[ids[2]];
+        const ab = b.clone().sub(a), ac = c.clone().sub(a);
+        const faceNormal = new THREE.Vector3().crossVectors(ab, ac);
+        const shouldPointAlongNormal = !reverse;
+        if ((faceNormal.dot(normal) > 0) !== shouldPointAlongNormal) ids = [ids[0], ids[2], ids[1]];
+        appendTriangle(vertices, points[ids[0]], points[ids[1]], points[ids[2]]);
       });
     };
-    cap(ringA, true);
-    cap(ringB, false);
+    cap(ringA, holesA, true);
+    cap(ringB, holesB, false);
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
     geometry.computeVertexNormals();
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
-    if (!geometry.boundingBox || geometry.boundingBox.isEmpty()) {
+    if (!geometry.boundingBox || geometry.boundingBox.isEmpty() || !geometry.attributes.position.count) {
       geometry.dispose();
       throw new Error('Loft konnte keine gültige Geometrie erzeugen.');
     }
