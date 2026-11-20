@@ -142,6 +142,26 @@ test('Projektimport weist auch selbstüberschneidende Aussenkonturen mit Innenl�
   assert.throws(()=>schema.validateProjectEnvelope(project),/Innenkonturen/);
 });
 
+test('Loft-Metadaten verwenden eindeutige Quellprofil-IDs', () => {
+  const project=validProject();
+  project.objects.push({
+    objectId:'loft-body',
+    loft:{sourceA:'outer-a',sourceB:'outer-b',sections:2,innerContourCount:2,sourceHoles:[
+      {a:'hole-a1',b:'hole-b1'},{a:'hole-a2',b:'hole-b2'}
+    ]}
+  });
+  assert.equal(schema.validateProjectEnvelope(project),project);
+  const duplicateOuter=structuredClone(project);
+  duplicateOuter.objects[0].loft.sourceB='outer-a';
+  assert.throws(()=>schema.validateProjectEnvelope(duplicateOuter),/eindeutige Objektkennungen/);
+  const duplicateHole=structuredClone(project);
+  duplicateHole.objects[0].loft.sourceHoles[1].a='hole-a1';
+  assert.throws(()=>schema.validateProjectEnvelope(duplicateHole),/eindeutige Objektkennungen/);
+  const samePair=structuredClone(project);
+  samePair.objects[0].loft.sourceHoles[0].b='hole-a1';
+  assert.throws(()=>schema.validateProjectEnvelope(samePair),/eindeutige Objektkennungen/);
+});
+
 test('Projektimport weist selbstüberschneidende oder entartete Skizzenringe ab', () => {
   const base={sketchOutline:[[-10,-10],[10,-10],[10,10],[-10,10]],sketch:{type:'freeform2d',holes:[]}};
   const cases=[
