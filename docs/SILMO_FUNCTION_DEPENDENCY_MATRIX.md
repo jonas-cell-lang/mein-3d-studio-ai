@@ -1,6 +1,6 @@
 # SILMO – Funktions- und Abhängigkeitsmatrix
 
-**Stand:** 15.11.2026
+**Stand:** 20.11.2026
 **Basis:** Technische Bestandsaufnahme v90 vom 14.11.2026 und Masterplan.
 **Zweck:** Bestehende Funktionen und bekannte technische Grundlagen vor Architektur- und Kernelmigration festhalten.
 
@@ -10,7 +10,7 @@
 
 | Bereich | Vorhandener Stand laut Audit | Bereits vorhandene Prüfung | Schutz bei Migration |
 |---|---|---|---|
-| 3D-Ansicht | Three.js r128, Kamera/Navigation, Arbeitsraster und Druckbett | Browserstart und Canvas-Prüfung | Rendering und Bedienung unabhängig vom CAD-Kern halten |
+| 3D-Ansicht | Three.js r128 lokal gepinnt, Kamera/Navigation, Arbeitsraster und Druckbett | Browserstart und Canvas-Prüfung | Rendering und Bedienung unabhängig vom CAD-Kern halten |
 | Grundkörper | Würfel, Kugel, Zylinder, Kegel, Sechskant-Prisma, Torus | Objektanlage im Browser-Test | Geometrie, Masse und Bedienabläufe erhalten |
 | Objektbearbeitung | Auswahl, Mehrfachauswahl, Verschieben, Drehen, Skalieren, Duplizieren, Löschen, Sperren | Browser-Regressionstests | Objekt-IDs und Transformationen schützen |
 | Gruppen | Gruppieren, Gruppierung aufheben, Gruppenbearbeitung | Browser-Regressionstests | Gruppenstruktur und Undo/Redo erhalten |
@@ -21,9 +21,9 @@
 | Boolesche Operationen | Eigene BSP-basierte CSG-Operationen; Vereinigen und Abziehen | Browser-Regressionstests | BSP erst nach Vergleichs- und Regressionstests ersetzen |
 | Loft/Sweep | Vorhandene Loft- und Sweep-Werkzeuge | Browser-Regressionstests | Vorhandene Profile, Pfade und Ergebnisse als Referenz sichern |
 | Kantenbehandlung | Abrunden und Fasen | Browser-Regressionstests | Fehlgeschlagene Operationen dürfen Originalgeometrie nicht beschädigen |
-| Projektdateien | JSON-Projekt mit eingebetteten Geometriedaten, Öffnen/Speichern | Genaue Schemaabdeckung offen | Rückwärtskompatibilität und Schema-Versionierung definieren |
-| STL | Import und Export | Grenzfallabdeckung offen | Mesh-Ausgabe, Einheiten und Normalen prüfen |
-| Image Studio | Bildvorlage importieren, drehen, skalieren; Konturerkennung; Übergabe in Skizze/3D | Synthetische Browser-Regressionsfälle | Nicht als beliebige vollständige Foto-zu-3D-Rekonstruktion ausgeben |
+| Projektdateien | Projektformat v3 mit eingebetteten Geometriedaten, Schema- und Geometrievalidierung, Öffnen/Speichern | Unit- und Browser-Tests inkl. minimalem/erweitertem Fixture sowie fehlerhaften Geometriedaten | Reale ältere Benutzerprojekte und explizite Migrationen bleiben offen |
+| STL | Import/Export in `src/stl-io.js`, zentrale mm-Konvertierung, Prüfung von Dateigrösse/Positionsdaten/Koordinaten, Export auf Geometriekopien | Browser-Tests für Import, Mehrfachimport, Export, Skalierung, Roundtrip und beschädigte STL | Weitere reale STL-Fixtures, Normalen-/Topologieprüfung und grosse Dateien bleiben offen |
+| Image Studio | Bildvorlage importieren, drehen, skalieren; Konturerkennung; Übergabe in Skizze/3D | Synthetische Browser-Regressionsfälle inkl. Randabstand, Lochüberschneidung, Selbstüberschneidung, 0,8-mm-Wand- und 0,01-mm²-Flächengrenze | Keine beliebige vollständige Foto-zu-3D-Rekonstruktion behaupten; weitere reale/komplexe Vorlagen und Erkennungsqualität bleiben offen |
 | Oberfläche | Hauptbereiche und fokussierte Unterreiter; Anfänger-/Expertenmodus | Browser-Tests auf Sichtbarkeit und Interaktion | Keine Funktionen aus Einfachheitsgründen entfernen |
 | Diagnose/Tutorials | Tastenkürzel, Tutorials, Diagnose-/Prüftool | Teilweise Browser-Tests | Hilfen beim Modulumbau erhalten |
 
@@ -32,14 +32,14 @@
 | Grundlage | Im Audit bestätigter Ist-Zustand | Daraus folgender Architekturbedarf |
 |---|---|---|
 | Anwendungseintritt | Hauptsächlich eine index.html mit eingebettetem CSS/JavaScript | Modulgrenzen schrittweise herauslösen; Anwendung lauffähig halten |
-| Rendering | Three.js r128 über externe CDN-Skripte | Rendering als eigene Schicht erhalten; Abhängigkeiten später lokal verwalten |
+| Rendering | Three.js r128 aus lokal bereitgestellten, gepinnten Dateien | Rendering als eigene Schicht erhalten; Abhängigkeiten später lokal verwalten |
 | Modellrepräsentation | Aktive Objekte sind Three.js-Meshes mit BufferGeometry | Exakte Geometrie und triangulierte Darstellung trennen |
 | Boolesche Geometrie | Eigener BSP-basierter CSG-Algorithmus | Vergleichstestkorpus erstellen; keinen ungetesteten Austausch vornehmen |
 | Einheiten | 1 Three.js-Einheit = 10 mm (der Code teilt Millimeterwerte durch 10, um interne Koordinaten zu erhalten); Umrechnung an mehreren Stellen | Zentrale Unit-/Tolerance-API definieren; bisherige Umrechnung zunächst unverändert lassen |
-| Projektformat | JSON mit eingebetteten Geometriedaten, Transformationen und Metadaten | Dokumentmodell mit Schema-Versionen und Migrationen spezifizieren |
-| Undo/Redo | Vollständige Objektzustandskopien | Speicher-/Leistungsbaseline messen; später befehlsbasierten Verlauf vergleichen |
-| Tests | Playwright-Browser-Test mit 327 Assertions laut Audit | Mathematische Unit- und Integrationstests ergänzen |
-| Abhängigkeiten | Keine package.json im Repository-Root; CDN-Laufzeitabhängigkeiten | Build- und Dependency-Strategie nach Bestandsaufnahme festlegen |
+| Projektformat | JSON v3 mit eingebetteten Geometriedaten, Transformationen und Metadaten | Validatoren und Fixtures vorhanden; Migrationen erst mit realen Altformaten ergänzen |
+| Undo/Redo in `src/history.js`, snapshotbasiert mit Restore-/Dispose-Schutz und Material-Arrays | Unit-Tests plus Node-Benchmark für 1/10/50 Objekte | Browser-RAM/Frame-Zeit und grosse reale Meshes fehlen; inkrementelle/befehlsbasierte History bleibt offen |
+| Tests | Playwright-Browserregression plus Node-Unit-Tests; aktueller Testquellstand: 23 Unit-Testfälle und 9 Browser-Testblöcke mit zusammen ungefähr 505 Assertion-Aufrufen | Geometrische Sollwerte, grosse reale CAD-Modelle und Browser-Leistungsmessungen ergänzen |
+| Abhängigkeiten | `package.json`/Lockdatei, Three.js 0.128.0 gepinnt und lokale Runtime-Vorbereitung; keine CDN-Laufzeitabhängigkeit | Reproduzierbaren Build und Pages-Paketprüfung erhalten |
 | Bildverarbeitung | Lokale Browser-Konturerkennung | Foto-zu-3D getrennt erforschen; Ergebnisse editierbar halten |
 
 ## 3. Datenflussübersicht – bestätigte und offene Beziehungen
@@ -99,10 +99,12 @@ Diese offenen Fragen werden anhand konkreter Funktionsnamen, Aufrufstellen und T
 **Abnahme:** Der migrierte Ablauf funktioniert vom Erstellen über Bearbeiten und Anzeigen bis Speichern/Wiederöffnen.
 
 ## 5. Nächste konkrete Arbeit nach dieser Matrix
-1. Quellcodeprüfung der Einheitenumrechnung, Objekt-Erzeugung, Mesh-Manipulation, Projektserialisierung und CSG-Aufrufstellen.
-2. Referenzfixtures und mathematische Sollwerte aus dem vorhandenen Verhalten ableiten.
-3. Zentrale Unit-/Tolerance-Spezifikation festlegen, ohne das aktuelle Verhalten zu verändern.
-4. Danach den isolierten Kernel-Prototyp anhand der dokumentierten Kandidaten und desselben Testkatalogs durchführen.
+1. Restliche Quellcodeprüfung der Objekt-Erzeugung, Mesh-Manipulation, Projektserialisierung und CSG-Aufrufstellen abschliessen.
+2. Mathematische Sollwerte für Grundkörper, Extrusion, Boolesche Operationen, Loft/Sweep, Fillet/Chamfer und STL aus Referenzkörpern ergänzen.
+3. Browser-RAM/Frame-Zeit und Import-/Export-/CSG-Zeit an grösseren realen Meshes messen.
+4. Toleranz-Audit mit positiven/negativen Grenzfällen pro Funktionsfamilie vervollständigen.
+5. Snapshot-History hinsichtlich grosser realer CAD-Modelle bewerten und danach die nächste Modulgrenze nur mit dokumentierter Abhängigkeitsanalyse extrahieren.
+6. PR #69 und PR #70 als geordnete Änderungen prüfen; bis zur ausdrücklichen Fertigstellung weder mergen noch deployen.
 
 ## 6. Quellen im SILMO-Projekt
 - [Masterplan](SILMO_MASTERPLAN.md)
@@ -110,3 +112,13 @@ Diese offenen Fragen werden anhand konkreter Funktionsnamen, Aufrufstellen und T
 - [Einheiten- und Toleranzspezifikation](SILMO_UNITS_TOLERANCE_SPEC.md)
 - [Geometriekern-Vorauswahl und Testplan](SILMO_GEOMETRY_KERNEL_EVALUATION.md)
 - [Vollständige Projektsicherung](SILMO_PROJECT_BACKUP.md)
+
+
+## 7. Ergänzung – aktueller Phase-1-Stand am 20.11.2026
+
+- Lokale Three.js-Runtime, Projektformat v3, zentrale Einheiten-API, History-, STL-, Projekt-I/O-, Projektgeometrie-, Image-Studio-, Toleranz- und Navigationsmodule sind im Entwicklungszweig vorhanden.
+- Die History ist weiterhin snapshotbasiert; der isolierte Node-Benchmark ist keine Browser-/CAD-Gesamtmessung.
+- Die Toleranz-API benennt Werte dimensionsgetrennt. Die Bildkontur-Punkt-in-Polygon- und Segmentprüfungen wurden anhand der Aufrufstellen korrekt als mm/mm² klassifiziert; Pixelraum-Erkennung bleibt getrennt.
+- Die Bildkontur-Druckbarkeitsprüfung hat Browser-Grenzfälle für Mindestwand 0,8 mm und Mindestfläche 0,01 mm². Ein numerischer Vergleichsspielraum von 1e-12 mm² verhindert Gleitkomma-Rundungsfehler an der exakten Grenze.
+- Der Code-Check-Workflow auf Commit `67cb91f9b55f2775e6cb5ccae71caeff5c5ad1a0` ist erfolgreich. Der vollständige Browserlauf auf demselben Code-Stand läuft noch; der unmittelbar vorherige Stand mit Flächen-Grenzfallkorrektur hatte vollständige Code- und Browserprüfungen erfolgreich.
+- Offen bleiben grössere reale CAD-Referenzkörper, Browser-Speicher-/Frame-Zeit, vollständige Geometrie-Sollwerte für alle Modellierungsfamilien, Rest-Audit der Toleranzen und die Prüfung der PR-Reihenfolge.
