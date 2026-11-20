@@ -1,9 +1,103 @@
 (function (root, factory) {
-  const api = factory(root.THREE, root.SILMOUnits);
+  const api = factory(root.THREE, root.SILMOUnits, root.SILMOTolerances);
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.SILMOSTLIO = api;
-})(globalThis, function (THREE, units) {
-  if (!THREE || !units) throw new Error('SILMO-STL-I/O benötigt Three.js und die Einheiten-API.');
+})(globalThis, function (THREE, units, tolerances) {
+  if (!THREE || !units || !tolerances) throw new Error('SILMO-STL-I/O benötigt Three.js sowie Einheiten- und Toleranz-API.');
+
+  // Prüft die Dreiecks-Topologie, ohne die STL-Geometrie zu verändern.
+  // STL-Koordinaten liegen an dieser Stelle noch in Millimetern vor.
+  function analyzeSTLGeometry(geometry) {
+    const position = geometry && geometry.attributes && geometry.attributes.position;
+    if (!position || position.itemSize !== 3 || position.count < 3 || position.count % 3 !== 0) {
+      throw new Error('Für die STL-Topologieprüfung werden vollständige Dreiecke benötigt.');
+    }
+    const triangleCount = position.count / 3;
+    const maxTriangles = tolerances.STL_DIAGNOSTIC_MAX_TRIANGLES;
+    if (!Number.isInteger(maxTriangles) || maxTriangles < 1) {
+      throw new Error('Das STL-Diagnoselimit ist nicht korrekt konfiguriert.');
+    }
+    if (triangleCount > maxTriangles) {
+      return Object.freeze({ analyzed: false, reason: 'limit', triangleCount, maxTriangles });
+    }
+    const weldToleranceMM = units.worldUnitsToMm(tolerances.STL_VERTEX_WELD_WORLD_UNITS);
+    if (!Number.isFinite(weldToleranceMM) || weldToleranceMM <= 0) {
+      throw new Error('Die STL-Verschweisstoleranz ist ungültig.');
+    }
+    const toleranceSquared = weldToleranceMM * weldToleranceMM;
+    const cells = new Map();
+    const vertexCoordinates = [];
+    const edges = new Map();
+    const faces = new Set();
+    let duplicateTriangleCount = 0;
+    let collapsedTriangleCount = 0;
+    let signedVolumeMM3 = 0;
+    const cellKey = (x, y, z) => x + ',' + y + ',' + z;
+    function vertexId(x, y, z) {
+      const cx = Math.floor(x / weldToleranceMM);
+      const cy = Math.floor(y / weldToleranceMM);
+      const cz = Math.floor(z / weldToleranceMM);
+      for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+        const candidates = cells.get(cellKey(cx + dx, cy + dy, cz + dz));
+        if (!candidates) continue;
+        for (const id of candidates) {
+          const offset = id * 3;
+          const vx = vertexCoordinates[offset] - x;
+          const vy = vertexCoordinates[offset + 1] - y;
+          const vz = vertexCoordinates[offset + 2] - z;
+          if (vx * vx + vy * vy + vz * vz <= toleranceSquared) return id;
+        }
+      }
+      const id = vertexCoordinates.length / 3;
+      vertexCoordinates.push(x, y, z);
+      const key = cellKey(cx, cy, cz);
+      if (!cells.has(key)) cells.set(key, []);
+      cells.get(key).push(id);
+      return id;
+    }
+    function addEdge(from, to) {
+      const low = Math.min(from, to), high = Math.max(from, to);
+      const key = low + ':' + high;
+      const direction = from < to ? 1 : -1;
+      const edge = edges.get(key);
+      if (edge) { edge.count++; edge.directionBalance += direction; }
+      else edges.set(key, { count: 1, directionBalance: direction });
+    }
+    for (let i = 0; i < position.count; i += 3) {
+      const points = [
+        [position.getX(i), position.getY(i), position.getZ(i)],
+        [position.getX(i + 1), position.getY(i + 1), position.getZ(i + 1)],
+        [position.getX(i + 2), position.getY(i + 2), position.getZ(i + 2)]
+      ];
+      const ids = points.map(point => vertexId(point[0], point[1], point[2]));
+      if (ids[0] === ids[1] || ids[1] === ids[2] || ids[2] === ids[0]) collapsedTriangleCount++;
+      const faceKey = ids.slice().sort((a, b) => a - b).join(':');
+      if (faces.has(faceKey)) duplicateTriangleCount++;
+      else faces.add(faceKey);
+      addEdge(ids[0], ids[1]); addEdge(ids[1], ids[2]); addEdge(ids[2], ids[0]);
+      const a = points[0], b = points[1], d = points[2];
+      signedVolumeMM3 += (
+        a[0] * (b[1] * d[2] - b[2] * d[1]) +
+        a[1] * (b[2] * d[0] - b[0] * d[2]) +
+        a[2] * (b[0] * d[1] - b[1] * d[0])
+      ) / 6;
+    }
+    let boundaryEdgeCount = 0, nonManifoldEdgeCount = 0, inconsistentEdgeCount = 0;
+    for (const edge of edges.values()) {
+      if (edge.count === 1) boundaryEdgeCount++;
+      else if (edge.count > 2) nonManifoldEdgeCount++;
+      else if (edge.directionBalance !== 0) inconsistentEdgeCount++;
+    }
+    const isClosedManifold = boundaryEdgeCount === 0 && nonManifoldEdgeCount === 0 &&
+      inconsistentEdgeCount === 0 && duplicateTriangleCount === 0 && collapsedTriangleCount === 0;
+    const invertedWinding = isClosedManifold && Math.abs(signedVolumeMM3) > 1e-12 ? signedVolumeMM3 < 0 : null;
+    return Object.freeze({
+      analyzed: true, triangleCount, weldedVertexCount: vertexCoordinates.length / 3,
+      uniqueEdgeCount: edges.size, boundaryEdgeCount, nonManifoldEdgeCount,
+      inconsistentEdgeCount, duplicateTriangleCount, collapsedTriangleCount,
+      isClosedManifold, invertedWinding, signedVolumeMM3, weldToleranceMM
+    });
+  }
 
   function createSTLIO(dependencies) {
     const deps = dependencies || {};
@@ -96,6 +190,14 @@
           mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
           mesh.userData.percent = { x: 100, y: 100, z: 100 };
           mesh.userData.label = (file.name || '').replace(/\.stl$/i, '') || 'STL-Modell';
+          let stlDiagnostics;
+          try {
+            stlDiagnostics = analyzeSTLGeometry(geometry);
+          } catch (diagnosticError) {
+            stlDiagnostics = { analyzed: false, reason: 'error' };
+            console.warn('STL-Topologieprüfung übersprungen:', diagnosticError);
+          }
+          mesh.userData.stlDiagnostics = stlDiagnostics;
 
           // Das importierte Modell wird auf der Arbeitsplatte zentriert.
           geometry.translate(
@@ -111,7 +213,25 @@
           committed = true;
           deps.selectObject(mesh);
           if (typeof deps.onImported === 'function') deps.onImported(mesh);
-          deps.setStatus('STL-Modell importiert: ' + mesh.userData.label + ' (mm). Vorhandene Modelle bleiben erhalten.');
+          let diagnosticMessage = '';
+          if (stlDiagnostics.analyzed) {
+            if (stlDiagnostics.isClosedManifold) {
+              diagnosticMessage = stlDiagnostics.invertedWinding
+                ? ' Topologie: geschlossen, aber Dreiecksorientierung ist umgekehrt.'
+                : ' Topologie: geschlossenes Netz.';
+            } else {
+              const issues = [];
+              if (stlDiagnostics.boundaryEdgeCount) issues.push(stlDiagnostics.boundaryEdgeCount + ' offene Kanten');
+              if (stlDiagnostics.nonManifoldEdgeCount) issues.push(stlDiagnostics.nonManifoldEdgeCount + ' nicht-manifold Kanten');
+              if (stlDiagnostics.inconsistentEdgeCount) issues.push(stlDiagnostics.inconsistentEdgeCount + ' widersprüchlich orientierte Kanten');
+              if (stlDiagnostics.duplicateTriangleCount) issues.push(stlDiagnostics.duplicateTriangleCount + ' doppelte Dreiecke');
+              if (stlDiagnostics.collapsedTriangleCount) issues.push(stlDiagnostics.collapsedTriangleCount + ' durch Toleranz zusammengefallene Dreiecke');
+              diagnosticMessage = ' Topologie-Warnung: ' + issues.join(', ') + '.';
+            }
+          } else {
+            diagnosticMessage = ' Topologieprüfung bei dieser Dateigrösse nicht durchgeführt.';
+          }
+          deps.setStatus('STL-Modell importiert: ' + mesh.userData.label + ' (mm). Vorhandene Modelle bleiben erhalten.' + diagnosticMessage);
         } catch (error) {
           if (!committed) {
             if (geometry) geometry.dispose();
@@ -208,7 +328,7 @@
       }
     }
 
-    return Object.freeze({ importSTLFile, exportSTL });
+    return Object.freeze({ importSTLFile, exportSTL, analyzeSTLGeometry });
   }
 
   return Object.freeze({ createSTLIO });
