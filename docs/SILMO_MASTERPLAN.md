@@ -226,7 +226,7 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - Die benannten Toleranzen sind dokumentiert. Zusätzlich wurden Kontur-Hohlrahmen, editierte Skizzenkonturen, Pfadrichtungen und Profilumfang mit getrennten Konstanten versehen; die numerischen Altwerte blieben unverändert. Das vollständige Toleranzinventar und Grenzfalltests für alle Klassen bleiben offen.
 - Projektdatei-I/O ist aus dem Hauptskript ausgelagert. Der atomare Wechsel auf das neue Modell wird durch Browser-Regressionen abgesichert.
 - Der aktuelle Entwicklungszweig ist `phase1/history-foundation`; PR 69 und PR 70 bleiben Draft und ungemergt. Es erfolgt kein Produktionsdeployment vor der ausdrücklichen Fertigstellung und Freigabe.
-- Für Code-Commit `78fe9212433d4101f2b85732524788316b130b41` waren Code-Checks und Browser-Tests erfolgreich; spätere reine Dokumentationsänderungen werden separat geprüft.
+- Für Code-Commit `717ff6c1eea5eb7bda4f5d7e26cf8e3bcdc6e3f2` waren Code-Checks und vollständige Browser-Tests erfolgreich. Für die anschliessende Projektmetadaten-Validierung auf Commit `0f32a9ca60adb78a0510a2facac1236aa03176a0` sind die Code-Checks erfolgreich; der zugehörige Browserlauf ist noch in Prüfung.
 
 **Nächste Schritte:** Zuerst die noch offenen Einheiten-/Toleranz-Aufrufstellen anhand des Quellcodes inventarisieren und fachlich getrennt migrieren. Danach weitere kritische Import-/Export- und Projektdatei-Grenzfälle ergänzen. Anschliessend die nächste Modulgrenze aus der Abhängigkeitsmatrix auswählen und mit kleinem Diff extrahieren. Phase 1 gilt erst als abgeschlossen, wenn alle festgelegten Abnahmekriterien nachweisbar erfüllt sind.
 
@@ -235,7 +235,7 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - Die App erstellt Mesh-/Material-Snapshots und übergibt Capture-, Restore- und Dispose-Funktionen an das unabhängige Modul.
 - Wiederherstellung baut die neuen Meshes und Materialien zuerst auf, bevor die bisherige Szene ersetzt wird; Material-Arrays werden unterstützt.
 - Unit-Tests decken Undo/Redo, Verlaufslimit, Snapshot-Freigabe, Clear/Dispose und fehlgeschlagene Wiederherstellung ab.
-- Weitere einzeln zugeordnete Schwellen für Rastergrenzen, Gruppenrotation, Profilquellabmessungen, Skizzenprofil-Schliessung und parallele Strahl-/Skizzenebenen-Berechnung sind in `src/tolerances.js` benannt und getestet.
+- Weitere einzeln zugeordnete Schwellen für Rastergrenzen, Gruppenrotation, Profilquellabmessungen, Skizzenprofil-Schliessung, parallele Strahl-/Skizzenebenen-Berechnung, Bildkontur-Pixel-/Pixel²-Prüfungen und Lernkurs-Positionsänderungen sind in `src/tolerances.js` benannt und getestet.
 - Die History bleibt snapshotbasiert. Eine inkrementelle/befehlsbasierte Historie und Speicher-/Leistungs-Baselines sind noch offen.
 - Der Browser-Testhelfer verwendet Playwright 1.65.1; die App-Runtime selbst hängt nicht von Playwright ab.
 
