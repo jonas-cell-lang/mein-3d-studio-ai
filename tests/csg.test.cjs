@@ -221,6 +221,7 @@ test('CSG weist fehlerhafte Positionsattribute und unvollständige Dreiecke ab',
   const base = box();
   const tool = box();
   try {
+    tool.geometry.setIndex(null);
     tool.geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0], 3));
     assert.throws(() => combineMeshes(base, tool, 'union'), /vollständige Dreiecke/);
   } finally {
