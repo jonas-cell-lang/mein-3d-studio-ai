@@ -327,4 +327,20 @@ test('Kantenbearbeitung weist ungültige Konturen und Parameter kontrolliert ab'
   assert.throws(() => sketchGeometry.createEdgeTreatmentGeometry(outline, 0, 0.1, 'fillet'), /positive Tiefe/);
   assert.throws(() => sketchGeometry.createEdgeTreatmentGeometry(outline, 1, 0, 'fillet'), /positive Tiefe/);
   assert.throws(() => sketchGeometry.createEdgeTreatmentGeometry(outline, 1, 0.1, 'unknown'), /gültigen Modus/);
+  assert.throws(() => sketchGeometry.createEdgeTreatmentGeometry(
+    [[0, 0], [1, 0], [1, 0], [0, 1]], 1, 0.1, 'fillet'
+  ), /Nullkanten/);
+  assert.throws(() => sketchGeometry.createEdgeTreatmentGeometry(
+    [[0, 0], [1, 0], [2, 0]], 1, 0.1, 'fillet'
+  ), /Fläche grösser null/);
+  const explicitlyClosed = sketchGeometry.createEdgeTreatmentGeometry(
+    [[-1, -1], [1, -1], [1, 1], [-1, 1], [-1, -1]], 1, 0.1, 'chamfer'
+  );
+  try {
+    assert.ok(explicitlyClosed.attributes.position.count > 0,
+      'Eine korrekt geschlossene Kontur darf keinen doppelten Endpunktfehler auslösen');
+    assert.ok(meshVolume(explicitlyClosed) > 0);
+  } finally {
+    explicitlyClosed.dispose();
+  }
 });
