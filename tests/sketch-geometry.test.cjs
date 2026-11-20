@@ -361,3 +361,26 @@ test('Kantenbearbeitung weist ungültige Konturen und Parameter kontrolliert ab'
     explicitlyClosed.dispose();
   }
 });
+
+
+test('Kantenbearbeitung ist unabhängig von der Umlaufrichtung der Kontur', () => {
+  const counterClockwise = [[-2, -1], [2, -1], [2, 1], [-2, 1]];
+  const clockwise = counterClockwise.slice().reverse();
+  for (const mode of ['fillet', 'chamfer']) {
+    const forward = sketchGeometry.createEdgeTreatmentGeometry(counterClockwise, 1.5, 0.1, mode);
+    const reversed = sketchGeometry.createEdgeTreatmentGeometry(clockwise, 1.5, 0.1, mode);
+    try {
+      const forwardSize = forward.boundingBox.getSize(new THREE.Vector3()).toArray();
+      const reversedSize = reversed.boundingBox.getSize(new THREE.Vector3()).toArray();
+      for (let axis = 0; axis < 3; axis++) {
+        assert.ok(Math.abs(forwardSize[axis] - reversedSize[axis]) < 1e-6,
+          mode + ' muss dieselben Aussenmasse bei umgekehrter Konturrichtung behalten');
+      }
+      assert.ok(Math.abs(meshVolume(forward) - meshVolume(reversed)) < 1e-5,
+        mode + ' muss dasselbe Volumen bei umgekehrter Konturrichtung behalten');
+    } finally {
+      forward.dispose();
+      reversed.dispose();
+    }
+  }
+});
