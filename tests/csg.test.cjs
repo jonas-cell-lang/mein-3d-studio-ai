@@ -117,3 +117,56 @@ test('CSG weist unbekannte Operationen zurück, statt sie als Abziehen auszufüh
     tool.material.dispose();
   }
 });
+
+
+test('CSG-Vereinigung getrennter Körper erhält beide Volumen', () => {
+  const base = box();
+  const tool = box([4, 0, 0]);
+  const result = combineMeshes(base, tool, 'union');
+  try {
+    assert.ok(Math.abs(Math.abs(signedVolume(result)) - 16) < 1e-5);
+    const b = bounds(result);
+    assert.deepEqual(b.min.map(v => Number(v.toFixed(5))), [-1, -1, -1]);
+    assert.deepEqual(b.max.map(v => Number(v.toFixed(5))), [5, 1, 1]);
+  } finally {
+    result.dispose();
+    base.geometry.dispose();
+    tool.geometry.dispose();
+    base.material.dispose();
+    tool.material.dispose();
+  }
+});
+
+test('CSG-Abziehen eines vollständig enthaltenen Würfels erhält die innere Aussparung', () => {
+  const base = box();
+  const tool = box([0, 0, 0], [1, 1, 1]);
+  const result = combineMeshes(base, tool, 'subtract');
+  try {
+    assert.ok(Math.abs(Math.abs(signedVolume(result)) - 7) < 1e-5,
+      'Restvolumen muss 8 - 1 = 7 Kubikeinheiten betragen');
+    const b = bounds(result);
+    assert.deepEqual(b.min.map(v => Number(v.toFixed(5))), [-1, -1, -1]);
+    assert.deepEqual(b.max.map(v => Number(v.toFixed(5))), [1, 1, 1]);
+  } finally {
+    result.dispose();
+    base.geometry.dispose();
+    tool.geometry.dispose();
+    base.material.dispose();
+    tool.material.dispose();
+  }
+});
+
+test('CSG-Vereinigung identischer Körper verdoppelt das Volumen nicht', () => {
+  const base = box();
+  const tool = box();
+  const result = combineMeshes(base, tool, 'union');
+  try {
+    assert.ok(Math.abs(Math.abs(signedVolume(result)) - 8) < 1e-5);
+  } finally {
+    result.dispose();
+    base.geometry.dispose();
+    tool.geometry.dispose();
+    base.material.dispose();
+    tool.material.dispose();
+  }
+});
