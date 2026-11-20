@@ -230,8 +230,10 @@
     const alignRingPair = (a, b) => {
       const center = ring => ring.reduce((sum, point) => sum.add(point), new THREE.Vector3()).multiplyScalar(1 / ring.length);
       const ca = center(a), cb = center(b);
-      const radius = ring => Math.sqrt(ring.reduce((sum, point) => sum + point.distanceToSquared(center(ring)), 0) / ring.length) || 1;
-      const ra = radius(a), rb = radius(b);
+      const radius = (ring, centroid) => Math.sqrt(
+        ring.reduce((sum, point) => sum + point.distanceToSquared(centroid), 0) / ring.length
+      ) || 1;
+      const ra = radius(a, ca), rb = radius(b, cb);
       let best = null, bestCost = Infinity;
       for (const direction of [1, -1]) {
         for (let shift = 0; shift < b.length; shift++) {
