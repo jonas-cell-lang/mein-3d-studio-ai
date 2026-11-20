@@ -1,8 +1,9 @@
 (function (root, factory) {
-  const api = factory();
+  const api = factory(root.SILMOTolerances);
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.SILMOProjectSchema = api;
-})(globalThis, function () {
+})(globalThis, function (tolerances) {
+  if (!tolerances) throw new Error('SILMO-Projektschema benötigt die zentrale Toleranz-API.');
   const CURRENT_PROJECT_VERSION = 3;
   const SUPPORTED_PROJECT_VERSIONS = Object.freeze([3]);
 
@@ -99,7 +100,6 @@
   }
 
   const SKETCH_RING_COORDINATE_LIMIT = 10000;
-  const SKETCH_RING_MIN_AREA = 1e-12;
   const MAX_SKETCH_CONTOUR_POINTS = 5000;
 
   function sketchCross(a, b, c) {
@@ -107,24 +107,24 @@
   }
 
   function sketchPointOnSegment(point, a, b) {
-    return Math.abs(sketchCross(a, b, point)) <= SKETCH_RING_MIN_AREA &&
-      point[0] >= Math.min(a[0], b[0]) - SKETCH_RING_MIN_AREA &&
-      point[0] <= Math.max(a[0], b[0]) + SKETCH_RING_MIN_AREA &&
-      point[1] >= Math.min(a[1], b[1]) - SKETCH_RING_MIN_AREA &&
-      point[1] <= Math.max(a[1], b[1]) + SKETCH_RING_MIN_AREA;
+    return Math.abs(sketchCross(a, b, point)) <= tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 &&
+      point[0] >= Math.min(a[0], b[0]) - tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM &&
+      point[0] <= Math.max(a[0], b[0]) + tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM &&
+      point[1] >= Math.min(a[1], b[1]) - tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM &&
+      point[1] <= Math.max(a[1], b[1]) + tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM;
   }
 
   function sketchSegmentsIntersect(a, b, c, d) {
     const abC = sketchCross(a, b, c), abD = sketchCross(a, b, d);
     const cdA = sketchCross(c, d, a), cdB = sketchCross(c, d, b);
-    if (((abC > SKETCH_RING_MIN_AREA && abD < -SKETCH_RING_MIN_AREA) ||
-         (abC < -SKETCH_RING_MIN_AREA && abD > SKETCH_RING_MIN_AREA)) &&
-        ((cdA > SKETCH_RING_MIN_AREA && cdB < -SKETCH_RING_MIN_AREA) ||
-         (cdA < -SKETCH_RING_MIN_AREA && cdB > SKETCH_RING_MIN_AREA))) return true;
-    return (Math.abs(abC) <= SKETCH_RING_MIN_AREA && sketchPointOnSegment(c, a, b)) ||
-      (Math.abs(abD) <= SKETCH_RING_MIN_AREA && sketchPointOnSegment(d, a, b)) ||
-      (Math.abs(cdA) <= SKETCH_RING_MIN_AREA && sketchPointOnSegment(a, c, d)) ||
-      (Math.abs(cdB) <= SKETCH_RING_MIN_AREA && sketchPointOnSegment(b, c, d));
+    if (((abC > tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && abD < -tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM) ||
+         (abC < -tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && abD > tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM)) &&
+        ((cdA > tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && cdB < -tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM) ||
+         (cdA < -tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && cdB > tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM))) return true;
+    return (Math.abs(abC) <= tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && sketchPointOnSegment(c, a, b)) ||
+      (Math.abs(abD) <= tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && sketchPointOnSegment(d, a, b)) ||
+      (Math.abs(cdA) <= tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && sketchPointOnSegment(a, c, d)) ||
+      (Math.abs(cdB) <= tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM && sketchPointOnSegment(b, c, d));
   }
 
   function sketchRingArea(ring) {
@@ -140,10 +140,10 @@
     if (!Array.isArray(ring) || ring.length < 3 || ring.length > 1000 ||
         !ring.every(point => Array.isArray(point) && point.length === 2 &&
           point.every(value => Number.isFinite(value) && Math.abs(value) <= SKETCH_RING_COORDINATE_LIMIT))) return false;
-    if (Math.abs(sketchRingArea(ring)) <= SKETCH_RING_MIN_AREA) return false;
+    if (Math.abs(sketchRingArea(ring)) <= tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2) return false;
     for (let i = 0; i < ring.length; i++) {
       const a = ring[i], b = ring[(i + 1) % ring.length];
-      if (Math.hypot(a[0] - b[0], a[1] - b[1]) <= SKETCH_RING_MIN_AREA) return false;
+      if (Math.hypot(a[0] - b[0], a[1] - b[1]) <= tolerances.PROJECT_SKETCH_RING_MIN_EDGE_MM) return false;
       for (let j = i + 1; j < ring.length; j++) {
         if (j === i || j === (i + 1) % ring.length || i === (j + 1) % ring.length) continue;
         if (sketchSegmentsIntersect(a, b, ring[j], ring[(j + 1) % ring.length])) return false;
