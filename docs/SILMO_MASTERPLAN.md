@@ -489,3 +489,12 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Topologieanalyse ist auf 100'000 Dreiecke begrenzt. Grössere Dateien bleiben innerhalb der bisherigen Importgrenze von 500'000 Dreiecken importierbar; SILMO weist dann darauf hin, dass die Topologieprüfung übersprungen wurde.
 - Reale ASCII-STL-Fixtures prüfen einen geschlossenen 10-mm-Würfel mit 12 Dreiecken und ein offenes Dreiecksnetz. Unit- und Browser-Tests decken ausserdem Duplikate, nicht-manifold Kanten sowie lokale und globale Orientierungsfehler ab.
 - Diese Diagnose ist eine Vorprüfung der Netzstruktur. Automatische Reparatur, vollständige Slicer-Simulation und eine Druckbarkeitsgarantie sind nicht Bestandteil dieses Schritts.
+
+### 6.26 Projektgeometrie-Roundtrip mit grösserem Mesh (20.11.2026)
+- `tests/project-geometry.test.cjs` prüft jetzt zusätzlich den vollständigen Serialisierungs-/Wiederherstellungs-Roundtrip eines indizierten Meshes mit 24'999 Vertices und Positions-, Normalen- sowie UV-Attributen.
+- Der Test vergleicht sämtliche Attribut- und Indexwerte exakt und prüft Bounding Box und Bounding Sphere nach dem Wiederaufbau.
+- Ein separater Test sichert den Roundtrip nicht-indizierter Geometrie.
+- Auf Commit `e5cc84c74f44d7fb0dc47c8c588cebfcbbcb2711` bestanden alle 88/88 Unit-Tests sowie Benchmark, Syntaxprüfung, Manifest-/HTML-ID-Prüfung und lokaler Pages-Paketcheck.
+- Browser- und OCCT-WebWorker-Regressionen wurden für diesen reinen Test-/Dokumentationsschritt nicht erneut ausgelöst; ihr letzter erfolgreicher Stand bleibt Commit `1248213f9897f8ac9f473729bb5816b0f9b71740`.
+- Dies ist ein gezielter Roundtrip-Belastungstest, noch keine Browser-RAM-/Frame-Zeit-Messung und kein Nachweis für beliebig grosse reale CAD-Projekte.
+
