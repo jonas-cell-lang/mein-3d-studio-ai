@@ -398,3 +398,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - **Noch offen:** Innenprofile müssen weiterhin als separate geschlossene Skizzenobjekte gezeichnet werden; eine direkte Lochzeichnung innerhalb eines einzigen Skizzenprofils und editierbare assoziative Loft-Features sind noch nicht umgesetzt.
 
 - Ergänzend werden Objekt-UUIDs im Projektformat gespeichert und beim Import wiederhergestellt, damit Loft-Quellprofilverweise nach einem Projekt-Roundtrip stabil bleiben. Das Schema weist ungültige oder doppelte gespeicherte Objektkennungen zurück.
+
+
+### 6.28 Innenlöcher direkt in einer einzelnen Freiform-Skizze (20.11.2026)
+- Der Punkt-für-Punkt-Zeichenbereich kann nach der Aussenkontur in den Modus „Innenloch zeichnen“ wechseln. Weitere Innenkonturen werden im selben Skizzenentwurf geführt und als echte Durchöffnungen extrudiert.
+- Die Vorschau zeigt Aussen- und Innenkonturen gemeinsam. Fertige Innenlöcher bleiben beim Abbrechen einer gerade begonnenen Innenkontur erhalten.
+- Validierung weist Innenkonturen ausserhalb der Aussenkontur, Selbstüberschneidungen, Berührungen und Überschneidungen mit anderen Innenlöchern zurück.
+- Freiform-Skizzen-Metadaten mit Innenkonturen werden im Projektformat v3 gespeichert, beim Import validiert und wiederhergestellt. Ältere v3-Dateien ohne diese optionalen Metadaten bleiben kompatibel.
+- Browser-Regression prüft echte Innenlöcher, Ablehnung einer ausserhalb liegenden Innenkontur sowie Speichern und erneutes Öffnen der editierbaren Konturdaten.
