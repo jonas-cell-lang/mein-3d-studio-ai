@@ -473,7 +473,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     zone.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
     zone.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
   },cubeFixture);
-  await page.waitForFunction(()=>Number(window.__silmoImportRevision||0)>3&&/Topologie: geschlossenes Netz/.test(document.querySelector('#status')?.textContent||''),null,{timeout:5000});
+  await page.waitForFunction(()=>Number(window.__silmoImportRevision||0)>3&&/Topologie: geschlossenes Dreiecksnetz/.test(document.querySelector('#status')?.textContent||''),null,{timeout:5000});
   assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeBinaryImport+2,'Reale ASCII-STL-Würfelreferenz wurde nicht importiert');
   const openFixture = readFileSync(new URL('./fixtures/stl/open-triangle.stl', import.meta.url), 'utf8');
   await page.locator('#stlDropZone').evaluate((zone,stl)=>{
