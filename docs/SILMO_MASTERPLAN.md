@@ -261,3 +261,11 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Paket wird in die Produktionsanwendung eingebunden, bevor die offenen technischen und rechtlichen Abnahmepunkte geklärt sind.
 
 **Erfolg bedeutet nicht möglichst viele Werkzeuge. Erfolg bedeutet, dass SILMO komplexe 3D-Aufgaben präzise, stabil und verständlich erledigt.**
+
+
+### 6.11 Weitere Skizzen- und Kontur-Toleranzen
+- Die bislang direkt im CAD-Hauptskript verwendeten Skizzen-Eingabeschwellen sind in `src/tolerances.js` einzeln benannt.
+- Abgedeckt sind Punktaufnahmeabstände, Mindestlänge einer Skizzenlinie, Vorschauversatz, Klickkontur-Schliessabstand, Konturpunktabstand, minimale Straightening-Bewegung, RDP-Degenerationsnenner und Mindestfläche einer Freiform.
+- Die Zahlenwerte wurden nicht verändert. Die Benennung hält Welteinheiten und Welteinheiten² getrennt und kennzeichnet den Vorschauversatz ausdrücklich als Darstellung.
+- `tests/tolerances.test.cjs` sichert alle neuen Werte; die betroffenen Aufrufstellen verwenden die zentrale API.
+- Offene Toleranzarbeit bleibt: weitere Aufrufstellen im Bild-Studio und in Modellierungsfunktionen systematisch inventarisieren; danach Grenzfalltests pro Funktionsfamilie ergänzen. Kein pauschales Ersetzen ähnlicher Zahlenwerte.
