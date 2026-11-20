@@ -1036,3 +1036,10 @@ Vor Beginn einer neuen Aufgabe:
 
 - Die aktuelle Quellcodeprüfung bestätigt zwei getrennte Werte: Skizzenkontur-Grenze `SKETCH_BED_BOUNDS_WORLD_UNITS = 1e-5` und fertige Modell-Druckbettprüfung `PRINT_BED_BOUNDS_WORLD_UNITS = 1e-4` Welteinheiten.
 - Eine ältere Tabellenzeile hatte die Werte verwechselt. Die technische Spezifikation ist korrigiert; am Programmverhalten wurde nichts geändert.
+
+
+## Ergänzung – Kontur-Hohlrahmen-Gehrungsgrenze am 20.11.2026
+
+- Die Begrenzung der inneren Gehrungs-/Offset-Schnittpunkte verwendet nun `CONTOUR_FRAME_MITER_LIMIT_FACTOR = 8` und `CONTOUR_FRAME_MITER_ALLOWANCE_WORLD_UNITS = 0.02` aus der zentralen Toleranz-API.
+- Die Dimensionen (dimensionsloser Faktor und Welteinheiten) bleiben getrennt; Werte und Verhalten wurden nicht verändert.
+- Unit-Tests und Browser-Regression müssen den neuen Stand noch bestätigen.
