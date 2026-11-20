@@ -2508,35 +2508,16 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     updateObjects();showProperties();updateMoveGizmo();
     status.textContent=(mode==='fillet'?'Kanten abgerundet':'Kanten abgefast')+' – '+radiusMM.toFixed(1)+' mm. Dies betrifft die Kanten der extrudierten Skizze.';
   }
-  function resampleCadOutline(points,count=64){
-    const pts=points.map(p=>new THREE.Vector2(p[0],p[1]));const lengths=[];let total=0;
-    for(let i=0;i<pts.length;i++){const len=pts[i].distanceTo(pts[(i+1)%pts.length]);lengths.push(len);total+=len;}
-    if(total<window.SILMOTolerances.PROFILE_MIN_PERIMETER_WORLD_UNITS)throw new Error('Profilkontur ist ungültig.');
-    const out=[];
-    for(let k=0;k<count;k++){let target=total*k/count,seg=0;while(seg<lengths.length-1&&target>lengths[seg]){target-=lengths[seg];seg++;}
-      const a=pts[seg],b=pts[(seg+1)%pts.length],t=lengths[seg]>0?target/lengths[seg]:0;out.push(a.clone().lerp(b,t));}
-    return out;
-  }
-  function appendCadTriangle(out,a,b,c){out.push(a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z);}
   function createLoftFromSelection(){
     const pair=selectedObjects.length===2?selectedObjects.slice():(selected?[selected]:[]);
     if(pair.length!==2)throw new Error('Für Loft müssen genau zwei Skizzenprofile ausgewählt sein.');
     const [a,b]=pair;
     if(!Array.isArray(a.userData.sketchOutline)||!Array.isArray(b.userData.sketchOutline))throw new Error('Beide ausgewählten Objekte brauchen eine gespeicherte geschlossene Skizzenkontur.');
     a.updateMatrixWorld(true);b.updateMatrixWorld(true);
-    const ra=resampleCadOutline(a.userData.sketchOutline,64).map(p=>a.localToWorld(new THREE.Vector3(p.x,p.y,0)));
-    const rb=resampleCadOutline(b.userData.sketchOutline,64).map(p=>b.localToWorld(new THREE.Vector3(p.x,p.y,0)));
-    const vertices=[];
-    for(let i=0;i<64;i++){const n=(i+1)%64;appendCadTriangle(vertices,ra[i],ra[n],rb[i]);appendCadTriangle(vertices,ra[n],rb[n],rb[i]);}
-    // Close both ends with triangulated planar caps. This supports simple convex and concave profiles.
-    const cap=(ring,reverse)=>{
-      const contour=ring.map(p=>new THREE.Vector2(p.x,p.y));
-      const triangles=THREE.ShapeUtils.triangulateShape(contour,[]);
-      triangles.forEach(tri=>{const ids=reverse?[tri[2],tri[1],tri[0]]:tri;appendCadTriangle(vertices,ring[ids[0]],ring[ids[1]],ring[ids[2]]);});
-    };
-    cap(ra,true);cap(rb,false);
-    const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
-    if(!geometry.boundingBox||geometry.boundingBox.isEmpty()){geometry.dispose();throw new Error('Loft konnte keine gültige Geometrie erzeugen.');}
+    const ra=window.SILMOSketchGeometry.resampleClosedOutline(a.userData.sketchOutline,64,window.SILMOTolerances.PROFILE_MIN_PERIMETER_WORLD_UNITS).map(p=>a.localToWorld(new THREE.Vector3(p.x,p.y,0)));
+    const rb=window.SILMOSketchGeometry.resampleClosedOutline(b.userData.sketchOutline,64,window.SILMOTolerances.PROFILE_MIN_PERIMETER_WORLD_UNITS).map(p=>b.localToWorld(new THREE.Vector3(p.x,p.y,0)));
+    const geometry=window.SILMOSketchGeometry.createLoftGeometry(ra,rb);
+    const loftSize=new THREE.Vector3();geometry.boundingBox.getSize(loftSize);
     const loftSize=new THREE.Vector3();geometry.boundingBox.getSize(loftSize);
     recordHistory();const mesh=new THREE.Mesh(geometry,a.material.clone());mesh.userData={label:'Loft-Körper',baseDimensions:{x:loftSize.x,y:loftSize.y,z:loftSize.z},percent:{x:100,y:100,z:100},loft:{sourceA:a.uuid,sourceB:b.uuid,sections:2}};
     scene.add(mesh);objects.push(mesh);selectObject(mesh);updateObjects();showProperties();updateMoveGizmo();
@@ -2548,12 +2529,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const [profile,pathObject]=pair,outline=profile.userData.sketchOutline,pathData=pathObject.userData.sketch;
     if(!Array.isArray(outline)||!pathData||!Array.isArray(pathData.pathPoints)||pathData.pathPoints.length<2)throw new Error('Sweep braucht ein geschlossenes Profil und eine gespeicherte Linien-/Kurvenbahn.');
     profile.updateMatrixWorld(true);pathObject.updateMatrixWorld(true);
-    const shape=new THREE.Shape();shape.moveTo(outline[0][0],outline[0][1]);outline.slice(1).forEach(p=>shape.lineTo(p[0],p[1]));shape.closePath();
     const points=pathData.pathPoints.map(p=>pathObject.localToWorld(new THREE.Vector3(p[0],p[1],p[2])));
-    const curve=new THREE.CatmullRomCurve3(points);
-    const geometry=new THREE.ExtrudeGeometry(shape,{steps:Math.max(48,points.length*16),bevelEnabled:false,extrudePath:curve,curveSegments:24});
-    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
-    if(!geometry.boundingBox||geometry.boundingBox.isEmpty()){geometry.dispose();throw new Error('Sweep konnte keine gültige Geometrie erzeugen.');}
+    const geometry=window.SILMOSketchGeometry.createSweepGeometry(outline,points);
     const sweepSize=new THREE.Vector3();geometry.boundingBox.getSize(sweepSize);
     recordHistory();const mesh=new THREE.Mesh(geometry,profile.material.clone());mesh.userData={label:'Sweep-Körper',baseDimensions:{x:sweepSize.x,y:sweepSize.y,z:sweepSize.z},percent:{x:100,y:100,z:100},sweep:{profile:profile.uuid,path:pathObject.uuid}};
     scene.add(mesh);objects.push(mesh);selectObject(mesh);updateObjects();showProperties();updateMoveGizmo();
