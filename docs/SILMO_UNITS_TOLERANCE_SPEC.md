@@ -1,6 +1,6 @@
 # SILMO – Spezifikation für Einheiten und Toleranzen
 
-**Stand:** 15.11.2026
+**Stand:** 20.11.2026
 **Basis:** Direkte Quellcodeprüfung von index.html, insbesondere Zeilen 1267–1321, 1359–1463, 2846–2860, 3007–3011, 4284–4353 sowie der Projektserialisierung.
 **Status:** Ist-Zustand, Migrationsanforderungen und erste Phase-1-Implementierung (PR in Prüfung).
 
@@ -76,6 +76,13 @@ Die folgenden Werte wurden direkt im aktuellen `index.html` geprüft. Sie werden
 
 
 ### 3.1 Weitere einzeln benannte Kontur- und Skizzenschwellen
+
+| Rastergrenzen | `GRID_BOUNDARY_EPSILON_WORLD_UNITS` | `1e-8` | interne Welteinheiten; nur Einschluss des letzten Rasterpunkts an der Bettkante |
+| Gruppenrotation | `GROUP_ROTATION_MIN_RADIANS` | `1e-12` | Radiant; ignoriert numerisch vernachlässigbare Rotationsänderungen |
+| Profil-Quellabmessung | `PROFILE_MIN_SOURCE_DIMENSION_WORLD_UNITS` | `1e-6` | interne Welteinheiten; verhindert Skalierung aus praktisch nullgrossen Ausgangsabmessungen |
+| Skizzenprofil-Schliessung | `SKETCH_PROFILE_CLOSURE_WORLD_UNITS` | `1e-7` | interne Welteinheiten; entfernt den doppelten Endpunkt einer geschlossenen Profilkontur |
+| Strahl-/Skizzenebenen-Nenner | `SKETCH_RAY_PARALLEL_DENOMINATOR_MIN` | `1e-6` | Schwelle des algebraischen Nenners; keine direkte Längenangabe |
+
 
 Bei der weiteren Quellcodeprüfung wurden zusätzliche Schwellen in klar begrenzten Funktionen zugeordnet. Die bisherigen Zahlenwerte wurden nicht verändert:
 
