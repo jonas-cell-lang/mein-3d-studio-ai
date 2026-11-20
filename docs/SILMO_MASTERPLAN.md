@@ -276,3 +276,9 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - `src/image-studio.js` nutzt diese Werte für die Bildkomponentenfilterung und die Druckbarkeitsprüfung. Die bestehenden Werte 0,000025, 0,01 mm² und 0,8 mm wurden nicht verändert.
 - Unit-Tests sichern die Werte; die Browser-Regression muss die automatische Konturerkennung, echte Innenlöcher und Druckbarkeitsvalidierung weiterhin bestehen.
 - Die zuvor als möglicherweise gemischt eingestufte Flächenschwelle in `polygonIsSimple` wurde anhand sämtlicher Aufrufstellen geprüft: die Funktion wird nur für bereits in mm abgebildete Konturen verwendet. Sie ist jetzt als `IMAGE_MIN_SIMPLE_POLYGON_AREA_MM2` benannt und getestet.
+
+
+### 6.13 Kontur-Hohlrahmen-Gehrungsgrenze
+- Die Gehrungs-/Offset-Schnittpunktbegrenzung des Kontur-Hohlrahmens verwendet jetzt zwei getrennt benannte Werte: dimensionsloser Faktor 8 und Zusatzspielraum 0,02 Welteinheiten.
+- Die Berechnung verwendet beide Werte über `SILMOTolerances`; die bisherigen Zahlenwerte bleiben unverändert.
+- Unit-Tests sichern beide Konstanten. Die bestehende Browser-Regression für den Kontur-Hohlrahmen bleibt Teil der Pflichtprüfung.
