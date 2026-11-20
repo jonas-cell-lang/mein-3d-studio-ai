@@ -423,3 +423,4 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Fehlende Quellprofile, ungültige Konturen, unvollständige Innenprofil-Paare und gesperrte Loft-Körper werden kontrolliert abgewiesen. Die alte Geometrie wird erst nach erfolgreicher Neuerzeugung ersetzt.
 - Browser-Regression verändert die Position eines Quellprofils und prüft, dass der ausgewählte Loft-Körper eine neue Bounding-Box erhält.
 - Grenze: Die Aktualisierung erfolgt bewusst manuell über die Schaltfläche; automatische Live-Neuberechnung bei jeder Quelländerung und vollständige Feature-Abhängigkeitsverwaltung bleiben offen.
+- Validierung auf Test-Head `1915a52be5661aee7cf0d3f94635c4f7c16eaf16`: Code Checks Run `44773232840`, Browser-Regression Run `44773232809` und isolierter OCCT-/WebWorker-Test Run `44773232778` erfolgreich.
