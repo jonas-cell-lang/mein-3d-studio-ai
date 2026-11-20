@@ -375,6 +375,15 @@
         (Math.abs(cdB) <= 1e-12 && onSegment(b, c, d));
     };
     for (let i = 0; i < points.length; i++) {
+      const previous = points[(i + points.length - 1) % points.length];
+      const current = points[i];
+      const next = points[(i + 1) % points.length];
+      if (Math.abs(cross(previous, current, next)) <= 1e-12 &&
+          (onSegment(previous, current, next) || onSegment(next, previous, current))) {
+        throw new TypeError('Kantenbearbeitung unterstützt keine überlappenden benachbarten Konturkanten.');
+      }
+    }
+    for (let i = 0; i < points.length; i++) {
       const a = points[i], b = points[(i + 1) % points.length];
       for (let j = i + 1; j < points.length; j++) {
         if (j === i || j === (i + 1) % points.length || i === (j + 1) % points.length) continue;
