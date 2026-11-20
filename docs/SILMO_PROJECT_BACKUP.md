@@ -1166,3 +1166,12 @@ Vor Beginn einer neuen Aufgabe:
 - Zwei neue zentrale Loft-Toleranzen sichern Planaritäts- und Normalenprüfung ab.
 - Neue Unit- und Browsertests prüfen geneigte Profile, umgekehrte Kontur-Reihenfolge, Hohl-Loft-Volumen und Fehlerfälle.
 - Die UI-/Projektformat-Unterstützung für das Zeichnen und Speichern mehrerer Innenkonturen ist noch offen; die neue Funktion ist derzeit auf Factory-/API-Ebene verfügbar.
+
+
+## Ergänzung – Hohl-Loft vollständig in App-Workflow eingebunden (20.11.2026)
+- Die Loft-Funktion nimmt jetzt zwei Aussenprofile und anschliessend paarweise separate Innenprofile an (bis zu acht Löcher).
+- Auswahlreihenfolge wird im Profi-CAD-Bereich erklärt.
+- Das Ergebnis speichert Loft-Metadaten mit Quell-UUIDs und Innenkonturanzahl.
+- Projektformat v3 schreibt diese Metadaten mit und stellt sie beim Import wieder her; das Schema prüft die Struktur und Referenzen.
+- Browser-Regression ergänzt den Vier-Profil-Workflow sowie einen Projekt-Speichern-/Laden-Roundtrip in einer zweiten Browserinstanz.
+- Grenzen: Löcher entstehen aus separaten Skizzenobjekten; direkte Innenkonturzeichnung in einem einzigen Skizzenprofil und assoziative Feature-Neuberechnung bleiben offen.
