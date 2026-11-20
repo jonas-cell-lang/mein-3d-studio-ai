@@ -253,6 +253,8 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - Erfasst werden Median der Snapshot-Aufnahme, Undo-/Redo-Zeit sowie Node-Speicherwerte vor Snapshots, nach Snapshots und nach Freigabe/GC.
 - Der Benchmark läuft als `npm run benchmark:history` in den Code-Checks.
 - Die Messung ist zunächst informativ und verwendet keine maschinenabhängigen Pass/Fail-Grenzwerte. Sie ist eine isolierte History-Baseline, keine vollständige Browser-/CAD-Leistungsmessung.
+- Erste GitHub-Runner-Referenz (Node v22.23.5, Three.js r128): bei 1/10/50 Objekten lag der Snapshot-Median bei 0,035/0,095/0,669 ms; Undo bei 0,192/0,277/1,429 ms; Redo bei 0,106/0,224/1,480 ms. Diese Werte sind nur Vergleichspunkte und keine Qualitätsgrenzen.
+- Bei 50 Objekten stiegen ArrayBuffers während fünf Snapshots von rund 1,22 MB auf 7,21 MB und fielen nach Dispose/GC auf rund 20,8 KB zurück; beide History-Stacks waren leer.
 - Nach dem Leeren der History werden mehrere GC-/Event-Loop-Durchläufe abgewartet; zusätzlich wird geprüft und protokolliert, dass Undo-/Redo-Stacks danach leer sind.
 - Offene nächste Schritte: grössere reale Meshes, Browser-RAM/Frame-Zeit, Projektöffnung, Boolesche Operationen und interaktive Bildkonturerkennung messen.
 
