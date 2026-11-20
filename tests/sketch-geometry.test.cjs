@@ -191,6 +191,12 @@ test('Loft weist nicht planare Profile und nicht passende Innenkonturen zurück'
   const warped = upper.map(point => point.clone());
   warped[2].z += 0.2;
   assert.throws(() => sketchGeometry.createLoftGeometry(lower, warped), /planar/);
+  const warpedHole = lower.map(point => point.clone().add(new THREE.Vector3(0.5, 0.5, 0)));
+  warpedHole[2].z += 0.2;
+  assert.throws(() => sketchGeometry.createLoftGeometry(lower, upper, {
+    holesA: [lower.map(point => point.clone().multiplyScalar(0.25))],
+    holesB: [warpedHole]
+  }), /planar/);
   assert.throws(() => sketchGeometry.createLoftGeometry(lower, upper, { holesA: [lower], holesB: [] }), /paarweise gültige/);
 });
 
