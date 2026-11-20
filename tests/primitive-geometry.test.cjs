@@ -28,7 +28,7 @@ test('Grundkörper-Fabrik erzeugt alle vorhandenen CAD-Grundformen mit Sollabmes
     ['Kugel', [1.6, 1.6, 1.6]],
     ['Zylinder', [1.4, 1.4, 1.5]],
     ['Kegel', [1.6, 1.6, 1.5]],
-    ['Sechskant-Prisma', [1.7, 1.4722431864, 1.5]],
+    ['Sechskant-Prisma', [1.4722431864, 1.7, 1.5]],
     ['Ring / Torus', [1.66, 1.66, 0.36]]
   ];
   for (const [type, expected] of cases) {
