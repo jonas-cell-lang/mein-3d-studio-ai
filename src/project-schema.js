@@ -58,7 +58,8 @@
           index.array.length < 3 || index.array.length > 4500000 ||
           index.array.length % 3 !== 0 ||
           !['Uint8Array', 'Uint16Array', 'Uint32Array'].includes(index.arrayType) ||
-          !index.array.every(value => Number.isInteger(value) && value >= 0 && value < positionCount)) {
+          !index.array.every(value => Number.isInteger(value) && value >= 0 && value < positionCount &&
+            value <= ({ Uint8Array: 0xff, Uint16Array: 0xffff, Uint32Array: 0xffffffff })[index.arrayType])) {
         throw new Error('Ungültige Modell-Indizes.');
       }
     } else if (positionCount % 3 !== 0) {
