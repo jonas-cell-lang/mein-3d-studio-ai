@@ -522,3 +522,13 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Explizit wiederholte Schluss-Punkte werden normalisiert; Nullkanten innerhalb der Kontur werden kontrolliert abgewiesen.
 - Die Segmentposition wird während der gleichmässigen Abtastung fortlaufend weitergeführt, statt für jeden Samplepunkt erneut bei Segment 0 zu beginnen.
 - Regressionstests decken die normale Abtastung, explizit geschlossene Konturen, Nullkanten sowie ungültige und zu grosse Abtastparameter ab. Die CI-Ergebnisse für die neuen Commits sind noch abzuwarten.
+
+
+### 6.42 Loft-Abtastung: gleichmässige Abstände und Startpunktunabhängigkeit (20.11.2026)
+- Die Loft-Kontur-Abtastung wird nicht nur auf Anzahl und Endlichkeit der Samples geprüft, sondern auch auf den tatsächlichen Abstand entlang des geschlossenen Umfangs.
+- Für ein Quadrat mit Umfang 8 und 32 Samples muss jeder aufeinanderfolgende Abstand einschliesslich des letzten zum ersten 0,25 Einheiten betragen.
+- Umgekehrte Umlaufrichtung und zyklisch verschobener Startpunkt müssen dieselbe abgetastete Punktmenge ergeben.
+- Der Test ergänzt die Normalisierung explizit geschlossener Konturen und die Ablehnung echter Nullkanten.
+- Auf Commit `4299ae265b9d9bcccfcb90def0eb43a8fcb91102` bestanden alle 90/90 Unit-Tests; der Code-Check-Workflow hat den Unit-Test-Schritt erfolgreich abgeschlossen.
+
+**Nachtrag zu Abschnitt 6.41:** Auf Commit `5b5ac584d9e8525827934feb31977d73b6271d08` waren Code Checks, Browser-Interaktion und isolierter OCCT-/WebWorker-Prototyp erfolgreich (Runs 44785871641, 44785871362 und 44785871326). Die vorherigen fehlgeschlagenen Code-Checks auf `5e08409` betrafen einen fehlerhaft konstruierten Nullkanten-Testfall; nach Korrektur auf `5b5ac58` bestanden 90/90 Tests.
