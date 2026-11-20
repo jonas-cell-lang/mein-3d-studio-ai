@@ -464,3 +464,19 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Existenz der Quellobjekte wird weiterhin nicht erzwungen: Ein Benutzer darf Quellskizzen löschen; das Loft bleibt dann als Geometrie erhalten, kann aber nicht mehr aus fehlenden Quellen aktualisiert werden.
 - Unit-Tests prüfen gültige eindeutige Zuordnungen sowie wiederverwendete Aussen- und Innenprofil-IDs.
 - Direkte Ausführung des Schema-Moduls und Syntaxprüfung der Tests: gültige Zuordnung akzeptiert; doppelte Aussen-ID, doppelte Innen-ID und doppelte ID innerhalb eines Innenprofil-Paars jeweils abgewiesen. GitHub meldet für den Code-Commit keine CI-Statuschecks.
+
+
+### 6.36 Projektdatei-I/O: Exportvalidierung und atomarer Importaufbau (20.11.2026)
+- saveProject() prüft die erzeugte Projektstruktur vor dem Download mit demselben Schema wie der Import. Damit werden z. B. mehr als 100 Objekte, doppelte IDs oder ungültige gespeicherte Konturen nicht als vermeintlich gültige Projektdatei angeboten.
+- Der Export prüft zusätzlich die tatsächliche JSON-Blobgrösse gegen das 25-MB-Limit des Imports. Ein Projekt, das SILMO anschliessend nicht wieder öffnen könnte, wird nicht heruntergeladen.
+- Der Import lehnt fehlende, negative, nicht endliche oder zu grosse Dateigrössen ab. Fehler beim Erzeugen oder Lesen des FileReaders werden kontrolliert gemeldet und die Dateiauswahl zurückgesetzt.
+- Der bisherige sichere Ablauf bleibt erhalten: Alle Geometrien/Meshes werden vor commitProject aufgebaut; bei einem späteren Fehler werden bereits erzeugte Ressourcen freigegeben und das aktuelle Projekt nicht ersetzt.
+- Neue isolierte Node-Tests prüfen gültigen Save/Open-Roundtrip, Exportvalidierung, Importlimit, ungültige Transformationen und Ressourcenfreigabe beim Teilfehler.
+
+### 6.37 STL-I/O: begrenzte Importkomplexität und geprüfter Export (20.11.2026)
+- STL-Import bleibt auf 50 MB begrenzt und prüft nun zusätzlich maximal 500'000 Dreiecke sowie endliche Koordinaten im Bereich ±10'000'000 mm.
+- Bestehende Fehlermeldung für nicht endliche oder unvollständige Dreiecksdaten bleibt erhalten; zu grosse Dreieckszahlen und ausserhalb des Bereichs liegende Koordinaten erhalten getrennte Meldungen.
+- STL-Export prüft Positionen, Rotationen, Skalierungen, Positionsattribute, Dreiecksanzahl und Indizes, bevor der Exporter aufgerufen wird. Nullskalierungen werden abgewiesen.
+- Die Umrechnung in Millimeter erfolgt weiterhin nur auf privaten Geometriekopien; das sichtbare Ursprungsmodell wird nicht verändert.
+- Neue isolierte Node-Tests prüfen mm-Konvertierung, Zentrierung, Erhalt vorhandener Objekte, Nullflächen-/Übergrössen-Ablehnung, Exportkopien und ungültige Drehungen.
+- Validierung auf Commit 60b0906de797f5fbdbb3ac452664773e274a1857: Code Checks Run 44777656360 erfolgreich (79/79 Unit-Tests). Browser-Regression Run 44777656275 und OCCT/WebWorker Run 44777656779 sind zum Zeitpunkt dieser Dokumentation noch nicht abgeschlossen.
