@@ -2508,6 +2508,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       ? 'Hohl-Loft erstellt: '+holesA.length+' Innenkontur(en) wurden als echte Öffnungen verbunden.'
       : 'Loft erstellt: zwei Skizzenprofile wurden zu einem Körper verbunden.';
   }
+  window.__silmoLoftMetadataSnapshot=()=>objects.filter(obj=>obj.userData?.loft).map(obj=>({
+    innerContourCount:obj.userData.loft.innerContourCount,
+    sourceHoleCount:Array.isArray(obj.userData.loft.sourceHoles)?obj.userData.loft.sourceHoles.length:0,
+    sections:obj.userData.loft.sections
+  }));
   function createSweepFromSelection(){
     const pair=selectedObjects.length===2?selectedObjects.slice():[];
     if(pair.length!==2)throw new Error('Für Sweep genau zwei Objekte auswählen: zuerst Profil, danach Pfad.');
