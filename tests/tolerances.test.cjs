@@ -76,6 +76,7 @@ test('Jede zentrale Toleranz wird von mindestens einem Laufzeitmodul verwendet',
     '../src/image-studio.js',
     '../src/tutorial.js',
     '../src/sketch-geometry.js',
+    '../src/project-schema.js',
     '../src/primitive-geometry.js',
     '../src/stl-io.js'
   ];
