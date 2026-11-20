@@ -76,6 +76,17 @@
     return data;
   }
 
+  function validateContourFrameMetadata(object) {
+    if (!object || typeof object !== 'object' || Array.isArray(object)) return;
+    const frame = object.contourFrame || object.caseWallFrame;
+    if (frame == null) return;
+    if (!frame || typeof frame !== 'object' || Array.isArray(frame) ||
+        !Number.isFinite(frame.wallThicknessMM) || frame.wallThicknessMM < 0.2 || frame.wallThicknessMM > 100 ||
+        !Number.isFinite(frame.wallHeightMM) || frame.wallHeightMM < 0.2 || frame.wallHeightMM > 2000) {
+      throw new Error('Ungültige Hohlrahmen-Metadaten: Wandstärke oder Rahmenhöhe liegt ausserhalb des unterstützten Bereichs.');
+    }
+  }
+
   function validateProjectEnvelope(project) {
     if (!project || typeof project !== 'object' || Array.isArray(project)) {
       throw new Error('Projektdatei ist kein gültiges JSON-Objekt.');
@@ -92,6 +103,7 @@
     if (!Array.isArray(project.objects) || project.objects.length > 100) {
       throw new Error('Die Projektdatei enthält eine ungültige Objektliste (maximal 100 Objekte).');
     }
+    project.objects.forEach(validateContourFrameMetadata);
     return project;
   }
 
