@@ -1221,6 +1221,10 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(contourPointCounts.afterDelete,4,'Punkt wurde nicht korrekt aus der Innenkontur entfernt');
   assert.equal(contourPointCounts.holeCount,1,'Innenloch ging beim Einfügen/Entfernen verloren');
   assert.ok(contourPointCounts.vertices>0,'Kontur besitzt nach Punktbearbeitung keine Geometrie');
+  const removedHole=await sketchHolePage.evaluate(()=>window.__silmoTestRemoveSketchHole());
+  assert.equal(removedHole.holeCount,0,'Innenloch wurde nicht vollständig entfernt');
+  assert.equal(removedHole.outerPointCount,4,'Aussenkontur wurde beim Entfernen eines Innenlochs beschädigt');
+  assert.ok(removedHole.vertices>0,'Körper ohne Innenloch besitzt keine gültige Geometrie');
   const editableLoft=await sketchHolePage.evaluate(()=>window.__silmoTestUpdateLoftFromSources());
   assert.ok(editableLoft.sourceReferencesResolve,'Loft-Quellprofile konnten nicht wiedergefunden werden');
   assert.ok(editableLoft.afterMaxZ>editableLoft.beforeMaxZ,'Loft wurde nach Änderung eines Quellprofils nicht aktualisiert');
