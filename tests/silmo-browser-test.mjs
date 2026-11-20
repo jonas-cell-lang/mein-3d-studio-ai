@@ -967,6 +967,35 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const primitiveStart = await page.locator('#objects .object-row').count();
   await page.locator('#addCone').click(); await page.locator('#addHexPrism').click(); await page.locator('#addTorus').click();
   assert.equal(await page.locator('#objects .object-row').count(),primitiveStart+3,'Zusätzliche CAD-Grundkörper werden nicht erstellt');
+
+  // Mathematische Referenzprüfung der neu ergänzten Grundkörper.
+  // Die Abmessungen werden direkt aus der tatsächlich erzeugten BufferGeometry gelesen.
+  const primitiveBounds = await page.evaluate(() => objects.slice(-3).map(object => {
+    object.geometry.computeBoundingBox();
+    const size = object.geometry.boundingBox.getSize(new THREE.Vector3());
+    const position = object.geometry.attributes.position;
+    return {
+      label: object.userData.label,
+      size: [size.x, size.y, size.z],
+      vertexCount: position?.count || 0,
+      finite: !!position && position.array.every(Number.isFinite)
+    };
+  }));
+  const expectedPrimitiveBounds = [
+    { label: 'Kegel', size: [1.6, 1.6, 1.5] },
+    { label: 'Sechskant-Prisma', size: [1.7, 2 * 0.85 * Math.cos(Math.PI / 6), 1.5] },
+    { label: 'Ring / Torus', size: [1.66, 1.66, 0.36] }
+  ];
+  for (let i = 0; i < expectedPrimitiveBounds.length; i++) {
+    const actual = primitiveBounds[i], expected = expectedPrimitiveBounds[i];
+    assert.equal(actual.label, expected.label, 'Grundkörper-Reihenfolge oder Typ ist falsch');
+    assert.ok(actual.vertexCount > 0 && actual.finite, expected.label + ' enthält keine endlichen Geometriepunkte');
+    for (let axis = 0; axis < 3; axis++) {
+      assert.ok(Math.abs(actual.size[axis] - expected.size[axis]) < 1e-5,
+        expected.label + ' hat eine falsche geometrische Ausdehnung auf Achse ' + axis +
+        ': erwartet ' + expected.size[axis] + ', erhalten ' + actual.size[axis]);
+    }
+  }
   await page.locator('[data-tab="draw"]').click();
   const drawSubtabs=page.locator('#pane-draw-left > .inner-tab-nav button');
   assert.equal(await drawSubtabs.count(),2,'v90: Unterreiter Zeichnen fehlen');
