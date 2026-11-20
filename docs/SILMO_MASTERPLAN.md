@@ -498,3 +498,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Browser- und OCCT-WebWorker-Regressionen wurden für diesen reinen Test-/Dokumentationsschritt nicht erneut ausgelöst; ihr letzter erfolgreicher Stand bleibt Commit `1248213f9897f8ac9f473729bb5816b0f9b71740`.
 - Dies ist ein gezielter Roundtrip-Belastungstest, noch keine Browser-RAM-/Frame-Zeit-Messung und kein Nachweis für beliebig grosse reale CAD-Projekte.
 
+### 6.39 Vollständiger Projektdatei-Roundtrip mit grossem Mesh (20.11.2026)
+- Der isolierte Geometrie-Roundtrip wird jetzt durch einen Test des vollständigen Projektdatei-I/O ergänzt.
+- Eine Projektdatei mit 24'999 indizierten Vertices sowie Positions-, Normalen- und UV-Attributen wird als JSON aufgebaut und über den echten `project-io.js`-Importpfad wiederhergestellt.
+- Der Test vergleicht alle Attribut- und Indexwerte exakt, prüft Objektkennung und Transformation, kontrolliert den erfolgreichen Projekt-Commit und gibt die erzeugten Ressourcen frei.
+- Auf Commit `09fc0b953685dd9499f0fc0f2d8505eeb7303f5c` bestanden 89/89 Unit-Tests einschliesslich des neuen Datei-I/O-Tests. Code-Checks, Benchmark, Syntax-, Manifest-/HTML-ID- und lokaler Pages-Paketcheck waren erfolgreich.
+- Browser- und OCCT-/WebWorker-Regressionen waren auf dem unmittelbar vorherigen Commit `bc70ea3fb1c35619de705da8926c3dcd7932458f` erfolgreich; der neue Commit ergänzt ausschliesslich einen Node-Test und Dokumentation, ohne App-Laufzeitcode zu ändern.
+- Der Test deckt einen einzelnen grösseren Projektkörper ab. Er ersetzt weder Browser-RAM-/Frame-Zeit-Messungen noch einen Mehrkörper-Langzeittest.
+
