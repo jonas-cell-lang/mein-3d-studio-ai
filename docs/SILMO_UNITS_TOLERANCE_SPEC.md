@@ -230,3 +230,13 @@ Die frühere Zeile in Abschnitt 1.2 hatte den Wert der Skizzenprüfung fälschli
 | `CONTOUR_FRAME_MITER_ALLOWANCE_WORLD_UNITS` | 0,02 | Welteinheiten; zusätzlicher Rundungs-/Geometriespielraum in der bestehenden Gehrungsbegrenzung |
 
 Beide Werte sind Bestandteile derselben Sicherheitsprüfung und bleiben getrennt nach Dimension. Die Werte wurden nicht verändert.
+
+
+### 3.7 Weitere Punktabstandsgrenzen für Freiform und Herz-Kontur
+
+| API-Konstante | Wert | Dimension / Zweck |
+|---|---:|---|
+| `SKETCH_FREEFORM_MIN_POINT_SPACING_WORLD_UNITS` | 0,005 | Welteinheiten; entfernt nahezu doppelte benachbarte Punkte vor der Freiformvereinfachung |
+| `HEART_OUTLINE_POINT_DEDUPLICATION_WORLD_UNITS` | 1e-5 | Welteinheiten; entfernt aufeinanderfolgende bzw. abschliessend doppelte Punkte bei der Herz-Konturklassifikation |
+
+Die Herz-Konturklassifikation ist ein spezieller Erkennungspfad und keine allgemeine Bild-zu-CAD-Erkennung. Die Schwelle wird hier nur als bestehende Geometrie-Aufbereitungsregel dokumentiert.
