@@ -572,3 +572,27 @@ test('STL-Topologie erkennt zwei Würfel mit gemeinsamer Fläche', () => {
   assert.equal(result.isClosedEdgeManifold, false);
   geometry.dispose();
 });
+
+
+test('STL-Topologie berechnet das orientierte Volumen auch weit ausserhalb des Ursprungs stabil', () => {
+  const offset = [9000000, -9000000, 9000000];
+  const translated = cubeTriangles.map(triangle =>
+    triangle.map(point => point.map((value, axis) => value + offset[axis]))
+  );
+  const geometry = makeGeometryFromTriangles(translated);
+  const result = stlDiagnostics.analyzeSTLGeometry(geometry);
+  assert.equal(result.isClosedEdgeManifold, true);
+  assert.equal(result.invertedWinding, false);
+  assert.ok(Math.abs(result.signedVolumeMM3 - 1000) < 1e-5,
+    'Das Volumen des verschobenen Würfels muss 1000 mm³ bleiben');
+  geometry.dispose();
+
+  const reversed = translated.map(triangle => [triangle[0], triangle[2], triangle[1]]);
+  const reversedGeometry = makeGeometryFromTriangles(reversed);
+  const reversedResult = stlDiagnostics.analyzeSTLGeometry(reversedGeometry);
+  assert.equal(reversedResult.isClosedEdgeManifold, true);
+  assert.equal(reversedResult.invertedWinding, true);
+  assert.ok(Math.abs(reversedResult.signedVolumeMM3 + 1000) < 1e-5,
+    'Das umgekehrt orientierte Volumen muss -1000 mm³ bleiben');
+  reversedGeometry.dispose();
+});
