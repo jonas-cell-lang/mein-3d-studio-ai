@@ -1124,6 +1124,38 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   for (const key of ['dimensionOK','filletOK','chamferOK','loftOK','sweepOK']) assert.equal(proCadTest[key],true,'Professionelle CAD-Funktion '+key+' funktioniert nicht');
   for (const [axis,expected] of Object.entries({x:30,y:25,z:4})) assert.ok(Math.abs(proCadTest.dimensionsMM[axis]-expected)<0.01,'Skizzen-Extrusion hat falsche '+axis.toUpperCase()+'-Abmessung: '+proCadTest.dimensionsMM[axis]+' mm statt '+expected+' mm');
   assert.ok(proCadTest.loftVertices>0&&proCadTest.sweepVertices>0,'Loft/Sweep erzeugt keine Geometrie');
+  const loftTopologyTest = await page.evaluate(() => {
+    const makeRing = (radius, z, reverse = false) => {
+      const points = [
+        new THREE.Vector3(-radius, -radius, z),
+        new THREE.Vector3(radius, -radius, z),
+        new THREE.Vector3(radius, radius, z),
+        new THREE.Vector3(-radius, radius, z)
+      ];
+      return reverse ? points.reverse() : points;
+    };
+    const outerA = makeRing(2, 0), outerB = makeRing(2, 3, true);
+    const holeA = makeRing(1, 0, true), holeB = makeRing(1, 3);
+    const geometry = window.SILMOSketchGeometry.createLoftGeometry(
+      outerA, outerB, { holesA: [holeA], holesB: [holeB] }
+    );
+    try {
+      const p = geometry.attributes.position.array;
+      let volume = 0;
+      for (let i = 0; i < p.length; i += 9) {
+        const ax=p[i], ay=p[i+1], az=p[i+2];
+        const bx=p[i+3], by=p[i+4], bz=p[i+5];
+        const cx=p[i+6], cy=p[i+7], cz=p[i+8];
+        volume += (ax*(by*cz-bz*cy)+ay*(bz*cx-bx*cz)+az*(bx*cy-by*cx))/6;
+      }
+      return { volume: Math.abs(volume), vertices: geometry.attributes.position.count };
+    } finally {
+      geometry.dispose();
+    }
+  });
+  assert.ok(Math.abs(loftTopologyTest.volume - 36) < 1e-4,
+    'Loft mit geneigten/umgekehrten Konturen und Innenloch hat falsches Volumen: '+loftTopologyTest.volume);
+  assert.ok(loftTopologyTest.vertices > 0, 'Loft-Innenloch erzeugt kein Mesh');
   const relationTest=await page.evaluate(()=>window.__silmoTestRunSketchRelations());
   for (const key of ['parallelOK','perpendicularOK','tangentOK','concentricOK','lengthOK','distanceOK']) assert.equal(relationTest[key],true,'Skizzenbedingung/Bemaßung '+key+' funktioniert nicht');
 
