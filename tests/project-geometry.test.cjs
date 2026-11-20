@@ -1,9 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const THREE = require('three');
-const schema = require('../src/project-schema.js');
-
 globalThis.THREE = THREE;
+globalThis.SILMOTolerances = require('../src/tolerances.js');
+const schema = require('../src/project-schema.js');
 globalThis.SILMOProjectSchema = schema;
 const projectGeometry = require('../src/project-geometry.js');
 
