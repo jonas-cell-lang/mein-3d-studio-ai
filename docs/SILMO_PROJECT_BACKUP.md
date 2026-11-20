@@ -1256,3 +1256,14 @@ Vor Beginn einer neuen Aufgabe:
 - STL-Export validiert Geometrieattribute, Dreiecksindizes, Positionen, Drehungen und Skalierungen; Nullskalierungen werden abgewiesen.
 - Die Umrechnung in mm erfolgt weiterhin auf temporären Kopien, nicht auf dem sichtbaren Modell.
 - Neue Unit-Tests prüfen Import-Skalierung/Zentrierung, vorhandene Modellbestände, beschädigte und übergrosse Dreiecksdateien sowie Export ohne Veränderung des Ursprungsmodells.
+
+
+## Ergänzung – STL-Topologie-Diagnose und Referenz-Fixtures am 20.11.2026
+
+- `src/stl-io.js` prüft importierte STL-Dreiecksnetze zusätzlich zur bisherigen Dateiformat- und Koordinatenvalidierung. Die Prüfung verändert die Geometrie nicht und blockiert den Import bei Topologieproblemen nicht.
+- Erkannte Probleme: offene Randkanten, nicht-manifold Kanten (mehr als zwei angrenzende Dreiecke), widersprüchliche Dreiecksorientierung, doppelte Dreiecke, durch die definierte Verschweisstoleranz zusammengefallene Dreiecke und global umgekehrte Orientierung geschlossener Körper.
+- STL-Vertices werden mit der zentral dokumentierten Toleranz aus `src/tolerances.js` räumlich zusammengeführt. Die Toleranz wird von Weltkoordinaten korrekt in Millimeter umgerechnet.
+- Zur Begrenzung von Laufzeit und Speicher wird die vollständige Topologieprüfung bei mehr als 100'000 Dreiecken übersprungen. Der STL-Import selbst bleibt bis zur bestehenden Grenze von 500'000 Dreiecken möglich.
+- Reale ASCII-Referenzdateien: `tests/fixtures/stl/cube-10mm.stl` (12 Dreiecke, geschlossener Würfel) und `tests/fixtures/stl/open-triangle.stl` (offenes Dreiecksnetz).
+- Unit- und Browser-Regressionen prüfen geschlossene und offene Netze, doppelte Flächen, nicht-manifold Kanten, lokale und globale Orientierungsfehler sowie den Import der beiden realen STL-Dateien.
+- Die Diagnose ist eine geometrische Vorprüfung und keine automatische Reparatur oder Garantie für einen erfolgreichen 3D-Druck.
