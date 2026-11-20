@@ -2223,8 +2223,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
             ? simplifySketchPolyline(distinct, 0.5)
             : distinct.map(point => point.clone());
           const finalPoints = cleaned.length >= 3 ? cleaned : distinct.map(point => point.clone());
-          sketchDraft = { type: 'freeform2d', points: finalPoints };
+          sketchDraft = { type: 'freeform2d', points: finalPoints, holes: [] };
           updateSketchPreview();
+          document.getElementById('clickContourHoleToggle').disabled = false;
           document.getElementById('createSketchSolid').disabled = false;
           document.getElementById('cancelSketch').disabled = false;
           document.getElementById('sketchStatus').textContent = 'Freiform bereit: ' + finalPoints.length + ' Konturpunkte' + (cleaned.length < distinct.length ? ' (beruhigt)' : '') + '. Die Kontur wird beim Extrudieren geschlossen.';
