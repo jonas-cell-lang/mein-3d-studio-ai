@@ -249,3 +249,8 @@ Die Browser-Regression prüft jetzt zusätzlich die exakten und knapp unterschri
 - Mindestkonturfläche 0,01 mm²: exakt 0,01 mm² muss akzeptiert werden; 0,009801 mm² muss abgewiesen werden.
 
 Diese Fälle schützen die Vergleichsrichtung der Grenzwerte vor späteren versehentlichen Änderungen.
+
+
+### 3.9 Numerisch robuste Flächen-Grenzvergleiche
+
+Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPSILON_MM2 = 1e-12`. Das ist ein kleiner numerischer Vergleichsspielraum in mm², damit eine mathematisch exakt auf 0,01 mm² liegende Kontur nicht wegen binärer Gleitkomma-Rundung als knapp zu klein abgewiesen wird. Die deutlich kleinere Testfläche 0,009801 mm² bleibt unterhalb der Grenze und wird abgewiesen.
