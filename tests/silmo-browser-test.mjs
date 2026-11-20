@@ -1213,6 +1213,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const editedHole=await sketchHolePage.evaluate(()=>window.__silmoTestEditSketchHolePoint());
   assert.equal(editedHole.holeCount,1,'Innenloch ging bei der Punktbearbeitung verloren');
   assert.ok(editedHole.pointXMM<10,'Innenloch-Punkt wurde nicht verändert');
+  assert.ok(editedHole.outerPointXMM<0,'Aussenkontur-Punkt wurde nicht verändert');
+  assert.equal(editedHole.holeCount,1,'Innenloch ging bei der anschliessenden Aussenkonturbearbeitung verloren');
   assert.ok(editedHole.vertices>0,'Bearbeitete Skizze besitzt keine Geometrie');
   await sketchHolePage.close();
   await page.locator('[data-tab="draw"]').click();
