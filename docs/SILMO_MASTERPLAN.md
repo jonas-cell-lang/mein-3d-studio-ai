@@ -406,3 +406,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Validierung weist Innenkonturen ausserhalb der Aussenkontur, Selbstüberschneidungen, Berührungen und Überschneidungen mit anderen Innenlöchern zurück.
 - Freiform-Skizzen-Metadaten mit Innenkonturen werden im Projektformat v3 gespeichert, beim Import validiert und wiederhergestellt. Ältere v3-Dateien ohne diese optionalen Metadaten bleiben kompatibel.
 - Browser-Regression prüft echte Innenlöcher, Ablehnung einer ausserhalb liegenden Innenkontur sowie Speichern und erneutes Öffnen der editierbaren Konturdaten.
+
+
+### 6.29 Nachträgliche Konturpunktbearbeitung inklusive Innenlöcher (20.11.2026)
+- Der bestehende Konturpunkt-Editor erhält eine Konturauswahl: Aussenkontur oder eines der gespeicherten Innenlöcher.
+- Punktkoordinaten lassen sich nach dem Erzeugen des 3D-Körpers ändern. Beim Neuaufbau der Extrusion bleiben sämtliche anderen Ringe erhalten und werden als echte Öffnungen neu erzeugt.
+- Änderungen werden auf degenerierte Ringe, zu kurze Kanten und ungültige Lage/Überschneidung der Innenlöcher geprüft, bevor die alte Geometrie ersetzt wird.
+- Browser-Regression prüft das Verschieben eines Innenloch-Punktes an einem bereits erzeugten Körper.
+- Noch nicht unterstützt: Konturbearbeitung an bereits abgerundeten/abgefasten Körpern; parametrische Abhängigkeiten und interaktive direkte Manipulation im 3D-Viewport.
