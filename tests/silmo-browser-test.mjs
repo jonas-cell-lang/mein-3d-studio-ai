@@ -356,6 +356,24 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(changedBed.outlineWidthMM,targetBedWidth,'Sichtbarer 3D-Rand hat nicht die eingegebene Breite');
   assert.equal(changedBed.outlineDepthMM,targetBedDepth,'Sichtbarer 3D-Rand hat nicht die eingegebene Tiefe');
   await page.locator('#checkBed').click();
+  // Binäres STL mit einem gültigen Dreieck muss ebenso importierbar sein.
+  const modelCountBeforeBinaryImport=await page.locator('#objects .object-row').count();
+  await page.locator('#stlDropZone').evaluate(zone=>{
+    const buffer=new ArrayBuffer(134);
+    const view=new DataView(buffer);
+    const header=new TextEncoder().encode('SILMO binary STL fixture');
+    new Uint8Array(buffer,0,header.length).set(header);
+    view.setUint32(80,1,true);
+    const values=[0,0,1, 0,0,0, 10,0,0, 0,10,0];
+    values.forEach((value,index)=>view.setFloat32(84+index*4,value,true));
+    view.setUint16(132,0,true);
+    const transfer=new DataTransfer();
+    transfer.items.add(new File([buffer],'binary-test.stl',{type:'model/stl'}));
+    zone.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+    zone.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+  });
+  await page.waitForFunction(()=>Number(window.__silmoImportRevision||0)>2,null,{timeout:5000});
+  assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeBinaryImport+1,'Gültige binäre STL-Datei wurde nicht importiert');
   await page.waitForFunction(()=>document.querySelector('#tutorialNext')?.disabled===false,null,{timeout:5000});
   assert.match(await page.locator('#tutorialFeedback').innerText(),/Erfolgskontrolle bestanden/,'Aufgabe 25 erkennt die Druckbettprüfung nicht');
   // Ungültige Masse dürfen die letzte gültige Platte nicht unbemerkt überschreiben.
