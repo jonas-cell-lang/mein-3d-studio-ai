@@ -1175,3 +1175,5 @@ Vor Beginn einer neuen Aufgabe:
 - Projektformat v3 schreibt diese Metadaten mit und stellt sie beim Import wieder her; das Schema prüft die Struktur und Referenzen.
 - Browser-Regression ergänzt den Vier-Profil-Workflow sowie einen Projekt-Speichern-/Laden-Roundtrip in einer zweiten Browserinstanz.
 - Grenzen: Löcher entstehen aus separaten Skizzenobjekten; direkte Innenkonturzeichnung in einem einzigen Skizzenprofil und assoziative Feature-Neuberechnung bleiben offen.
+
+- Zusätzlich bleiben die UUIDs der Quellobjekte beim Speichern und Öffnen erhalten. Die Loft-Metadaten verweisen dadurch nach dem Projekt-Roundtrip weiterhin auf dieselben Quellprofile; das Schema prüft Eindeutigkeit und Format der IDs.
