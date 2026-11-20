@@ -2199,42 +2199,14 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       status.textContent='Wandstärke muss 0,2–100 mm und Rahmenhöhe 0,2–2000 mm betragen.';return;
     }
     const outline=base.userData.sketchOutline||base.userData.caseOutline;
-    const outer=outline.map(point=>new THREE.Vector2(point[0],point[1]));
-    if(outer.length>240){status.textContent='Die Kontur hat zu viele Punkte. Zeichne sie etwas einfacher neu.';return;}
-    const signedArea=points=>points.reduce((sum,p,i)=>{const n=points[(i+1)%points.length];return sum+p.x*n.y-n.x*p.y;},0)/2;
-    const area=signedArea(outer);
-    if(!Number.isFinite(area)||Math.abs(area)<window.SILMOTolerances.CONTOUR_FRAME_MIN_AREA_WORLD_UNITS2){status.textContent='Die Rückwand-Kontur ist zu klein oder ungültig.';return;}
-    const ccw=area>0,offset=mmToWorldUnits(thicknessMM),inner=[];
-    const cross=(a,b)=>a.x*b.y-a.y*b.x;
-    for(let i=0;i<outer.length;i++){
-      const prev=outer[(i+outer.length-1)%outer.length],p=outer[i],next=outer[(i+1)%outer.length];
-      const e1=new THREE.Vector2(p.x-prev.x,p.y-prev.y),e2=new THREE.Vector2(next.x-p.x,next.y-p.y);
-      if(e1.length()<window.SILMOTolerances.CONTOUR_FRAME_MIN_EDGE_WORLD_UNITS||e2.length()<window.SILMOTolerances.CONTOUR_FRAME_MIN_EDGE_WORLD_UNITS)continue;
-      e1.normalize();e2.normalize();
-      const n1=ccw?new THREE.Vector2(-e1.y,e1.x):new THREE.Vector2(e1.y,-e1.x);
-      const n2=ccw?new THREE.Vector2(-e2.y,e2.x):new THREE.Vector2(e2.y,-e2.x);
-      const q1=p.clone().addScaledVector(n1,offset),q2=p.clone().addScaledVector(n2,offset),den=cross(e1,e2);
-      let hit;
-      if(Math.abs(den)<window.SILMOTolerances.CONTOUR_FRAME_PARALLEL_CROSS_MIN){
-        const normal=n1.clone().add(n2);
-        if(normal.length()<window.SILMOTolerances.CONTOUR_FRAME_MIN_NORMAL_WORLD_UNITS)throw new Error('Kontur enthält einen ungültigen Knick.');
-        hit=p.clone().addScaledVector(normal.normalize(),offset);
-      }else{
-        const u=cross(new THREE.Vector2(q2.x-q1.x,q2.y-q1.y),e2)/den;
-        hit=q1.clone().addScaledVector(e1,u);
-      }
-      if(hit.distanceTo(p)>offset*window.SILMOTolerances.CONTOUR_FRAME_MITER_LIMIT_FACTOR+window.SILMOTolerances.CONTOUR_FRAME_MITER_ALLOWANCE_WORLD_UNITS)throw new Error('Die Kontur ist für diese Wandstärke zu eng. Verringere die Wandstärke.');
-      inner.push(hit);
-    }
-    const innerArea=signedArea(inner);
-    if(inner.length<3||Math.abs(innerArea)<window.SILMOTolerances.CONTOUR_FRAME_MIN_AREA_WORLD_UNITS2||Math.sign(innerArea)!==Math.sign(area))
-      throw new Error('Innenkontur ist zu eng oder überschneidet sich. Verringere die Wandstärke oder glätte die gezeichnete Kontur.');
-    const shape=new THREE.Shape();
-    shape.moveTo(outer[0].x,outer[0].y);outer.slice(1).forEach(p=>shape.lineTo(p.x,p.y));shape.closePath();
-    const hole=new THREE.Path(),reversed=inner.slice().reverse();
-    hole.moveTo(reversed[0].x,reversed[0].y);reversed.slice(1).forEach(p=>hole.lineTo(p.x,p.y));hole.closePath();shape.holes.push(hole);
-    const geometry=new THREE.ExtrudeGeometry(shape,{depth:mmToWorldUnits(heightMM),bevelEnabled:false,curveSegments:16});
-    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    if(outline.length>240){status.textContent='Die Kontur hat zu viele Punkte. Zeichne sie etwas einfacher neu.';return;}
+    const geometry=window.SILMOSketchGeometry.createContourFrameGeometry(
+      outline,
+      mmToWorldUnits(thicknessMM),
+      mmToWorldUnits(heightMM),
+      window.SILMOTolerances,
+      CSG_EPSILON
+    );
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
     if(![size.x,size.y,size.z].every(v=>Number.isFinite(v)&&v>CSG_EPSILON)){geometry.dispose();throw new Error('Hohlrahmen hat ungültige Abmessungen.');}
     recordHistory();
