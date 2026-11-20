@@ -1874,6 +1874,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   let sketchDrawing = false, sketchPointerId = null;
   let sketchDraft = null, sketchPreview = null;
   let clickContourMode = false;
+  let clickContourHoleMode = false;
   let clickContourPoints = [];
 
   function clearSketchPreview() {
@@ -1975,9 +1976,19 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       sketchPreview = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: sketchDraft.type === 'line3d' ? 0xffd166 : 0x53d8e8, depthTest: false }));
     } else if (sketchDraft.type === 'freeform2d') {
       if (!Array.isArray(sketchDraft.points) || sketchDraft.points.length < 3) return;
-      const points = sketchDraft.points.map(point => new THREE.Vector3(point.x, point.y, window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS));
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      sketchPreview = new THREE.LineLoop(geometry, new THREE.LineBasicMaterial({ color: 0x53d8e8, depthTest: false }));
+      const loops = [sketchDraft.points, ...(Array.isArray(sketchDraft.holes) ? sketchDraft.holes : [])];
+      if (clickContourHoleMode && clickContourPoints.length >= 2) loops.push(clickContourPoints);
+      const vertices = [];
+      loops.forEach(loop => {
+        for (let i = 0; i < loop.length; i++) {
+          const a = loop[i], b = loop[(i + 1) % loop.length];
+          vertices.push(a.x,a.y,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS,
+            b.x,b.y,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS);
+        }
+      });
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices,3));
+      sketchPreview = new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ color: 0x53d8e8, depthTest: false }));
     } else {
       let points = [];
       const activeTool = document.getElementById('sketchTool')?.value;
@@ -2058,6 +2069,31 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       document.getElementById('sketchStatus').textContent = error.message;
     }
   }
+  function validateSketchHole(outer, hole, existingHoles = []) {
+    const valid = ring => Array.isArray(ring) && ring.length >= 3 &&
+      ring.every(point => point && Number.isFinite(point.x) && Number.isFinite(point.y));
+    if (!valid(outer) || !valid(hole) || hole.length > 500) throw new Error('Innenkonturen brauchen 3 bis 500 gültige Punkte.');
+    const area = ring => ring.reduce((sum,p,i) => { const q=ring[(i+1)%ring.length]; return sum+p.x*q.y-q.x*p.y; },0)/2;
+    if (Math.abs(area(hole)) < window.SILMOTolerances.FREEFORM_MIN_AREA_WORLD_UNITS2) throw new Error('Das Innenloch ist zu klein.');
+    const orient=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
+    const onSegment=(a,b,p)=>Math.min(a.x,b.x)-1e-9<=p.x&&p.x<=Math.max(a.x,b.x)+1e-9&&Math.min(a.y,b.y)-1e-9<=p.y&&p.y<=Math.max(a.y,b.y)+1e-9;
+    const intersects=(a,b,c,d)=>{
+      const o1=orient(a,b,c),o2=orient(a,b,d),o3=orient(c,d,a),o4=orient(c,d,b);
+      if (((o1>1e-9&&o2< -1e-9)||(o1< -1e-9&&o2>1e-9))&&((o3>1e-9&&o4< -1e-9)||(o3< -1e-9&&o4>1e-9))) return true;
+      return (Math.abs(o1)<=1e-9&&onSegment(a,b,c))||(Math.abs(o2)<=1e-9&&onSegment(a,b,d))||(Math.abs(o3)<=1e-9&&onSegment(c,d,a))||(Math.abs(o4)<=1e-9&&onSegment(c,d,b));
+    };
+    const inside=(p,ring)=>{let result=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){const a=ring[i],b=ring[j];if(((a.y>p.y)!==(b.y>p.y))&&(p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x))result=!result;}return result;};
+    const selfCrosses=ring=>{for(let i=0;i<ring.length;i++)for(let j=i+1;j<ring.length;j++){if(j===i+1||(i===0&&j===ring.length-1))continue;if(intersects(ring[i],ring[(i+1)%ring.length],ring[j],ring[(j+1)%ring.length]))return true;}return false;};
+    if(selfCrosses(hole))throw new Error('Das Innenloch überschneidet sich selbst.');
+    if(!hole.every(point=>inside(point,outer)))throw new Error('Das Innenloch muss vollständig innerhalb der Aussenkontur liegen.');
+    for(let i=0;i<hole.length;i++)for(let j=0;j<outer.length;j++)if(intersects(hole[i],hole[(i+1)%hole.length],outer[j],outer[(j+1)%outer.length]))throw new Error('Das Innenloch darf die Aussenkontur nicht berühren oder schneiden.');
+    for(const other of existingHoles){
+      if(hole.some(point=>inside(point,other))||other.some(point=>inside(point,hole)))throw new Error('Innenlöcher dürfen sich nicht überlappen oder ineinander liegen.');
+      for(let i=0;i<hole.length;i++)for(let j=0;j<other.length;j++)if(intersects(hole[i],hole[(i+1)%hole.length],other[j],other[(j+1)%other.length]))throw new Error('Innenlöcher dürfen sich nicht berühren oder schneiden.');
+    }
+    return true;
+  }
+
   document.getElementById('clickContourToggle').addEventListener('click', () => {
     if (!sketchMode) {
       document.getElementById('sketchStatus').textContent = 'Bitte zuerst „Zeichnen starten“ wählen.';
@@ -2065,8 +2101,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
     const enabled = !clickContourMode;
     clickContourMode = enabled;
+    clickContourHoleMode = false;
     clickContourPoints = [];
     sketchDraft = null;
+    document.getElementById('clickContourHoleToggle').disabled = true;
+    document.getElementById('clickContourHoleToggle').setAttribute('aria-pressed','false');
     clearSketchPreview();
     document.getElementById('clickContourToggle').setAttribute('aria-pressed',String(enabled));
     document.getElementById('clickContourToggle').textContent = enabled ? '■ Punktmodus ausschalten' : '＋ Punktmodus einschalten';
@@ -2078,28 +2117,73 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       ? 'Punktmodus aktiv: Klicke nacheinander auf mindestens drei Ecken. Ein Klick nahe beim Startpunkt schliesst die Kontur.'
       : 'Punktmodus ausgeschaltet. Du kannst wieder wie gewohnt ziehen.';
   });
+  document.getElementById('clickContourHoleToggle').addEventListener('click', () => {
+    if (!sketchMode || sketchDraft?.type !== 'freeform2d' || sketchDraft.points?.length < 3) {
+      document.getElementById('sketchStatus').textContent = 'Erstelle zuerst eine geschlossene Aussenkontur.';
+      return;
+    }
+    if (clickContourHoleMode) {
+      clickContourMode=false; clickContourHoleMode=false; clickContourPoints=[];
+      document.getElementById('clickContourToggle').disabled=false;
+      document.getElementById('clickContourHoleToggle').setAttribute('aria-pressed','false');
+      document.getElementById('clickContourHoleToggle').textContent='＋ Weiteres Innenloch zeichnen';
+      document.getElementById('clickContourUndo').disabled=true;
+      document.getElementById('clickContourFinish').disabled=true;
+      updateSketchPreview();
+      document.getElementById('sketchStatus').textContent='Innenloch-Zeichnung abgebrochen. Fertige Konturen bleiben erhalten.';
+      return;
+    }
+    clickContourMode=true; clickContourHoleMode=true; clickContourPoints=[];
+    document.getElementById('clickContourToggle').disabled=true;
+    document.getElementById('clickContourHoleToggle').setAttribute('aria-pressed','true');
+    document.getElementById('clickContourHoleToggle').textContent='■ Innenloch-Zeichnung abbrechen';
+    document.getElementById('clickContourUndo').disabled=true;
+    document.getElementById('clickContourFinish').disabled=true;
+    document.getElementById('sketchStatus').textContent='Innenloch aktiv: Klicke mindestens drei Punkte innerhalb der Aussenkontur. Schliesse den Ring mit einem Klick nahe beim Startpunkt.';
+  });
   document.getElementById('clickContourUndo').addEventListener('click', () => {
     if (!clickContourPoints.length) return;
     clickContourPoints.pop();
     document.getElementById('clickContourUndo').disabled = clickContourPoints.length === 0;
     document.getElementById('clickContourFinish').disabled = clickContourPoints.length < 3;
     if (clickContourPoints.length >= 3) {
-      sketchDraft = {type:'freeform2d',points:clickContourPoints.map(p=>p.clone())};
+      if (!clickContourHoleMode) sketchDraft = {type:'freeform2d',points:clickContourPoints.map(p=>p.clone()),holes:[]};
       updateSketchPreview();
-    } else { sketchDraft = null; clearSketchPreview(); }
+    } else if (!clickContourHoleMode) { sketchDraft = null; clearSketchPreview(); }
     document.getElementById('sketchStatus').textContent = clickContourPoints.length + ' Konturpunkte vorhanden.';
   });
   document.getElementById('clickContourFinish').addEventListener('click', () => {
     if (clickContourPoints.length < 3) return;
-    sketchDraft = {type:'freeform2d',points:clickContourPoints.map(p=>p.clone())};
+    if (clickContourHoleMode) {
+      try {
+        const hole=clickContourPoints.map(point=>point.clone());
+        const existing=Array.isArray(sketchDraft.holes)?sketchDraft.holes:[];
+        validateSketchHole(sketchDraft.points,hole,existing);
+        sketchDraft.holes=[...existing,hole];
+        clickContourHoleMode=false; clickContourMode=false; clickContourPoints=[];
+        document.getElementById('clickContourToggle').disabled=false;
+        document.getElementById('clickContourHoleToggle').setAttribute('aria-pressed','false');
+        document.getElementById('clickContourHoleToggle').textContent='＋ Weiteres Innenloch zeichnen';
+        document.getElementById('clickContourUndo').disabled=true;
+        document.getElementById('clickContourFinish').disabled=true;
+        updateSketchPreview();
+        document.getElementById('createSketchSolid').disabled=false;
+        document.getElementById('sketchStatus').textContent='Innenloch hinzugefügt. '+sketchDraft.holes.length+' echte Öffnung(en) vorbereitet.';
+      } catch(error) {
+        document.getElementById('sketchStatus').textContent='Innenloch abgelehnt: '+error.message;
+      }
+      return;
+    }
+    sketchDraft = {type:'freeform2d',points:clickContourPoints.map(p=>p.clone()),holes:[]};
     updateSketchPreview();
     document.getElementById('createSketchSolid').disabled = false;
     document.getElementById('cancelSketch').disabled = false;
     document.getElementById('clickContourFinish').disabled = true;
-    document.getElementById('sketchStatus').textContent = 'Kontur fertig: '+clickContourPoints.length+' Punkte. Du kannst sie jetzt als 3D-Körper erstellen oder weiter bearbeiten.';
+    document.getElementById('clickContourHoleToggle').disabled = false;
+    document.getElementById('sketchStatus').textContent = 'Aussenkontur fertig. Jetzt kannst du Innenlöcher direkt in derselben Skizze hinzufügen.';
     clickContourMode = false;
     document.getElementById('clickContourToggle').setAttribute('aria-pressed','false');
-    document.getElementById('clickContourToggle').textContent = '＋ Neue Punktkontur zeichnen';
+    document.getElementById('clickContourToggle').textContent = '＋ Neue Aussenkontur zeichnen';
   });
 
   function finishSketchPointer(e) {
@@ -2591,7 +2675,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const localHoles = Array.isArray(sketchDraft.holes) ? sketchDraft.holes : [];
         const holeMetadata = [];
         for (const holePoints of localHoles) {
-          if (!Array.isArray(holePoints) || holePoints.length < 3) continue;
+          validateSketchHole(points,holePoints,localHoles.filter(candidate=>candidate!==holePoints));
           const holeVectors = holePoints.map(point => new THREE.Vector2(point.x - centerX, point.y - centerY));
           const holePath = new THREE.Path();
           holePath.moveTo(holeVectors[0].x, holeVectors[0].y);
@@ -2717,7 +2801,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     clearSketchPreview();
     sketchDraft = null;
     sketchDrawing = false;
-    clickContourPoints = []; clickContourMode = false;
+    clickContourPoints = []; clickContourMode = false; clickContourHoleMode = false;
+    document.getElementById('clickContourHoleToggle').disabled = true;
+    document.getElementById('clickContourToggle').disabled = false;
     document.getElementById('clickContourToggle').setAttribute('aria-pressed','false');
     document.getElementById('clickContourToggle').textContent = '＋ Punktmodus einschalten';
     document.getElementById('clickContourUndo').disabled = true;
@@ -2760,6 +2846,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   document.getElementById('subtractSelected').addEventListener('click',()=>runBooleanOperation('subtract'));
   document.getElementById('cancelSketch').addEventListener('click', () => {
     sketchMode = false; sketchDrawing = false; sketchPointerId = null; sketchDraft = null;
+    clickContourMode=false; clickContourHoleMode=false; clickContourPoints=[];
+    document.getElementById('clickContourHoleToggle').disabled=true;
+    document.getElementById('clickContourToggle').disabled=false;
     updateGizmoModeButton();
     rotationAngleLabel.hidden = false;
     document.getElementById('sketchViewLockNote').textContent = 'Zeichenmodus beendet. Kamera- und Objektdrehung sind wieder verfügbar.';
@@ -2876,7 +2965,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       document.getElementById('clickContourFinish').disabled = clickContourPoints.length < 3;
       document.getElementById('sketchStatus').textContent = clickContourPoints.length + ' Konturpunkte gesetzt. Klicke weitere Ecken oder schliesse die Kontur ab.';
       if (clickContourPoints.length >= 3) {
-        sketchDraft = { type:'freeform2d', points:clickContourPoints.map(p=>p.clone()) };
+        if (!clickContourHoleMode) sketchDraft = { type:'freeform2d', points:clickContourPoints.map(p=>p.clone()), holes:[] };
         updateSketchPreview();
       }
       return;
