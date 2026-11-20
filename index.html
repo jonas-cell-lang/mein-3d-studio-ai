@@ -2072,7 +2072,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   function validateSketchHole(outer, hole, existingHoles = []) {
     const valid = ring => Array.isArray(ring) && ring.length >= 3 &&
       ring.every(point => point && Number.isFinite(point.x) && Number.isFinite(point.y));
-    if (!valid(outer) || !valid(hole) || hole.length > 500) throw new Error('Innenkonturen brauchen 3 bis 500 gültige Punkte.');
+    if (!valid(outer) || !valid(hole) || hole.length > 1000) throw new Error('Innenkonturen brauchen 3 bis 500 gültige Punkte.');
     const area = ring => ring.reduce((sum,p,i) => { const q=ring[(i+1)%ring.length]; return sum+p.x*q.y-q.x*p.y; },0)/2;
     if (Math.abs(area(hole)) < window.SILMOTolerances.FREEFORM_MIN_AREA_WORLD_UNITS2) throw new Error('Das Innenloch ist zu klein.');
     const orient=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
@@ -2149,7 +2149,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     if (clickContourPoints.length >= 3) {
       if (!clickContourHoleMode) sketchDraft = {type:'freeform2d',points:clickContourPoints.map(p=>p.clone()),holes:[]};
       updateSketchPreview();
-    } else if (!clickContourHoleMode) { sketchDraft = null; clearSketchPreview(); }
+    } else if (clickContourHoleMode) { updateSketchPreview(); }
+    else { sketchDraft = null; clearSketchPreview(); }
     document.getElementById('sketchStatus').textContent = clickContourPoints.length + ' Konturpunkte vorhanden.';
   });
   document.getElementById('clickContourFinish').addEventListener('click', () => {
@@ -2752,6 +2753,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       mesh.userData.percent = { x: 100, y: 100, z: 100 };
       mesh.userData.label = label;
       mesh.userData.sketch = sketchMetadata;
+      document.getElementById('clickContourHoleToggle').disabled = true;
       if(Array.isArray(sketchMetadata.outlinePoints)&&sketchMetadata.outlinePoints.length>=3)mesh.userData.sketchOutline=sketchMetadata.outlinePoints;
       scene.add(mesh);
       objects.push(mesh);
