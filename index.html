@@ -591,10 +591,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const step = mmToWorldUnits(visualStepMM);
     const vertices = [];
     const halfW = w / 2, halfD = d / 2;
-    for (let x = -Math.floor(halfW / step) * step; x <= halfW + 1e-8; x += step) {
+    for (let x = -Math.floor(halfW / step) * step; x <= halfW + window.SILMOTolerances.GRID_BOUNDARY_EPSILON_WORLD_UNITS; x += step) {
       vertices.push(x, -halfD, 0.003, x, halfD, 0.003);
     }
-    for (let y = -Math.floor(halfD / step) * step; y <= halfD + 1e-8; y += step) {
+    for (let y = -Math.floor(halfD / step) * step; y <= halfD + window.SILMOTolerances.GRID_BOUNDARY_EPSILON_WORLD_UNITS; y += step) {
       vertices.push(-halfW, y, 0.003, halfW, y, 0.003);
     }
     const gridGeometry = new THREE.BufferGeometry();
@@ -1359,7 +1359,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
 
   function applyGroupRotation(axis, delta, targets = getSelectedTargets()) {
-    if (!targets.length || !Number.isFinite(delta) || Math.abs(delta) < 1e-12) return;
+    if (!targets.length || !Number.isFinite(delta) || Math.abs(delta) < window.SILMOTolerances.GROUP_ROTATION_MIN_RADIANS) return;
     const direction = axis === 'x' ? new THREE.Vector3(1,0,0) : axis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
     const center = getSelectionCenter(targets);
     const deltaRotation = new THREE.Quaternion().setFromAxisAngle(direction, delta);
@@ -2562,7 +2562,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const values=['editSketchWidthMM','editSketchDepthMM','editSketchHeightMM'].map(id=>Number(document.getElementById(id).value));
     if(values.some(v=>!Number.isFinite(v)||v<0.1||v>2000))throw new Error('Breite, Tiefe und Höhe müssen zwischen 0,1 und 2000 mm liegen.');
     obj.geometry.computeBoundingBox();const old=obj.geometry.boundingBox.getSize(new THREE.Vector3());
-    if(old.x<1e-6||old.y<1e-6||old.z<1e-6)throw new Error('Diese Skizze besitzt keine skalierbare Fläche oder Extrusionshöhe.');
+    if(old.x<window.SILMOTolerances.PROFILE_MIN_SOURCE_DIMENSION_WORLD_UNITS||old.y<window.SILMOTolerances.PROFILE_MIN_SOURCE_DIMENSION_WORLD_UNITS||old.z<window.SILMOTolerances.PROFILE_MIN_SOURCE_DIMENSION_WORLD_UNITS)throw new Error('Diese Skizze besitzt keine skalierbare Fläche oder Extrusionshöhe.');
     const factors=[values[0]/(worldUnitsToMm(old.x*Math.abs(obj.scale.x))),values[1]/(worldUnitsToMm(old.y*Math.abs(obj.scale.y))),values[2]/(worldUnitsToMm(old.z*Math.abs(obj.scale.z)))];
     if(factors.some(v=>!Number.isFinite(v)||v<=0||v>20000))throw new Error('Die gewünschte Skalierung ist ausserhalb des gültigen Bereichs.');
     recordHistory();obj.geometry.scale(...factors);obj.geometry.computeVertexNormals();obj.geometry.computeBoundingBox();obj.geometry.computeBoundingSphere();
@@ -2779,7 +2779,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         }
         geometry = new THREE.ExtrudeGeometry(shape, { depth: dims.height, bevelEnabled: false, curveSegments: 64 });
         geometry.computeVertexNormals();
-        const profileOutline=shape.getPoints(32);if(profileOutline.length>1&&profileOutline[0].distanceTo(profileOutline[profileOutline.length-1])<1e-7)profileOutline.pop();
+        const profileOutline=shape.getPoints(32);if(profileOutline.length>1&&profileOutline[0].distanceTo(profileOutline[profileOutline.length-1])<window.SILMOTolerances.SKETCH_PROFILE_CLOSURE_WORLD_UNITS)profileOutline.pop();
         meshPosition.set(sketchDraft.centerX, sketchDraft.centerY, 0);
         sketchMetadata = {
           type: tool,
@@ -3013,7 +3013,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const a = ray.direction.dot(ray.direction), b = ray.direction.dot(direction);
     const c = direction.dot(direction), d = ray.direction.dot(w0), e = direction.dot(w0);
     const denom = a*c - b*b;
-    if (Math.abs(denom) < 1e-6) return -e / c;
+    if (Math.abs(denom) < window.SILMOTolerances.SKETCH_RAY_PARALLEL_DENOMINATOR_MIN) return -e / c;
     return (a*e - b*d) / denom;
   }
 
