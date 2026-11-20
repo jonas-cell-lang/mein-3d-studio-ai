@@ -41,10 +41,17 @@
           geometry = loader.parse(reader.result);
           const position = geometry && geometry.attributes && geometry.attributes.position;
           if (!position || position.itemSize !== 3 || position.count < 3 ||
-              position.count % 3 !== 0 || position.array.length !== position.count * 3 ||
-              position.count / 3 > MAX_STL_TRIANGLES ||
-              !position.array.every(value => Number.isFinite(value) && Math.abs(value) <= MAX_STL_COORDINATE_MM)) {
-            throw new Error('Die STL-Datei enthält ungültige, zu grosse oder zu umfangreiche Dreiecksdaten.');
+              position.count % 3 !== 0 || position.array.length !== position.count * 3) {
+            throw new Error('Die STL-Datei enthält keine vollständigen, gültigen Dreiecke.');
+          }
+          if (position.count / 3 > MAX_STL_TRIANGLES) {
+            throw new Error('Die STL-Datei überschreitet das sichere Limit von 500000 Dreiecken.');
+          }
+          if (!position.array.every(Number.isFinite)) {
+            throw new Error('Die STL-Datei enthält keine vollständigen, gültigen Dreiecke.');
+          }
+          if (!position.array.every(value => Math.abs(value) <= MAX_STL_COORDINATE_MM)) {
+            throw new Error('Die STL-Datei enthält Koordinaten ausserhalb des unterstützten Bereichs.');
           }
           // STL ist ein Dreiecksformat. Nullflächen-Dreiecke können beim
           // weiteren Modellieren und beim Slicer zu undefinierten Ergebnissen führen.
