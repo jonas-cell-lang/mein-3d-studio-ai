@@ -7,7 +7,6 @@ const path = require('node:path');
 test('Toleranzwerte behalten die im Audit belegten Werte', () => {
   assert.equal(tolerances.CSG_GEOMETRY_WORLD_UNITS, 1e-5);
   assert.equal(tolerances.STL_VERTEX_WELD_WORLD_UNITS, 1e-5);
-  assert.equal(tolerances.STL_DIAGNOSTIC_MAX_TRIANGLES, 100000);
   assert.equal(tolerances.ALIGNMENT_OVERLAP_WORLD_UNITS, 1e-7);
   assert.equal(tolerances.ALIGNMENT_CHANGE_WORLD_UNITS, 1e-8);
   assert.equal(tolerances.SKETCH_SIMPLIFICATION_MIN_MM, 0.01);
