@@ -145,6 +145,21 @@ test('Loft unterstützt geneigte und unterschiedlich ausgerichtete planare Profi
   }
 });
 
+test('Loft richtet Startpunkt und Laufrichtung gegensätzlicher Profilkonturen aus', () => {
+  const lower = [
+    new THREE.Vector3(-1, -1, 0), new THREE.Vector3(1, -1, 0),
+    new THREE.Vector3(1, 1, 0), new THREE.Vector3(-1, 1, 0)
+  ];
+  const upper = lower.slice().reverse().map(point => point.clone().add(new THREE.Vector3(0, 0, 2)));
+  const geometry = sketchGeometry.createLoftGeometry(lower, upper);
+  try {
+    assert.ok(Math.abs(meshVolume(geometry) - 8) < 1e-5);
+    assert.deepEqual(geometry.boundingBox.getSize(new THREE.Vector3()).toArray(), [2, 2, 2]);
+  } finally {
+    geometry.dispose();
+  }
+});
+
 test('Loft unterstützt durchgehende Innenkonturen und erhält analytisches Rohrvolumen', () => {
   const outerA = [
     new THREE.Vector3(-2, -2, 0), new THREE.Vector3(2, -2, 0),
