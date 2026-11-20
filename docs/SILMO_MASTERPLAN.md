@@ -561,3 +561,6 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Vereinigung eines gespiegelten Basiskörpers mit einem überlappenden Würfel muss dasselbe analytische Volumen von 12 Kubikeinheiten und dieselben erwarteten Grenzen liefern.
 - Damit wird die Orientierungskorrektur für beide Eingabepositionen der CSG-Operation abgesichert; dies ist weiterhin ein gezielter BSP-Regressionstest und kein Nachweis für alle koplanaren, tangierenden oder selbstüberschneidenden Fälle.
 - Der neue Unit-Test wurde auf dem Entwicklungszweig ergänzt. CI für Commit `878d81c1700f16e86a82f6ce565b98f41c179be5` ist noch abzuwarten.
+
+
+**Nachtrag zu Abschnitt 6.44/6.45:** Die beiden Spiegelungs-Regressionen prüfen jetzt ausdrücklich ein positives orientiertes Volumen und nicht nur dessen Absolutwert. Damit würde eine vollständig umgedrehte Dreiecksorientierung nicht mehr fälschlich als bestanden gelten. Die aktualisierten Tests sind auf Commit `1f7be71bfd114faeab237b79e33fcf1ce7277b4b` enthalten; CI steht noch aus.
