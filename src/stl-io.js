@@ -37,9 +37,26 @@
           geometry = loader.parse(reader.result);
           const position = geometry && geometry.attributes && geometry.attributes.position;
           if (!position || position.itemSize !== 3 || position.count < 3 ||
-              position.array.length % 3 !== 0 ||
+              position.count % 3 !== 0 || position.array.length % 3 !== 0 ||
               !position.array.every(Number.isFinite)) {
-            throw new Error('Die STL-Datei enthält keine gültigen 3D-Punkte.');
+            throw new Error('Die STL-Datei enthält keine vollständigen, gültigen Dreiecke.');
+          }
+          // STL ist ein Dreiecksformat. Nullflächen-Dreiecke können beim
+          // weiteren Modellieren und beim Slicer zu undefinierten Ergebnissen führen.
+          for (let i = 0; i < position.count; i += 3) {
+            const ax = position.getX(i), ay = position.getY(i), az = position.getZ(i);
+            const abx = position.getX(i + 1) - ax;
+            const aby = position.getY(i + 1) - ay;
+            const abz = position.getZ(i + 1) - az;
+            const acx = position.getX(i + 2) - ax;
+            const acy = position.getY(i + 2) - ay;
+            const acz = position.getZ(i + 2) - az;
+            const nx = aby * acz - abz * acy;
+            const ny = abz * acx - abx * acz;
+            const nz = abx * acy - aby * acx;
+            if (![nx, ny, nz].every(Number.isFinite) || (nx === 0 && ny === 0 && nz === 0)) {
+              throw new Error('Die STL-Datei enthält ein entartetes Dreieck ohne Fläche.');
+            }
           }
           geometry.computeVertexNormals();
           geometry.computeBoundingBox();
