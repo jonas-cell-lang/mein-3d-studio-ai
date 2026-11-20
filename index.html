@@ -2402,6 +2402,13 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const chamferOK=p2.userData.edgeTreatment?.type==='chamfer'&&p2.geometry.attributes.position.count>0;
     return {dimensionOK,dimensionsMM,filletOK,chamferOK,loftOK,hollowLoftOK,sweepOK,objectDelta:objects.length-before,loftVertices:loft.geometry.attributes.position.count,hollowLoftVertices:hollowLoft.geometry.attributes.position.count,sweepVertices:sweep.geometry.attributes.position.count};
   };
+  window.__silmoTestRemoveSketchHole=()=>{
+    const result=window.__silmoImageStudioCreateFromPoints([[0,0],[40,0],[40,30],[0,30]],10,[[[10,10],[10,20],[20,20],[20,10]]]);
+    if(!result.ok)throw new Error(result.message);
+    const obj=selected;loadSelectedSketchPoints();document.getElementById('sketchContourIndex').value='1';loadSelectedSketchPoints();
+    removeSelectedSketchContour();
+    return {holeCount:obj.userData.sketch.holes.length,outerPointCount:obj.userData.sketchOutline.length,vertices:obj.geometry.attributes.position.count};
+  };
   window.__silmoTestInsertDeleteSketchContourPoint=()=>{
     const result=window.__silmoImageStudioCreateFromPoints([[0,0],[40,0],[40,30],[0,30]],10,[[[10,10],[10,20],[20,20],[20,10]]]);
     if(!result.ok)throw new Error(result.message);
@@ -2646,6 +2653,15 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const current=rings[ringIndex][index],next=rings[ringIndex][(index+1)%rings[ringIndex].length];
     rings[ringIndex].splice(index+1,0,[(current[0]+next[0])/2,(current[1]+next[1])/2]);
     rebuildSelectedSketchContours(obj,rings,ringIndex,index+1,'Neuer Konturpunkt eingefügt');
+  }
+  function removeSelectedSketchContour(){
+    const obj=selectedCadObject();
+    if(!obj.userData.sketch||obj.userData.edgeTreatment)throw new Error('Konturen können nur an einer unveränderten Skizzenextrusion entfernt werden.');
+    const rings=selectedSketchContourRings(obj).map(ring=>ring.map(point=>point.slice()));
+    const ringIndex=Number(document.getElementById('sketchContourIndex').value)||0;
+    if(!Number.isInteger(ringIndex)||ringIndex<=0||ringIndex>=rings.length)throw new Error('Wähle zuerst ein Innenloch aus. Die Aussenkontur kann nicht entfernt werden.');
+    rings.splice(ringIndex,1);
+    rebuildSelectedSketchContours(obj,rings,Math.min(ringIndex,rings.length-1),0,'Innenloch entfernt');
   }
   function deleteSelectedSketchPoint(){
     const obj=selectedCadObject();
@@ -2988,6 +3004,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   document.getElementById('applySketchPoint').addEventListener('click',()=>{try{applySelectedSketchPoint();}catch(e){status.textContent='Punkt konnte nicht übernommen werden: '+e.message;}});
   document.getElementById('insertSketchPoint').addEventListener('click',()=>{try{insertSelectedSketchPoint();}catch(e){status.textContent='Punkt konnte nicht eingefügt werden: '+e.message;}});
   document.getElementById('deleteSketchPoint').addEventListener('click',()=>{try{deleteSelectedSketchPoint();}catch(e){status.textContent='Punkt konnte nicht entfernt werden: '+e.message;}});
+  document.getElementById('removeSketchHole').addEventListener('click',()=>{try{removeSelectedSketchContour();}catch(e){status.textContent='Innenloch konnte nicht entfernt werden: '+e.message;}});
   document.getElementById('applyEdgeFillet').addEventListener('click',()=>{try{createEdgeTreatment('fillet');}catch(e){status.textContent='Abrundung nicht möglich: '+e.message;}});
   document.getElementById('applyEdgeChamfer').addEventListener('click',()=>{try{createEdgeTreatment('chamfer');}catch(e){status.textContent='Fase nicht möglich: '+e.message;}});
   document.getElementById('createLoft').addEventListener('click',()=>{try{createLoftFromSelection();}catch(e){status.textContent='Loft nicht möglich: '+e.message;}});
