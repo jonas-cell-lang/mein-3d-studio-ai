@@ -1057,3 +1057,10 @@ Vor Beginn einer neuen Aufgabe:
 - Der Browser-Test prüft nun die Druckbarkeitsgrenzen exakt: 0,8 mm Mindestwand wird akzeptiert, 0,799 mm abgewiesen; 0,01 mm² Mindestkonturfläche wird akzeptiert, 0,009801 mm² abgewiesen.
 - Bestehende Prüfungen für Randabstand, überlappende Innenlöcher und selbstschneidende Konturen bleiben bestehen.
 - Diese zusätzlichen Browserfälle müssen noch in einem vollständigen Actions-Lauf erfolgreich bestätigt werden.
+
+
+## Ergänzung – numerischer Bildflächen-Grenzfall am 20.11.2026
+
+- Der Browser-Test deckte einen Gleitkomma-Grenzfall auf: eine mathematisch exakt 0,01 mm² grosse Kontur wurde durch binäre Rundung knapp unter dem Mindestwert eingeordnet.
+- Die Vergleiche verwenden jetzt `IMAGE_MIN_AREA_COMPARISON_EPSILON_MM2 = 1e-12`. Die fachliche Mindestfläche bleibt 0,01 mm²; 0,009801 mm² muss weiterhin abgewiesen werden.
+- Der korrigierte Stand muss den vollständigen Code- und Browser-Testlauf noch bestehen.
