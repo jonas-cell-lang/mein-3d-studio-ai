@@ -58,7 +58,7 @@ try {
   }));
   assert.deepEqual(runtimeInfo, { revision: '128', loader: 'function', exporter: 'function' }, 'Lokale Three.js r128 Runtime oder STL-Erweiterungen fehlen');
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v93/, 'Build-Metadaten zeigen nicht v93');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v94/, 'Build-Metadaten zeigen nicht v94');
   assert.equal(await page.evaluate(() => window.SILMOUnits?.mmToWorldUnits(10)), 1, 'Zentrale Einheiten-API ist im Browser nicht verfügbar');
   assert.equal(await page.evaluate(() => window.SILMOUnits?.worldUnitsToMm(1)), 10, 'Zentrale Einheiten-API liefert falsche Millimeterwerte');
   assert.equal(await page.evaluate(() => window.SILMOTolerances?.CSG_GEOMETRY_WORLD_UNITS), 1e-5, 'Zentrale Toleranz-API ist nicht verfügbar oder hat den falschen CSG-Wert');
