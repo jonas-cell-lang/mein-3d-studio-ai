@@ -41,6 +41,26 @@ test('unbekannte ältere und neuere Projektversionen werden abgelehnt', () => {
   assert.throws(() => schema.validateProjectEnvelope({ ...validProject(), version: 4 }), /Nicht unterstützte Projektversion 4/);
 });
 
+test('Hohlrahmen-Metadaten müssen innerhalb der unterstützten CAD-Eingabebereiche liegen', () => {
+  const valid = validProject();
+  valid.objects.push({ contourFrame: { wallThicknessMM: 0.2, wallHeightMM: 0.2 } });
+  valid.objects.push({ caseWallFrame: { wallThicknessMM: 100, wallHeightMM: 2000 } });
+  assert.equal(schema.validateProjectEnvelope(valid), valid);
+
+  for (const frame of [
+    { wallThicknessMM: 0, wallHeightMM: 12 },
+    { wallThicknessMM: 100.1, wallHeightMM: 12 },
+    { wallThicknessMM: 1.4, wallHeightMM: 0 },
+    { wallThicknessMM: 1.4, wallHeightMM: 2000.1 },
+    { wallThicknessMM: NaN, wallHeightMM: 12 },
+    { wallThicknessMM: 1.4, wallHeightMM: Infinity }
+  ]) {
+    const project = validProject();
+    project.objects.push({ contourFrame: frame });
+    assert.throws(() => schema.validateProjectEnvelope(project), /Ungültige Hohlrahmen-Metadaten/);
+  }
+});
+
 test('falsche App-Kennung und ungültige Objektlisten werden abgelehnt', () => {
   assert.throws(() => schema.validateProjectEnvelope({ ...validProject(), app: 'Andere App' }), /keine gültige SILMO-Projektdatei/);
   assert.throws(() => schema.validateProjectEnvelope({ ...validProject(), objects: null }), /ungültige Objektliste/);
