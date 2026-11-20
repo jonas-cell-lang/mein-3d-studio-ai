@@ -932,3 +932,13 @@ Vor Beginn einer neuen Aufgabe:
 - Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44735662941
 - Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44735662796
 - Kein Merge nach `main`, kein Live-Deployment, keine kostenpflichtigen Dienste; Kostenlimit CHF 0.00.
+
+
+## Ergänzung – Hohlrahmen-Metadatenprüfung und Browser-CI am 20.11.2026
+
+- `src/project-schema.js` prüft beim Projektimport Hohlrahmen-Metadaten gegen dieselben Eingabegrenzen wie die CAD-Oberfläche: Wandstärke 0,2–100 mm, Rahmenhöhe 0,2–2000 mm. Der frühere Alias `caseWallFrame` wird ebenfalls geprüft; auch falsy ungültige Werte werden zurückgewiesen.
+- `tests/project-schema.test.cjs` deckt gültige Grenzwerte, zu kleine und zu grosse Werte, fehlende/ungültige Zahlen sowie ungültige falsy Werte ab.
+- Für Code-Commit `0f32a9ca60adb78a0510a2facac1236aa03176a0` waren Code-Checks und vollständige Playwright-Browser-Regression erfolgreich.
+- Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44736126833
+- Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44736126756
+- Kein Merge nach `main`, kein Live-Deployment, keine kostenpflichtigen Dienste; Kostenlimit CHF 0.00.
