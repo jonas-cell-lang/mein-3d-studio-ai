@@ -2402,6 +2402,18 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const chamferOK=p2.userData.edgeTreatment?.type==='chamfer'&&p2.geometry.attributes.position.count>0;
     return {dimensionOK,dimensionsMM,filletOK,chamferOK,loftOK,hollowLoftOK,sweepOK,objectDelta:objects.length-before,loftVertices:loft.geometry.attributes.position.count,hollowLoftVertices:hollowLoft.geometry.attributes.position.count,sweepVertices:sweep.geometry.attributes.position.count};
   };
+  window.__silmoTestEditSketchHolePoint=()=>{
+    const result=window.__silmoImageStudioCreateFromPoints([[0,0],[40,0],[40,30],[0,30]],10,[[[10,10],[10,20],[20,20],[20,10]]]);
+    if(!result.ok)throw new Error(result.message);
+    const obj=selected,oldHolePoint=obj.userData.sketch.holes[0][0].slice();
+    loadSelectedSketchPoints();
+    document.getElementById('sketchContourIndex').value='1';loadSelectedSketchPoints();
+    document.getElementById('sketchPointIndex').value='0';
+    document.getElementById('sketchPointXMM').value=String(worldUnitsToMm(oldHolePoint[0])-1);
+    document.getElementById('sketchPointYMM').value=String(worldUnitsToMm(oldHolePoint[1]));
+    applySelectedSketchPoint();
+    return {holeCount:obj.userData.sketch.holes.length,pointXMM:worldUnitsToMm(obj.userData.sketch.holes[0][0][0]),outerPointCount:obj.userData.sketchOutline.length,vertices:obj.geometry.attributes.position.count};
+  };
   window.__silmoTestCreateContourFrame=()=>{
     const points=[[-1,-1],[1,-1],[1,1],[-1,1]];
     const shape=new THREE.Shape();shape.moveTo(points[0][0],points[0][1]);points.slice(1).forEach(point=>shape.lineTo(point[0],point[1]));shape.closePath();
@@ -2514,43 +2526,73 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     obj.userData.sketch.widthMM=values[0];obj.userData.sketch.depthMM=values[1];obj.userData.sketch.extrusionMM=values[2];
     updateObjects();showProperties();updateMoveGizmo();status.textContent='Skizzenmasse aktualisiert: '+values.map(v=>v.toFixed(1)).join(' × ')+' mm.';
   }
+  function selectedSketchContourRings(obj) {
+    const outer=obj.userData.sketchOutline||obj.userData.sketch?.outlinePoints;
+    if(!Array.isArray(outer)||outer.length<3)throw new Error('Bitte einen extrudierten 2D-Skizzenkörper mit gespeicherter Kontur auswählen.');
+    const holes=Array.isArray(obj.userData.sketch?.holes)?obj.userData.sketch.holes:[];
+    return [outer,...holes];
+  }
   function loadSelectedSketchPoints(){
-    const obj=selectedCadObject(),outline=obj.userData.sketchOutline||obj.userData.sketch?.outlinePoints;
-    if(!obj.userData.sketch||!Array.isArray(outline)||outline.length<3)throw new Error('Bitte einen extrudierten 2D-Skizzenkörper mit gespeicherter Kontur auswählen.');
+    const obj=selectedCadObject();
+    if(!obj.userData.sketch)throw new Error('Die Auswahl ist keine bearbeitbare Skizzen-Extrusion.');
+    const rings=selectedSketchContourRings(obj),contourSelect=document.getElementById('sketchContourIndex');
+    const previousContour=Number(contourSelect.value)||0;
+    contourSelect.innerHTML=rings.map((ring,index)=>'<option value="'+index+'">'+(index===0?'Aussenkontur':'Innenloch '+index)+' ('+ring.length+' Punkte)</option>').join('');
+    contourSelect.value=String(Math.min(previousContour,rings.length-1));
     const select=document.getElementById('sketchPointIndex'),current=Number(select.value)||0;
-    select.innerHTML=outline.map((point,index)=>'<option value="'+index+'">Punkt '+(index+1)+'</option>').join('');
-    select.value=String(Math.min(current,outline.length-1));loadSelectedSketchPoint();
-    status.textContent=outline.length+' Konturpunkte geladen. Wähle einen Punkt und ändere seine Koordinaten.';
+    const activeRing=rings[Number(contourSelect.value)||0];
+    select.innerHTML=activeRing.map((point,index)=>'<option value="'+index+'">Punkt '+(index+1)+'</option>').join('');
+    select.value=String(Math.min(current,activeRing.length-1));loadSelectedSketchPoint();
+    status.textContent=rings.length+' Kontur(en) geladen. Du kannst Aussenkontur oder Innenlöcher einzeln bearbeiten.';
   }
   function loadSelectedSketchPoint(){
-    const obj=selectedCadObject(),outline=obj.userData.sketchOutline||obj.userData.sketch?.outlinePoints;
-    if(!obj.userData.sketch||!Array.isArray(outline)||outline.length<3)throw new Error('Bitte zuerst die Konturpunkte laden.');
+    const obj=selectedCadObject(),rings=selectedSketchContourRings(obj);
+    const ringIndex=Number(document.getElementById('sketchContourIndex').value)||0;
+    const outline=rings[ringIndex];
+    if(!outline)throw new Error('Ungültige Konturauswahl.');
     const index=Number(document.getElementById('sketchPointIndex').value);
     if(!Number.isInteger(index)||index<0||index>=outline.length)throw new Error('Ungültiger Konturpunkt.');
     document.getElementById('sketchPointXMM').value=(worldUnitsToMm(outline[index][0])).toFixed(2);
     document.getElementById('sketchPointYMM').value=(worldUnitsToMm(outline[index][1])).toFixed(2);
   }
   function applySelectedSketchPoint(){
-    const obj=selectedCadObject(),meta=obj.userData.sketch,outline=obj.userData.sketchOutline||meta?.outlinePoints;
-    if(!meta||!Array.isArray(outline)||outline.length<3||!Number.isFinite(meta.extrusionMM))throw new Error('Bitte einen extrudierten 2D-Skizzenkörper mit Kontur auswählen.');
+    const obj=selectedCadObject(),meta=obj.userData.sketch;
+    if(!meta||!Number.isFinite(meta.extrusionMM))throw new Error('Bitte einen extrudierten 2D-Skizzenkörper mit Kontur auswählen.');
+    if(obj.userData.edgeTreatment)throw new Error('Die Kontur eines bereits abgerundeten oder abgefasten Körpers kann hier noch nicht bearbeitet werden. Entferne zuerst die Kantenbearbeitung.');
+    const rings=selectedSketchContourRings(obj),ringIndex=Number(document.getElementById('sketchContourIndex').value)||0;
     const index=Number(document.getElementById('sketchPointIndex').value),xMM=Number(document.getElementById('sketchPointXMM').value),yMM=Number(document.getElementById('sketchPointYMM').value);
-    if(!Number.isInteger(index)||index<0||index>=outline.length)throw new Error('Ungültiger Konturpunkt.');
+    if(!Number.isInteger(ringIndex)||ringIndex<0||ringIndex>=rings.length||!Number.isInteger(index)||index<0||index>=rings[ringIndex].length)throw new Error('Ungültige Kontur- oder Punkt-Auswahl.');
     if(!Number.isFinite(xMM)||!Number.isFinite(yMM)||Math.abs(xMM)>2000||Math.abs(yMM)>2000)throw new Error('Punktkoordinaten müssen zwischen −2000 und 2000 mm liegen.');
-    const updated=outline.map(point=>[point[0],point[1]]);updated[index]=[mmToWorldUnits(xMM),mmToWorldUnits(yMM)];
-    const points=updated.map(point=>new THREE.Vector2(point[0],point[1]));
-    let area=0;for(let i=0;i<points.length;i++){const a=points[i],b=points[(i+1)%points.length];area+=a.x*b.y-b.x*a.y;}
-    if(Math.abs(area)<window.SILMOTolerances.SKETCH_OUTLINE_MIN_AREA2_WORLD_UNITS2)throw new Error('Die Kontur wäre entartet. Wähle andere Punktkoordinaten.');
-    for(let i=0;i<points.length;i++)if(points[i].distanceTo(points[(i+1)%points.length])<window.SILMOTolerances.SKETCH_OUTLINE_MIN_EDGE_WORLD_UNITS)throw new Error('Zwei benachbarte Konturpunkte liegen zu nahe beieinander.');
-    const shape=new THREE.Shape();shape.moveTo(points[0].x,points[0].y);points.slice(1).forEach(point=>shape.lineTo(point.x,point.y));shape.closePath();
-    const geometry=new THREE.ExtrudeGeometry(shape,{depth:mmToWorldUnits(meta.extrusionMM),bevelEnabled:false,curveSegments:32});
+    const updatedRings=rings.map(ring=>ring.map(point=>[point[0],point[1]]));
+    updatedRings[ringIndex][index]=[mmToWorldUnits(xMM),mmToWorldUnits(yMM)];
+    const vectors=updatedRings.map(ring=>ring.map(point=>new THREE.Vector2(point[0],point[1])));
+    for(const ring of vectors){
+      let area=0;for(let i=0;i<ring.length;i++){const a=ring[i],b=ring[(i+1)%ring.length];area+=a.x*b.y-b.x*a.y;}
+      if(Math.abs(area)<window.SILMOTolerances.SKETCH_OUTLINE_MIN_AREA2_WORLD_UNITS2)throw new Error('Die geänderte Kontur wäre entartet.');
+      for(let i=0;i<ring.length;i++)if(ring[i].distanceTo(ring[(i+1)%ring.length])<window.SILMOTolerances.SKETCH_OUTLINE_MIN_EDGE_WORLD_UNITS)throw new Error('Zwei benachbarte Konturpunkte liegen zu nahe beieinander.');
+    }
+    if(vectors.length>1){
+      const asPoints=ring=>ring.map(point=>({x:point.x,y:point.y}));
+      const outer=asPoints(vectors[0]),holes=vectors.slice(1).map(asPoints);
+      holes.forEach((hole,holeIndex)=>validateSketchHole(outer,hole,holes.filter((_,i)=>i!==holeIndex)));
+    }
+    const shape=new THREE.Shape();shape.moveTo(vectors[0][0].x,vectors[0][0].y);vectors[0].slice(1).forEach(point=>shape.lineTo(point.x,point.y));shape.closePath();
+    const holeMetadata=[];
+    vectors.slice(1).forEach(ring=>{
+      const path=new THREE.Path();path.moveTo(ring[0].x,ring[0].y);ring.slice(1).forEach(point=>path.lineTo(point.x,point.y));path.closePath();shape.holes.push(path);
+      holeMetadata.push(ring.map(point=>[point.x,point.y]));
+    });
+    const geometry=window.SILMOSketchGeometry.createExtrusionGeometry(shape,{depth:mmToWorldUnits(meta.extrusionMM),bevelEnabled:false,curveSegments:32});
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
-    if(![size.x,size.y,size.z].every(value=>Number.isFinite(value)&&value>CSG_EPSILON)){geometry.dispose();throw new Error('Die geänderte Kontur erzeugt keine gültige 3D-Geometrie.');}
-    recordHistory();obj.geometry.dispose();obj.geometry=geometry;obj.userData.sketchOutline=updated;meta.outlinePoints=updated;
-    meta.widthMM=worldUnitsToMm(size.x);meta.depthMM=worldUnitsToMm(size.y);meta.areaMM2=worldUnits2ToMm2(Math.abs(area)/2);
-    meta.perimeterMM=points.reduce((sum,point,i)=>sum+worldUnitsToMm(point.distanceTo(points[(i+1)%points.length])),0);
+    if(![size.x,size.y,size.z].every(value=>Number.isFinite(value)&&value>CSG_EPSILON)){geometry.dispose();throw new Error('Die geänderten Konturen erzeugen keine gültige 3D-Geometrie.');}
+    recordHistory();obj.geometry.dispose();obj.geometry=geometry;
+    obj.userData.sketchOutline=updatedRings[0];meta.outlinePoints=updatedRings[0];meta.holes=holeMetadata;
+    meta.widthMM=worldUnitsToMm(size.x);meta.depthMM=worldUnitsToMm(size.y);
+    meta.areaMM2=worldUnits2ToMm2(Math.abs(vectors[0].reduce((sum,point,i)=>sum+point.x*vectors[0][(i+1)%vectors[0].length].y-vectors[0][(i+1)%vectors[0].length].x*point.y,0))/2);
+    meta.perimeterMM=worldUnitsToMm(vectors[0].reduce((sum,point,i)=>sum+point.distanceTo(vectors[0][(i+1)%vectors[0].length]),0));
     obj.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
-    updateObjects();showProperties();updateMoveGizmo();status.textContent='Konturpunkt '+(index+1)+' geändert. Die Skizzenfläche wurde neu aufgebaut.';
+    updateObjects();showProperties();updateMoveGizmo();status.textContent=(ringIndex===0?'Aussenkontur':'Innenloch '+ringIndex)+' – Punkt '+(index+1)+' geändert. Alle Öffnungen wurden erhalten.';
     loadSelectedSketchPoints();
   }
   function createEdgeTreatment(mode){
@@ -2839,6 +2881,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   document.getElementById('loadSketchDimensions').addEventListener('click',()=>{try{loadSelectedSketchDimensions();}catch(e){status.textContent=e.message;}});
   document.getElementById('applySketchDimensions').addEventListener('click',()=>{try{applySelectedSketchDimensions();}catch(e){status.textContent='Masse konnten nicht übernommen werden: '+e.message;}});
   document.getElementById('loadSketchPoints').addEventListener('click',()=>{try{loadSelectedSketchPoints();}catch(e){status.textContent=e.message;}});
+  document.getElementById('sketchContourIndex').addEventListener('change',()=>{try{loadSelectedSketchPoints();}catch(e){status.textContent=e.message;}});
   document.getElementById('sketchPointIndex').addEventListener('change',()=>{try{loadSelectedSketchPoint();}catch(e){status.textContent=e.message;}});
   document.getElementById('applySketchPoint').addEventListener('click',()=>{try{applySelectedSketchPoint();}catch(e){status.textContent='Punkt konnte nicht übernommen werden: '+e.message;}});
   document.getElementById('applyEdgeFillet').addEventListener('click',()=>{try{createEdgeTreatment('fillet');}catch(e){status.textContent='Abrundung nicht möglich: '+e.message;}});
