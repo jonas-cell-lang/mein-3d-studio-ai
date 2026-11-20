@@ -550,6 +550,7 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Pro Eingabekörper sind maximal 25'000 Dreiecke erlaubt. Die Grenze wird vor dem Aufbau der BSP-Struktur geprüft.
 - Lokale und transformierte Weltkoordinaten müssen endlich sein und innerhalb ±10'000'000 Einheiten liegen; auch die Weltmatrix wird auf endliche Werte geprüft.
 - Die triangulierte Ausgabe ist auf 250'000 Dreiecke begrenzt und wird vor dem Buffer-Aufbau auf endliche, begrenzte Koordinaten geprüft.
+- Bei Transformationen mit negativer Determinante (Spiegelung) wird die Dreiecksreihenfolge korrigiert, damit die Aussenorientierung der CSG-Flächen erhalten bleibt. Ein Regressionstest prüft das Volumen und die Begrenzung einer Vereinigung mit gespiegeltem Werkzeugkörper.
 - Neue Tests prüfen unvollständige Dreiecke, nicht endliche/zu grosse Koordinaten, ungültige Indizes und die Dreiecksobergrenze.
 - Die Grenzwerte sind Schutzgrenzen für diese aktuelle BSP-Implementierung und keine Aussage, dass beliebig komplexe Produktionsmodelle performant verarbeitet werden.
 - CI für den aktuellen Commit ist noch abzuwarten.
