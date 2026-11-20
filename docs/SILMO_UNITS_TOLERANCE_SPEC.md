@@ -240,3 +240,12 @@ Beide Werte sind Bestandteile derselben Sicherheitsprüfung und bleiben getrennt
 | `HEART_OUTLINE_POINT_DEDUPLICATION_WORLD_UNITS` | 1e-5 | Welteinheiten; entfernt aufeinanderfolgende bzw. abschliessend doppelte Punkte bei der Herz-Konturklassifikation |
 
 Die Herz-Konturklassifikation ist ein spezieller Erkennungspfad und keine allgemeine Bild-zu-CAD-Erkennung. Die Schwelle wird hier nur als bestehende Geometrie-Aufbereitungsregel dokumentiert.
+
+
+### 3.8 Browser-Grenzfälle der Bildkontur-Druckbarkeit
+
+Die Browser-Regression prüft jetzt zusätzlich die exakten und knapp unterschrittenen Grenzen:
+- Mindestwandstärke 0,8 mm: exakt 0,8 mm muss akzeptiert werden; 0,799 mm muss abgewiesen werden.
+- Mindestkonturfläche 0,01 mm²: exakt 0,01 mm² muss akzeptiert werden; 0,009801 mm² muss abgewiesen werden.
+
+Diese Fälle schützen die Vergleichsrichtung der Grenzwerte vor späteren versehentlichen Änderungen.
