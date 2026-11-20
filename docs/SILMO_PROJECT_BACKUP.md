@@ -942,3 +942,12 @@ Vor Beginn einer neuen Aufgabe:
 - Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44736126833
 - Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44736126756
 - Kein Merge nach `main`, kein Live-Deployment, keine kostenpflichtigen Dienste; Kostenlimit CHF 0.00.
+
+
+## Ergänzung – STL-Adapter-Auslagerung am 20.11.2026
+
+- Der STL-Import/-Export wurde in `src/stl-io.js` ausgelagert. Die Oberfläche behält Dateiauswahl, Drag-and-drop und Web-Link-Handling; das Modul übernimmt Parsing, Validierung, mm-/Welteinheiten-Konvertierung, ASCII-Export und temporäre Exportgeometrien.
+- Die neue Datei ist in den Code-Checks und Pages-Artefaktlisten eingetragen.
+- Import prüft Positionsdaten und entsorgt nicht übernommene Geometrie-/Materialressourcen bei Fehlern. Export arbeitet mit Kopien und entsorgt diese nach Abschluss.
+- Die Browser-Regression muss diesen Stand noch vollständig prüfen; bis dahin gilt die Auslagerung als implementiert, aber nicht abgenommen.
+- Kein Merge nach `main`, kein Live-Deployment, keine Kosten.
