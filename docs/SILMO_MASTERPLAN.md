@@ -334,3 +334,12 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Das neue Modul ist in Script-Reihenfolge, Pages-Paket, Code-Checks und Browser-Regression registriert.
 - Commit `4f6b1be0983651f590977a10ab48e34b3146d551`: 41/41 Unit-Tests bestanden; vollständige Browser-Regression und isolierter OCCT-/WebWorker-Test erfolgreich.
 - Kein Versionssprung: App-Metadaten bleiben v94. Kein Merge und kein Deployment.
+
+
+### 6.21 Parametrische Skizzenprofile ebenfalls ausgelagert (20.11.2026)
+- `src/sketch-geometry.js` erzeugt jetzt neben Extrusionsgeometrien auch die parametrischen Profile Kreis, Ellipse, Dreieck, Rechteck und abgerundetes Rechteck.
+- Die bisher im Hauptskript liegende abgerundete Rechteck-Kontur wurde in dieselbe Factory verschoben. Sowohl die Vorschau als auch die endgültige Skizzengeometrie verwenden diese gemeinsame Konturimplementierung; die Option für umgekehrte Konturrichtung bleibt verfügbar.
+- Die bestehenden Eingabegrenzen und Fehlermeldungen für Eckenradien bleiben im App-Hauptskript. Die Factory prüft zusätzlich, ob positive Profilabmessungen übergeben wurden.
+- Neue Unit-Tests prüfen die Aussenabmessungen und gültige Volumenerzeugung aller fünf Profiltypen, umgekehrte abgerundete Konturrichtung sowie ungültige Abmessungen.
+- Auf Code-Head `2af76685ebf31a417bc0cf1896a7b161a199567c`: 44/44 Unit-Tests, vollständige Browser-Regression und isolierter OCCT-/WebWorker-Test erfolgreich.
+- Die Extraktion verändert weder Werkzeugbedienung noch Modell-Commit. Keine Versionsänderung, kein Merge und kein Deployment.

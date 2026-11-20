@@ -1119,3 +1119,11 @@ Vor Beginn einer neuen Aufgabe:
 - Neue Tests prüfen 4×3×2-Quader mit Volumen 24, eine Innenloch-Extrusion mit Volumen 22, Kreisprofil, Geometrieinstanzen und Fehlerfall.
 - Auf Commit `4f6b1be0983651f590977a10ab48e34b3146d551` sind 41/41 Unit-Tests, die vollständige Browser-Regression sowie der isolierte OCCT-/WebWorker-Test erfolgreich.
 - PR #70 bleibt Draft und ungemergt. Kein Deployment. Kosten: CHF 0.00.
+
+
+## Ergänzung – Parametrische Skizzenprofile (20.11.2026)
+- Das Skizzen-Geometriemodul erzeugt nun die parametrischen Profile Kreis, Ellipse, Dreieck, Rechteck und abgerundetes Rechteck.
+- Die gemeinsame Funktion für abgerundete Rechteckpfade wird sowohl von der Skizzenvorschau als auch von der Profilgenerierung verwendet. Die umgekehrte Konturrichtung für Innenkonturen ist weiter verfügbar.
+- Die App validiert weiterhin die Eingabegrenzen (z.B. Eckenradius); das Geometriemodul kontrolliert zusätzlich positive Profilabmessungen.
+- Neue Tests ergänzen die Extrusions-/Lochtests um die Soll-Aussenabmessungen aller Profilformen und die umgekehrte Konturrichtung.
+- Commit `2af76685ebf31a417bc0cf1896a7b161a199567c`: 44/44 Unit-Tests, Browser-Regression und OCCT-WebWorker erfolgreich.
