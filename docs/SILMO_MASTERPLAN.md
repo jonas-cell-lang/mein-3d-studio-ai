@@ -480,3 +480,12 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Umrechnung in Millimeter erfolgt weiterhin nur auf privaten Geometriekopien; das sichtbare Ursprungsmodell wird nicht verändert.
 - Neue isolierte Node-Tests prüfen mm-Konvertierung, Zentrierung, Erhalt vorhandener Objekte, Nullflächen-/Übergrössen-Ablehnung, Exportkopien und ungültige Drehungen.
 - Validierung auf Commit 60b0906de797f5fbdbb3ac452664773e274a1857: Code Checks Run 44777656360 erfolgreich (79/79 Unit-Tests). Browser-Regression Run 44777656275 und OCCT/WebWorker Run 44777656779 sind zum Zeitpunkt dieser Dokumentation noch nicht abgeschlossen.
+
+
+### 6.38 STL-Topologie-Diagnose und reale Referenzdateien (20.11.2026)
+- Der STL-Import prüft nach der grundlegenden Dreiecksvalidierung zusätzlich die Netz-Topologie. Die Prüfung verändert die importierte Geometrie nicht und blockiert den Import bei offenen oder problematischen Netzen nicht.
+- Erkannt werden offene Randkanten, Kanten mit mehr als zwei angrenzenden Dreiecken, lokal widersprüchliche Dreiecksorientierung, doppelte Dreiecke, durch die Verschweisstoleranz zusammenfallende Dreiecke und global umgekehrte Orientierung geschlossener Körper.
+- Die Vertex-Verschweisstoleranz ist zentral in `src/tolerances.js` definiert und wird für den STL-Eingaberaum korrekt in Millimeter umgerechnet.
+- Die Topologieanalyse ist auf 100'000 Dreiecke begrenzt. Grössere Dateien bleiben innerhalb der bisherigen Importgrenze von 500'000 Dreiecken importierbar; SILMO weist dann darauf hin, dass die Topologieprüfung übersprungen wurde.
+- Reale ASCII-STL-Fixtures prüfen einen geschlossenen 10-mm-Würfel mit 12 Dreiecken und ein offenes Dreiecksnetz. Unit- und Browser-Tests decken ausserdem Duplikate, nicht-manifold Kanten sowie lokale und globale Orientierungsfehler ab.
+- Diese Diagnose ist eine Vorprüfung der Netzstruktur. Automatische Reparatur, vollständige Slicer-Simulation und eine Druckbarkeitsgarantie sind nicht Bestandteil dieses Schritts.
