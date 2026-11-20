@@ -246,7 +246,7 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - Der Import prüft Dateityp, Dateigrösse, Positionsattribut, Punktanzahl und endliche Koordinaten; Fehler geben nicht übernommene Geometrie- und Materialressourcen frei.
 - Der Export arbeitet ausschliesslich auf Geometriekopien und entsorgt diese nach dem Export, ohne das sichtbare Modell zu verändern.
 - Dateiauswahl, Drag-and-drop und Web-Link-Interaktion bleiben im Hauptskript; Objekt- und Statusänderungen werden über Callbacks angebunden.
-- Code- und Browser-Regressionsläufe müssen Import, Mehrfachimport, Export, mm-Skalierung und Roundtrip weiterhin prüfen.
+- Code- und Browser-Regressionsläufe prüfen Import, Mehrfachimport, Export, mm-Skalierung und Roundtrip; der vollständige Browserlauf war auf Commit `1e69a14ee41043d76fe95886b2e75938f791e2f9` erfolgreich.
 
 Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Paket wird in die Produktionsanwendung eingebunden, bevor die offenen technischen und rechtlichen Abnahmepunkte geklärt sind.
 
