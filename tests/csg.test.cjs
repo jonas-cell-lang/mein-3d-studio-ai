@@ -99,3 +99,21 @@ test('CSG berücksichtigt die Weltposition des Werkzeugs bei der Berechnung', ()
     tool.material.dispose();
   }
 });
+
+
+test('CSG weist unbekannte Operationen zurück, statt sie als Abziehen auszuführen', () => {
+  const base = box();
+  const tool = box([1, 0, 0]);
+  try {
+    assert.throws(() => combineMeshes(base, tool, 'intersect'), /Unbekannte CSG-Operation/);
+    assert.equal(base.geometry.getAttribute('position').count, 24,
+      'Basisgeometrie bleibt nach ungültiger Operation unverändert');
+    assert.equal(tool.geometry.getAttribute('position').count, 24,
+      'Werkzeuggeometrie bleibt nach ungültiger Operation unverändert');
+  } finally {
+    base.geometry.dispose();
+    tool.geometry.dispose();
+    base.material.dispose();
+    tool.material.dispose();
+  }
+});
