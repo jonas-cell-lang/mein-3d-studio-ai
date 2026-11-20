@@ -22,6 +22,10 @@
     if (triangleCount > maxTriangles) {
       return Object.freeze({ analyzed: false, reason: 'limit', triangleCount, maxTriangles });
     }
+    if (!position.array || position.array.length !== position.count * 3 ||
+        !Array.from(position.array).every(Number.isFinite)) {
+      throw new Error('Die STL-Topologieprüfung benötigt ausschliesslich endliche XYZ-Koordinaten.');
+    }
     const weldToleranceMM = units.worldUnitsToMm(tolerances.STL_VERTEX_WELD_WORLD_UNITS);
     if (!Number.isFinite(weldToleranceMM) || weldToleranceMM <= 0) {
       throw new Error('Die STL-Verschweisstoleranz ist ungültig.');
@@ -33,6 +37,7 @@
     const faces = new Set();
     let duplicateTriangleCount = 0;
     let collapsedTriangleCount = 0;
+    let degenerateTriangleCount = 0;
     let signedVolumeMM3 = 0;
     const cellKey = (x, y, z) => x + ',' + y + ',' + z;
     function vertexId(x, y, z) {
@@ -73,6 +78,10 @@
       ];
       const ids = points.map(point => vertexId(point[0], point[1], point[2]));
       if (ids[0] === ids[1] || ids[1] === ids[2] || ids[2] === ids[0]) collapsedTriangleCount++;
+      const abx = points[1][0] - points[0][0], aby = points[1][1] - points[0][1], abz = points[1][2] - points[0][2];
+      const acx = points[2][0] - points[0][0], acy = points[2][1] - points[0][1], acz = points[2][2] - points[0][2];
+      const nx = aby * acz - abz * acy, ny = abz * acx - abx * acz, nz = abx * acy - aby * acx;
+      if (nx * nx + ny * ny + nz * nz <= toleranceSquared * toleranceSquared) degenerateTriangleCount++;
       const faceKey = ids.slice().sort((a, b) => a - b).join(':');
       if (faces.has(faceKey)) duplicateTriangleCount++;
       else faces.add(faceKey);
@@ -91,12 +100,13 @@
       else if (edge.directionBalance !== 0) inconsistentEdgeCount++;
     }
     const isClosedEdgeManifold = boundaryEdgeCount === 0 && nonManifoldEdgeCount === 0 &&
-      inconsistentEdgeCount === 0 && duplicateTriangleCount === 0 && collapsedTriangleCount === 0;
+      inconsistentEdgeCount === 0 && duplicateTriangleCount === 0 && collapsedTriangleCount === 0 &&
+      degenerateTriangleCount === 0;
     const invertedWinding = isClosedEdgeManifold && Math.abs(signedVolumeMM3) > 1e-12 ? signedVolumeMM3 < 0 : null;
     return Object.freeze({
       analyzed: true, triangleCount, weldedVertexCount: vertexCoordinates.length / 3,
       uniqueEdgeCount: edges.size, boundaryEdgeCount, nonManifoldEdgeCount,
-      inconsistentEdgeCount, duplicateTriangleCount, collapsedTriangleCount,
+      inconsistentEdgeCount, duplicateTriangleCount, collapsedTriangleCount, degenerateTriangleCount,
       isClosedEdgeManifold, invertedWinding, signedVolumeMM3, weldToleranceMM
     });
   }
