@@ -1043,3 +1043,10 @@ Vor Beginn einer neuen Aufgabe:
 - Die Begrenzung der inneren Gehrungs-/Offset-Schnittpunkte verwendet nun `CONTOUR_FRAME_MITER_LIMIT_FACTOR = 8` und `CONTOUR_FRAME_MITER_ALLOWANCE_WORLD_UNITS = 0.02` aus der zentralen Toleranz-API.
 - Die Dimensionen (dimensionsloser Faktor und Welteinheiten) bleiben getrennt; Werte und Verhalten wurden nicht verändert.
 - Unit-Tests und Browser-Regression müssen den neuen Stand noch bestätigen.
+
+
+## Ergänzung – Freiform-/Herz-Kontur-Punktabstände am 20.11.2026
+
+- Die Freiform-Punktbereinigung nutzt nun `SKETCH_FREEFORM_MIN_POINT_SPACING_WORLD_UNITS = 0.005`.
+- Die spezielle Herz-Konturklassifikation nutzt `HEART_OUTLINE_POINT_DEDUPLICATION_WORLD_UNITS = 1e-5`.
+- Beide Werte sind unverändert und durch Toleranz-Unit-Tests abgesichert. Die Erkennungslogik wurde nicht geändert.
