@@ -423,5 +423,5 @@ test('STL-Topologie überspringt grosse Netze kontrolliert statt den Import zu b
   assert.equal(result.analyzed, false);
   assert.equal(result.reason, 'limit');
   assert.equal(result.triangleCount, 100001);
-  assert.equal(result.maxTriangles, tolerances.STL_DIAGNOSTIC_MAX_TRIANGLES);
+  assert.equal(result.maxTriangles, 100000);
 });
