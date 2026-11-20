@@ -628,3 +628,13 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Neue Regressionstests decken NaN-Koordinaten und kollineare Dreiecke ab.
 - Code-Checks auf Commit `27202985272e3e9947c369c903208cfa0f5fba05`: 114/114 Unit-Tests erfolgreich.
 - Browser-Interaktion und OCCT-WebWorker liefen für diesen Commit beim Dokumentationszeitpunkt noch; Ergebnisse werden separat bestätigt.
+
+
+### 6.54 STL-Topologie: Vertex-Link-Prüfung für getrennte und punktberührende Körper (20.11.2026)
+- Die STL-Diagnose prüft zusätzlich zu Kanteninzidenz und Orientierung den Link jedes verschweissten Eckpunkts.
+- Bei einem geschlossenen triangulierten 2-Manifold muss der Vertex-Link genau einen zusammenhängenden Zyklus bilden. Mehrere getrennte Zyklen am selben Eckpunkt weisen z.B. zwei Körper nach, die sich nur an einem Punkt berühren.
+- `nonManifoldVertexCount` wird im Diagnoseergebnis ausgegeben und verhindert, dass solche Netze als geschlossenes Edge-/Vertex-Manifold eingestuft werden.
+- Die Importwarnung nennt nicht-manifold Eckpunkte und flächenlose Dreiecke nun ausdrücklich.
+- Neue Regressionstests: punktberührende Würfel werden abgewiesen; zwei räumlich getrennte geschlossene Würfel werden weiterhin akzeptiert.
+- Code-Checks auf Commit `68d0b9bb6543b40770f988c6eaa7c0680f9a51ee`: 116/116 Unit-Tests erfolgreich.
+- Browser-Interaktion und OCCT-WebWorker für diesen Commit sind beim Dokumentationszeitpunkt noch in Bearbeitung; nicht als bestanden dokumentiert.
