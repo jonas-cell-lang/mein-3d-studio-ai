@@ -513,6 +513,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 <script src="./src/project-geometry.js"></script>
 <script src="./src/project-io.js"></script>
 <script src="./src/history.js"></script>
+<script src="./src/stl-io.js"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -1751,58 +1752,15 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     status.textContent = 'Objekt dupliziert';
   };
 
-  function importSTLFile(file) {
-    if (!file) return;
-    if (typeof THREE.STLLoader === 'undefined') {
-      status.textContent = 'STL-Import konnte nicht geladen werden. Bitte Internetverbindung prüfen.';
-      return;
-    }
-    if (!/\.stl$/i.test(file.name || '') && file.type !== 'model/stl' && file.type !== 'application/sla') {
-      status.textContent = 'Bitte eine STL-Datei auswählen oder in die Ablage ziehen.';
-      return;
-    }
-    if (file.size > 50 * 1024 * 1024) {
-      status.textContent = 'STL-Datei ist zu gross (maximal 50 MB).';
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      let geometry=null;
-      try {
-        const loader = new THREE.STLLoader();
-        geometry = loader.parse(reader.result);
-        geometry.computeVertexNormals();
-        geometry.computeBoundingBox();
-        if (!geometry.boundingBox || geometry.boundingBox.isEmpty()) throw new Error('Die STL-Datei enthält keine gültige Geometrie.');
-        // STL-Dateien werden als Millimeter eingelesen und in die App-Einheiten umgerechnet.
-        geometry.scale(mmToWorldUnits(1), mmToWorldUnits(1), mmToWorldUnits(1));
-        geometry.computeBoundingBox();
-        const material = new THREE.MeshStandardMaterial({color:0x4b91ed,roughness:0.5,metalness:0.05});
-        const mesh = new THREE.Mesh(geometry, material);
-        const size = new THREE.Vector3();
-        geometry.boundingBox.getSize(size);
-        mesh.userData.baseDimensions = {x:size.x,y:size.y,z:size.z};
-        mesh.userData.percent = {x:100,y:100,z:100};
-        mesh.userData.label = file.name.replace(/\.stl$/i,'') || 'STL-Modell';
-        // Modell auf der Arbeitsplatte zentrieren, ohne vorhandene Objekte zu verändern.
-        geometry.translate(
-          -(geometry.boundingBox.min.x+geometry.boundingBox.max.x)/2,
-          -(geometry.boundingBox.min.y+geometry.boundingBox.max.y)/2,
-          -geometry.boundingBox.min.z
-        );
-        mesh.position.set(0,0,0);
-        scene.add(mesh);objects.push(mesh);selectObject(mesh);
-        window.__silmoImportRevision=(window.__silmoImportRevision||0)+1;
-        status.textContent='STL-Modell importiert: '+mesh.userData.label+' (mm). Vorhandene Modelle bleiben erhalten.';
-      } catch (error) {
-        if (geometry && !objects.some(obj=>obj.geometry===geometry)) geometry.dispose();
-        console.error(error);
-        status.textContent='STL-Datei konnte nicht gelesen werden: '+(error.message||'Datei prüfen.');
-      }
-    };
-    reader.onerror=()=>{status.textContent='STL-Datei konnte nicht gelesen werden.';};
-    reader.readAsArrayBuffer(file);
-  }
+  const stlIO = window.SILMOSTLIO.createSTLIO({
+    getObjects: () => objects,
+    addObject: mesh => { scene.add(mesh); objects.push(mesh); },
+    selectObject,
+    setStatus: message => { status.textContent = message; },
+    onImported: () => { window.__silmoImportRevision = (window.__silmoImportRevision || 0) + 1; },
+    onExported: () => { window.__silmoExportRevision = (window.__silmoExportRevision || 0) + 1; }
+  });
+  const importSTLFile = stlIO.importSTLFile;
   $('importModel').onclick=()=> $('fileInput').click();
   $('stlChooseFile').onclick=()=> $('fileInput').click();
   $('fileInput').addEventListener('change',event=>{
@@ -1857,60 +1815,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     if(Array.from(event.dataTransfer?.files||[]).length)event.preventDefault();
   });
 
-  $('exportModel').onclick = () => {
-    if (typeof THREE.STLExporter === 'undefined') {
-      status.textContent = 'STL-Export konnte nicht geladen werden. Internet prüfen.';
-      return;
-    }
-    if (!objects.length) {
-      status.textContent = 'Es gibt keine Objekte zum Exportieren.';
-      return;
-    }
-    try {
-      const exportScene = new THREE.Scene();
-      objects.forEach((obj, index) => {
-        // Export a private geometry copy: never modify the model currently shown in the editor.
-        const exportGeometry = obj.geometry.clone();
-        // The editor uses 10 mm per Three.js unit. STL coordinates must be in millimetres,
-        // so convert vertices as well as object translations (not just the translations).
-        exportGeometry.scale(worldUnitsToMm(1), worldUnitsToMm(1), worldUnitsToMm(1));
-        exportGeometry.computeBoundingBox();
-        exportGeometry.computeBoundingSphere();
-
-        const clone = new THREE.Mesh(exportGeometry, obj.material);
-        clone.position.set(worldUnitsToMm(obj.position.x), worldUnitsToMm(obj.position.y), worldUnitsToMm(obj.position.z));
-        clone.rotation.copy(obj.rotation);
-        // Object scale is dimensionless and is applied after converting geometry to mm.
-        clone.scale.copy(obj.scale);
-        clone.updateMatrix();
-        if (![clone.position.x, clone.position.y, clone.position.z,
-              clone.scale.x, clone.scale.y, clone.scale.z].every(Number.isFinite)) {
-          exportGeometry.dispose();
-          throw new Error('Ungültige Position oder Skalierung bei Objekt ' + (index + 1));
-        }
-        exportScene.add(clone);
-      });
-      const exporter = new THREE.STLExporter();
-      const stlText = exporter.parse(exportScene, { binary: false });
-      if (typeof stlText !== 'string' || !stlText.trim().startsWith('solid') || !stlText.includes('endsolid')) {
-        throw new Error('Der STL-Exporter hat keine gültige ASCII-STL-Datei erzeugt.');
-      }
-      const blob = new Blob([stlText], { type: 'model/stl' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'silmo-3d-modell.stl';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
-      status.textContent = 'STL exportiert: alle Modelle in Millimetern';
-      window.__silmoExportRevision=(window.__silmoExportRevision||0)+1;
-    } catch (error) {
-      console.error(error);
-      status.textContent = 'STL-Export fehlgeschlagen.';
-    }
-  };
+  $('exportModel').onclick = stlIO.exportSTL;
 
   $('dropToBed').onclick = () => {
     const requested = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
