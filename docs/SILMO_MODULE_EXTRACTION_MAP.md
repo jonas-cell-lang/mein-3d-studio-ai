@@ -119,3 +119,13 @@ Der BSP-CSG-Kern ist als `src/csg.js` ausgelagert. Der vollständige Browserlauf
 - Nicht planare oder entartete Endprofile und unpassende Innenkonturen werden abgewiesen. Planaritäts- und Mindestnormalentoleranz liegen zentral in `src/tolerances.js`.
 - Unit- und Browser-Regressionen ergänzen geneigte Profile, umgekehrte Punktreihenfolgen, Hohl-Loft mit analytischem Volumen sowie ungültige Profile.
 - Hinweis: Die Geometrie-Factory kann Innenkonturen verarbeiten; der aktuelle App-Dialog übergibt weiterhin nur eine gespeicherte Aussenkontur. Die UI-/Projektmetadaten-Unterstützung für mehrere Skizzen-Innenkonturen ist ein separater nächster Schritt.
+
+
+## 10. Hohl-Loft – App-Integration und Projektformat (20.11.2026)
+- `createLoftFromSelection` unterstützt zwei Aussenprofile plus 1–8 Paare separater Innenprofile.
+- Auswahlreihenfolge: Aussen A, Aussen B, Innen A1, Innen B1, Innen A2, Innen B2 usw.
+- Die UI-Hilfe beschreibt die Reihenfolge; Profilobjekte müssen geschlossene Skizzenkonturen besitzen.
+- `src/project-io.js` speichert die Loft-Metadaten einschliesslich Anzahl der Innenkonturen und Quell-UUIDs. Der Import stellt sie wieder her.
+- `src/project-schema.js` validiert Sections, Referenzen, Innenkonturanzahl und Quellpaare.
+- Browser-Test deckt vier Profile, echtes Hohl-Loft-Mesh, Projekt-Download und Import in eine frische Browserinstanz ab.
+- Grenzen: Innenkonturen sind separate Skizzenobjekte; eine einzelne Skizze mit mehreren bearbeitbaren Insel-/Lochkonturen ist noch nicht Teil der Zeichenoberfläche.
