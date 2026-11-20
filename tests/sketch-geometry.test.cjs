@@ -106,3 +106,48 @@ test('abgerundetes Profil unterstützt die umgekehrte Konturrichtung für Innenk
 test('parametrische Profile lehnen ungültige Abmessungen kontrolliert ab', () => {
   assert.throws(() => sketchGeometry.createParametricProfile('rectangle', { width: 0, depth: 2 }), /positive Abmessungen/);
 });
+
+test('Loft-Geometrie verbindet zwei geschlossene Ringe mit Sollabmessungen und Volumen', () => {
+  const lower = [
+    new THREE.Vector3(-1, -1, 0), new THREE.Vector3(1, -1, 0),
+    new THREE.Vector3(1, 1, 0), new THREE.Vector3(-1, 1, 0)
+  ];
+  const upper = lower.map(point => point.clone().add(new THREE.Vector3(0, 0, 2)));
+  const geometry = sketchGeometry.createLoftGeometry(lower, upper);
+  try {
+    assert.deepEqual(geometry.boundingBox.getSize(new THREE.Vector3()).toArray(), [2, 2, 2]);
+    assert.ok(Math.abs(meshVolume(geometry) - 8) < 1e-5);
+    assert.ok(geometry.attributes.normal);
+  } finally {
+    geometry.dispose();
+  }
+});
+
+test('Loft-Kontur wird gleichmässig abgetastet und ungültige Konturen abgewiesen', () => {
+  const sampled = sketchGeometry.resampleClosedOutline([[0, 0], [2, 0], [2, 2], [0, 2]], 32, 0.001);
+  assert.equal(sampled.length, 32);
+  assert.ok(sampled.every(point => Number.isFinite(point.x) && Number.isFinite(point.y)));
+  assert.throws(() => sketchGeometry.resampleClosedOutline([[0, 0], [0, 0], [0, 0]], 32, 0.001), /ungültig/);
+  assert.throws(() => sketchGeometry.createLoftGeometry([new THREE.Vector3()], []), /gleich viele gültige/);
+});
+
+test('Sweep erzeugt entlang eines 3D-Pfads einen endlichen Volumenkörper', () => {
+  const outline = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+  const path = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 3)];
+  const geometry = sketchGeometry.createSweepGeometry(outline, path);
+  try {
+    const size = geometry.boundingBox.getSize(new THREE.Vector3());
+    assert.ok(Math.abs(size.x - 2) < 1e-5);
+    assert.ok(Math.abs(size.y - 2) < 1e-5);
+    assert.ok(Math.abs(size.z - 3) < 1e-5);
+    assert.ok(Math.abs(meshVolume(geometry) - 12) < 0.05);
+    for (const value of geometry.attributes.position.array) assert.ok(Number.isFinite(value));
+  } finally {
+    geometry.dispose();
+  }
+});
+
+test('Sweep lehnt offene oder ungültige Eingaben kontrolliert ab', () => {
+  assert.throws(() => sketchGeometry.createSweepGeometry([[0, 0], [1, 0]], [new THREE.Vector3(), new THREE.Vector3(0, 0, 1)]), /gültiges geschlossenes Profil/);
+  assert.throws(() => sketchGeometry.createSweepGeometry([[0, 0], [1, 0], [0, 1]], [new THREE.Vector3()]), /mindestens zwei/);
+});
