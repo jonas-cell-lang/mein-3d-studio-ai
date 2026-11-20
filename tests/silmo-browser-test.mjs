@@ -491,6 +491,27 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(canvasSize.width > 0 && canvasSize.height > 0, '3D canvas hat keine gültige Grösse');
 
   // Zeichenmodus: Rechtsklick-Ziehen darf die Kamera nicht drehen.
+  // Mathematische Referenzprüfung der drei grundlegenden CAD-Körper.
+  for (const id of ['addCube', 'addSphere', 'addCylinder']) await page.locator('#' + id).click();
+  const basicPrimitiveBounds = (await page.evaluate(() => window.__silmoTutorialModelAudit())).slice(-3);
+  const expectedBasicBounds = [
+    { label: 'Würfel', size: [15, 15, 15] },
+    { label: 'Kugel', size: [16, 16, 16] },
+    { label: 'Zylinder', size: [14, 14, 15] }
+  ];
+  for (let i = 0; i < expectedBasicBounds.length; i++) {
+    const actual = basicPrimitiveBounds[i], expected = expectedBasicBounds[i];
+    assert.equal(actual.label, expected.label, 'Grundkörper-Reihenfolge oder Typ ist falsch');
+    assert.ok(actual.vertexCount > 0, expected.label + ' enthält keine Geometriepunkte');
+    for (const key of ['width', 'depth', 'height']) {
+      const axis = key === 'width' ? 0 : key === 'depth' ? 1 : 2;
+      assert.ok(Number.isFinite(actual[key]), expected.label + ' hat eine nicht endliche Ausdehnung');
+      assert.ok(Math.abs(actual[key] - expected.size[axis]) < 1e-4,
+        expected.label + ' hat eine falsche geometrische Ausdehnung (' + key +
+        '): erwartet ' + expected.size[axis] + ' mm, erhalten ' + actual[key] + ' mm');
+    }
+  }
+
   await page.locator('[data-tab="draw"]').click();
   await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('rectangle');
