@@ -984,3 +984,11 @@ Vor Beginn einer neuen Aufgabe:
 - Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44737483853
 - Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44737483844
 - Der Browser-Test bestätigt nun: beschädigter STL-Import wird abgewiesen, der bestehende Modellbestand bleibt unverändert und es entsteht kein unerwarteter Konsolenfehler.
+
+
+## Ergänzung – erste reproduzierbare History-Leistungsbaseline am 20.11.2026
+
+- `scripts/benchmark-history.mjs` wurde ergänzt und über `npm run benchmark:history` in die Code-Checks eingebunden.
+- Er misst 1, 10 und 50 Objekte mit je 999 Vertices, fünf Snapshots, Snapshot-Aufnahmezeit, Undo-/Redo-Zeit sowie Node-Speicherwerte vor/nach Snapshot und nach Freigabe/GC.
+- Der Benchmark ist bewusst informativ und verwendet keine maschinenabhängigen Schwellenwerte. Er ist eine isolierte History-Baseline, noch keine vollständige Browser-/CAD-Leistungsmessung.
+- Der neue Benchmark muss durch den nächsten Code-Check-Lauf ausgeführt und auf seine Messausgabe geprüft werden.
