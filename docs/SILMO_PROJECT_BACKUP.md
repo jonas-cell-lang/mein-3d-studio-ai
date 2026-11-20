@@ -1006,3 +1006,11 @@ Vor Beginn einer neuen Aufgabe:
 - Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44738160483
 - Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44738160492
 - Dies ist eine erste isolierte Node-History-Baseline, keine Aussage über Browserleistung oder grosse CAD-Modelle.
+
+
+## Ergänzung – Skizzen-/Kontur-Toleranz-Audit am 20.11.2026
+
+- Neun bisher direkt im CAD-Hauptskript verwendete Werte wurden in `src/tolerances.js` mit dimensionsspezifischen Namen versehen.
+- Betroffen sind Punktaufnahme, Mindestlinienlänge, Zeichenpunktabstand, Vorschauversatz, Klickkonturabschluss, Klickkonturpunktabstand, minimale Straightening-Bewegung, RDP-Degenerationsnenner und Mindestfläche einer Freiform.
+- Alle numerischen Werte bleiben unverändert; Aufrufstellen verwenden jetzt die zentrale API. Die Unit-Tests sichern die Werte.
+- Spezifikation und Masterplan wurden ergänzt. Der neue Stand benötigt noch den automatischen Code- und Browser-Regressionslauf.
