@@ -15,6 +15,7 @@
     }
 
     function saveProject() {
+      let downloadUrl = null;
       try {
         const project = {
           app: 'SILMO 3D Studio AI',
@@ -42,32 +43,51 @@
             geometry: projectGeometry.serializeGeometry(obj.geometry)
           }))
         };
-        const blob = new Blob([JSON.stringify(project)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
+        projectSchema.validateProjectEnvelope(project);
+        const json = JSON.stringify(project);
+        const blob = new Blob([json], { type: 'application/json' });
+        if (blob.size > 25 * 1024 * 1024) {
+          throw new Error('Das Projekt ist grösser als das unterstützte Importlimit von 25 MB.');
+        }
+        downloadUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = url;
+        link.href = downloadUrl;
         link.download = 'silmo-projekt.json';
         document.body.appendChild(link);
         link.click();
         link.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1500);
+        const urlToRevoke = downloadUrl;
+        downloadUrl = null;
+        setTimeout(() => URL.revokeObjectURL(urlToRevoke), 1500);
         deps.setStatus('Vollständiges Projekt gespeichert');
         if (typeof deps.onSaved === 'function') deps.onSaved();
       } catch (error) {
+        if (downloadUrl) URL.revokeObjectURL(downloadUrl);
         console.error(error);
-        deps.setStatus('Projekt konnte nicht gespeichert werden.');
+        deps.setStatus(error.message && error.message.includes('25 MB')
+          ? error.message
+          : 'Projekt konnte nicht gespeichert werden.');
       }
     }
 
     function openProjectFile(file) {
       if (!file) return;
       const input = deps.getProjectFileInput();
-      if (file.size > 25 * 1024 * 1024) {
-        deps.setStatus('Projektdatei ist zu gross (maximal 25 MB).');
+      if (!Number.isFinite(file.size) || file.size < 0 || file.size > 25 * 1024 * 1024) {
+        deps.setStatus(file.size > 25 * 1024 * 1024
+          ? 'Projektdatei ist zu gross (maximal 25 MB).'
+          : 'Projektdatei hat eine ungültige Dateigrösse.');
         if (input) input.value = '';
         return;
       }
-      const reader = new FileReader();
+      let reader;
+      try {
+        reader = new FileReader();
+      } catch (error) {
+        deps.setStatus('Projektdatei konnte nicht gelesen werden.');
+        if (input) input.value = '';
+        return;
+      }
       reader.onload = () => {
         let newObjects = [];
         try {
@@ -160,7 +180,13 @@
         deps.setStatus('Projektdatei konnte nicht gelesen werden.');
         if (input) input.value = '';
       };
-      reader.readAsText(file);
+      try {
+        reader.readAsText(file);
+      } catch (error) {
+        console.error(error);
+        deps.setStatus('Projektdatei konnte nicht gelesen werden.');
+        if (input) input.value = '';
+      }
     }
 
     return Object.freeze({ saveProject, openProjectFile });
