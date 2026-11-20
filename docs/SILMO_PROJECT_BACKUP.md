@@ -1127,3 +1127,12 @@ Vor Beginn einer neuen Aufgabe:
 - Die App validiert weiterhin die Eingabegrenzen (z.B. Eckenradius); das Geometriemodul kontrolliert zusätzlich positive Profilabmessungen.
 - Neue Tests ergänzen die Extrusions-/Lochtests um die Soll-Aussenabmessungen aller Profilformen und die umgekehrte Konturrichtung.
 - Commit `2af76685ebf31a417bc0cf1896a7b161a199567c`: 44/44 Unit-Tests, Browser-Regression und OCCT-WebWorker erfolgreich.
+
+
+## Ergänzung – Loft- und Sweep-Geometrie (20.11.2026)
+- `src/sketch-geometry.js` übernimmt jetzt auch das Resampling geschlossener Konturen, die Erzeugung von Loft-Geometrien mit Endkappen und Sweep-Geometrien entlang einer 3D-Catmull-Rom-Kurve.
+- Das Hauptskript verwaltet weiterhin Quellobjektauswahl, Welttransformationen, Undo-History, Material, Szene-Commit und UI.
+- Zusätzliche Tests prüfen analytische Sollvolumen für einen Loft-Quader (8 Einheiten³) und einen Sweep-Quader (12 Einheiten³), Abmessungen, endliche Geometriedaten und ungültige Eingaben.
+- Bekannte Loft-Grenzen bleiben dokumentiert: Die Kappentriangulation arbeitet in XY-Weltprojektion und ist nicht für beliebig geneigte Profile oder Innenlöcher abgesichert. Die optimale Zuordnung der Kontur-Startpunkte ist noch offen.
+- Code-Head `9bf75280747d879f5980df6c9cc45b5da199fea1`: 48/48 Unit-Tests, Browser-Regression und isolierter OCCT-/WebWorker-Test erfolgreich.
+- Keine Versionsänderung, kein Merge, kein Deployment; Kosten CHF 0.00.

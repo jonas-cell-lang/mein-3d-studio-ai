@@ -343,3 +343,13 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Neue Unit-Tests prüfen die Aussenabmessungen und gültige Volumenerzeugung aller fünf Profiltypen, umgekehrte abgerundete Konturrichtung sowie ungültige Abmessungen.
 - Auf Code-Head `2af76685ebf31a417bc0cf1896a7b161a199567c`: 44/44 Unit-Tests, vollständige Browser-Regression und isolierter OCCT-/WebWorker-Test erfolgreich.
 - Die Extraktion verändert weder Werkzeugbedienung noch Modell-Commit. Keine Versionsänderung, kein Merge und kein Deployment.
+
+
+### 6.22 Loft- und Sweep-Geometrie ausgelagert (20.11.2026)
+- Die Geometriefunktionen für Loft und Sweep sind jetzt Teil von `src/sketch-geometry.js`.
+- Loft: geschlossene Profile werden gleichmässig abgetastet, zu Seitenflächen verbunden und mit triangulierten Endflächen geschlossen.
+- Sweep: ein geschlossenes Profil wird entlang einer Catmull-Rom-3D-Bahn extrudiert.
+- Auswahl, Quellobjekttransformationen, History, Material, Objektverwaltung und UI bleiben im Hauptskript.
+- Neue Tests prüfen analytische Sollvolumen (Loft 8, Sweep 12), Bounding-Box-Abmessungen, endliche Koordinaten und kontrollierte Fehlerfälle.
+- Bekannte Loft-Grenzen: Endkappen verwenden weiterhin XY-Projektion der Weltkoordinaten; arbitrary geneigte Profile und Innenkonturen sind noch nicht robust. Die Zuordnung von Startpunkt und Laufrichtung zweier Profile ist ebenfalls noch nicht optimiert.
+- Auf Code-Head `9bf75280747d879f5980df6c9cc45b5da199fea1`: 48/48 Unit-Tests, Browser-Regression und OCCT-WebWorker-Test erfolgreich.
