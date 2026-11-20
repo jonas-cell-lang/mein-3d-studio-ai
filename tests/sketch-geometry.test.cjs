@@ -124,6 +124,60 @@ test('Loft-Geometrie verbindet zwei geschlossene Ringe mit Sollabmessungen und V
   }
 });
 
+
+test('Loft unterstützt geneigte und unterschiedlich ausgerichtete planare Profile', () => {
+  const lower = [
+    new THREE.Vector3(-1, -1, 0), new THREE.Vector3(1, -1, 0),
+    new THREE.Vector3(1, 1, 0), new THREE.Vector3(-1, 1, 0)
+  ];
+  const upper = [
+    new THREE.Vector3(-0.8, -0.8, 2), new THREE.Vector3(0.8, -0.8, 2.4),
+    new THREE.Vector3(0.8, 0.8, 2.8), new THREE.Vector3(-0.8, 0.8, 2.4)
+  ];
+  const geometry = sketchGeometry.createLoftGeometry(lower, upper);
+  try {
+    assert.ok(geometry.boundingBox.getSize(new THREE.Vector3()).z > 2);
+    assert.ok(geometry.attributes.normal);
+    for (const value of geometry.attributes.position.array) assert.ok(Number.isFinite(value));
+    assert.ok(meshVolume(geometry) > 0);
+  } finally {
+    geometry.dispose();
+  }
+});
+
+test('Loft unterstützt durchgehende Innenkonturen und erhält analytisches Rohrvolumen', () => {
+  const outerA = [
+    new THREE.Vector3(-2, -2, 0), new THREE.Vector3(2, -2, 0),
+    new THREE.Vector3(2, 2, 0), new THREE.Vector3(-2, 2, 0)
+  ];
+  const outerB = outerA.map(point => point.clone().add(new THREE.Vector3(0, 0, 3)));
+  const holeA = [
+    new THREE.Vector3(-1, -1, 0), new THREE.Vector3(-1, 1, 0),
+    new THREE.Vector3(1, 1, 0), new THREE.Vector3(1, -1, 0)
+  ];
+  const holeB = holeA.map(point => point.clone().add(new THREE.Vector3(0, 0, 3)));
+  const geometry = sketchGeometry.createLoftGeometry(outerA, outerB, { holesA: [holeA], holesB: [holeB] });
+  try {
+    assert.ok(Math.abs(meshVolume(geometry) - 36) < 1e-5);
+    const size = geometry.boundingBox.getSize(new THREE.Vector3());
+    assert.deepEqual(size.toArray(), [4, 4, 3]);
+  } finally {
+    geometry.dispose();
+  }
+});
+
+test('Loft weist nicht planare Profile und nicht passende Innenkonturen zurück', () => {
+  const lower = [
+    new THREE.Vector3(0, 0, 0), new THREE.Vector3(2, 0, 0),
+    new THREE.Vector3(2, 2, 0), new THREE.Vector3(0, 2, 0)
+  ];
+  const upper = lower.map(point => point.clone().add(new THREE.Vector3(0, 0, 2)));
+  const warped = upper.map(point => point.clone());
+  warped[2].z += 0.2;
+  assert.throws(() => sketchGeometry.createLoftGeometry(lower, warped), /planar/);
+  assert.throws(() => sketchGeometry.createLoftGeometry(lower, upper, { holesA: [lower], holesB: [] }), /paarweise gültige/);
+});
+
 test('Loft-Kontur wird gleichmässig abgetastet und ungültige Konturen abgewiesen', () => {
   const sampled = sketchGeometry.resampleClosedOutline([[0, 0], [2, 0], [2, 2], [0, 2]], 32, 0.001);
   assert.equal(sampled.length, 32);
