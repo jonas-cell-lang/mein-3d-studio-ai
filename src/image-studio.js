@@ -117,7 +117,7 @@
     return Math.min(pointSegment(a,c,d),pointSegment(b,c,d),pointSegment(c,a,b),pointSegment(d,a,b),pointDistance(a,c),pointDistance(a,d),pointDistance(b,c),pointDistance(b,d));
   }
   function polygonIsSimple(poly) {
-    if(!Array.isArray(poly)||poly.length<3||polygonArea(poly)<tolerances.IMAGE_MIN_SIMPLE_POLYGON_AREA_MM2)return false;
+    if(!Array.isArray(poly)||poly.length<3||polygonArea(poly)+tolerances.IMAGE_MIN_AREA_COMPARISON_EPSILON_MM2<tolerances.IMAGE_MIN_SIMPLE_POLYGON_AREA_MM2)return false;
     const n=poly.length;
     for(let i=0;i<n;i++){
       const a=poly[i],b=poly[(i+1)%n];
@@ -543,7 +543,7 @@
       else if(rotation===270){u=y;v=image.naturalWidth-x;}
       return [u/rotated.width*widthMM-widthMM/2,heightMM/2-v/rotated.height*heightMM];
     }).filter(point=>point.every(Number.isFinite));
-    const mapped=state.contours.map(mapContour).filter(points=>points.length>=3&&polygonArea(points)>=tolerances.IMAGE_MIN_PRINT_CONTOUR_AREA_MM2);
+    const mapped=state.contours.map(mapContour).filter(points=>points.length>=3&&polygonArea(points)+tolerances.IMAGE_MIN_AREA_COMPARISON_EPSILON_MM2>=tolerances.IMAGE_MIN_PRINT_CONTOUR_AREA_MM2);
     if(!mapped.length){status('Es wurde keine gültige geschlossene Kontur gefunden.');return;}
     let outerIndex=0;
     for(let i=1;i<mapped.length;i++)if(polygonArea(mapped[i])>polygonArea(mapped[outerIndex]))outerIndex=i;
@@ -551,7 +551,7 @@
     for(let i=0;i<mapped.length;i++){
       if(i===outerIndex)continue;
       const candidate=mapped[i],area=polygonArea(candidate);
-      if(area<tolerances.IMAGE_MIN_PRINT_CONTOUR_AREA_MM2||area>=polygonArea(points)*0.8)continue;
+      if(area+tolerances.IMAGE_MIN_AREA_COMPARISON_EPSILON_MM2<tolerances.IMAGE_MIN_PRINT_CONTOUR_AREA_MM2||area>=polygonArea(points)*0.8)continue;
       candidates.push(candidate);
     }
     // Druckbarkeit: keine selbstschneidenden Konturen und mindestens 0,8 mm
