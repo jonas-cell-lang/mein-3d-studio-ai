@@ -2402,6 +2402,16 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const chamferOK=p2.userData.edgeTreatment?.type==='chamfer'&&p2.geometry.attributes.position.count>0;
     return {dimensionOK,dimensionsMM,filletOK,chamferOK,loftOK,hollowLoftOK,sweepOK,objectDelta:objects.length-before,loftVertices:loft.geometry.attributes.position.count,hollowLoftVertices:hollowLoft.geometry.attributes.position.count,sweepVertices:sweep.geometry.attributes.position.count};
   };
+  window.__silmoTestUpdateLoftFromSources=()=>{
+    const make=(label,x,z,size)=>{const shape=new THREE.Shape();shape.moveTo(-size,-size);shape.lineTo(size,-size);shape.lineTo(size,size);shape.lineTo(-size,size);shape.closePath();const outline=shape.getPoints(16).slice(0,-1).map(point=>[point.x,point.y]);const geometry=new THREE.ExtrudeGeometry(shape,{depth:0.2,bevelEnabled:false});const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:'#4b91ed'}));mesh.position.set(x,0,z);mesh.userData={label,baseDimensions:{x:size*2,y:size*2,z:0.2},percent:{x:100,y:100,z:100},sketch:{type:'rectangle',outlinePoints:outline,extrusionMM:2},sketchOutline:outline};scene.add(mesh);objects.push(mesh);return mesh;};
+    const a=make('Loft-Quelle A',-1,0,0.8),b=make('Loft-Quelle B',1,1,0.5);
+    selectedObjects=[a,b];selected=b;createLoftFromSelection();
+    const loft=selected,before=loft.geometry.boundingBox.max.z;
+    b.position.z=2;b.updateMatrixWorld(true);
+    updateSelectedLoftFromSources();
+    const after=loft.geometry.boundingBox.max.z;
+    return {sourceA:loft.userData.loft.sourceA,sourceB:loft.userData.loft.sourceB,sourceReferencesResolve:objects.some(obj=>obj.uuid===loft.userData.loft.sourceA)&&objects.some(obj=>obj.uuid===loft.userData.loft.sourceB),beforeMaxZ:before,afterMaxZ:after,vertices:loft.geometry.attributes.position.count};
+  };
   window.__silmoTestEditSketchHolePoint=()=>{
     const result=window.__silmoImageStudioCreateFromPoints([[0,0],[40,0],[40,30],[0,30]],10,[[[10,10],[10,20],[20,20],[20,10]]]);
     if(!result.ok)throw new Error(result.message);
@@ -2670,6 +2680,46 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       sourceReferencesResolve:sourceIds.every(id=>objects.some(source=>source.uuid===id))
     };
   });
+  function updateSelectedLoftFromSources(){
+    const loft=selectedCadObject(),metadata=loft.userData.loft;
+    if(!metadata||!metadata.sourceA||!metadata.sourceB)throw new Error('Wähle zuerst einen Loft-Körper mit gespeicherten Quellprofilen aus.');
+    if(loft.userData.locked===true)throw new Error('Der Loft-Körper ist gesperrt. Entsperre ihn zuerst.');
+    const sourceA=objects.find(obj=>obj.uuid===metadata.sourceA),sourceB=objects.find(obj=>obj.uuid===metadata.sourceB);
+    if(!sourceA||!sourceB)throw new Error('Mindestens ein ursprüngliches Aussenprofil fehlt. Der Loft kann nicht automatisch aktualisiert werden.');
+    const sourceHoles=Array.isArray(metadata.sourceHoles)?metadata.sourceHoles:[];
+    if(sourceHoles.length!==(metadata.innerContourCount||0))throw new Error('Die gespeicherte Zuordnung der Loft-Innenprofile ist unvollständig.');
+    const holePairs=sourceHoles.map(pair=>{
+      const a=objects.find(obj=>obj.uuid===pair.a),b=objects.find(obj=>obj.uuid===pair.b);
+      if(!a||!b)throw new Error('Ein ursprüngliches Innenprofil fehlt. Der Loft kann nicht vollständig aktualisiert werden.');
+      return [a,b];
+    });
+    const worldRing=obj=>{
+      if(!Array.isArray(obj.userData.sketchOutline)||obj.userData.sketchOutline.length<3)throw new Error('Ein Quellprofil besitzt keine gültige geschlossene Kontur mehr.');
+      obj.updateMatrixWorld(true);
+      return window.SILMOSketchGeometry.resampleClosedOutline(obj.userData.sketchOutline,64,window.SILMOTolerances.PROFILE_MIN_PERIMETER_WORLD_UNITS)
+        .map(point=>obj.localToWorld(new THREE.Vector3(point.x,point.y,0)));
+    };
+    const holesA=holePairs.map(pair=>worldRing(pair[0])),holesB=holePairs.map(pair=>worldRing(pair[1]));
+    let geometry;
+    try {
+      geometry=window.SILMOSketchGeometry.createLoftGeometry(worldRing(sourceA),worldRing(sourceB),{holesA,holesB});
+      loft.updateMatrixWorld(true);
+      geometry.applyMatrix4(loft.matrixWorld.clone().invert());
+      geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+      const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
+      if(![size.x,size.y,size.z].every(value=>Number.isFinite(value)&&value>CSG_EPSILON))throw new Error('Die aktualisierten Profile erzeugen keine gültige Loft-Geometrie.');
+      recordHistory();
+      loft.geometry.dispose();loft.geometry=geometry;
+      loft.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
+      loft.userData.loft={...metadata,innerContourCount:holePairs.length,sourceHoles:sourceHoles.map(pair=>({a:pair.a,b:pair.b}))};
+      updateObjects();showProperties();updateMoveGizmo();
+      status.textContent='Loft aktualisiert: '+(holePairs.length?'Aussen- und Innenprofile':'Aussenprofile')+' wurden aus den aktuellen Quellskizzen neu aufgebaut.';
+    } catch(error) {
+      if(geometry&&geometry!==loft.geometry)geometry.dispose();
+      throw error;
+    }
+  }
+
   function createSweepFromSelection(){
     const pair=selectedObjects.length===2?selectedObjects.slice():[];
     if(pair.length!==2)throw new Error('Für Sweep genau zwei Objekte auswählen: zuerst Profil, danach Pfad.');
@@ -2906,6 +2956,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   document.getElementById('applyEdgeFillet').addEventListener('click',()=>{try{createEdgeTreatment('fillet');}catch(e){status.textContent='Abrundung nicht möglich: '+e.message;}});
   document.getElementById('applyEdgeChamfer').addEventListener('click',()=>{try{createEdgeTreatment('chamfer');}catch(e){status.textContent='Fase nicht möglich: '+e.message;}});
   document.getElementById('createLoft').addEventListener('click',()=>{try{createLoftFromSelection();}catch(e){status.textContent='Loft nicht möglich: '+e.message;}});
+  document.getElementById('updateLoftFromSources').addEventListener('click',()=>{try{updateSelectedLoftFromSources();}catch(e){status.textContent='Loft konnte nicht aktualisiert werden: '+e.message;}});
   document.getElementById('createSweep').addEventListener('click',()=>{try{createSweepFromSelection();}catch(e){status.textContent='Sweep nicht möglich: '+e.message;}});
   document.getElementById('applySketchRelation').addEventListener('click',()=>{try{applySketchRelation();}catch(e){status.textContent='Bedingung nicht möglich: '+e.message;}});
   document.getElementById('loadPathLength').addEventListener('click',()=>{try{loadSelectedPathLength();}catch(e){status.textContent=e.message;}});
