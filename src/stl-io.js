@@ -200,7 +200,7 @@
     const componentRecords = [];
     for (const [root, volume] of componentVolumes) {
       signedVolumeMM3 += volume;
-      if (volume < -1e-12) invertedComponentCount++;
+      if (volume < -tolerances.STL_SIGNED_VOLUME_EPSILON_MM3) invertedComponentCount++;
       componentRecords.push({ volume, bounds: componentBounds.get(root) });
     }
     const componentCount = componentVolumes.size;
@@ -211,8 +211,8 @@
     for (let i = 0; i < componentRecords.length && !disconnectedWindingConflict; i++) {
       for (let j = i + 1; j < componentRecords.length; j++) {
         const a = componentRecords[i], b = componentRecords[j];
-        if (!((a.volume < -1e-12 && b.volume > 1e-12) ||
-              (a.volume > 1e-12 && b.volume < -1e-12))) continue;
+        if (!((a.volume < -tolerances.STL_SIGNED_VOLUME_EPSILON_MM3 && b.volume > tolerances.STL_SIGNED_VOLUME_EPSILON_MM3) ||
+              (a.volume > tolerances.STL_SIGNED_VOLUME_EPSILON_MM3 && b.volume < -tolerances.STL_SIGNED_VOLUME_EPSILON_MM3))) continue;
         const separated = a.bounds.max.some((value, axis) => value < b.bounds.min[axis]) ||
           b.bounds.max.some((value, axis) => value < a.bounds.min[axis]);
         if (separated) {
@@ -223,7 +223,7 @@
     }
     const mixedWinding = isClosedEdgeManifold && disconnectedWindingConflict;
     const invertedWinding = isClosedEdgeManifold && !mixedWinding &&
-      Math.abs(signedVolumeMM3) > 1e-12 ? signedVolumeMM3 < 0 : null;
+      Math.abs(signedVolumeMM3) > tolerances.STL_SIGNED_VOLUME_EPSILON_MM3 ? signedVolumeMM3 < 0 : null;
     return Object.freeze({
       analyzed: true, triangleCount, weldedVertexCount: vertexCoordinates.length / 3,
       uniqueEdgeCount: edges.size, boundaryEdgeCount, nonManifoldEdgeCount,
