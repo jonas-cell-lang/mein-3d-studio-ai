@@ -91,3 +91,8 @@ Der BSP-CSG-Kern ist als `src/csg.js` ausgelagert. Der vollständige Browserlauf
 - `src/sketch-geometry.js` stellt jetzt gemeinsame Factory-Funktionen für gespeicherte CAD-Pfade bereit: `createPathCurve` erhält die bisherige Unterscheidung zwischen gerader 2D-Linie und Catmull-Rom-Kurve; `createPathTubeGeometry` baut das Rohr mit den angeforderten Segmentzahlen und berechnet Normalen sowie Bounding-Volumen.
 - Das Hauptskript nutzt die Factory bei der ursprünglichen Skizzenanlage, beim erneuten Aufbau nach einer Pfadlängenänderung und beim Auslesen der Kurvenlänge.
 - Pfadpunkte, mm-Eingabe, Längenskalierung, Mittelpunktverschiebung, Metadaten, History und Modell-Commit bleiben im Hauptskript.
+
+
+### Verifikation Pfadkurven-/Rohr-Factories
+- Code-Head `fdb0139a9b48188b39f92ecbe1beb5260618781c`: 51/51 Unit-Tests bestanden; Browser-Regression und OCCT-/WebWorker-Test erfolgreich.
+- GitHub Actions: Code Checks `44765048481`, Browser-Regression `44765048493`, OCCT-Prototyp `44765048667` – alle erfolgreich.

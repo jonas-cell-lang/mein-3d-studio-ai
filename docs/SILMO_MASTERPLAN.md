@@ -360,3 +360,5 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Rohrgeometrie für Linien und Kurven wird durch `createPathTubeGeometry` erzeugt und berechnet Normalen, Bounding Box und Bounding Sphere.
 - Die Factory wird bei der Skizzenanlage, Pfadlängenänderung und Kurvenlängenabfrage verwendet.
 - Neue Tests prüfen Linien-/Kurvensemantik, Sollradius und Rohrabmessungen sowie ungültige Parameter.
+
+- Verifikation der Pfadkurven-/Rohr-Extraktion auf Code-Head `fdb0139a9b48188b39f92ecbe1beb5260618781c`: 51/51 Unit-Tests; Browser-Regression und OCCT-/WebWorker-Test erfolgreich.

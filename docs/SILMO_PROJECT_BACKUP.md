@@ -1142,3 +1142,5 @@ Vor Beginn einer neuen Aufgabe:
 - Das Geometriemodul erzeugt nun auch gerade 2D-Pfadkurven, Catmull-Rom-Kurven und die zugehörigen Rohrgeometrien.
 - Die App verwendet die gemeinsame Factory bei Skizzenanlage und Pfadlängenänderung. Pfadbearbeitung, mm-Konvertierung, History, Objektverwaltung und UI bleiben im Hauptskript.
 - Tests prüfen Pfadlänge, Linien-/Kurvenverhalten, Rohrabmessungen und Parameterfehler.
+
+- Code-Head `fdb0139a9b48188b39f92ecbe1beb5260618781c`: 51/51 Unit-Tests, Browser-Regression und OCCT-/WebWorker-Test erfolgreich. Die anschliessende Änderung `1be5a96` betrifft nur die Projektdokumentation.
