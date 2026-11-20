@@ -152,6 +152,21 @@
       }
       inner.push(hit);
     }
+    const distanceToSegment = (point, start, end) => {
+      const edge = end.clone().sub(start);
+      const lengthSquared = edge.lengthSq();
+      const t = lengthSquared > 0 ? Math.max(0, Math.min(1, point.clone().sub(start).dot(edge) / lengthSquared)) : 0;
+      return point.distanceTo(start.clone().addScaledVector(edge, t));
+    };
+    for (const point of inner) {
+      let nearestBoundary = Infinity;
+      for (let i = 0; i < outer.length; i++) {
+        nearestBoundary = Math.min(nearestBoundary, distanceToSegment(point, outer[i], outer[(i + 1) % outer.length]));
+      }
+      if (nearestBoundary + tolerances.CONTOUR_FRAME_MIN_EDGE_WORLD_UNITS < thickness) {
+        throw new Error('Innenkontur ist zu eng oder überschreitet die ursprüngliche Kontur. Verringere die Wandstärke.');
+      }
+    }
     const innerArea = signedArea(inner);
     if (inner.length < 3 || Math.abs(innerArea) < tolerances.CONTOUR_FRAME_MIN_AREA_WORLD_UNITS2 || Math.sign(innerArea) !== Math.sign(area)) {
       throw new Error('Innenkontur ist zu eng oder überschneidet sich. Verringere die Wandstärke oder glätte die gezeichnete Kontur.');
