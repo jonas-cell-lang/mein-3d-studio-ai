@@ -1929,7 +1929,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const previous = clickContourPoints[clickContourPoints.length - 1];
     const dx = point.x - previous.x, dy = point.y - previous.y;
     const distance = Math.hypot(dx,dy);
-    if (distance < 0.0001) return point;
+    if (distance < window.SILMOTolerances.CLICK_CONTOUR_STRAIGHTEN_MIN_DISTANCE_WORLD_UNITS) return point;
     const step = Math.PI / 4;
     const angle = Math.atan2(dy,dx);
     const fixedAngle = Math.round(angle / step) * step;
@@ -1952,7 +1952,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       let maxDistanceSq = toleranceSq, splitIndex = -1;
       for (let i = first + 1; i < last; i++) {
         const p = points[i];
-        const t = lengthSq > 1e-12 ? Math.max(0, Math.min(1, ((p.x-a.x)*dx + (p.y-a.y)*dy) / lengthSq)) : 0;
+        const t = lengthSq > window.SILMOTolerances.SKETCH_POLYLINE_DEGENERATE_LENGTH_SQUARED_WORLD_UNITS2 ? Math.max(0, Math.min(1, ((p.x-a.x)*dx + (p.y-a.y)*dy) / lengthSq)) : 0;
         const px = a.x + t * dx, py = a.y + t * dy;
         const ex = p.x - px, ey = p.y - py;
         const distanceSq = ex * ex + ey * ey;
@@ -2001,7 +2001,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       sketchPreview = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: sketchDraft.type === 'line3d' ? 0xffd166 : 0x53d8e8, depthTest: false }));
     } else if (sketchDraft.type === 'freeform2d') {
       if (!Array.isArray(sketchDraft.points) || sketchDraft.points.length < 3) return;
-      const points = sketchDraft.points.map(point => new THREE.Vector3(point.x, point.y, 0.025));
+      const points = sketchDraft.points.map(point => new THREE.Vector3(point.x, point.y, window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS));
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
       sketchPreview = new THREE.LineLoop(geometry, new THREE.LineBasicMaterial({ color: 0x53d8e8, depthTest: false }));
     } else {
@@ -2023,7 +2023,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const radiusMM=Number(document.getElementById('sketchCornerRadiusMM').value);
         const radius=Math.max(0,Math.min(mmToWorldUnits(radiusMM),sketchDraft.width/2,sketchDraft.depth/2));
         addRoundedRectPath(path,sketchDraft.width,sketchDraft.depth,radius,sketchDraft.centerX,sketchDraft.centerY);
-        points=path.getPoints(10).map(point=>new THREE.Vector3(point.x,point.y,0.025));
+        points=path.getPoints(10).map(point=>new THREE.Vector3(point.x,point.y,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS));
       } else {
         const halfW = sketchDraft.width / 2, halfD = sketchDraft.depth / 2;
         points = activeTool === 'triangle' ? [
@@ -2137,10 +2137,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         snapSketchPoint(sketchPoint);
         let points = sketchDraft?.type === activeTool ? sketchDraft.points : [sketchStart.clone()];
         if (activeTool === 'line2d') points = [sketchStart.clone(), sketchPoint.clone()];
-        else if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > 0.015) points.push(sketchPoint.clone());
+        else if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > window.SILMOTolerances.SKETCH_POLYLINE_SAMPLE_MIN_DISTANCE_WORLD_UNITS) points.push(sketchPoint.clone());
         sketchDraft = { type: activeTool, points };
       }
-      if (sketchDraft?.type === activeTool && sketchDraft.points.length >= 2 && sketchDraft.points[0].distanceTo(sketchDraft.points[sketchDraft.points.length - 1]) > 0.02) {
+      if (sketchDraft?.type === activeTool && sketchDraft.points.length >= 2 && sketchDraft.points[0].distanceTo(sketchDraft.points[sketchDraft.points.length - 1]) > window.SILMOTolerances.SKETCH_POLYLINE_MIN_LENGTH_WORLD_UNITS) {
         updateSketchInputsFromDraft();
         updateSketchPreview();
       } else {
@@ -2151,7 +2151,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
         snapSketchPoint(sketchPoint);
         const points = sketchDraft?.type === 'freeform2d' ? sketchDraft.points : [sketchStart.clone()];
-        if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > 0.015) points.push(sketchPoint.clone());
+        if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > window.SILMOTolerances.SKETCH_POLYLINE_SAMPLE_MIN_DISTANCE_WORLD_UNITS) points.push(sketchPoint.clone());
         if (points.length > 500) points.splice(1, points.length - 500);
         sketchDraft = { type: 'freeform2d', points };
       }
@@ -2632,7 +2632,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           perimeter += point.distanceTo(next);
         });
         const area = Math.abs(twiceArea) / 2;
-        if (area < 0.0001) throw new Error('Die Freiform ist zu klein oder bildet keine geschlossene Fläche.');
+        if (area < window.SILMOTolerances.FREEFORM_MIN_AREA_WORLD_UNITS2) throw new Error('Die Freiform ist zu klein oder bildet keine geschlossene Fläche.');
         const heightMM = Number(document.getElementById('sketchHeightMM').value);
         if (!Number.isFinite(heightMM) || heightMM < 0.1 || heightMM > 2000) throw new Error('Die Extrusionshöhe muss zwischen 0,1 und 2000 mm liegen.');
         const shape = new THREE.Shape();
@@ -2929,11 +2929,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       setPointerRay(e);
       if (!raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) return;
       const point = straightenContourPoint(snapSketchPoint(sketchPoint.clone()));
-      if (clickContourPoints.length && clickContourPoints[0].distanceTo(point) < 0.025 && clickContourPoints.length >= 3) {
+      if (clickContourPoints.length && clickContourPoints[0].distanceTo(point) < window.SILMOTolerances.CLICK_CONTOUR_CLOSE_DISTANCE_WORLD_UNITS && clickContourPoints.length >= 3) {
         document.getElementById('clickContourFinish').click();
         return;
       }
-      if (!clickContourPoints.length || clickContourPoints[clickContourPoints.length-1].distanceTo(point) > 0.01) clickContourPoints.push(point);
+      if (!clickContourPoints.length || clickContourPoints[clickContourPoints.length-1].distanceTo(point) > window.SILMOTolerances.CLICK_CONTOUR_POINT_MIN_DISTANCE_WORLD_UNITS) clickContourPoints.push(point);
       document.getElementById('clickContourUndo').disabled = clickContourPoints.length === 0;
       document.getElementById('clickContourFinish').disabled = clickContourPoints.length < 3;
       document.getElementById('sketchStatus').textContent = clickContourPoints.length + ' Konturpunkte gesetzt. Klicke weitere Ecken oder schliesse die Kontur ab.';
@@ -3065,7 +3065,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const tool = document.getElementById('sketchTool').value;
         if (tool === 'line3d' || tool === 'curve2d') {
           const points = sketchDraft?.type === tool ? sketchDraft.points : [sketchStart.clone()];
-          if (points[points.length - 1].distanceTo(sketchPoint) > 0.02) {
+          if (points[points.length - 1].distanceTo(sketchPoint) > window.SILMOTolerances.SKETCH_DRAW_POINT_MIN_DISTANCE_WORLD_UNITS) {
             points.push(sketchPoint.clone());
             sketchDraft = { type: tool, points };
             updateSketchPreview();
@@ -3075,7 +3075,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           updateSketchPreview();
         } else if (tool === 'freeform2d') {
           const points = sketchDraft?.type === 'freeform2d' ? sketchDraft.points : [sketchStart.clone()];
-          if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > 0.02) {
+          if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > window.SILMOTolerances.SKETCH_DRAW_POINT_MIN_DISTANCE_WORLD_UNITS) {
             points.push(sketchPoint.clone());
             if (points.length > 500) points.splice(1, points.length - 500);
             sketchDraft = { type: 'freeform2d', points };
