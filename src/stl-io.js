@@ -12,6 +12,10 @@
       if (typeof deps[name] !== 'function') throw new Error('STL-I/O-Abhängigkeit fehlt: ' + name);
     }
 
+    const MAX_STL_FILE_BYTES = 50 * 1024 * 1024;
+    const MAX_STL_TRIANGLES = 500000;
+    const MAX_STL_COORDINATE_MM = 1e7;
+
     function importSTLFile(file) {
       if (!file) return;
       if (typeof THREE.STLLoader === 'undefined') {
@@ -22,7 +26,7 @@
         deps.setStatus('Bitte eine STL-Datei auswählen oder in die Ablage ziehen.');
         return;
       }
-      if (file.size > 50 * 1024 * 1024) {
+      if (!Number.isFinite(file.size) || file.size < 0 || file.size > MAX_STL_FILE_BYTES) {
         deps.setStatus('STL-Datei ist zu gross (maximal 50 MB).');
         return;
       }
@@ -37,9 +41,10 @@
           geometry = loader.parse(reader.result);
           const position = geometry && geometry.attributes && geometry.attributes.position;
           if (!position || position.itemSize !== 3 || position.count < 3 ||
-              position.count % 3 !== 0 || position.array.length % 3 !== 0 ||
-              !position.array.every(Number.isFinite)) {
-            throw new Error('Die STL-Datei enthält keine vollständigen, gültigen Dreiecke.');
+              position.count % 3 !== 0 || position.array.length !== position.count * 3 ||
+              position.count / 3 > MAX_STL_TRIANGLES ||
+              !position.array.every(value => Number.isFinite(value) && Math.abs(value) <= MAX_STL_COORDINATE_MM)) {
+            throw new Error('Die STL-Datei enthält ungültige, zu grosse oder zu umfangreiche Dreiecksdaten.');
           }
           // STL ist ein Dreiecksformat. Nullflächen-Dreiecke können beim
           // weiteren Modellieren und beim Slicer zu undefinierten Ergebnissen führen.
@@ -150,9 +155,24 @@
           clone.rotation.copy(obj.rotation);
           clone.scale.copy(obj.scale);
           clone.updateMatrix();
+          const rotationValues = clone.rotation.toArray().slice(0, 3);
+          const exportPosition = exportGeometry.attributes && exportGeometry.attributes.position;
+          const exportIndex = exportGeometry.index;
+          const exportTriangleCount = exportIndex ? exportIndex.count / 3 :
+            (exportPosition ? exportPosition.count / 3 : 0);
           if (![clone.position.x, clone.position.y, clone.position.z,
-                clone.scale.x, clone.scale.y, clone.scale.z].every(Number.isFinite)) {
-            throw new Error('Ungültige Position oder Skalierung bei Objekt ' + (index + 1));
+                clone.scale.x, clone.scale.y, clone.scale.z, ...rotationValues].every(Number.isFinite) ||
+              [clone.scale.x, clone.scale.y, clone.scale.z].some(value => value === 0) ||
+              !exportPosition || exportPosition.itemSize !== 3 ||
+              !Number.isInteger(exportTriangleCount) || exportTriangleCount < 1 ||
+              exportTriangleCount > MAX_STL_TRIANGLES ||
+              (!exportIndex && exportPosition.count % 3 !== 0) ||
+              !exportPosition.array.every(value => Number.isFinite(value) && Math.abs(value) <= MAX_STL_COORDINATE_MM)) {
+            throw new Error('Ungültige oder zu umfangreiche Geometrie, Position, Drehung oder Skalierung bei Objekt ' + (index + 1));
+          }
+          if (exportIndex && (!exportIndex.array.every(value =>
+              Number.isInteger(value) && value >= 0 && value < exportPosition.count))) {
+            throw new Error('Ungültige Dreiecksindizes bei Objekt ' + (index + 1));
           }
           exportScene.add(clone);
         });
