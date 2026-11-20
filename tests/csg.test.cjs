@@ -286,8 +286,8 @@ test('CSG erhält die Aussenorientierung bei gespiegelten Mesh-Transformationen'
   tool.updateMatrixWorld(true);
   const result = combineMeshes(base, tool, 'union');
   try {
-    assert.ok(Math.abs(Math.abs(signedVolume(result)) - 12) < 1e-5,
-      'Gespiegelte Eingabe muss dieselbe Vereinigungsmenge mit Volumen 12 ergeben');
+    assert.ok(signedVolume(result) > 0 && Math.abs(signedVolume(result) - 12) < 1e-5,
+      'Gespiegelte Eingabe muss eine positiv orientierte Vereinigungsmenge mit Volumen 12 ergeben');
     const b = bounds(result);
     assert.deepEqual(b.min.map(v => Number(v.toFixed(5))), [-1, -1, -1]);
     assert.deepEqual(b.max.map(v => Number(v.toFixed(5))), [2, 1, 1]);
@@ -305,8 +305,8 @@ test('CSG erhält die Aussenorientierung auch bei einem gespiegelten Basiskörpe
   base.updateMatrixWorld(true);
   const result = combineMeshes(base, tool, 'union');
   try {
-    assert.ok(Math.abs(Math.abs(signedVolume(result)) - 12) < 1e-5,
-      'Gespiegelter Basiskörper muss dieselbe Vereinigungsmenge mit Volumen 12 ergeben');
+    assert.ok(signedVolume(result) > 0 && Math.abs(signedVolume(result) - 12) < 1e-5,
+      'Gespiegelter Basiskörper muss eine positiv orientierte Vereinigungsmenge mit Volumen 12 ergeben');
     const b = bounds(result);
     assert.deepEqual(b.min.map(v => Number(v.toFixed(5))), [-1, -1, -1]);
     assert.deepEqual(b.max.map(v => Number(v.toFixed(5))), [2, 1, 1]);
