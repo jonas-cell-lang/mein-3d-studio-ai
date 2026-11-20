@@ -1177,3 +1177,14 @@ Vor Beginn einer neuen Aufgabe:
 - Grenzen: Löcher entstehen aus separaten Skizzenobjekten; direkte Innenkonturzeichnung in einem einzigen Skizzenprofil und assoziative Feature-Neuberechnung bleiben offen.
 
 - Zusätzlich bleiben die UUIDs der Quellobjekte beim Speichern und Öffnen erhalten. Die Loft-Metadaten verweisen dadurch nach dem Projekt-Roundtrip weiterhin auf dieselben Quellprofile; das Schema prüft Eindeutigkeit und Format der IDs.
+
+
+## Ergänzung – direkte Innenlochzeichnung in einer Freiform-Skizze (20.11.2026)
+- Die Punkt-für-Punkt-Zeichenhilfe unterstützt nun zwei Stufen: zuerst Aussenkontur, danach ein oder mehrere Innenlöcher.
+- Neue Schaltfläche: „Innenloch in dieser Skizze zeichnen“. Das Werkzeug nutzt denselben Punktmodus, dieselbe Raster-/45°-Ausrichtung, Rückgängig-Funktion und Konturabschluss.
+- Fertige Löcher erscheinen gemeinsam mit der Aussenkontur in der Vorschau und werden als echte Öffnungen extrudiert.
+- Ungültige Innenkonturen werden zurückgewiesen: ausserhalb, Selbstüberschneidung, Berührung der Aussenkante oder Überschneidung mit einem anderen Loch.
+- Skizzen-Metadaten enthalten die Innenring-Koordinaten und werden in Projektformat v3 gespeichert und wiederhergestellt. Die bestehende Mesh-Geometrie bleibt zusätzlich vollständig gespeichert.
+- Das Projektschema prüft die Metadaten und begrenzt Innenringe auf maximal 1000 Punkte sowie maximal 100 Innenringe.
+- Tests: Code-Checks einschliesslich Unit-/Schema-Tests erfolgreich (Run 44771243349). Browser-Regression für Innenlochzeichnung und Projekt-Roundtrip läuft noch; OCCT-Prototyp ist unabhängig davon.
+- Noch nicht umgesetzt: nachträgliche assoziative Bearbeitung eines bereits erzeugten 3D-Körpers; der Skizzenentwurf kann vor dem Erzeugen des Körpers bearbeitet werden.
