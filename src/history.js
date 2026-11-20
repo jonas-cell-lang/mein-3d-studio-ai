@@ -35,7 +35,7 @@
     }
 
     function apply(fromStack, toStack) {
-      if (disposed || !fromStack.length) return false;
+      if (disposed || applying || !fromStack.length) return false;
       const currentSnapshot = captureState();
       const targetSnapshot = fromStack.pop();
       applying = true;
