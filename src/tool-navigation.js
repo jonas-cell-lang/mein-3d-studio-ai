@@ -238,6 +238,7 @@
   const insertPointButton=document.createElement('button');insertPointButton.type='button';insertPointButton.id='insertSketchPoint';insertPointButton.textContent='＋ Punkt einfügen';
   const deletePointButton=document.createElement('button');deletePointButton.type='button';deletePointButton.id='deleteSketchPoint';deletePointButton.textContent='− Punkt entfernen';
   vertexActions.append(insertPointButton,deletePointButton);proGroup.appendChild(vertexActions);
+  const removeContourButton=document.createElement('button');removeContourButton.type='button';removeContourButton.id='removeSketchHole';removeContourButton.className='wide';removeContourButton.textContent='× Ganzes Innenloch entfernen';proGroup.appendChild(removeContourButton);
   const pointNote=document.createElement('p');pointNote.className='cad-pro-note';pointNote.textContent='Hinweis: Das ist ein direkter Kontur-Editor. Er löst noch keine vollständigen parametrischen Abhängigkeiten zwischen mehreren Linien.';proGroup.appendChild(pointNote);
   const proDivider2=document.createElement('div');proDivider2.className='cad-pro-divider';proGroup.appendChild(proDivider2);
   const edgeHeading=document.createElement('h3');edgeHeading.textContent='Kanten abrunden oder abfasen';proGroup.appendChild(edgeHeading);
