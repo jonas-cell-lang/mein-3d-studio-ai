@@ -297,3 +297,22 @@ test('CSG erhält die Aussenorientierung bei gespiegelten Mesh-Transformationen'
     base.material.dispose(); tool.material.dispose();
   }
 });
+
+test('CSG erhält die Aussenorientierung auch bei einem gespiegelten Basiskörper', () => {
+  const base = box();
+  const tool = box([1, 0, 0]);
+  base.scale.x = -1;
+  base.updateMatrixWorld(true);
+  const result = combineMeshes(base, tool, 'union');
+  try {
+    assert.ok(Math.abs(Math.abs(signedVolume(result)) - 12) < 1e-5,
+      'Gespiegelter Basiskörper muss dieselbe Vereinigungsmenge mit Volumen 12 ergeben');
+    const b = bounds(result);
+    assert.deepEqual(b.min.map(v => Number(v.toFixed(5))), [-1, -1, -1]);
+    assert.deepEqual(b.max.map(v => Number(v.toFixed(5))), [2, 1, 1]);
+  } finally {
+    result.dispose();
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
