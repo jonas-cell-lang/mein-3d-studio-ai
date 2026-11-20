@@ -542,3 +542,14 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Änderungen sind auf dem Entwicklungszweig enthalten; CI-Ergebnisse für den aktuellen Test- und Dokumentationsstand sind noch abzuwarten.
 
 - Nach dem ersten CI-Lauf wurde ausschliesslich die erwartete Fehlermeldung sprachlich kompatibel zur bestehenden Regression gehalten; die Grenzprüfungen selbst waren bereits erfolgreich. Der abschliessende CI-Lauf auf dem korrigierten Stand ist abzuwarten.
+
+
+### 6.44 Boolesche Geometrie: Eingabe- und Ergebnisgrenzen (20.11.2026)
+- CSG akzeptiert nur echte Three.js-Meshes mit BufferGeometry, gültigem Positionsattribut und vollständigen Dreiecken.
+- Indizierte Meshes werden ohne vorherige Vollkonvertierung zu nicht indizierten Kopien geprüft; jeder Index muss innerhalb des Positionsattributs liegen.
+- Pro Eingabekörper sind maximal 25'000 Dreiecke erlaubt. Die Grenze wird vor dem Aufbau der BSP-Struktur geprüft.
+- Lokale und transformierte Weltkoordinaten müssen endlich sein und innerhalb ±10'000'000 Einheiten liegen; auch die Weltmatrix wird auf endliche Werte geprüft.
+- Die triangulierte Ausgabe ist auf 250'000 Dreiecke begrenzt und wird vor dem Buffer-Aufbau auf endliche, begrenzte Koordinaten geprüft.
+- Neue Tests prüfen unvollständige Dreiecke, nicht endliche/zu grosse Koordinaten, ungültige Indizes und die Dreiecksobergrenze.
+- Die Grenzwerte sind Schutzgrenzen für diese aktuelle BSP-Implementierung und keine Aussage, dass beliebig komplexe Produktionsmodelle performant verarbeitet werden.
+- CI für den aktuellen Commit ist noch abzuwarten.
