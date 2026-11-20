@@ -2347,7 +2347,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     selectedObjects=[p1];selected=p1;
     document.getElementById('editSketchWidthMM').value='30';document.getElementById('editSketchDepthMM').value='25';document.getElementById('editSketchHeightMM').value='4';
     applySelectedSketchDimensions();
-    const dimensionOK=Math.abs(worldUnitsToMm(p1.geometry.boundingBox.getSize(new THREE.Vector3()).x)-30)<0.01;
+    p1.geometry.computeBoundingBox();
+    const dimensionSize=p1.geometry.boundingBox.getSize(new THREE.Vector3());
+    const dimensionsMM={x:worldUnitsToMm(dimensionSize.x),y:worldUnitsToMm(dimensionSize.y),z:worldUnitsToMm(dimensionSize.z)};
+    const dimensionOK=Math.abs(dimensionsMM.x-30)<0.01&&Math.abs(dimensionsMM.y-25)<0.01&&Math.abs(dimensionsMM.z-4)<0.01;
     document.getElementById('edgeTreatmentMM').value='0.5';createEdgeTreatment('fillet');
     const filletOK=p1.userData.edgeTreatment?.type==='fillet'&&p1.geometry.attributes.position.count>0;
     selectedObjects=[p1,p2];selected=p2;createLoftFromSelection();
@@ -2358,7 +2361,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const sweep=objects[objects.length-1],sweepOK=!!sweep.userData.sweep&&sweep.geometry.attributes.position.count>0;
     selectedObjects=[p2];selected=p2;document.getElementById('edgeTreatmentMM').value='0.3';createEdgeTreatment('chamfer');
     const chamferOK=p2.userData.edgeTreatment?.type==='chamfer'&&p2.geometry.attributes.position.count>0;
-    return {dimensionOK,filletOK,chamferOK,loftOK,sweepOK,objectDelta:objects.length-before,loftVertices:loft.geometry.attributes.position.count,sweepVertices:sweep.geometry.attributes.position.count};
+    return {dimensionOK,dimensionsMM,filletOK,chamferOK,loftOK,sweepOK,objectDelta:objects.length-before,loftVertices:loft.geometry.attributes.position.count,sweepVertices:sweep.geometry.attributes.position.count};
   };
   window.__silmoTestCreateContourFrame=()=>{
     const points=[[-1,-1],[1,-1],[1,1],[-1,1]];
