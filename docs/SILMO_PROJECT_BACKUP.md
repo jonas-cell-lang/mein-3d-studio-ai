@@ -1214,3 +1214,10 @@ Vor Beginn einer neuen Aufgabe:
 - Eine Kontur kann nie unter drei Punkte fallen; pro Kontur gilt ein Maximum von 1000 Punkten.
 - Nach jedem Vorgang wird die gesamte Skizzenextrusion mit allen Innenlöchern validiert und neu aufgebaut. Die History wird erst vor dem Austausch der gültigen Geometrie erfasst.
 - Browser-Test prüft 4 → 5 → 4 Punkte an einer Innenkontur und kontrolliert, dass die echte Öffnung erhalten bleibt.
+
+
+## Ergänzung – Ganzes Innenloch entfernen (20.11.2026)
+- Über „Ganzes Innenloch entfernen“ kann die aktuell ausgewählte Innenkontur aus einer Skizzenextrusion entfernt werden.
+- Die Aussenkontur kann über diese Aktion nicht entfernt werden.
+- Alle übrigen Konturen bleiben erhalten; die Geometrie wird vor dem Austausch neu aufgebaut und geprüft.
+- Browser-Test erstellt eine Skizze mit einem Loch, entfernt das Loch und prüft, dass der Körper ohne Öffnung weiterhin eine gültige Geometrie besitzt.
