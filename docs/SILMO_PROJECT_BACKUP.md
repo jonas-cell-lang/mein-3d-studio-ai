@@ -975,3 +975,12 @@ Vor Beginn einer neuen Aufgabe:
 - Der erste Negativtest zeigte, dass Three.js beim Parsen einer beschädigten STL-Datei einen `RangeError` auslöst. SILMO fing ihn bereits ab, protokollierte ihn aber als `console.error`, wodurch der Browser-Regressionslauf einen unerwarteten Laufzeitfehler erkannte.
 - Der STL-Adapter behandelt diesen erwartbaren Benutzereingabefehler nun als Importwarnung (`console.warn`) und zeigt weiterhin eine verständliche Statusmeldung. Der Negativtest prüft zusätzlich, dass keine vorhandenen Modelle verändert werden.
 - Die korrigierte Version benötigt einen erneuten vollständigen Code- und Browser-CI-Nachweis.
+
+
+## Ergänzung – abgeschlossene STL-Fehlerfallregression am 20.11.2026
+
+- Der beschädigte STL-Test zeigte zunächst, dass Three.js beim Parsen einen `RangeError` in der Konsole ausgibt. SILMO fing den Fehler bereits ab; die Meldung wurde von `console.error` auf eine erwartbare Importwarnung umgestellt.
+- Auf Commit `f1d97ad7f03ca6fc9efd126e704b6bbd74b2f33d` waren anschliessend Code-Checks und vollständige Playwright-Browser-Regression erfolgreich.
+- Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44737483853
+- Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44737483844
+- Der Browser-Test bestätigt nun: beschädigter STL-Import wird abgewiesen, der bestehende Modellbestand bleibt unverändert und es entsteht kein unerwarteter Konsolenfehler.
