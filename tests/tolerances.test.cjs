@@ -1,6 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const tolerances = require('../src/tolerances.js');
+const fs = require('node:fs');
+const path = require('node:path');
 
 test('Toleranzwerte behalten die im Audit belegten Werte', () => {
   assert.equal(tolerances.CSG_GEOMETRY_WORLD_UNITS, 1e-5);
@@ -52,4 +54,22 @@ test('Toleranzwerte behalten die im Audit belegten Werte', () => {
 
 test('Toleranz-API ist unveränderlich', () => {
   assert.equal(Object.isFrozen(tolerances), true);
+});
+
+
+test('Jede zentrale Toleranz wird von mindestens einem Laufzeitmodul verwendet', () => {
+  const runtimeFiles = [
+    '../index.html',
+    '../src/csg.js',
+    '../src/image-studio.js',
+    '../src/tutorial.js',
+    '../src/sketch-geometry.js',
+    '../src/primitive-geometry.js'
+  ];
+  const runtimeSource = runtimeFiles
+    .map(file => fs.readFileSync(path.join(__dirname, file), 'utf8'))
+    .join('\n');
+  const keys = Object.keys(tolerances);
+  const unused = keys.filter(key => !runtimeSource.includes(key));
+  assert.deepEqual(unused, [], 'Nicht verwendete Toleranzkonstanten: ' + unused.join(', '));
 });
