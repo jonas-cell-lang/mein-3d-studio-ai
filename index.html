@@ -2301,13 +2301,19 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const filletOK=p1.userData.edgeTreatment?.type==='fillet'&&p1.geometry.attributes.position.count>0;
     selectedObjects=[p1,p2];selected=p2;createLoftFromSelection();
     const loft=objects[objects.length-1],loftOK=loft.userData.loft?.sections===2&&loft.geometry.attributes.position.count>0;
+    const holeA=makeProfile('Test-Innenprofil A',-1,0,0,0.35,0.35,0.2);
+    const holeB=makeProfile('Test-Innenprofil B',1,0,1,0.25,0.25,0.2);
+    selectedObjects=[p1,p2,holeA,holeB];selected=holeB;createLoftFromSelection();
+    const hollowLoft=objects[objects.length-1];
+    const hollowLoftOK=hollowLoft.userData.loft?.innerContourCount===1&&
+      hollowLoft.userData.loft?.sourceHoles?.length===1&&hollowLoft.geometry.attributes.position.count>0;
     const pathGeometry=new THREE.BoxGeometry(0.08,0.08,2);
     const path=new THREE.Mesh(pathGeometry,new THREE.MeshStandardMaterial({color:'#53d8e8'}));path.userData={label:'Testpfad',sketch:{type:'line3d',pathPoints:[[0,0,0],[0,0,1],[0.4,0,2]]}};
     scene.add(path);objects.push(path);selectedObjects=[p2,path];selected=path;createSweepFromSelection();
     const sweep=objects[objects.length-1],sweepOK=!!sweep.userData.sweep&&sweep.geometry.attributes.position.count>0;
     selectedObjects=[p2];selected=p2;document.getElementById('edgeTreatmentMM').value='0.3';createEdgeTreatment('chamfer');
     const chamferOK=p2.userData.edgeTreatment?.type==='chamfer'&&p2.geometry.attributes.position.count>0;
-    return {dimensionOK,dimensionsMM,filletOK,chamferOK,loftOK,sweepOK,objectDelta:objects.length-before,loftVertices:loft.geometry.attributes.position.count,sweepVertices:sweep.geometry.attributes.position.count};
+    return {dimensionOK,dimensionsMM,filletOK,chamferOK,loftOK,hollowLoftOK,sweepOK,objectDelta:objects.length-before,loftVertices:loft.geometry.attributes.position.count,hollowLoftVertices:hollowLoft.geometry.attributes.position.count,sweepVertices:sweep.geometry.attributes.position.count};
   };
   window.__silmoTestCreateContourFrame=()=>{
     const points=[[-1,-1],[1,-1],[1,1],[-1,1]];
