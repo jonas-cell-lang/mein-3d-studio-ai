@@ -1229,3 +1229,10 @@ Vor Beginn einer neuen Aufgabe:
 - Jedes Loch muss vollständig innerhalb der Aussenkontur liegen und darf diese nicht berühren oder kreuzen.
 - Innenlöcher dürfen sich weder überschneiden noch berühren oder ineinander liegen.
 - Die Prüfungen sind unabhängig von Three.js und schützen bereits beim Import vor strukturell ungültigen Konturdaten.
+
+
+## Ergänzung – Laufzeitgrenzen der Projektimport-Topologieprüfung
+- Pro Skizzenobjekt gilt ein gemeinsames Budget von maximal 5000 Punkten über Aussenkontur und alle Innenlöcher.
+- Maximal 100 Innenlöcher und 1000 Punkte pro Ring bleiben zusätzlich bestehen.
+- Bounding-Box-Vorprüfung überspringt Segmentvergleiche für klar getrennte Ringe.
+- Der Zweck ist, die Importprüfung bei manipulierten oder extrem grossen Projektdateien zeitlich zu begrenzen.
