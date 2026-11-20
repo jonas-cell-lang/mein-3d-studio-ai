@@ -200,7 +200,8 @@
   }
 
   function createPathCurve(pathPoints, type) {
-    if (!Array.isArray(pathPoints) || pathPoints.length < 2 ||
+    const maximumPathPoints = 1000;
+    if (!Array.isArray(pathPoints) || pathPoints.length < 2 || pathPoints.length > maximumPathPoints ||
         !pathPoints.every(point => Array.isArray(point) && point.length >= 3 && point.slice(0, 3).every(Number.isFinite))) {
       throw new TypeError('Ein Pfad benötigt mindestens zwei gültige 3D-Punkte.');
     }
@@ -211,9 +212,12 @@
   }
 
   function createPathTubeGeometry(pathPoints, type, radius, tubularSegments, radialSegments = 8) {
+    const maximumTubularSegments = 10000, maximumRadialSegments = 256;
+    const maximumTubeVertices = 250000;
     if (!Number.isFinite(radius) || radius <= 0 ||
-        !Number.isInteger(tubularSegments) || tubularSegments < 1 ||
-        !Number.isInteger(radialSegments) || radialSegments < 3) {
+        !Number.isInteger(tubularSegments) || tubularSegments < 1 || tubularSegments > maximumTubularSegments ||
+        !Number.isInteger(radialSegments) || radialSegments < 3 || radialSegments > maximumRadialSegments ||
+        (tubularSegments + 1) * (radialSegments + 1) > maximumTubeVertices) {
       throw new TypeError('Pfadradius und Segmentzahlen müssen gültig und positiv sein.');
     }
     const curve = createPathCurve(pathPoints, type);
@@ -225,17 +229,22 @@
   }
 
   function createLoftGeometry(ringA, ringB, options = {}) {
-    const validRing = ring => Array.isArray(ring) && ring.length >= 3 &&
+    const maximumRingPoints = 512, maximumHoleRings = 64, maximumTotalProfilePoints = 4096;
+    const validRing = ring => Array.isArray(ring) && ring.length >= 3 && ring.length <= maximumRingPoints &&
       ring.every(point => point && Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z));
     if (!validRing(ringA) || !validRing(ringB) || ringA.length !== ringB.length ||
         !options || typeof options !== 'object') {
       throw new TypeError('Loft-Ringe müssen gleich viele gültige 3D-Punkte enthalten.');
     }
     const holesA = options.holesA || [], holesB = options.holesB || [];
-    if (!Array.isArray(holesA) || !Array.isArray(holesB) || holesA.length !== holesB.length ||
+    if (!Array.isArray(holesA) || !Array.isArray(holesB) ||
+        holesA.length > maximumHoleRings || holesB.length > maximumHoleRings ||
+        holesA.length !== holesB.length ||
         !holesA.every((ring, index) => validRing(ring) && ring.length === holesB[index]?.length) ||
-        !holesB.every(validRing)) {
-      throw new TypeError('Loft-Innenkonturen müssen paarweise gültige Ringe mit gleicher Punktzahl enthalten.');
+        !holesB.every(validRing) ||
+        ringA.length + ringB.length + holesA.reduce((sum, ring) => sum + (Array.isArray(ring) ? ring.length : 0), 0) +
+          holesB.reduce((sum, ring) => sum + (Array.isArray(ring) ? ring.length : 0), 0) > maximumTotalProfilePoints) {
+      throw new TypeError('Loft-Innenkonturen müssen paarweise gültig sein und innerhalb der Punkt- und Ringgrenzen liegen.');
     }
     const alignRingPair = (a, b) => {
       const center = ring => ring.reduce((sum, point) => sum.add(point), new THREE.Vector3()).multiplyScalar(1 / ring.length);
@@ -322,10 +331,12 @@
   }
 
   function createSweepGeometry(outline, pathPoints, options = {}) {
-    if (!Array.isArray(outline) || outline.length < 3 ||
+    const maximumSweepProfilePoints = 256, maximumSweepPathPoints = 256;
+    if (!Array.isArray(outline) || outline.length < 3 || outline.length > maximumSweepProfilePoints ||
         !outline.every(point => Array.isArray(point) && Number.isFinite(point[0]) && Number.isFinite(point[1])) ||
-        !Array.isArray(pathPoints) || pathPoints.length < 2 ||
-        !pathPoints.every(point => point && Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z))) {
+        !Array.isArray(pathPoints) || pathPoints.length < 2 || pathPoints.length > maximumSweepPathPoints ||
+        !pathPoints.every(point => point && Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z)) ||
+        !options || typeof options !== 'object' || Array.isArray(options)) {
       throw new TypeError('Sweep benötigt ein gültiges geschlossenes Profil und mindestens zwei 3D-Pfadpunkte.');
     }
     const shape = new THREE.Shape();
@@ -334,11 +345,11 @@
     shape.closePath();
     const curve = new THREE.CatmullRomCurve3(pathPoints);
     const geometry = createExtrusionGeometry(shape, {
+      ...options,
       steps: Math.max(48, pathPoints.length * 16),
       bevelEnabled: false,
       extrudePath: curve,
-      curveSegments: 24,
-      ...options
+      curveSegments: 24
     });
     if (!geometry.boundingBox || geometry.boundingBox.isEmpty()) {
       geometry.dispose();
