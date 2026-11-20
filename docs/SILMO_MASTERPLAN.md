@@ -282,3 +282,9 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Gehrungs-/Offset-Schnittpunktbegrenzung des Kontur-Hohlrahmens verwendet jetzt zwei getrennt benannte Werte: dimensionsloser Faktor 8 und Zusatzspielraum 0,02 Welteinheiten.
 - Die Berechnung verwendet beide Werte über `SILMOTolerances`; die bisherigen Zahlenwerte bleiben unverändert.
 - Unit-Tests sichern beide Konstanten. Die bestehende Browser-Regression für den Kontur-Hohlrahmen bleibt Teil der Pflichtprüfung.
+
+
+### 6.14 Freiform- und Herz-Kontur-Punktabstände
+- Die Mindestabstände für die Bereinigung benachbarter Freiformpunkte und für die Herz-Konturklassifikation sind zentral benannt.
+- Die Werte 0,005 und 1e-5 Welteinheiten bleiben unverändert und werden durch Unit-Tests gesichert.
+- Der spezielle Herz-Konturpfad bleibt getrennt von der allgemeinen Bildkonturerkennung; diese Benennung ändert keine Erkennungslogik.
