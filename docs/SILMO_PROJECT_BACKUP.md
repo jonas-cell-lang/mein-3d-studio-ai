@@ -1236,3 +1236,9 @@ Vor Beginn einer neuen Aufgabe:
 - Maximal 100 Innenlöcher und 1000 Punkte pro Ring bleiben zusätzlich bestehen.
 - Bounding-Box-Vorprüfung überspringt Segmentvergleiche für klar getrennte Ringe.
 - Der Zweck ist, die Importprüfung bei manipulierten oder extrem grossen Projektdateien zeitlich zu begrenzen.
+
+
+## Ergänzung – Eindeutigkeit von Loft-Quellprofilen
+- Die Loft-Metadaten müssen unterschiedliche IDs für beide Aussenprofile und jedes Innenprofil-Paar enthalten.
+- Doppelte Profil-IDs werden bereits beim Projektimport abgewiesen.
+- Fehlende Quellobjekte bleiben als historische Referenzen erlaubt, damit bestehende Loft-Geometrie nicht beim Löschen der Ursprungsskizzen ungültig wird.
