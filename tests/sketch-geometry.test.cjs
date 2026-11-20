@@ -201,10 +201,17 @@ test('Loft weist nicht planare Profile und nicht passende Innenkonturen zurück'
 });
 
 test('Loft-Kontur wird gleichmässig abgetastet und ungültige Konturen abgewiesen', () => {
-  const sampled = sketchGeometry.resampleClosedOutline([[0, 0], [2, 0], [2, 2], [0, 2]], 32, 0.001);
+  const outline = [[0, 0], [2, 0], [2, 2], [0, 2]];
+  const sampled = sketchGeometry.resampleClosedOutline(outline, 32, 0.001);
   assert.equal(sampled.length, 32);
   assert.ok(sampled.every(point => Number.isFinite(point.x) && Number.isFinite(point.y)));
+  const explicitlyClosed = sketchGeometry.resampleClosedOutline([...outline, [0, 0]], 32, 0.001);
+  assert.deepEqual(explicitlyClosed.map(point => point.toArray()), sampled.map(point => point.toArray()));
   assert.throws(() => sketchGeometry.resampleClosedOutline([[0, 0], [0, 0], [0, 0]], 32, 0.001), /ungültig/);
+  assert.throws(() => sketchGeometry.resampleClosedOutline([[0, 0], [1, 0], [1, 1]], 10001, 0.001), /begrenzte positive Abtastung/);
+  assert.throws(() => sketchGeometry.resampleClosedOutline(outline, 32, 0), /begrenzte positive Abtastung/);
+  assert.throws(() => sketchGeometry.resampleClosedOutline(outline, 32, Infinity), /begrenzte positive Abtastung/);
+  assert.throws(() => sketchGeometry.resampleClosedOutline([[0, 0], [1, 0], [1, 1], [0, 0]], 32, 0.001), /Nullkanten/);
   assert.throws(() => sketchGeometry.createLoftGeometry([new THREE.Vector3()], []), /gleich viele gültige/);
 });
 
