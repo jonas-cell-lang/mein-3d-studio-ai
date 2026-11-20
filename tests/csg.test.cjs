@@ -215,3 +215,65 @@ test('CSG berücksichtigt Rotation und Skalierung beider Eingabekörper', () => 
     tool.material.dispose();
   }
 });
+
+
+test('CSG weist fehlerhafte Positionsattribute und unvollständige Dreiecke ab', () => {
+  const base = box();
+  const tool = box();
+  try {
+    tool.geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0], 3));
+    assert.throws(() => combineMeshes(base, tool, 'union'), /vollständige Dreiecke/);
+  } finally {
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
+
+test('CSG weist nicht endliche und ausserhalb des Koordinatenlimits liegende Punkte ab', () => {
+  const base = box();
+  const tool = box();
+  try {
+    const invalid = new THREE.BoxGeometry(2, 2, 2);
+    const values = invalid.getAttribute('position').array;
+    values[0] = Number.NaN;
+    invalid.getAttribute('position').needsUpdate = true;
+    tool.geometry.dispose(); tool.geometry = invalid;
+    assert.throws(() => combineMeshes(base, tool, 'union'), /ungültige oder zu grosse Koordinaten/);
+  } finally {
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
+
+test('CSG begrenzt die Dreieckszahl vor der BSP-Berechnung', () => {
+  const base = box();
+  const tool = box();
+  try {
+    const count = 25001 * 3;
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i += 3) {
+      positions[i * 3] = 0; positions[i * 3 + 1] = 0; positions[i * 3 + 2] = 0;
+      positions[(i + 1) * 3] = 1; positions[(i + 1) * 3 + 1] = 0; positions[(i + 1) * 3 + 2] = 0;
+      positions[(i + 2) * 3] = 0; positions[(i + 2) * 3 + 1] = 1; positions[(i + 2) * 3 + 2] = 0;
+    }
+    tool.geometry.dispose();
+    tool.geometry = new THREE.BufferGeometry();
+    tool.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    assert.throws(() => combineMeshes(base, tool, 'union'), /maximal 25000 Dreiecke/);
+  } finally {
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
+
+test('CSG prüft Indexbereiche bei indizierten Meshes', () => {
+  const base = box();
+  const tool = box();
+  try {
+    tool.geometry.setIndex([0, 1, 9999]);
+    assert.throws(() => combineMeshes(base, tool, 'union'), /ausserhalb des Positionsattributs/);
+  } finally {
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
