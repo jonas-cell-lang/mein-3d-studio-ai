@@ -40,6 +40,34 @@ try {
   closeTo(kernel.getVolume(fourHolePlate), 6000 - 180 * Math.PI,
     "40x30x5 plate with four radius-3 through-holes");
 
+  // Repeated boolean stress: twelve independently positioned through-holes.
+  const repeatedCutBase = kernel.makeBox(40, 30, 5);
+  let twelveHolePlate = repeatedCutBase;
+  for (const [x, y] of [
+    [6, 7], [14, 7], [22, 7], [30, 7],
+    [6, 15], [14, 15], [22, 15], [30, 15],
+    [6, 23], [14, 23], [22, 23], [30, 23]
+  ]) {
+    const cutter = kernel.translate(kernel.makeCylinder(1, 5), x, y, 0);
+    twelveHolePlate = kernel.cut(twelveHolePlate, cutter);
+  }
+  closeTo(kernel.getVolume(twelveHolePlate), 6000 - 60 * Math.PI,
+    "40x30x5 plate after twelve sequential radius-1 through-holes");
+  assert.equal(kernel.isSolid(twelveHolePlate), true,
+    "repeated boolean cuts must preserve a solid");
+  const repeatedCutMesh = kernel.tessellate(twelveHolePlate);
+  assert.ok(repeatedCutMesh.triangleCount > 0,
+    "repeated boolean result must remain tessellatable");
+
+  // Thin-wall check: a small through-hole in a 1.2 mm plate.
+  const thinPlate = kernel.makeBox(40, 30, 1.2);
+  const thinPlateCutter = kernel.translate(kernel.makeCylinder(0.5, 1.2), 20, 15, 0);
+  const thinPlateWithHole = await time("thin-wall-cut", () => kernel.cut(thinPlate, thinPlateCutter));
+  closeTo(kernel.getVolume(thinPlateWithHole), 40 * 30 * 1.2 - Math.PI * 0.25 * 1.2,
+    "1.2 mm thin plate with radius-0.5 through-hole");
+  assert.equal(kernel.isSolid(thinPlateWithHole), true,
+    "thin-plate boolean result must remain a solid");
+
   const filletBase = kernel.makeBox(20, 20, 20);
   const edges = kernel.getSubShapes(filletBase, "edge");
   assert.equal(edges.length, 12, "plain box must expose 12 topological edges");
@@ -85,6 +113,8 @@ try {
       "analytic box volume and exact bounding extents",
       "boolean subtraction with analytic volume",
       "plate with four through-holes",
+      "twelve sequential through-hole booleans with analytic volume and tessellation",
+      "thin-plate through-hole with analytic volume",
       "fillet and topological sub-shape queries",
       "mesh tessellation",
       "STEP export/import round trip",
