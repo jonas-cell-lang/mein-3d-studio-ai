@@ -64,6 +64,7 @@ try {
   assert.equal(await page.evaluate(() => window.SILMOTolerances?.CSG_GEOMETRY_WORLD_UNITS), 1e-5, 'Zentrale Toleranz-API ist nicht verfügbar oder hat den falschen CSG-Wert');
   assert.equal(await page.evaluate(() => window.SILMOTolerances?.PRINT_BED_BOUNDS_WORLD_UNITS), 1e-4, 'Druckbett-Toleranz hat sich unerwartet geändert');
   assert.equal(await page.evaluate(() => typeof window.SILMOPrimitiveGeometry?.createPrimitiveGeometry), 'function', 'Grundkörper-Geometriemodul ist nicht verfügbar');
+  assert.equal(await page.evaluate(() => typeof window.SILMOSketchGeometry?.createExtrusionGeometry), 'function', 'Skizzen-Geometriemodul ist nicht verfügbar');
   assert.equal(await page.evaluate(() => window.SILMOProjectSchema?.CURRENT_PROJECT_VERSION), 3, 'Projektformat-Version 3 ist nicht registriert');
 assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.serializeGeometry), 'function', 'Projektgeometrie-Serialisierung ist nicht verfügbar');
 assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.restoreGeometry), 'function', 'Projektgeometrie-Wiederaufbau ist nicht verfügbar');
