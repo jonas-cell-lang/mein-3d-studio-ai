@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
+globalThis.SILMOTolerances = require('../src/tolerances.js');
 const schema = require('../src/project-schema.js');
 
 function validProject() {
