@@ -638,3 +638,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Neue Regressionstests: punktberührende Würfel werden abgewiesen; zwei räumlich getrennte geschlossene Würfel werden weiterhin akzeptiert.
 - Code-Checks auf Commit `68d0b9bb6543b40770f988c6eaa7c0680f9a51ee`: 116/116 Unit-Tests erfolgreich.
 - Browser-Interaktion und OCCT-WebWorker für diesen Commit sind beim Dokumentationszeitpunkt noch in Bearbeitung; nicht als bestanden dokumentiert.
+
+
+### 6.55 STL-Topologie: Körper mit gemeinsamer Kante oder Fläche (20.11.2026)
+- Die Regressionstests erweitern die Kontaktfälle um zwei Würfel, die eine Kante bzw. eine ganze Fläche teilen.
+- Der gemeinsame Kantenkontakt muss über nicht-manifold Kanten auffallen; der Flächenkontakt muss als nicht-manifold oder doppelte Dreiecksfläche erkannt werden.
+- Beide Fälle dürfen nicht als geschlossenes Edge-/Vertex-Manifold gemeldet werden.
+- Code-Checks auf Commit `fc518c038ec8e3230e92b95b908d13b1374f30b2`: 118/118 Unit-Tests erfolgreich, darunter beide neuen Kontaktfälle.
+- Browser-Interaktion und OCCT-WebWorker für diesen Commit sind noch in Bearbeitung; diese Ergebnisse werden separat bestätigt.
