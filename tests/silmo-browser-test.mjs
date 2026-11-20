@@ -492,6 +492,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
 
   // Zeichenmodus: Rechtsklick-Ziehen darf die Kamera nicht drehen.
   // Mathematische Referenzprüfung der drei grundlegenden CAD-Körper.
+  await page.locator('[data-tab="create"]').click();
+  await showCreateSubtab(0);
   for (const id of ['addCube', 'addSphere', 'addCylinder']) await page.locator('#' + id).click();
   const basicPrimitiveBounds = (await page.evaluate(() => window.__silmoTutorialModelAudit())).slice(-3);
   const expectedBasicBounds = [
