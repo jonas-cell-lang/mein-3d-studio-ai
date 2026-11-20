@@ -21,6 +21,14 @@ try {
   assert.ok(Math.abs(result.volume - 6000) < 1e-7, "worker returned incorrect 10x20x30 box volume");
   assert.ok(result.triangleCount > 0 && result.positionValues > 0 && result.indexValues > 0,
     "worker did not return a usable tessellated mesh");
+  assert.equal(result.booleanStress?.holes, 12, "worker did not run the repeated boolean stress case");
+  assert.equal(result.booleanStress?.solidCount, 1, "worker boolean result did not retain one solid");
+  assert.ok(Math.abs(result.booleanStress.volume - result.booleanStress.expectedVolume) < 1e-6,
+    "worker boolean result has incorrect analytic volume");
+  assert.ok(result.booleanStress.triangleCount > 0
+    && result.booleanStress.positionValues > 0
+    && result.booleanStress.indexValues > 0,
+  "worker boolean stress result did not produce a usable mesh");
   assert.deepEqual(errors, [], "browser reported worker, JavaScript, or console errors");
   console.log(JSON.stringify({ status, ...result }, null, 2));
 } finally {
