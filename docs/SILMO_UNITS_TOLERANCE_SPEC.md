@@ -278,3 +278,10 @@ Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPS
 - Die Begrenzungsprüfung eines Punktes auf einem Segment verwendet `SKETCH_GEOMETRY_BOUNDS_EPSILON_WORLD_UNITS = 1e-12` für Koordinatenvergleiche.
 - Die bisherigen Zahlenwerte bleiben unverändert. Die Trennung dokumentiert, dass Kreuzprodukte eine Flächendimension haben, während Segmentgrenzen Längenkoordinaten vergleichen.
 - Der bestehende Test für selbstüberschneidende und überlappende Konturen bleibt als Verhaltensregression bestehen; beide Konstanten werden zusätzlich im zentralen Toleranzwerttest und im Laufzeit-Verwendungs-Audit erfasst.
+
+
+### 3.13 Projektimport: getrennte Toleranzen für Skizzenringe (20.11.2026)
+- Die Validierung gespeicherter Skizzenringe verwendet nun `PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM` für Koordinaten-/Segmentgrenzen, `PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2` für Kreuzprodukt- und Flächenvergleiche sowie `PROJECT_SKETCH_RING_MIN_EDGE_MM` für minimale Kantenlängen.
+- Alle drei Werte behalten den bisherigen Zahlenwert `1e-12`; die Änderung trennt ausschliesslich ihre Dimension und fachliche Bedeutung.
+- `src/project-schema.js` erhält die zentrale Toleranz-API explizit. Das Laufzeit-Ladeschema lädt `src/tolerances.js` bereits vor `src/project-schema.js`.
+- Unit-Tests sichern die drei Werte und nehmen `project-schema.js` in den Laufzeit-Verwendungs-Audit auf. Die bestehenden positiven und negativen Projektimporttests bleiben Regressionstests.
