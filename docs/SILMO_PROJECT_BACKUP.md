@@ -1197,3 +1197,12 @@ Vor Beginn einer neuen Aufgabe:
 - History/Undo wird vor dem Austausch der Geometrie erfasst.
 - Kantenbearbeitete Körper sind vorerst von diesem direkten Neuaufbau ausgeschlossen, damit eine Punktänderung nicht unbemerkt Abrundungen oder Fasen entfernt.
 - Automatischer Browser-Test ändert nach der Extrusion zuerst die Gesamtmasse und verschiebt danach einen Innenloch- sowie einen Aussenkontur-Punkt. Die Öffnung muss dabei erhalten bleiben; gespeicherte Konturdaten werden gemeinsam mit der Geometrie skaliert.
+
+
+## Ergänzung – Manuelles Aktualisieren assoziativer Loft-Körper (20.11.2026)
+- Jeder neu erzeugte Loft speichert UUID-Referenzen seiner beiden Aussenprofile und aller gepaarten Innenprofile.
+- Die Schaltfläche „Aus Quellprofilen aktualisieren“ baut einen ausgewählten Loft aus den aktuellen Konturen und Transformationen dieser Quellobjekte neu auf.
+- Die neu erzeugte Weltgeometrie wird in den lokalen Koordinatenraum des Loft-Objekts transformiert. Dadurch bleiben Position, Rotation und Skalierung des Loft-Objekts erhalten.
+- Fehlende Quellobjekte, unvollständige Lochpaare, ungültige Profile und gesperrte Loft-Körper werden vor dem Austausch abgewiesen. Die alte Geometrie bleibt bestehen, wenn die Neuerzeugung scheitert.
+- Der Workflow ist manuell und kein Live-Update. Vollständige Feature-Abhängigkeitsverwaltung und automatische Aktualisierung bleiben offen.
+- Automatischer Browser-Test verschiebt ein Quellprofil und prüft, dass der Loft-Körper eine entsprechend veränderte Geometrie erhält.
