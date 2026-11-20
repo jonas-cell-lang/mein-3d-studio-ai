@@ -968,3 +968,10 @@ Vor Beginn einer neuen Aufgabe:
 
 - Die Browser-Regression enthält jetzt zusätzlich einen ungültigen STL-Importfall. Er prüft, dass ein beschädigter STL-Upload abgewiesen wird und die bereits vorhandenen Modelle unverändert erhalten bleiben.
 - Dieser zusätzliche Browser-Test ist im aktuellen Branch enthalten; ein eigener neuer Actions-Lauf dafür ist noch nicht sichtbar.
+
+
+## Ergänzung – STL-Fehlerbehandlung aus Browser-Regression abgeleitet am 20.11.2026
+
+- Der erste Negativtest zeigte, dass Three.js beim Parsen einer beschädigten STL-Datei einen `RangeError` auslöst. SILMO fing ihn bereits ab, protokollierte ihn aber als `console.error`, wodurch der Browser-Regressionslauf einen unerwarteten Laufzeitfehler erkannte.
+- Der STL-Adapter behandelt diesen erwartbaren Benutzereingabefehler nun als Importwarnung (`console.warn`) und zeigt weiterhin eine verständliche Statusmeldung. Der Negativtest prüft zusätzlich, dass keine vorhandenen Modelle verändert werden.
+- Die korrigierte Version benötigt einen erneuten vollständigen Code- und Browser-CI-Nachweis.
