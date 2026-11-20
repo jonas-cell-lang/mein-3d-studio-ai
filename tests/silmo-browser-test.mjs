@@ -394,6 +394,16 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   });
   await page.waitForFunction(()=>Number(window.__silmoImportRevision||0)>0,null,{timeout:5000});
   assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeImport+1,'STL-Drop importiert kein zusätzliches Modell oder hat bestehende Modelle ersetzt');
+  const modelCountBeforeDegenerateImport=await page.locator('#objects .object-row').count();
+  await page.locator('#stlDropZone').evaluate(zone=>{
+    const stl='solid degenerate\\nfacet normal 0 0 1\\nouter loop\\nvertex 0 0 0\\nvertex 10 0 0\\nvertex 20 0 0\\nendloop\\nendfacet\\nendsolid degenerate';
+    const transfer=new DataTransfer();
+    transfer.items.add(new File([stl],'degenerate.stl',{type:'model/stl'}));
+    zone.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+    zone.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+  });
+  await page.waitForFunction(()=>/entartetes Dreieck/.test(document.querySelector('#status')?.textContent||''),null,{timeout:5000});
+  assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeDegenerateImport,'STL mit Nullflächen-Dreieck wurde importiert');
   const modelCountBeforeInvalidImport=await page.locator('#objects .object-row').count();
   await page.locator('#stlDropZone').evaluate(zone=>{
     const transfer=new DataTransfer();
