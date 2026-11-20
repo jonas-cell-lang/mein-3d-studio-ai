@@ -133,6 +133,15 @@ test('Skizzenkonturen haben ein gemeinsames sicheres Punktbudget', () => {
   assert.throws(()=>schema.validateProjectEnvelope(overBudget),/Innenkonturen/);
 });
 
+test('Projektimport weist auch selbstüberschneidende Aussenkonturen mit Innenlöchern ab', () => {
+  const project=validProject();
+  project.objects.push({
+    sketchOutline:[[-10,-10],[10,10],[-10,10],[10,-10]],
+    sketch:{type:'freeform2d',holes:[[[0,0],[1,0],[1,1],[0,1]]]}
+  });
+  assert.throws(()=>schema.validateProjectEnvelope(project),/Innenkonturen/);
+});
+
 test('Projektimport weist selbstüberschneidende oder entartete Skizzenringe ab', () => {
   const base={sketchOutline:[[-10,-10],[10,-10],[10,10],[-10,10]],sketch:{type:'freeform2d',holes:[]}};
   const cases=[
