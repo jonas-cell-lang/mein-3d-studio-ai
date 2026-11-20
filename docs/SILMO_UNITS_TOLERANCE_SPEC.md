@@ -220,3 +220,13 @@ Die Quellcodeprüfung unterscheidet zwei verschiedene Grenzen:
 - Prüfung der fertigen Modell-Bounding-Box: `PRINT_BED_BOUNDS_WORLD_UNITS = 1e-4` Welteinheiten (= 0,001 mm).
 
 Die frühere Zeile in Abschnitt 1.2 hatte den Wert der Skizzenprüfung fälschlich der fertigen Druckbettprüfung zugeordnet. Die Tabelle ist korrigiert; die Zahlenwerte im Programm wurden nicht verändert.
+
+
+### 3.6 Kontur-Hohlrahmen: Miter-/Gehrungsbegrenzung
+
+| API-Konstante | Wert | Dimension / Zweck |
+|---|---:|---|
+| `CONTOUR_FRAME_MITER_LIMIT_FACTOR` | 8 | Dimensionsloser Faktor; begrenzt die Länge eines inneren Gehrungs-/Offset-Schnittpunkts relativ zur Wandstärke |
+| `CONTOUR_FRAME_MITER_ALLOWANCE_WORLD_UNITS` | 0,02 | Welteinheiten; zusätzlicher Rundungs-/Geometriespielraum in der bestehenden Gehrungsbegrenzung |
+
+Beide Werte sind Bestandteile derselben Sicherheitsprüfung und bleiben getrennt nach Dimension. Die Werte wurden nicht verändert.
