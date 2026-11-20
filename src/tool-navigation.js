@@ -234,6 +234,10 @@
   const loadPointButton=document.createElement('button');loadPointButton.type='button';loadPointButton.id='loadSketchPoints';loadPointButton.textContent='Konturpunkte laden';
   const applyPointButton=document.createElement('button');applyPointButton.type='button';applyPointButton.id='applySketchPoint';applyPointButton.className='primary';applyPointButton.textContent='Punkt übernehmen';
   pointActions.append(loadPointButton,applyPointButton);proGroup.appendChild(pointActions);
+  const vertexActions=document.createElement('div');vertexActions.className='cad-pro-actions';
+  const insertPointButton=document.createElement('button');insertPointButton.type='button';insertPointButton.id='insertSketchPoint';insertPointButton.textContent='＋ Punkt einfügen';
+  const deletePointButton=document.createElement('button');deletePointButton.type='button';deletePointButton.id='deleteSketchPoint';deletePointButton.textContent='− Punkt entfernen';
+  vertexActions.append(insertPointButton,deletePointButton);proGroup.appendChild(vertexActions);
   const pointNote=document.createElement('p');pointNote.className='cad-pro-note';pointNote.textContent='Hinweis: Das ist ein direkter Kontur-Editor. Er löst noch keine vollständigen parametrischen Abhängigkeiten zwischen mehreren Linien.';proGroup.appendChild(pointNote);
   const proDivider2=document.createElement('div');proDivider2.className='cad-pro-divider';proGroup.appendChild(proDivider2);
   const edgeHeading=document.createElement('h3');edgeHeading.textContent='Kanten abrunden oder abfasen';proGroup.appendChild(edgeHeading);
