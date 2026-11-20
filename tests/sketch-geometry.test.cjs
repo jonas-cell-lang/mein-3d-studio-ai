@@ -332,7 +332,7 @@ test('Kantenbearbeitung weist ungültige Konturen und Parameter kontrolliert ab'
   ), /Nullkanten/);
   assert.throws(() => sketchGeometry.createEdgeTreatmentGeometry(
     [[0, 0], [1, 0], [2, 0]], 1, 0.1, 'fillet'
-  ), /Fläche grösser null/);
+  ), /Konturkanten/);
   assert.throws(() => sketchGeometry.createEdgeTreatmentGeometry(
     [[0, 0], [2, 2], [0, 2], [2, 0]], 1, 0.1, 'fillet'
   ), /selbstüberschneidende Kontur/);
