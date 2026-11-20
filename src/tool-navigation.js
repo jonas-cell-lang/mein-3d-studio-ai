@@ -152,11 +152,12 @@
   const clickContourToggle=document.createElement('button');clickContourToggle.type='button';clickContourToggle.id='clickContourToggle';clickContourToggle.className='wide';clickContourToggle.textContent='＋ Punktmodus einschalten';clickContourToggle.setAttribute('aria-pressed','false');
   const clickContourUndo=document.createElement('button');clickContourUndo.type='button';clickContourUndo.id='clickContourUndo';clickContourUndo.className='wide';clickContourUndo.textContent='↶ Letzten Punkt entfernen';clickContourUndo.disabled=true;
   const clickContourFinish=document.createElement('button');clickContourFinish.type='button';clickContourFinish.id='clickContourFinish';clickContourFinish.className='wide primary';clickContourFinish.textContent='✓ Kontur abschliessen';clickContourFinish.disabled=true;
+  const clickContourHoleToggle=document.createElement('button');clickContourHoleToggle.type='button';clickContourHoleToggle.id='clickContourHoleToggle';clickContourHoleToggle.className='wide';clickContourHoleToggle.textContent='＋ Innenloch in dieser Skizze zeichnen';clickContourHoleToggle.disabled=true;clickContourHoleToggle.setAttribute('aria-pressed','false');
   const clickContourStraightLabel=document.createElement('label');clickContourStraightLabel.style.cssText='display:flex;align-items:center;gap:8px;margin:8px 0;color:#dcecff';
   const clickContourStraight=document.createElement('input');clickContourStraight.type='checkbox';clickContourStraight.id='clickContourStraight';clickContourStraight.checked=true;
   clickContourStraightLabel.append(clickContourStraight,document.createTextNode('Linien begradigen (45°-Raster)'));
   const clickContourStraightHelp=document.createElement('small');clickContourStraightHelp.textContent='Neue Kanten werden waagrecht, senkrecht oder diagonal ausgerichtet.';
-  clickContourPanel.append(clickContourTitle,clickContourHelp,clickContourStraightLabel,clickContourStraightHelp,clickContourToggle,clickContourUndo,clickContourFinish);
+  clickContourPanel.append(clickContourTitle,clickContourHelp,clickContourStraightLabel,clickContourStraightHelp,clickContourToggle,clickContourHoleToggle,clickContourUndo,clickContourFinish);
   paneMap.draw.left.insertBefore(clickContourPanel,startSketchButton);
 
   const createGroup=(parent,title,open=false)=>{
