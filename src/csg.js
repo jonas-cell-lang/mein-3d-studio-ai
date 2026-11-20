@@ -157,7 +157,7 @@
     // zerlegt. Alle Endpunkte auf derselben geometrischen Linie werden deshalb
     // vor der Triangulierung gesammelt und in beide Polygonränder eingefügt.
     const lineGroups = new Map();
-    const directionQuantum = 1e-8;
+    const directionQuantum = tolerances.CSG_LINE_DIRECTION_QUANTUM;
     const lineQuantum = CSG_EPSILON;
     function lineInfo(a, b) {
       const direction = b.clone().sub(a);
