@@ -1030,3 +1030,9 @@ Vor Beginn einer neuen Aufgabe:
 - Die bisherige Mindestfläche 0,01 wird deshalb korrekt als `IMAGE_MIN_SIMPLE_POLYGON_AREA_MM2` benannt und in `src/image-studio.js` verwendet.
 - Die neue Konstante wird durch `tests/tolerances.test.cjs` gesichert. Die zuvor offene mögliche Einheitenvermischung ist damit für diese Stelle geklärt.
 - Die abschliessende Code- und Browser-CI-Prüfung für den gesamten Audit-Stand steht noch aus.
+
+
+## Ergänzung – Korrektur der Druckbett-Toleranzdokumentation am 20.11.2026
+
+- Die aktuelle Quellcodeprüfung bestätigt zwei getrennte Werte: Skizzenkontur-Grenze `SKETCH_BED_BOUNDS_WORLD_UNITS = 1e-5` und fertige Modell-Druckbettprüfung `PRINT_BED_BOUNDS_WORLD_UNITS = 1e-4` Welteinheiten.
+- Eine ältere Tabellenzeile hatte die Werte verwechselt. Die technische Spezifikation ist korrigiert; am Programmverhalten wurde nichts geändert.
