@@ -362,3 +362,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Neue Tests prüfen Linien-/Kurvensemantik, Sollradius und Rohrabmessungen sowie ungültige Parameter.
 
 - Verifikation der Pfadkurven-/Rohr-Extraktion auf Code-Head `fdb0139a9b48188b39f92ecbe1beb5260618781c`: 51/51 Unit-Tests; Browser-Regression und OCCT-/WebWorker-Test erfolgreich.
+
+
+### 6.24 Hohlrahmen-Geometrie ausgelagert und Offset-Grenzfall abgesichert (20.11.2026)
+- Die Offset-Kontur und Extrusionsgeometrie des selbst gezeichneten Hohlrahmens wird jetzt durch `src/sketch-geometry.js` erzeugt.
+- Auswahl, Sperrstatus, Eingabefelder, mm-Umrechnung, History, Material, Positionierung und Szenen-Commit verbleiben im Hauptskript.
+- Zusätzlich wurde ein geometrischer Grenzfall korrigiert: Bei zu grosser Wandstärke konnte ein nach innen versetztes Quadrat über den Kollapspunkt hinaus wieder eine kleine Kontur mit gleicher Flächenorientierung bilden. Die Factory prüft jetzt den tatsächlichen Mindestabstand der Innenkontur zur Ausgangskontur und weist diesen Fall zurück.
+- Tests prüfen Hohlrahmenvolumen, Abmessungen, beide Konturrichtungen sowie ungültige und kollabierte Innenkonturen.
+- Auf Code-Head `208815fd7d101f1af4520d2834c8437a9ea8bad4`: 54/54 Unit-Tests, Browser-Regression und OCCT-WebWorker erfolgreich.

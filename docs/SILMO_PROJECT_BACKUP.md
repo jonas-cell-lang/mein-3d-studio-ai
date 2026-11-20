@@ -1144,3 +1144,10 @@ Vor Beginn einer neuen Aufgabe:
 - Tests prüfen Pfadlänge, Linien-/Kurvenverhalten, Rohrabmessungen und Parameterfehler.
 
 - Code-Head `fdb0139a9b48188b39f92ecbe1beb5260618781c`: 51/51 Unit-Tests, Browser-Regression und OCCT-/WebWorker-Test erfolgreich. Die anschliessende Änderung `1be5a96` betrifft nur die Projektdokumentation.
+
+
+## Ergänzung – Hohlrahmen-Geometrie (20.11.2026)
+- Die Erzeugung der versetzten Innenkontur und des extrudierten Hohlrahmens wurde nach `src/sketch-geometry.js` verschoben.
+- Die UI-/Modellzuständigkeiten bleiben im Hauptskript. Ein Mindestabstandscheck weist zu grosse Wandstärken zurück, die zuvor über den Kollapspunkt der Innenkontur hinauslaufen konnten.
+- Tests decken Volumen, Abmessungen, beide Konturrichtungen und ungültige Wandstärken ab.
+- Code-Head `208815fd7d101f1af4520d2834c8437a9ea8bad4`: 54/54 Unit-Tests, Browser-Regression und OCCT-/WebWorker-Test erfolgreich.

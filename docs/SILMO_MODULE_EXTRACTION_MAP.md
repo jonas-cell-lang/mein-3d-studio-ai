@@ -16,7 +16,7 @@
 | `src/stl-io.js` | STL-Dateien importieren und als ASCII-STL exportieren; Einheitenumrechnung und temporäre Exportgeometrien verwalten | Factory erhält Three.js und Einheiten-API; App-Zustand wird über Objekt-/Status-Callbacks angebunden |
 | `src/csg.js` | BSP-basierte Boolesche Geometrieoperationen (Verbindung und Differenz) | Factory erhält `THREE` und `SILMOTolerances`; stellt `window.SILMOCSG.combineMeshes` bereit |
 | `src/primitive-geometry.js` | Erzeugung der sechs vorhandenen Grundkörper inklusive Z-Höhenorientierung und Bounding Box | Factory erhält `THREE`; stellt `window.SILMOPrimitiveGeometry.createPrimitiveGeometry(type)` bereit |
-| `src/sketch-geometry.js` | Parametrische 2D-Profile, abgerundete Konturpfade, Extrusion, geschlossene Konturabtastung, Loft, Sweep sowie CAD-Pfadkurven und Pfadrohre | Factory erhält `THREE`; stellt Profil-, Extrusions-, Loft-, Sweep- und Pfadkurven-/Rohr-Factories bereit |
+| `src/sketch-geometry.js` | Parametrische 2D-Profile, Konturpfade, Extrusion, Loft, Sweep, CAD-Pfadkurven/-rohre und Hohlrahmen-Offset-/Extrusionsgeometrie | Factory erhält `THREE`; stellt Profil-, Pfad-, Konturrahmen-, Extrusions-, Loft- und Sweep-Factories bereit |
 | `src/developer-diagnostics.js` | Diagnosefenster, Laufzeit- und Bedienprotokoll | Eigenständige DOM-/Browser-IIFE; bleibt im Dokumentkopf |
 | `src/tool-navigation.js` | Hauptnavigation, Werkzeugbereiche und Unterreiter organisieren | Eigenständige DOM-IIFE; wird vor Three.js ausgeführt |
 | `src/tutorial.js` | Geführter Lernkurs und Erfolgskontrolle | Eigenständige DOM-IIFE; nutzt vorhandene `window`-Test-/App-Schnittstellen |
@@ -96,3 +96,13 @@ Der BSP-CSG-Kern ist als `src/csg.js` ausgelagert. Der vollständige Browserlauf
 ### Verifikation Pfadkurven-/Rohr-Factories
 - Code-Head `fdb0139a9b48188b39f92ecbe1beb5260618781c`: 51/51 Unit-Tests bestanden; Browser-Regression und OCCT-/WebWorker-Test erfolgreich.
 - GitHub Actions: Code Checks `44765048481`, Browser-Regression `44765048493`, OCCT-Prototyp `44765048667` – alle erfolgreich.
+
+
+## 8. Hohlrahmen-Geometrie (20.11.2026)
+
+- Die reine Geometrieerzeugung für den selbst gezeichneten Hohlrahmen liegt jetzt ebenfalls in `src/sketch-geometry.js`.
+- Die Factory berechnet die nach innen versetzte Kontur, prüft die resultierende Innenkontur und erzeugt den extrudierten Rahmen mit echtem Innenloch.
+- Die App behält Auswahl-/Sperrprüfung, mm-Eingaben, UI-Meldungen, Quellobjektposition, Material, History und Szene-Commit.
+- Ein zusätzlicher Mindestabstandscheck verhindert, dass eine zu grosse Wandstärke bei einem kleinen Profil über die Innenkontur hinweg kollabiert und fälschlich wieder eine kleine gültige Kontur erzeugt.
+- Unit-Tests prüfen beide Konturrichtungen, Aussenabmessungen, analytisches Hohlrahmenvolumen und ungültige/zu grosse Wandstärken.
+- Code-Head `208815fd7d101f1af4520d2834c8437a9ea8bad4`: 54/54 Unit-Tests, Browser-Regression und OCCT-/WebWorker-Test erfolgreich.
