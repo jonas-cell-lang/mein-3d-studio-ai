@@ -353,12 +353,42 @@
     if (points.length < 3 || points.some((point, index) => samePoint(point, points[(index + 1) % points.length]))) {
       throw new TypeError('Kantenbearbeitung benötigt mindestens drei unterschiedliche Konturpunkte ohne Nullkanten.');
     }
+    if (points.length > 1000) {
+      throw new RangeError('Kantenbearbeitung unterstützt höchstens 1000 Konturpunkte.');
+    }
+    const cross = (a, b, c) =>
+      (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+    const onSegment = (point, a, b) =>
+      Math.abs(cross(a, b, point)) <= 1e-12 &&
+      point[0] >= Math.min(a[0], b[0]) - 1e-12 &&
+      point[0] <= Math.max(a[0], b[0]) + 1e-12 &&
+      point[1] >= Math.min(a[1], b[1]) - 1e-12 &&
+      point[1] <= Math.max(a[1], b[1]) + 1e-12;
+    const intersects = (a, b, c, d) => {
+      const abC = cross(a, b, c), abD = cross(a, b, d);
+      const cdA = cross(c, d, a), cdB = cross(c, d, b);
+      if (((abC > 1e-12 && abD < -1e-12) || (abC < -1e-12 && abD > 1e-12)) &&
+          ((cdA > 1e-12 && cdB < -1e-12) || (cdA < -1e-12 && cdB > 1e-12))) return true;
+      return (Math.abs(abC) <= 1e-12 && onSegment(c, a, b)) ||
+        (Math.abs(abD) <= 1e-12 && onSegment(d, a, b)) ||
+        (Math.abs(cdA) <= 1e-12 && onSegment(a, c, d)) ||
+        (Math.abs(cdB) <= 1e-12 && onSegment(b, c, d));
+    };
     const twiceArea = points.reduce((sum, point, index) => {
       const next = points[(index + 1) % points.length];
       return sum + point[0] * next[1] - next[0] * point[1];
     }, 0);
     if (!Number.isFinite(twiceArea) || Math.abs(twiceArea) <= 1e-12) {
       throw new TypeError('Kantenbearbeitung benötigt eine Kontur mit einer Fläche grösser null.');
+    }
+    for (let i = 0; i < points.length; i++) {
+      const a = points[i], b = points[(i + 1) % points.length];
+      for (let j = i + 1; j < points.length; j++) {
+        if (j === i || j === (i + 1) % points.length || i === (j + 1) % points.length) continue;
+        if (intersects(a, b, points[j], points[(j + 1) % points.length])) {
+          throw new TypeError('Kantenbearbeitung benötigt eine einfache, nicht selbstüberschneidende Kontur.');
+        }
+      }
     }
     const shape = new THREE.Shape();
     shape.moveTo(points[0][0], points[0][1]);
