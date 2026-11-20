@@ -254,3 +254,13 @@ Diese Fälle schützen die Vergleichsrichtung der Grenzwerte vor späteren verse
 ### 3.9 Numerisch robuste Flächen-Grenzvergleiche
 
 Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPSILON_MM2 = 1e-12`. Das ist ein kleiner numerischer Vergleichsspielraum in mm², damit eine mathematisch exakt auf 0,01 mm² liegende Kontur nicht wegen binärer Gleitkomma-Rundung als knapp zu klein abgewiesen wird. Die deutlich kleinere Testfläche 0,009801 mm² bleibt unterhalb der Grenze und wird abgewiesen.
+
+
+### 3.10 Vollständigkeitsprüfung der zentralen Toleranz-API (20.11.2026)
+
+- Die API enthält aktuell 45 benannte Schwellen.
+- Ein automatisierter Quellcode-Audit vergleicht die Namen jeder exportierten Konstante mit den produktiven Laufzeitdateien (CAD-Hauptskript, CSG, Bild-Studio, Lernkurs sowie Geometrie-Module).
+- Dabei wurde `TUTORIAL_POSITION_CHANGE_WORLD_UNITS` zunächst als scheinbar unbenutzt erkannt. Die Aufrufstelle liegt tatsächlich in `src/tutorial.js`; der bisherige Audit hatte dieses Modul nicht in der Suchmenge.
+- Der Unit-Test liest deshalb jetzt zusätzlich `src/tutorial.js` und weist künftig jede Toleranzkonstante zurück, die in keinem der geprüften Laufzeitmodule verwendet wird.
+- Alle 45 Konstanten sind zusätzlich weiterhin einzeln mit ihrem dokumentierten Zahlenwert abgesichert. Dieser Audit ändert keine Toleranzwerte und führt keine pauschale Vereinheitlichung durch.
+- Die neuen Prüfungen sind implementiert; ihr erfolgreicher CI-Lauf muss noch bestätigt werden.
