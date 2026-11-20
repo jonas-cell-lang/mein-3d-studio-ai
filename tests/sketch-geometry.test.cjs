@@ -333,6 +333,12 @@ test('Kantenbearbeitung weist ungültige Konturen und Parameter kontrolliert ab'
   assert.throws(() => sketchGeometry.createEdgeTreatmentGeometry(
     [[0, 0], [1, 0], [2, 0]], 1, 0.1, 'fillet'
   ), /Fläche grösser null/);
+  assert.throws(() => sketchGeometry.createEdgeTreatmentGeometry(
+    [[0, 0], [2, 2], [0, 2], [2, 0]], 1, 0.1, 'fillet'
+  ), /selbstüberschneidende Kontur/);
+  assert.throws(() => sketchGeometry.createEdgeTreatmentGeometry(
+    [[0, 0], [3, 0], [3, 2], [1, 0], [0, 2]], 1, 0.1, 'fillet'
+  ), /selbstüberschneidende Kontur/);
   const explicitlyClosed = sketchGeometry.createEdgeTreatmentGeometry(
     [[-1, -1], [1, -1], [1, 1], [-1, 1], [-1, -1]], 1, 0.1, 'chamfer'
   );
