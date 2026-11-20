@@ -129,6 +129,21 @@ test('Serialisierte Mesh-Geometrie wird vor dem Wiederaufbau strukturell geprüf
   assert.throws(() => schema.validateSerializedGeometry(nonFinite), /Ungültige oder zu grosse Geometriedaten/);
 });
 
+test('Projektimport begrenzt die gesamte Geometrie über alle Objekte und Union-Teile', () => {
+  const largeGeometry = {
+    attributes: {
+      position: { arrayType: 'Float32Array', array: Array(750000).fill(0), itemSize: 3, normalized: false },
+      normal: { arrayType: 'Float32Array', array: Array(750000).fill(0), itemSize: 3, normalized: false }
+    }
+  };
+  const project = validProject();
+  project.objects = Array.from({ length: 10 }, () => ({ geometry: largeGeometry }));
+  assert.equal(schema.validateProjectEnvelope(project), project);
+
+  project.objects.push({ unionParts: [{ geometry: largeGeometry }] });
+  assert.throws(() => schema.validateProjectEnvelope(project), /insgesamt zu viele Geometriedaten/);
+});
+
 test('nicht-indizierte Meshes müssen aus vollständigen Dreiecken bestehen', () => {
   const valid = {
     attributes: {
