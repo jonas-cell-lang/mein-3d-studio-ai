@@ -505,6 +505,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 <script src="./src/tool-navigation.js"></script>
 <script src="./vendor/three/three.min.js"></script>
 <script src="./src/primitive-geometry.js"></script>
+<script src="./src/sketch-geometry.js"></script>
 <script src="./vendor/three/STLLoader.js"></script>
 <script src="./vendor/three/STLExporter.js"></script>
 <script src="./src/units.js"></script>
@@ -2643,8 +2644,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           shape.holes.push(holePath);
           holeMetadata.push(holeVectors.map(point => [point.x, point.y]));
         }
-        geometry = new THREE.ExtrudeGeometry(shape, { depth: mmToWorldUnits(heightMM), bevelEnabled: false });
-        geometry.computeVertexNormals();
+        geometry = window.SILMOSketchGeometry.createExtrusionGeometry(shape, { depth: mmToWorldUnits(heightMM), bevelEnabled: false });
         meshPosition.set(centerX, centerY, 0);
         sketchMetadata = {
           type: 'freeform2d', points: localPoints.length, holes: holeMetadata,
@@ -2674,8 +2674,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           const x = dims.width / 2, y = dims.depth / 2;
           shape.moveTo(-x, -y); shape.lineTo(x, -y); shape.lineTo(x, y); shape.lineTo(-x, y); shape.closePath();
         }
-        geometry = new THREE.ExtrudeGeometry(shape, { depth: dims.height, bevelEnabled: false, curveSegments: 64 });
-        geometry.computeVertexNormals();
+        geometry = window.SILMOSketchGeometry.createExtrusionGeometry(shape, { depth: dims.height, bevelEnabled: false, curveSegments: 64 });
         const profileOutline=shape.getPoints(32);if(profileOutline.length>1&&profileOutline[0].distanceTo(profileOutline[profileOutline.length-1])<window.SILMOTolerances.SKETCH_PROFILE_CLOSURE_WORLD_UNITS)profileOutline.pop();
         meshPosition.set(sketchDraft.centerX, sketchDraft.centerY, 0);
         sketchMetadata = {
