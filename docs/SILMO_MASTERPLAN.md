@@ -554,3 +554,10 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Neue Tests prüfen unvollständige Dreiecke, nicht endliche/zu grosse Koordinaten, ungültige Indizes und die Dreiecksobergrenze.
 - Die Grenzwerte sind Schutzgrenzen für diese aktuelle BSP-Implementierung und keine Aussage, dass beliebig komplexe Produktionsmodelle performant verarbeitet werden.
 - CI für den aktuellen Commit ist noch abzuwarten.
+
+
+### 6.45 Boolesche Geometrie: gespiegelter Basiskörper (20.11.2026)
+- Ergänzend zur Spiegelung des Werkzeugkörpers wird nun auch ein negativer Skalierungsdeterminant des Basiskörpers geprüft.
+- Die Vereinigung eines gespiegelten Basiskörpers mit einem überlappenden Würfel muss dasselbe analytische Volumen von 12 Kubikeinheiten und dieselben erwarteten Grenzen liefern.
+- Damit wird die Orientierungskorrektur für beide Eingabepositionen der CSG-Operation abgesichert; dies ist weiterhin ein gezielter BSP-Regressionstest und kein Nachweis für alle koplanaren, tangierenden oder selbstüberschneidenden Fälle.
+- Der neue Unit-Test wurde auf dem Entwicklungszweig ergänzt. CI für Commit `878d81c1700f16e86a82f6ce565b98f41c179be5` ist noch abzuwarten.
