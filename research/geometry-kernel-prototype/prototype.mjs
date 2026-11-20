@@ -53,6 +53,11 @@ try {
   }
   closeTo(kernel.getVolume(twelveHolePlate), 6000 - 60 * Math.PI,
     "40x30x5 plate after twelve sequential radius-1 through-holes");
+  console.log("Boolean solid diagnostics:", JSON.stringify({
+    singleCut: kernel.isSolid(drilled),
+    fourHolePlate: kernel.isSolid(fourHolePlate),
+    twelveHolePlate: kernel.isSolid(twelveHolePlate)
+  }));
   assert.equal(kernel.isSolid(twelveHolePlate), true,
     "repeated boolean cuts must preserve a solid");
   const repeatedCutMesh = kernel.tessellate(twelveHolePlate);
