@@ -519,3 +519,31 @@ test('STL-Topologie erkennt kollineare Dreiecke mit drei verschiedenen Eckpunkte
   assert.equal(result.isClosedEdgeManifold, false);
   geometry.dispose();
 });
+
+
+test('STL-Topologie erkennt zwei geschlossene Körper, die nur einen Punkt teilen', () => {
+  const touching = cubeTriangles.concat(cubeTriangles.map(triangle =>
+    triangle.map(([x, y, z]) => [x + 10, y + 10, z + 10])
+  ));
+  const geometry = makeGeometryFromTriangles(touching);
+  const result = stlDiagnostics.analyzeSTLGeometry(geometry);
+  assert.equal(result.boundaryEdgeCount, 0);
+  assert.equal(result.nonManifoldEdgeCount, 0);
+  assert.ok(result.nonManifoldVertexCount > 0,
+    'Der gemeinsame Punkt muss als nicht-manifold Eckpunkt erkannt werden');
+  assert.equal(result.isClosedEdgeManifold, false);
+  geometry.dispose();
+});
+
+test('STL-Topologie akzeptiert zwei räumlich getrennte geschlossene Körper', () => {
+  const separate = cubeTriangles.concat(cubeTriangles.map(triangle =>
+    triangle.map(([x, y, z]) => [x + 20, y, z])
+  ));
+  const geometry = makeGeometryFromTriangles(separate);
+  const result = stlDiagnostics.analyzeSTLGeometry(geometry);
+  assert.equal(result.boundaryEdgeCount, 0);
+  assert.equal(result.nonManifoldEdgeCount, 0);
+  assert.equal(result.nonManifoldVertexCount, 0);
+  assert.equal(result.isClosedEdgeManifold, true);
+  geometry.dispose();
+});
