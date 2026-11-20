@@ -2591,7 +2591,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const path=new THREE.Path();path.moveTo(ring[0].x,ring[0].y);ring.slice(1).forEach(point=>path.lineTo(point.x,point.y));path.closePath();shape.holes.push(path);
       holeMetadata.push(ring.map(point=>[point.x,point.y]));
     });
-    const localExtrusionMM=meta.extrusionMM/Math.max(Math.abs(obj.scale.z),1e-12);\n    const geometry=window.SILMOSketchGeometry.createExtrusionGeometry(shape,{depth:mmToWorldUnits(localExtrusionMM),bevelEnabled:false,curveSegments:32});
+    const localExtrusionMM=meta.extrusionMM/Math.max(Math.abs(obj.scale.z),1e-12);
+    const geometry=window.SILMOSketchGeometry.createExtrusionGeometry(shape,{depth:mmToWorldUnits(localExtrusionMM),bevelEnabled:false,curveSegments:32});
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
     if(![size.x,size.y,size.z].every(value=>Number.isFinite(value)&&value>CSG_EPSILON)){geometry.dispose();throw new Error('Die geänderten Konturen erzeugen keine gültige 3D-Geometrie.');}
