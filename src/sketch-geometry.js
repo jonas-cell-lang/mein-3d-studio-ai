@@ -227,6 +227,29 @@
         !holesB.every(validRing)) {
       throw new TypeError('Loft-Innenkonturen müssen paarweise gültige Ringe mit gleicher Punktzahl enthalten.');
     }
+    const alignRingPair = (a, b) => {
+      const center = ring => ring.reduce((sum, point) => sum.add(point), new THREE.Vector3()).multiplyScalar(1 / ring.length);
+      const ca = center(a), cb = center(b);
+      const radius = ring => Math.sqrt(ring.reduce((sum, point) => sum + point.distanceToSquared(center(ring)), 0) / ring.length) || 1;
+      const ra = radius(a), rb = radius(b);
+      let best = null, bestCost = Infinity;
+      for (const direction of [1, -1]) {
+        for (let shift = 0; shift < b.length; shift++) {
+          const candidate = b.map((_, index) => b[(shift + direction * index + b.length * 2) % b.length]);
+          let cost = 0;
+          for (let index = 0; index < a.length; index++) {
+            const pa = a[index].clone().sub(ca).multiplyScalar(1 / ra);
+            const pb = candidate[index].clone().sub(cb).multiplyScalar(1 / rb);
+            cost += pa.distanceToSquared(pb);
+          }
+          if (cost < bestCost) { bestCost = cost; best = candidate; }
+        }
+      }
+      return best;
+    };
+    const alignedB = options.alignProfiles === false ? ringB : alignRingPair(ringA, ringB);
+    const alignedHolesB = holesA.map((hole, index) =>
+      options.alignProfiles === false ? holesB[index] : alignRingPair(hole, holesB[index]));
     const vertices = [];
     const connect = (a, b) => {
       for (let i = 0; i < a.length; i++) {
@@ -235,8 +258,8 @@
         appendTriangle(vertices, a[next], b[next], b[i]);
       }
     };
-    connect(ringA, ringB);
-    holesA.forEach((hole, index) => connect(hole, holesB[index]));
+    connect(ringA, alignedB);
+    holesA.forEach((hole, index) => connect(hole, alignedHolesB[index]));
 
     const cap = (outer, holes, reverse) => {
       const origin = outer[0];
@@ -259,7 +282,6 @@
         return new THREE.Vector2(delta.dot(u), delta.dot(v));
       });
       const contours = [project(outer), ...holes.map(project)];
-      const flat = contours.flat();
       const triangles = THREE.ShapeUtils.triangulateShape(contours[0], contours.slice(1));
       if (!triangles.length) throw new Error('Loft-Profil konnte nicht trianguliert werden.');
       const points = [outer, ...holes].flat();
@@ -274,7 +296,7 @@
       });
     };
     cap(ringA, holesA, true);
-    cap(ringB, holesB, false);
+    cap(alignedB, alignedHolesB, false);
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
     geometry.computeVertexNormals();
