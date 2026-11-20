@@ -903,3 +903,12 @@ Vor Beginn einer neuen Aufgabe:
 **Endgültiger Projektleitsatz:**
 
 # SILMO – Einfach zu bedienen. Professionell in den Möglichkeiten. Präzise in der Technik. Eigenständig als 3D-Studio.
+
+
+## Ergänzung – weiterer Entwicklungsstand am 20.11.2026
+
+- PR 70 ergänzt auf dem separaten Branch `phase1/history-foundation` die Auslagerung der Undo-/Redo-Verwaltung in `src/history.js`.
+- Die Code-Checks und Playwright-Browser-Regression waren nach dem Playwright-Update auf Commit `da26cb15438e30efd90fbf2d29ff76568e44c668` erfolgreich.
+- Weitere bestehende Schwellen für Rastergrenzen, Gruppenrotation, Profilquellabmessungen, Profil-Schliessung und Strahl-/Skizzenebenen-Berechnung wurden einzeln benannt und durch Unit-Tests abgesichert; die Zahlenwerte wurden nicht verändert.
+- Die folgenden Änderungen müssen nach dem letzten Toleranz-Audit erneut durch Code- und Browser-CI laufen.
+- Keine Änderung an `main`, kein Live-Deployment, keine kostenpflichtigen Dienste; Kostenlimit CHF 0.00.
