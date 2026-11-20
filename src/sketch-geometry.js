@@ -107,6 +107,73 @@
   }
 
 
+
+  function createContourFrameGeometry(outline, thickness, height, tolerances, minimumDimension = 1e-9) {
+    if (!Array.isArray(outline) || outline.length < 3 || outline.length > 240 ||
+        !outline.every(point => Array.isArray(point) && point.length >= 2 && Number.isFinite(point[0]) && Number.isFinite(point[1])) ||
+        !Number.isFinite(thickness) || thickness <= 0 || !Number.isFinite(height) || height <= 0 ||
+        !tolerances) {
+      throw new TypeError('Hohlrahmen benötigt eine gültige Kontur sowie positive Wandstärke und Höhe.');
+    }
+    const outer = outline.map(point => new THREE.Vector2(point[0], point[1]));
+    const signedArea = points => points.reduce((sum, point, index) => {
+      const next = points[(index + 1) % points.length];
+      return sum + point.x * next.y - next.x * point.y;
+    }, 0) / 2;
+    const area = signedArea(outer);
+    if (!Number.isFinite(area) || Math.abs(area) < tolerances.CONTOUR_FRAME_MIN_AREA_WORLD_UNITS2) {
+      throw new Error('Die Rückwand-Kontur ist zu klein oder ungültig.');
+    }
+    const ccw = area > 0, inner = [];
+    const cross = (a, b) => a.x * b.y - a.y * b.x;
+    for (let i = 0; i < outer.length; i++) {
+      const previous = outer[(i + outer.length - 1) % outer.length], point = outer[i], next = outer[(i + 1) % outer.length];
+      const edge1 = new THREE.Vector2(point.x - previous.x, point.y - previous.y);
+      const edge2 = new THREE.Vector2(next.x - point.x, next.y - point.y);
+      if (edge1.length() < tolerances.CONTOUR_FRAME_MIN_EDGE_WORLD_UNITS ||
+          edge2.length() < tolerances.CONTOUR_FRAME_MIN_EDGE_WORLD_UNITS) continue;
+      edge1.normalize(); edge2.normalize();
+      const normal1 = ccw ? new THREE.Vector2(-edge1.y, edge1.x) : new THREE.Vector2(edge1.y, -edge1.x);
+      const normal2 = ccw ? new THREE.Vector2(-edge2.y, edge2.x) : new THREE.Vector2(edge2.y, -edge2.x);
+      const offset1 = point.clone().addScaledVector(normal1, thickness);
+      const offset2 = point.clone().addScaledVector(normal2, thickness);
+      const denominator = cross(edge1, edge2);
+      let hit;
+      if (Math.abs(denominator) < tolerances.CONTOUR_FRAME_PARALLEL_CROSS_MIN) {
+        const normal = normal1.clone().add(normal2);
+        if (normal.length() < tolerances.CONTOUR_FRAME_MIN_NORMAL_WORLD_UNITS) throw new Error('Kontur enthält einen ungültigen Knick.');
+        hit = point.clone().addScaledVector(normal.normalize(), thickness);
+      } else {
+        const distance = cross(new THREE.Vector2(offset2.x - offset1.x, offset2.y - offset1.y), edge2) / denominator;
+        hit = offset1.clone().addScaledVector(edge1, distance);
+      }
+      if (hit.distanceTo(point) > thickness * tolerances.CONTOUR_FRAME_MITER_LIMIT_FACTOR + tolerances.CONTOUR_FRAME_MITER_ALLOWANCE_WORLD_UNITS) {
+        throw new Error('Die Kontur ist für diese Wandstärke zu eng. Verringere die Wandstärke.');
+      }
+      inner.push(hit);
+    }
+    const innerArea = signedArea(inner);
+    if (inner.length < 3 || Math.abs(innerArea) < tolerances.CONTOUR_FRAME_MIN_AREA_WORLD_UNITS2 || Math.sign(innerArea) !== Math.sign(area)) {
+      throw new Error('Innenkontur ist zu eng oder überschneidet sich. Verringere die Wandstärke oder glätte die gezeichnete Kontur.');
+    }
+    const shape = new THREE.Shape();
+    shape.moveTo(outer[0].x, outer[0].y);
+    outer.slice(1).forEach(point => shape.lineTo(point.x, point.y));
+    shape.closePath();
+    const hole = new THREE.Path(), reversed = inner.slice().reverse();
+    hole.moveTo(reversed[0].x, reversed[0].y);
+    reversed.slice(1).forEach(point => hole.lineTo(point.x, point.y));
+    hole.closePath();
+    shape.holes.push(hole);
+    const geometry = createExtrusionGeometry(shape, { depth: height, bevelEnabled: false, curveSegments: 16 });
+    const size = geometry.boundingBox.getSize(new THREE.Vector3());
+    if (![size.x, size.y, size.z].every(value => Number.isFinite(value) && value > minimumDimension)) {
+      geometry.dispose();
+      throw new Error('Hohlrahmen hat ungültige Abmessungen.');
+    }
+    return geometry;
+  }
+
   function createPathCurve(pathPoints, type) {
     if (!Array.isArray(pathPoints) || pathPoints.length < 2 ||
         !pathPoints.every(point => Array.isArray(point) && point.length >= 3 && point.slice(0, 3).every(Number.isFinite))) {
@@ -192,5 +259,5 @@
     return geometry;
   }
 
-  return Object.freeze({ createExtrusionGeometry, createParametricProfile, addRoundedRectPath, resampleClosedOutline, createLoftGeometry, createSweepGeometry, createPathCurve, createPathTubeGeometry });
+  return Object.freeze({ createExtrusionGeometry, createParametricProfile, addRoundedRectPath, resampleClosedOutline, createLoftGeometry, createSweepGeometry, createPathCurve, createPathTubeGeometry, createContourFrameGeometry });
 });
