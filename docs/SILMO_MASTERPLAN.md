@@ -433,3 +433,9 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Browser-Regression prüft Einfügen und Entfernen eines Punktes in einer extrudierten Innenkontur, ohne die Öffnung zu verlieren.
 - Kantenbehandelte Körper bleiben von dieser direkten Konturbearbeitung ausgeschlossen.
 - Validierung auf Test-Head `f20c40951c0cccf11b89c36fa84d01f4a3769260`: Code Checks Run `44773846336` und Browser-Regression Run `44773846039` erfolgreich. Der unabhängige OCCT-/WebWorker-Lauf `44773846005` läuft noch.
+
+
+### 6.32 Ein ganzes Innenloch aus einer extrudierten Skizze entfernen (20.11.2026)
+- Der Kontur-Editor kann ein ausgewähltes Innenloch vollständig entfernen, ohne die Aussenkontur oder andere Innenlöcher zu verändern.
+- Die Aussenkontur ist gegen versehentliches Entfernen geschützt. Nach dem Entfernen wird der Körper mit den verbleibenden Konturen neu aufgebaut und vor dem Commit validiert.
+- Browser-Regression prüft das Entfernen des einzigen Innenlochs und die erhaltene gültige Grundgeometrie.
