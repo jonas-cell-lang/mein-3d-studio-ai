@@ -128,7 +128,7 @@ test('Skizzenkonturen haben ein gemeinsames sicheres Punktbudget', () => {
   assert.equal(schema.validateProjectEnvelope(project),project);
   const overBudget=validProject();
   overBudget.objects.push({...withinBudget,sketch:{...withinBudget.sketch,holes:[
-    ...withinBudget.sketch.holes,circle(80,0,5,830)
+    ...withinBudget.sketch.holes,circle(80,0,5,850)
   ]}});
   assert.throws(()=>schema.validateProjectEnvelope(overBudget),/Innenkonturen/);
 });
