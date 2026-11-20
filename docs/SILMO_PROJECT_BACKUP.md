@@ -1158,3 +1158,11 @@ Vor Beginn einer neuen Aufgabe:
 - Unit-Tests für beide Modi prüfen endliche Mesh-Daten, Normalen, Bounding-Box/-Sphere, Sollabmessungen und ungültige Parameter.
 - Der Toleranz-Audit umfasst 45 benannte Werte. Ein neuer Quellcode-Test prüft, dass jede Konstante in mindestens einem Laufzeitmodul verwendet wird; Lernkurs-Schwellen werden dazu korrekt in `src/tutorial.js` gesucht.
 - Die neuen Prüfungen sind implementiert; CI-Erfolg ist noch nicht bestätigt.
+
+
+## Ergänzung – Loft-Qualität (20.11.2026)
+- Loft-Geometrie unterstützt jetzt beliebig orientierte planare 3D-Endprofile, mehrere paarweise Innenkonturen, Kappentriangulation mit Löchern und Mantelflächen für Innenwände.
+- Profilstartpunkt und Laufrichtung werden standardmässig zur Reduktion von Verdrehungen abgeglichen; optional mit `alignProfiles: false` deaktivierbar.
+- Zwei neue zentrale Loft-Toleranzen sichern Planaritäts- und Normalenprüfung ab.
+- Neue Unit- und Browsertests prüfen geneigte Profile, umgekehrte Kontur-Reihenfolge, Hohl-Loft-Volumen und Fehlerfälle.
+- Die UI-/Projektformat-Unterstützung für das Zeichnen und Speichern mehrerer Innenkonturen ist noch offen; die neue Funktion ist derzeit auf Factory-/API-Ebene verfügbar.
