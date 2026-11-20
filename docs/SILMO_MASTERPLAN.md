@@ -463,3 +463,4 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Doppelte Verweise auf dasselbe Quellobjekt werden abgewiesen, da sie die Profilpaarung und spätere Aktualisierung mehrdeutig machen würden.
 - Die Existenz der Quellobjekte wird weiterhin nicht erzwungen: Ein Benutzer darf Quellskizzen löschen; das Loft bleibt dann als Geometrie erhalten, kann aber nicht mehr aus fehlenden Quellen aktualisiert werden.
 - Unit-Tests prüfen gültige eindeutige Zuordnungen sowie wiederverwendete Aussen- und Innenprofil-IDs.
+- Direkte Ausführung des Schema-Moduls und Syntaxprüfung der Tests: gültige Zuordnung akzeptiert; doppelte Aussen-ID, doppelte Innen-ID und doppelte ID innerhalb eines Innenprofil-Paars jeweils abgewiesen. GitHub meldet für den Code-Commit keine CI-Statuschecks.
