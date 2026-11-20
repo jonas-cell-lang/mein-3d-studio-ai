@@ -1050,3 +1050,10 @@ Vor Beginn einer neuen Aufgabe:
 - Die Freiform-Punktbereinigung nutzt nun `SKETCH_FREEFORM_MIN_POINT_SPACING_WORLD_UNITS = 0.005`.
 - Die spezielle Herz-Konturklassifikation nutzt `HEART_OUTLINE_POINT_DEDUPLICATION_WORLD_UNITS = 1e-5`.
 - Beide Werte sind unverändert und durch Toleranz-Unit-Tests abgesichert. Die Erkennungslogik wurde nicht geändert.
+
+
+## Ergänzung – Bildkontur-Grenzfalltests am 20.11.2026
+
+- Der Browser-Test prüft nun die Druckbarkeitsgrenzen exakt: 0,8 mm Mindestwand wird akzeptiert, 0,799 mm abgewiesen; 0,01 mm² Mindestkonturfläche wird akzeptiert, 0,009801 mm² abgewiesen.
+- Bestehende Prüfungen für Randabstand, überlappende Innenlöcher und selbstschneidende Konturen bleiben bestehen.
+- Diese zusätzlichen Browserfälle müssen noch in einem vollständigen Actions-Lauf erfolgreich bestätigt werden.
