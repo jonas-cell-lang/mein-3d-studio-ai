@@ -200,3 +200,14 @@ Die folgende Gruppe wurde beim weiteren Audit in den CAD-Skizzenfunktionen gefun
 | `FREEFORM_MIN_AREA_WORLD_UNITS2` | 0,0001 | Welteinheiten²; Mindestfläche einer geschlossenen Freiform vor Extrusion |
 
 Diese Werte sind keine globalen CAD-Genauigkeitsversprechen. Insbesondere Vorschauversatz, Punktaufnahme und Konturabschluss sind Bedien-/Darstellungsregeln und bleiben getrennt von CSG- und Druckbett-Toleranzen.
+
+
+### 3.4 Bild-Studio: eindeutig zugeordnete Druckbarkeitsgrenzen
+
+| API-Konstante | Wert | Dimension / Zweck |
+|---|---:|---|
+| `IMAGE_MIN_COMPONENT_AREA_FRACTION` | 0,000025 | Dimensionsloser Anteil der Bildfläche; Mindestgrösse einer erkannten zusammenhängenden Bildkomponente (zusätzlich mindestens 4 Pixel) |
+| `IMAGE_MIN_PRINT_CONTOUR_AREA_MM2` | 0,01 | mm²; Mindestfläche einer auf reale Modellmasse abgebildeten Aussen-/Innenkontur vor der CAD-Übergabe |
+| `IMAGE_MIN_WALL_THICKNESS_MM` | 0,8 | mm; Mindestmaterialstärke zwischen Aussparungen sowie zwischen Aussparung und Aussenkante |
+
+Die Bildkonturprüfung enthält ausserdem eine bestehende Flächenschwelle in `polygonIsSimple`, die sowohl vor als auch nach der Abbildung auf reale Modellmasse aufgerufen wird. Weil der Aufruf derzeit nicht eindeutig Pixel² oder mm² garantiert, bleibt diese Schwelle absichtlich unverändert und ist als offener Einheiten-Auditpunkt markiert.
