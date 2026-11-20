@@ -66,6 +66,8 @@ try {
   assert.equal(await page.evaluate(() => typeof window.SILMOPrimitiveGeometry?.createPrimitiveGeometry), 'function', 'Grundkörper-Geometriemodul ist nicht verfügbar');
   assert.equal(await page.evaluate(() => typeof window.SILMOSketchGeometry?.createExtrusionGeometry), 'function', 'Skizzen-Geometriemodul ist nicht verfügbar');
   assert.equal(await page.evaluate(() => typeof window.SILMOSketchGeometry?.createParametricProfile), 'function', 'Parametrische Skizzenprofile sind nicht verfügbar');
+  assert.equal(await page.evaluate(() => typeof window.SILMOSketchGeometry?.createLoftGeometry), 'function', 'Loft-Geometrie ist nicht verfügbar');
+  assert.equal(await page.evaluate(() => typeof window.SILMOSketchGeometry?.createSweepGeometry), 'function', 'Sweep-Geometrie ist nicht verfügbar');
   assert.equal(await page.evaluate(() => window.SILMOProjectSchema?.CURRENT_PROJECT_VERSION), 3, 'Projektformat-Version 3 ist nicht registriert');
 assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.serializeGeometry), 'function', 'Projektgeometrie-Serialisierung ist nicht verfügbar');
 assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.restoreGeometry), 'function', 'Projektgeometrie-Wiederaufbau ist nicht verfügbar');
