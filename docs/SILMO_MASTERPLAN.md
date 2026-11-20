@@ -173,7 +173,7 @@ Die Anwendung wird schrittweise in klar getrennte Module aufgeteilt. Die genaue 
 
 ## 6. Nächster konkreter Arbeitsschritt
 
-Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsbranch umgesetzt. Die ersten beiden Bausteine sind implementiert und auf dem aktuellen Stand v93 geprüft:
+Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsbranch umgesetzt. Die Einheiten-/Projektformat-Bausteine sind implementiert; der aktuelle Entwicklungszweig ergänzt die History-Auslagerung und weitere Toleranz-Audits. Der Produktionsstand bleibt davon getrennt.
 
 ### 6.1 Zentrale Einheiten-API
 - `src/units.js` definiert die bestehende Skala: 1 Three.js-Welteinheit = 10 mm.
@@ -219,13 +219,22 @@ Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsb
 - Die Module werden in dokumentierter Reihenfolge geladen; statische Prüfungen und Browser-Regressionen beziehen die ausgelagerten Module ein.
 - Das CAD-Hauptskript enthält weiterhin den zentralen Laufzeitzustand, die Modellierungswerkzeuge und eng gekoppelte Interaktionen. Weitere Extraktionen erfolgen erst nach dokumentierter Abhängigkeitsanalyse.
 
+### 6.8 Undo-/Redo-History und weitere Toleranz-Audits
+- `src/history.js` verwaltet Undo-/Redo-Stacks, begrenzte Snapshot-Anzahl, Verwerfen des Redo-Zweigs nach neuen Änderungen sowie Snapshot-Freigabe.
+- Die App erstellt Mesh-/Material-Snapshots und übergibt Capture-, Restore- und Dispose-Funktionen an das unabhängige Modul.
+- Wiederherstellung baut die neuen Meshes und Materialien zuerst auf, bevor die bisherige Szene ersetzt wird; Material-Arrays werden unterstützt.
+- Unit-Tests decken Undo/Redo, Verlaufslimit, Snapshot-Freigabe, Clear/Dispose und fehlgeschlagene Wiederherstellung ab.
+- Weitere einzeln zugeordnete Schwellen für Rastergrenzen, Gruppenrotation, Profilquellabmessungen, Skizzenprofil-Schliessung und parallele Strahl-/Skizzenebenen-Berechnung sind in `src/tolerances.js` benannt und getestet.
+- Die History bleibt snapshotbasiert. Eine inkrementelle/befehlsbasierte Historie und Speicher-/Leistungs-Baselines sind noch offen.
+- Der Browser-Testhelfer verwendet Playwright 1.65.1; die App-Runtime selbst hängt nicht von Playwright ab.
+
 ### 6.7 Aktueller Stand und nächste Schritte
 - Die zentrale Einheiten-API ist in `index.html` eingebunden; eine aktuelle Quellcodesuche findet dort keine Verwendung des alten Namens `MM_PER_UNIT`.
 - Die lokale Three.js-Runtime ist fest gepinnt und wird für Browser-Tests und Pages-Artefakte vorbereitet.
 - Projektformat v3 und Geometrievalidierung sind implementiert. Einfache und erweiterte Projekt-Fixtures sowie negative Importtests sind Teil der Browser-Regression.
 - Die benannten Toleranzen sind dokumentiert. Zusätzlich wurden Kontur-Hohlrahmen, editierte Skizzenkonturen, Pfadrichtungen und Profilumfang mit getrennten Konstanten versehen; die numerischen Altwerte blieben unverändert. Das vollständige Toleranzinventar und Grenzfalltests für alle Klassen bleiben offen.
 - Projektdatei-I/O ist aus dem Hauptskript ausgelagert. Der atomare Wechsel auf das neue Modell wird durch Browser-Regressionen abgesichert.
-- Der aktuelle Entwicklungsbranch ist `phase1/central-units-api`; PR 69 bleibt Draft und ungemergt. Es erfolgt kein Produktionsdeployment vor der ausdrücklichen Fertigstellung und Freigabe.
+- Der aktuelle Entwicklungszweig ist `phase1/history-foundation`; PR 69 und PR 70 bleiben Draft und ungemergt. Es erfolgt kein Produktionsdeployment vor der ausdrücklichen Fertigstellung und Freigabe.
 - Für Code-Commit `78fe9212433d4101f2b85732524788316b130b41` waren Code-Checks und Browser-Tests erfolgreich; spätere reine Dokumentationsänderungen werden separat geprüft.
 
 **Nächste Schritte:** Zuerst die noch offenen Einheiten-/Toleranz-Aufrufstellen anhand des Quellcodes inventarisieren und fachlich getrennt migrieren. Danach weitere kritische Import-/Export- und Projektdatei-Grenzfälle ergänzen. Anschliessend die nächste Modulgrenze aus der Abhängigkeitsmatrix auswählen und mit kleinem Diff extrahieren. Phase 1 gilt erst als abgeschlossen, wenn alle festgelegten Abnahmekriterien nachweisbar erfüllt sind.
