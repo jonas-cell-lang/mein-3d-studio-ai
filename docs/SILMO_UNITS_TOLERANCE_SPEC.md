@@ -79,15 +79,15 @@ Die folgenden Werte wurden direkt im aktuellen `index.html` geprüft. Sie werden
 
 | API-Konstante | Wert | Dimension / Zweck |
 |---|---:|---|
-| `IMAGE_POLYGON_RAY_DENOMINATOR_FALLBACK_MM` | `1e-12` | Pixel-Differenz; Fallback bei nahezu horizontaler Polygonkante im Punkt-in-Polygon-Test |
-| `IMAGE_SEGMENT_BOUNDS_EPSILON_MM` | `1e-8` | Pixel; Einschlussrand für Punkt-auf-Segment-Prüfung |
-| `IMAGE_SEGMENT_ORIENTATION_EPSILON_MM2` | `1e-8` | Pixel²; Kollinearitätsgrenze des 2D-Kreuzprodukts |
-| `IMAGE_POLYGON_MIN_EDGE_MM` | `1e-5` | Pixel; Mindestlänge einer Polygonkante |
-| `IMAGE_POLYGON_MIN_NONADJACENT_GAP_MM` | `1e-7` | Pixel; Mindestabstand nicht benachbarter Polygonsegmente |
+| `IMAGE_POLYGON_RAY_DENOMINATOR_FALLBACK_MM` | `1e-12` | Millimeter; Nenner-Fallback bei nahezu horizontaler Kante im Punkt-in-Polygon-Test nach der Abbildung in CAD-Masse |
+| `IMAGE_SEGMENT_BOUNDS_EPSILON_MM` | `1e-8` | Millimeter; Einschlussrand für Punkt-auf-Segment-Prüfung an abgebildeten Konturen |
+| `IMAGE_SEGMENT_ORIENTATION_EPSILON_MM2` | `1e-8` | mm²; Kollinearitätsgrenze des 2D-Kreuzprodukts an abgebildeten Konturen |
+| `IMAGE_POLYGON_MIN_EDGE_MM` | `1e-5` | Millimeter; Mindestlänge einer Polygonkante nach der Abbildung |
+| `IMAGE_POLYGON_MIN_NONADJACENT_GAP_MM` | `1e-7` | Millimeter; Mindestabstand nicht benachbarter Polygonsegmente nach der Abbildung |
 | `IMAGE_MIN_WALL_COMPARISON_EPSILON_MM` | `1e-6` | Millimeter; Vergleichsrand bei der Prüfung der Mindestwand zwischen Konturen |
 | `TUTORIAL_POSITION_CHANGE_WORLD_UNITS` | `1e-5` | interne Welteinheiten; erkennt Positionsänderungen für die Lernkurs-Erfolgskontrolle |
 
-Die Bildkontur-Schwellen sind bewusst nicht als CAD-Weltkoordinaten benannt. Pixelraum, Pixel² und Millimeter bleiben getrennt. Der Lernkurswert prüft eine Interaktionsänderung und ist keine Fertigungstoleranz.
+Die Konturerkennungs-Schwellen im Bildraum (Pixel/Pixel²) sind von den nach der Abbildung geprüften Konturen in Millimeter/mm² getrennt. Die oben aufgeführten Punkt-in-Polygon- und Segmentprüfungen werden nur auf bereits in reale Modellmasse abgebildete Konturen angewendet. Der Lernkurswert prüft eine Interaktionsänderung und ist keine Fertigungstoleranz.
 
 ### 3.2 Weitere einzeln benannte Kontur- und Skizzenschwellen
 
