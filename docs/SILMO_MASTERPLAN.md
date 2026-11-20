@@ -386,3 +386,13 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Zentrale Planaritäts- und Normalentoleranzen sind ergänzt. Nicht planare/entartete Profile und nicht paarweise passende Innenkonturen werden kontrolliert abgewiesen.
 - Unit- und Browsertests decken geneigte Profile, umgekehrte Punktreihenfolgen, Hohlkörper-Volumen und ungültige Eingaben ab.
 - **Grenze:** Die Geometrie-API unterstützt Innenkonturen; die bestehende App-Auswahl und Projektmetadaten liefern derzeit noch keine mehreren Konturen pro Skizze.
+
+
+### 6.27 Hohl-Loft in der App und im Projektformat (20.11.2026)
+- Die Profi-CAD-Loft-Auswahl akzeptiert jetzt zwei Aussenprofile sowie paarweise Innenprofile in der Reihenfolge Aussen A, Aussen B, Innen A1, Innen B1, Innen A2, Innen B2 usw.
+- Bis zu acht Innenkontur-Paare werden auf die bestehende Loft-Factory übertragen; die Factory trianguliert die Endflächen mit Aussparungen und verbindet die Innenwände.
+- Die UI-Hilfe erklärt die Auswahlreihenfolge. Ungültige Auswahlanzahlen und Profile ohne gespeicherte geschlossene Kontur werden vor der Geometrieerzeugung abgewiesen.
+- Loft-Metadaten enthalten Anzahl der Innenkonturen und die Quellprofil-UUIDs. Projektformat v3 speichert diese Metadaten und stellt sie beim Import wieder her.
+- Das Projektschema validiert die Loft-Referenzen, die Anzahl (0–8) und die paarweise Quellzuordnung.
+- Browser-Regression prüft den App-Workflow mit vier ausgewählten Profilen sowie Speichern und erneutes Öffnen einer Projektdatei.
+- **Noch offen:** Innenprofile müssen weiterhin als separate geschlossene Skizzenobjekte gezeichnet werden; eine direkte Lochzeichnung innerhalb eines einzigen Skizzenprofils und editierbare assoziative Loft-Features sind noch nicht umgesetzt.
