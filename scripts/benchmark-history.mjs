@@ -62,7 +62,15 @@ function median(values) {
   return sorted[Math.floor(sorted.length / 2)] || 0;
 }
 
-function runScenario(objectCount) {
+async function collectGarbage() {
+  if (!global.gc) return;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    global.gc();
+    await new Promise(resolve => setImmediate(resolve));
+  }
+}
+
+async function runScenario(objectCount) {
   let objects = Array.from({ length: objectCount }, (_, index) => makeObject(index));
   const history = createHistory({
     limit: RECORDS_PER_SCENARIO,
@@ -82,7 +90,7 @@ function runScenario(objectCount) {
     disposeState
   });
 
-  if (global.gc) global.gc();
+  await collectGarbage();
   const before = memorySnapshot();
   const recordTimesMs = [];
 
@@ -102,12 +110,14 @@ function runScenario(objectCount) {
   const redoMs = performance.now() - redoStart;
 
   history.dispose();
+  const historyAfterDispose = history.getStats();
   disposeState(objects);
   objects = [];
-  if (global.gc) global.gc();
+  await collectGarbage();
   const afterDispose = memorySnapshot();
 
   return {
+    historyAfterDispose,
     objectCount,
     verticesPerObject: VERTICES_PER_OBJECT,
     snapshotsRecorded: RECORDS_PER_SCENARIO,
@@ -120,7 +130,10 @@ function runScenario(objectCount) {
   };
 }
 
-const results = [1, 10, 50].map(runScenario);
+const results = [];
+for (const objectCount of [1, 10, 50]) {
+  results.push(await runScenario(objectCount));
+}
 console.log(JSON.stringify({
   benchmark: 'SILMO snapshot-based Undo/Redo baseline',
   node: process.version,
