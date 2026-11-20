@@ -677,3 +677,10 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Der Regressionstest ruft beide Methoden während Undo und Redo aus `restoreState` heraus auf und kontrolliert Zwischenzustand, Stack-Zähler sowie anschliessende Nutzbarkeit von Undo/Redo. Die reguläre `dispose()`-Funktion wird nach Abschluss weiterhin ausgeführt.
 - Auf Commit `27e338be7706f4a1a244661acc2f6aeb04b66a05` bestanden 123/123 Unit-Tests; Code-Checks, Browser-Interaktion und isolierter OCCT-WebWorker-Prototyp waren erfolgreich.
 - Der Schutz gilt für synchrone, während `restoreState` ausgeführte Reentrancy. Asynchrone Callbacks oder Fehler innerhalb benutzerdefinierter `disposeState`-Funktionen sind damit nicht allgemein abgesichert.
+
+
+### 6.60 History: fehlgeschlagene Snapshot-Aufnahme erhält Verlauf (20.11.2026)
+- Wenn `captureState()` beim Aufzeichnen, Undo oder Redo einen Fehler auslöst, bleiben die betroffenen Undo-/Redo-Stacks unverändert. Ein fehlgeschlagenes Undo/Redo verschiebt den Ziel-Snapshot somit nicht und verliert auch den aktuell erreichbaren Zustand nicht.
+- Der Regressionstest erzwingt Aufnahmefehler in `record()`, `undo()` und `redo()`, kontrolliert jeweils die Stack-Zähler und prüft anschliessend, dass Undo und Redo nach Behebung des Fehlers wieder funktionieren.
+- Auf Commit `d3c6ddd96b768557d9c7b2994e5fbea0bd6435dc` bestanden alle 124/124 Unit-Tests. Code-Checks (Run 44796023996), Browser-Interaktion (Run 44796035446) und isolierter OCCT-/WebWorker-Test (Run 44796035828) waren erfolgreich.
+- Der Test belegt die Stack-Konsistenz bei synchronen Fehlern der Snapshot-Aufnahme. Er ist keine allgemeine Garantie gegen Fehler in beliebigen benutzerdefinierten Restore- oder Dispose-Callbacks.
