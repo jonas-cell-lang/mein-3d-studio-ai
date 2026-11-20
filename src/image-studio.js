@@ -117,7 +117,7 @@
     return Math.min(pointSegment(a,c,d),pointSegment(b,c,d),pointSegment(c,a,b),pointSegment(d,a,b),pointDistance(a,c),pointDistance(a,d),pointDistance(b,c),pointDistance(b,d));
   }
   function polygonIsSimple(poly) {
-    if(!Array.isArray(poly)||poly.length<3||polygonArea(poly)<0.01)return false;
+    if(!Array.isArray(poly)||poly.length<3||polygonArea(poly)<tolerances.IMAGE_MIN_SIMPLE_POLYGON_AREA_MM2)return false;
     const n=poly.length;
     for(let i=0;i<n;i++){
       const a=poly[i],b=poly[(i+1)%n];
