@@ -151,16 +151,88 @@
   function geometryFromPolygons(polygons, localOffset) {
     const coords = [];
     let outputTriangles = 0;
+
+    // BSP-Schnitte können T-Verbindungen erzeugen: Ein Polygon besitzt eine
+    // lange Kante, während das Nachbarpolygon dieselbe Kante in Teilstücke
+    // zerlegt. Alle Endpunkte auf derselben geometrischen Linie werden deshalb
+    // vor der Triangulierung gesammelt und in beide Polygonränder eingefügt.
+    const lineGroups = new Map();
+    const directionQuantum = 1e-8;
+    const lineQuantum = CSG_EPSILON;
+    function lineInfo(a, b) {
+      const direction = b.clone().sub(a);
+      const length = direction.length();
+      if (!(length > CSG_EPSILON)) return null;
+      direction.multiplyScalar(1 / length);
+      if (direction.x < -directionQuantum ||
+          (Math.abs(direction.x) <= directionQuantum && direction.y < -directionQuantum) ||
+          (Math.abs(direction.x) <= directionQuantum && Math.abs(direction.y) <= directionQuantum && direction.z < 0)) {
+        direction.negate();
+      }
+      const moment = a.clone().cross(direction);
+      const key = [
+        Math.round(direction.x / directionQuantum),
+        Math.round(direction.y / directionQuantum),
+        Math.round(direction.z / directionQuantum),
+        Math.round(moment.x / lineQuantum),
+        Math.round(moment.y / lineQuantum),
+        Math.round(moment.z / lineQuantum)
+      ].join(':');
+      return { key, direction };
+    }
+    polygons.forEach(poly => {
+      for (let i = 0; i < poly.vertices.length; i++) {
+        const a = poly.vertices[i].pos, b = poly.vertices[(i + 1) % poly.vertices.length].pos;
+        const info = lineInfo(a, b);
+        if (!info) continue;
+        let group = lineGroups.get(info.key);
+        if (!group) { group = { direction: info.direction, points: [] }; lineGroups.set(info.key, group); }
+        group.points.push(a, b);
+      }
+    });
+
     polygons.forEach(poly => {
       if (poly.vertices.length < 3) return;
-      const triangleCount = poly.vertices.length - 2;
-      outputTriangles += triangleCount;
+      const boundary = [];
+      for (let i = 0; i < poly.vertices.length; i++) {
+        const a = poly.vertices[i].pos;
+        const b = poly.vertices[(i + 1) % poly.vertices.length].pos;
+        boundary.push(a);
+        const info = lineInfo(a, b);
+        const group = info && lineGroups.get(info.key);
+        if (!group) continue;
+        const direction = b.clone().sub(a);
+        const lengthSquared = direction.lengthSq();
+        if (lengthSquared <= CSG_EPSILON * CSG_EPSILON) continue;
+        const candidates = [];
+        const seen = new Set();
+        for (const point of group.points) {
+          const t = point.clone().sub(a).dot(direction) / lengthSquared;
+          if (t <= CSG_EPSILON / Math.sqrt(lengthSquared) ||
+              t >= 1 - CSG_EPSILON / Math.sqrt(lengthSquared)) continue;
+          const projection = a.clone().addScaledVector(direction, t);
+          if (projection.distanceToSquared(point) > CSG_EPSILON * CSG_EPSILON) continue;
+          const key = [
+            Math.round(point.x / CSG_EPSILON),
+            Math.round(point.y / CSG_EPSILON),
+            Math.round(point.z / CSG_EPSILON)
+          ].join(':');
+          if (!seen.has(key)) { seen.add(key); candidates.push({ point, t }); }
+        }
+        candidates.sort((left, right) => left.t - right.t);
+        candidates.forEach(candidate => boundary.push(candidate.point));
+      }
+      if (boundary.length < 3) return;
+      const center = new THREE.Vector3();
+      boundary.forEach(point => center.add(point));
+      center.multiplyScalar(1 / boundary.length);
+      outputTriangles += boundary.length;
       if (outputTriangles > MAX_OUTPUT_TRIANGLES) {
         throw new RangeError('CSG-Ergebnis überschreitet die Grenze von ' + MAX_OUTPUT_TRIANGLES + ' Dreiecken.');
       }
-      for (let i = 2; i < poly.vertices.length; i++) {
-        [poly.vertices[0], poly.vertices[i-1], poly.vertices[i]].forEach(v => {
-          const p = v.pos.clone().sub(localOffset);
+      for (let i = 0; i < boundary.length; i++) {
+        [center, boundary[i], boundary[(i + 1) % boundary.length]].forEach(point => {
+          const p = point.clone().sub(localOffset);
           if (![p.x, p.y, p.z].every(Number.isFinite) ||
               Math.max(Math.abs(p.x), Math.abs(p.y), Math.abs(p.z)) > MAX_ABSOLUTE_COORDINATE) {
             throw new TypeError('CSG-Ergebnis enthält ungültige oder zu grosse Koordinaten.');
