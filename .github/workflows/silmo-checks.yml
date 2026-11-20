@@ -40,6 +40,8 @@ jobs:
 
       - name: Test unit and project schema APIs
         run: node --test tests/*.test.cjs
+      - name: Measure snapshot history baseline
+        run: npm run benchmark:history
       - name: Check inline JavaScript syntax
         shell: bash
         run: |
