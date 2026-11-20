@@ -244,7 +244,7 @@
   const loftButton=document.createElement('button');loftButton.type='button';loftButton.id='createLoft';loftButton.textContent='⤢ Loft zwischen Profilen';
   const sweepButton=document.createElement('button');sweepButton.type='button';sweepButton.id='createSweep';sweepButton.textContent='〰 Profil entlang Pfad';
   formActions.append(loftButton,sweepButton);proGroup.appendChild(formActions);
-  const formNote=document.createElement('p');formNote.className='cad-pro-note';formNote.textContent='Loft: Wähle zwei geschlossene Skizzenprofile. Sweep: Wähle zuerst ein geschlossenes Profil und danach eine gezeichnete 2D-/3D-Linie oder Kurve als Pfad.';proGroup.appendChild(formNote);
+  const formNote=document.createElement('p');formNote.className='cad-pro-note';formNote.textContent='Loft: Wähle zuerst Aussenprofil A und B. Für jedes Innenloch folgen danach zwei passende Konturen (A und B), also 4, 6, 8 … Profile insgesamt. Sweep: Wähle zuerst ein geschlossenes Profil und danach eine gezeichnete 2D-/3D-Linie oder Kurve als Pfad.';proGroup.appendChild(formNote);
   // Start-/Abschlussaktionen gehören direkt zum Skizzieren und bleiben dort sichtbar.
   const actionWrap=document.createElement('div');actionWrap.className='cad-draw-actions';actionWrap.append(startSketchButton,createSketchButton,cancelSketchButton);
   paneMap.draw.left.insertBefore(clickContourPanel,contourToolsHeading);
