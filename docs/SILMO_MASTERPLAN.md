@@ -432,3 +432,4 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die gemeinsame Geometrie-Neuerzeugung validiert Mindestfläche, Mindestkantenlänge, Selbstüberschneidung und Lage/Abstand aller Innenlöcher. Erst nach erfolgreicher Geometrieerzeugung wird die alte Geometrie ersetzt und History erfasst.
 - Browser-Regression prüft Einfügen und Entfernen eines Punktes in einer extrudierten Innenkontur, ohne die Öffnung zu verlieren.
 - Kantenbehandelte Körper bleiben von dieser direkten Konturbearbeitung ausgeschlossen.
+- Validierung auf Test-Head `f20c40951c0cccf11b89c36fa84d01f4a3769260`: Code Checks Run `44773846336` und Browser-Regression Run `44773846039` erfolgreich. Der unabhängige OCCT-/WebWorker-Lauf `44773846005` läuft noch.
