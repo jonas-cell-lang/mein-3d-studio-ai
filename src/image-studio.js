@@ -137,7 +137,7 @@
     }
     return gap;
   }
-  function validatePrintableContours(outer,candidates,minWallMM=0.8) {
+  function validatePrintableContours(outer,candidates,minWallMM=tolerances.IMAGE_MIN_WALL_THICKNESS_MM) {
     const accepted=[],rejected=[];
     if(!polygonIsSimple(outer))return {ok:false,holes:[],rejected:candidates.length,reason:'Die Aussenkontur ist nicht eindeutig geschlossen oder schneidet sich selbst.'};
     for(const hole of candidates){
@@ -189,7 +189,7 @@
       }
       components.push(component);
     }
-    const minComponentPixels=Math.max(4,Math.floor(w*h*0.000025));
+    const minComponentPixels=Math.max(4,Math.floor(w*h*tolerances.IMAGE_MIN_COMPONENT_AREA_FRACTION));
     const backgroundIds=new Set(components.filter(c=>c.touchesBorder).map(c=>c.id));
     for(const component of components){
       if(component.touchesBorder)continue;
@@ -487,7 +487,7 @@
   window.__silmoImageStudioAutoTraceTest = dataUrl => new Promise((resolve,reject)=>{
     const probe=new Image();probe.onload=()=>{try{resolve(autoTraceContour(probe));}catch(e){reject(e);}};probe.onerror=()=>reject(new Error('Testbild konnte nicht geladen werden.'));probe.src=dataUrl;
   });
-  window.__silmoImageStudioValidateForPrintTest = (outer,holes,minWallMM=0.8) => validatePrintableContours(outer,holes,minWallMM);
+  window.__silmoImageStudioValidateForPrintTest = (outer,holes,minWallMM=tolerances.IMAGE_MIN_WALL_THICKNESS_MM) => validatePrintableContours(outer,holes,minWallMM);
   window.__silmoImageStudioAutoTraceAllTest = (dataUrl,sensitivity=55) => new Promise((resolve,reject)=>{
     const probe=new Image();probe.onload=()=>{try{resolve(autoTraceContours(probe,sensitivity));}catch(e){reject(e);}};probe.onerror=()=>reject(new Error('Testbild konnte nicht geladen werden.'));probe.src=dataUrl;
   });
@@ -543,7 +543,7 @@
       else if(rotation===270){u=y;v=image.naturalWidth-x;}
       return [u/rotated.width*widthMM-widthMM/2,heightMM/2-v/rotated.height*heightMM];
     }).filter(point=>point.every(Number.isFinite));
-    const mapped=state.contours.map(mapContour).filter(points=>points.length>=3&&polygonArea(points)>=0.01);
+    const mapped=state.contours.map(mapContour).filter(points=>points.length>=3&&polygonArea(points)>=tolerances.IMAGE_MIN_PRINT_CONTOUR_AREA_MM2);
     if(!mapped.length){status('Es wurde keine gültige geschlossene Kontur gefunden.');return;}
     let outerIndex=0;
     for(let i=1;i<mapped.length;i++)if(polygonArea(mapped[i])>polygonArea(mapped[outerIndex]))outerIndex=i;
@@ -551,12 +551,12 @@
     for(let i=0;i<mapped.length;i++){
       if(i===outerIndex)continue;
       const candidate=mapped[i],area=polygonArea(candidate);
-      if(area<0.01||area>=polygonArea(points)*0.8)continue;
+      if(area<tolerances.IMAGE_MIN_PRINT_CONTOUR_AREA_MM2||area>=polygonArea(points)*0.8)continue;
       candidates.push(candidate);
     }
     // Druckbarkeit: keine selbstschneidenden Konturen und mindestens 0,8 mm
     // Material zwischen Aussparungen sowie zwischen Loch und Aussenkante.
-    const printCheck=validatePrintableContours(points,candidates,0.8);
+    const printCheck=validatePrintableContours(points,candidates,tolerances.IMAGE_MIN_WALL_THICKNESS_MM);
     if(!printCheck.ok){status(printCheck.reason+' Bitte Kontur manuell korrigieren.');return;}
     const holes=printCheck.holes;
     const result=window.__silmoImageStudioCreateFromPoints?.(points,extrusionMM,holes);
