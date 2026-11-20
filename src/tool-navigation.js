@@ -148,7 +148,7 @@
   const clickContourPanel=document.createElement('div');clickContourPanel.className='cad-group-body';clickContourPanel.id='clickContourPanel';
   clickContourPanel.style.cssText='margin:10px 0;padding:12px;border:1px solid #365575;border-radius:12px;background:#10243a';
   const clickContourTitle=document.createElement('strong');clickContourTitle.textContent='Einfach zeichnen – Punkt für Punkt';
-  const clickContourHelp=document.createElement('p');clickContourHelp.className='note';clickContourHelp.textContent='Aktiviere den Punktmodus und setze die Ecken deiner Form mit einzelnen Klicks. Du musst die Maus nicht gedrückt halten.';
+  const clickContourHelp=document.createElement('p');clickContourHelp.className='note';clickContourHelp.textContent='Zeichne zuerst die Aussenkontur. Danach kannst du mit „Innenloch“ weitere geschlossene Konturen in derselben Skizze hinzufügen. Ungültige, überlappende oder ausserhalb liegende Löcher werden abgewiesen.';
   const clickContourToggle=document.createElement('button');clickContourToggle.type='button';clickContourToggle.id='clickContourToggle';clickContourToggle.className='wide';clickContourToggle.textContent='＋ Punktmodus einschalten';clickContourToggle.setAttribute('aria-pressed','false');
   const clickContourUndo=document.createElement('button');clickContourUndo.type='button';clickContourUndo.id='clickContourUndo';clickContourUndo.className='wide';clickContourUndo.textContent='↶ Letzten Punkt entfernen';clickContourUndo.disabled=true;
   const clickContourFinish=document.createElement('button');clickContourFinish.type='button';clickContourFinish.id='clickContourFinish';clickContourFinish.className='wide primary';clickContourFinish.textContent='✓ Kontur abschliessen';clickContourFinish.disabled=true;
