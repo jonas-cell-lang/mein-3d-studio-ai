@@ -425,3 +425,77 @@ test('STL-Topologie überspringt grosse Netze kontrolliert statt den Import zu b
   assert.equal(result.triangleCount, 100001);
   assert.equal(result.maxTriangles, 100000);
 });
+
+test('Projektdatei öffnet ein grosses indiziertes Mesh verlustfrei über den vollständigen Datei-I/O-Pfad', () => {
+  withBrowserGlobals(() => {
+    const vertexCount = 24999;
+    const positions = new Float32Array(vertexCount * 3);
+    const normals = new Float32Array(vertexCount * 3);
+    const uvs = new Float32Array(vertexCount * 2);
+    const indices = new Uint32Array(vertexCount);
+    for (let i = 0; i < vertexCount; i++) {
+      const angle = (i / vertexCount) * Math.PI * 2;
+      const radius = 5 + (i % 53) * 0.01;
+      positions[i * 3] = Math.cos(angle) * radius;
+      positions[i * 3 + 1] = Math.sin(angle) * radius;
+      positions[i * 3 + 2] = (i % 113) * 0.01;
+      normals[i * 3] = Math.cos(angle);
+      normals[i * 3 + 1] = Math.sin(angle);
+      normals[i * 3 + 2] = 0;
+      uvs[i * 2] = i / vertexCount;
+      uvs[i * 2 + 1] = (i % 97) / 96;
+      indices[i] = i;
+    }
+    const source = new THREE.BufferGeometry();
+    source.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    source.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    source.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    source.setIndex(new THREE.BufferAttribute(indices, 1));
+    const project = {
+      app: 'SILMO 3D Studio AI',
+      version: schema.CURRENT_PROJECT_VERSION,
+      bedWidthMM: 220,
+      bedDepthMM: 220,
+      uniform: true,
+      objects: [{
+        objectId: 'large-roundtrip-mesh',
+        label: 'Grosses Testmesh',
+        position: [1, 2, 3],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+        color: '#336699',
+        geometry: projectGeometry.serializeGeometry(source)
+      }]
+    };
+    const text = JSON.stringify(project);
+    source.dispose();
+
+    const { state, deps } = makeProjectDependencies();
+    projectIO.createProjectIO(deps).openProjectFile({
+      size: Buffer.byteLength(text),
+      text
+    });
+
+    try {
+      assert.ok(state.committed, 'Projektdatei wurde nicht übernommen');
+      assert.equal(state.committed.objects.length, 1);
+      const restored = state.committed.objects[0];
+      assert.equal(restored.uuid, 'large-roundtrip-mesh');
+      assert.equal(restored.geometry.attributes.position.count, vertexCount);
+      assert.equal(restored.geometry.index.count, vertexCount);
+      assert.deepEqual(Array.from(restored.geometry.attributes.position.array), Array.from(positions));
+      assert.deepEqual(Array.from(restored.geometry.attributes.normal.array), Array.from(normals));
+      assert.deepEqual(Array.from(restored.geometry.attributes.uv.array), Array.from(uvs));
+      assert.deepEqual(Array.from(restored.geometry.index.array), Array.from(indices));
+      assert.deepEqual(restored.position.toArray(), [1, 2, 3]);
+      assert.match(state.status, /Projekt geöffnet/);
+      assert.equal(state.input.value, '');
+    } finally {
+      if (state.committed) state.committed.objects.forEach(object => {
+        object.geometry.dispose();
+        object.material.dispose();
+      });
+    }
+  });
+});
+
