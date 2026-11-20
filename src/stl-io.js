@@ -196,12 +196,11 @@
       ) / 6;
       componentVolumes.set(root, componentVolumes.get(root) + volume);
     }
-    let invertedComponentCount = 0, positiveComponentCount = 0;
+    let invertedComponentCount = 0;
     const componentRecords = [];
     for (const [root, volume] of componentVolumes) {
       signedVolumeMM3 += volume;
       if (volume < -1e-12) invertedComponentCount++;
-      else if (volume > 1e-12) positiveComponentCount++;
       componentRecords.push({ volume, bounds: componentBounds.get(root) });
     }
     const componentCount = componentVolumes.size;
@@ -229,7 +228,7 @@
       analyzed: true, triangleCount, weldedVertexCount: vertexCoordinates.length / 3,
       uniqueEdgeCount: edges.size, boundaryEdgeCount, nonManifoldEdgeCount,
       inconsistentEdgeCount, nonManifoldVertexCount, duplicateTriangleCount, collapsedTriangleCount, degenerateTriangleCount,
-      isClosedEdgeManifold, invertedWinding, mixedWinding, disconnectedWindingConflict,
+      isClosedEdgeManifold, invertedWinding, disconnectedWindingConflict,
       componentCount, invertedComponentCount, signedVolumeMM3, weldToleranceMM
     });
   }
