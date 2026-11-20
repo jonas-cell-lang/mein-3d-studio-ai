@@ -603,3 +603,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Testgeometrie wird für die Analyse entsprechend der bestehenden SILMO-Einheitenkonvention von 10 mm pro Welteinheit in Millimeter skaliert.
 - Ziel ist nicht nur ein korrektes Volumen, sondern auch ein geschlossenes, konsistent orientiertes Dreiecksnetz als Voraussetzung für verlässlichen STL-Export.
 - Neue Tests enthalten in Commit `57ccbcbb5fbf15c067aa6fe8d79b3d2c6f1d354d`; CI-Prüfungen ausstehend.
+
+
+### 6.51 CSG-Reparatur: T-Verbindungen vor der Triangulierung auflösen (20.11.2026)
+- Die neuen STL-Topologietests fanden bei überlappender Würfel-Vereinigung und -Differenz jeweils 12 offene Kanten, obwohl die Volumenwerte korrekt waren.
+- Ursache: BSP-Schnittpolygone konnten T-Verbindungen erzeugen, bei denen eine lange Polygonkante nicht dieselben Zwischenpunkte wie die benachbarte, unterteilte Kante enthielt.
+- Die CSG-Ausgabe gruppiert jetzt kollineare Polygonkanten und fügt gemeinsame Zwischenpunkte vor der Triangulierung in die Polygonränder ein. Die Polygone werden anschliessend über einen Mittelpunkt trianguliert.
+- Nach dieser Änderung bestehen alle 110 Unit-Tests einschliesslich der beiden geschlossenen CSG-Topologieprüfungen.
+- Code-Check-Commit `dcd6863410dbb1a1cac3af50f85be8a7db35709a`: 110/110 Tests erfolgreich. Browser- und OCCT-Workflows sind separat noch zu bestätigen.
