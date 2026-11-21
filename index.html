@@ -676,7 +676,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   const CSG_EPSILON = window.SILMOTolerances.CSG_GEOMETRY_WORLD_UNITS;
 
   function getOcctSourceDescriptor(obj) {
-    if (['box', 'boolean'].includes(obj.userData.occtSource?.kind)) {
+    if (['box', 'boolean', 'step'].includes(obj.userData.occtSource?.kind)) {
       return JSON.parse(JSON.stringify(obj.userData.occtSource));
     }
     if (obj.userData.sketch?.outlinePoints) {
@@ -985,6 +985,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       ownedHandles.push(result.shapeId);
       return result;
     }
+    if (source.kind === 'step') {
+      const result = await window.__silmoOcctClient.importStep(source.stepText);
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
     if (source.kind === 'sketch' && source.sketch?.outlinePoints) {
       const rings = [source.sketch.outlinePoints,
         ...(Array.isArray(source.sketch.holes) ? source.sketch.holes : [])];
@@ -1059,11 +1064,13 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       }
       return;
     }
-    if (source?.kind !== 'box') return;
+    if (!['box', 'step'].includes(source?.kind)) return;
     let result = null;
     try {
       if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
-      result = await window.__silmoOcctClient.createBox(source.widthMM, source.depthMM, source.heightMM);
+      result = source.kind === 'step'
+        ? await window.__silmoOcctClient.importStep(source.stepText)
+        : await window.__silmoOcctClient.createBox(source.widthMM, source.depthMM, source.heightMM);
       if (!objects.includes(mesh)) {
         await window.__silmoOcctClient.releaseShape(result.shapeId);
         return;
