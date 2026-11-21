@@ -391,6 +391,41 @@ async function execute(method, args) {
     return result;
   }
 
+  if (method === "getWireframe") {
+    const shape = shapes.get(args.shapeId);
+    if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
+    const edges = kernel.getSubShapes(shape, "edge");
+    try {
+      const indexByHash = new Map(edges.map((edge, index) => [
+        kernel.hashCode(edge, 2147483647), index
+      ]));
+      const wireframe = kernel.wireframe(shape, {
+        source: "triangulation",
+        deflection: 0.05
+      });
+      const groups = new Int32Array(wireframe.edgeCount * 3);
+      for (let i = 0; i < wireframe.edgeCount; i++) {
+        const start = i * 3;
+        const edgeIndex = indexByHash.get(wireframe.edgeGroups[start + 2]);
+        if (!Number.isInteger(edgeIndex)) {
+          throw new Error("Eine dargestellte OCCT-Kante konnte keiner nativen Kantenkennung zugeordnet werden.");
+        }
+        groups[start] = wireframe.edgeGroups[start];
+        groups[start + 1] = wireframe.edgeGroups[start + 1];
+        groups[start + 2] = edgeIndex;
+      }
+      return {
+        points: new Float32Array(wireframe.points),
+        edgeGroups: groups,
+        edgeCount: wireframe.edgeCount
+      };
+    } finally {
+      for (const edge of edges) {
+        try { kernel.release(edge); } catch { /* best effort cleanup */ }
+      }
+    }
+  }
+
   if (method === "filletEdges") {
     const { shapeId, edgeIndices, radiusMM } = args;
     const shape = shapes.get(shapeId);
