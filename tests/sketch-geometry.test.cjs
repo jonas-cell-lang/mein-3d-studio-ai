@@ -105,6 +105,12 @@ test('abgerundetes Profil unterstützt die umgekehrte Konturrichtung für Innenk
   assert.ok(hole.getPoints(8).length >= 8);
 });
 
+test('abgerundetes Profil verwendet die benannte Mindest-Eckenradiusgrenze', () => {
+  const shape = sketchGeometry.createParametricProfile('roundedRectangle', { width: 4, depth: 3 }, 0);
+  const points = shape.getPoints(8);
+  assert.ok(Math.abs(points[0].x - (-2 + tolerances.SKETCH_PROFILE_MIN_CORNER_RADIUS_WORLD_UNITS)) < 1e-9);
+});
+
 test('parametrische Profile lehnen ungültige Abmessungen kontrolliert ab', () => {
   assert.throws(() => sketchGeometry.createParametricProfile('rectangle', { width: 0, depth: 2 }), /positive Abmessungen/);
 });
