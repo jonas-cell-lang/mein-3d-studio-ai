@@ -430,8 +430,13 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(edgePickTolerance.far, null,
     'Die bildschirmbasierte Kantenerkennung akzeptiert einen Klick ausserhalb der Toleranz');
   await page.mouse.click(edgeScreenPoint.x + 8, edgeScreenPoint.y + 6);
-  await page.waitForFunction(() => document.querySelector('#occtEdgeList option[value="0"]')?.selected === true,
-    null, { timeout: 10000 });
+  await page.waitForTimeout(300);
+  const edgePickEventDebug = await page.evaluate(() => ({
+    event: window.__silmoOcctLastEdgePickEvent || null,
+    selected: document.querySelector('#occtEdgeList option[value="0"]')?.selected === true
+  }));
+  assert.ok(edgePickEventDebug.selected,
+    '3D-Klick hat Kante 1 nicht ausgewählt. Ereignisdiagnose: ' + JSON.stringify(edgePickEventDebug));
   const viewportEdgePick = await page.evaluate(() => ({
     selected: Array.from(window.__silmoOcctEdgeOverlay?.selectedIndices || []),
     highlighted: window.__silmoOcctEdgeOverlay?.group.children
