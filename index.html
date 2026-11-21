@@ -933,8 +933,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   async function inspectSelectedOcctShape() {
     const button = $('inspectOcctShape');
     if (button.disabled) return;
-    if (!selected) { status.textContent = 'Bitte zuerst einen OCCT-Körper auswählen.'; return; }
-    const shapeId = window.__silmoOcctObjectHandles?.get(selected);
+    const sourceMesh = selected;
+    if (!sourceMesh) { status.textContent = 'Bitte zuerst einen OCCT-Körper auswählen.'; return; }
+    const shapeId = window.__silmoOcctObjectHandles?.get(sourceMesh);
     if (!Number.isInteger(shapeId) || shapeId <= 0 || !window.__silmoOcctClient) {
       status.textContent = 'Das ausgewählte Objekt besitzt keinen aktiven nativen OCCT-Körper. Gewöhnliche Meshes können hier noch nicht geprüft werden.';
       return;
