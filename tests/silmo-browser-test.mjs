@@ -281,29 +281,16 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     await page.locator('#addOcctBox').click();
     await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
   }
-  await page.evaluate(start => {
-    const rows = [...document.querySelectorAll('#objects .object-select')];
-    for (let index = 0; index < 3; index++) {
-      const object = window.__silmoObjectsForTest?.[start + index];
-      if (object) object.position.x = window.SILMOUnits.mmToWorldUnits(index * 30);
-      else {
-        const selectButton = rows[start + index];
-        if (!selectButton) throw new Error('Dritter OCCT-Testkörper fehlt in der Objektliste.');
-        selectButton.dataset.multiBodyPosition = String(index * 30);
-      }
-    }
-    if (window.__silmoObjectsForTest) {
-      window.__silmoObjectsForTest.slice(start, start + 3).forEach(object => object.updateMatrixWorld(true));
-    }
-  }, multiBodyStart);
-  // Die App-Objektliste ist absichtlich nicht global exponiert; Positionen über die
-  // normale Objekt-/Transformationsoberfläche setzen und danach alle drei auswählen.
-  await page.evaluate(start => {
-    const rows = [...document.querySelectorAll('#objects .object-select')];
-    rows.slice(start, start + 3).forEach((button, index) => {
-      button.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: index > 0 }));
-    });
-  }, multiBodyStart);
+  // Körper mit der normalen SILMO-Tastaturbedienung auf 0, 30 und 60 mm verteilen.
+  for (const [index, steps] of [[1, 3], [2, 6]]) {
+    await page.locator('#objects .object-select').nth(multiBodyStart + index).click();
+    for (let step = 0; step < steps; step++) await page.keyboard.press('Shift+ArrowRight');
+  }
+  await page.locator('#objects .object-select').nth(multiBodyStart).click();
+  await page.locator('#objects .object-select').nth(multiBodyStart + 1).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true })));
+  await page.locator('#objects .object-select').nth(multiBodyStart + 2).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true })));
   const previousMultiBodyShapeId = await page.evaluate(() => window.__silmoOcctLastBoolean?.shapeId || 0);
   await page.locator('#booleanUnion').evaluate(button => {
     if (button.disabled) throw new Error('OCCT-Mehrkörper-Fuse-Schaltfläche ist deaktiviert.');
@@ -313,8 +300,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     window.__silmoOcctLastBoolean.shapeId > previous, previousMultiBodyShapeId, { timeout: 30000 });
   const multiBodyResult = await page.evaluate(async () => ({
     ...window.__silmoOcctLastBoolean,
-    workerVolumeMM3: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastBoolean.shapeId),
-    source: window.__silmoOcctLastSceneSource || null
+    workerVolumeMM3: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastBoolean.shapeId)
   }));
   assert.ok(Math.abs(multiBodyResult.volumeMM3 - 24000) < 1e-6 &&
     Math.abs(multiBodyResult.workerVolumeMM3 - 24000) < 1e-6,
@@ -330,9 +316,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.keyboard.press('Control+y');
   await waitForOcctRestore(multiRedoGeneration);
   const multiRedo = await page.evaluate(async () => ({
-    volume: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId),
-    sourceKind: window.__silmoOcctLastRestored.source?.kind || null,
-    nestedKind: window.__silmoOcctLastRestored.source?.operands?.[0]?.kind || null
+    volume: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId)
   }));
   assert.ok(Math.abs(multiRedo.volume - 24000) < 1e-6,
     'Redo rekonstruierte das Mehrkörper-OCCT-Ergebnis nicht korrekt');
