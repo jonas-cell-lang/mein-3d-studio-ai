@@ -261,7 +261,7 @@
   function runExam(){
     const audit=window.__silmoTutorialModelAudit?.()||[];
     const valid=audit.filter(x=>x&&x.vertexCount>=20&&x.width>0&&x.depth>0&&x.height>0&&[x.width,x.depth,x.height].every(Number.isFinite));
-    const hasExport=exportObserved||/STL exportiert/i.test($('status')?.textContent||'');
+    const hasExport=exportObserved||Number(window.__silmoExportRevision)>0||/STL exportiert/i.test($('status')?.textContent||'');
     const heart=refreshHeartRecognition();
     const checks=[
       {label:'Mindestens ein echter 3D-Körper mit ausreichend Geometrie',ok:valid.length>0},
