@@ -231,7 +231,8 @@ test('OCCT-Konstruktionsrezepte für Quader, Skizzen und Boolesche Körper werde
       ],
       translationsMM: [[0,0,0],[10,0,0]]
     } },
-    { occtSource: { kind: 'cone', radiusMM: 10, heightMM: 30 } }
+    { occtSource: { kind: 'cone', radiusMM: 10, heightMM: 30 } },
+    { occtSource: { kind: 'torus', majorRadiusMM: 20, minorRadiusMM: 5 } }
   );
   assert.equal(schema.validateProjectEnvelope(project), project);
 
@@ -242,6 +243,10 @@ test('OCCT-Konstruktionsrezepte für Quader, Skizzen und Boolesche Körper werde
   const invalidBox = structuredClone(project);
   invalidBox.objects[0].occtSource.widthMM = Infinity;
   assert.throws(() => schema.validateProjectEnvelope(invalidBox), /OCCT-Quaderabmessungen/);
+
+  const invalidTorus = structuredClone(project);
+  invalidTorus.objects[7].occtSource.minorRadiusMM = 20;
+  assert.throws(() => schema.validateProjectEnvelope(invalidTorus), /OCCT-Torusabmessungen/);
 
   const invalidCone = structuredClone(project);
   invalidCone.objects[5].occtSource.heightMM = 0;
