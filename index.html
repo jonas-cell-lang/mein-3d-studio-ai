@@ -976,6 +976,106 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
   }
 
+  async function importSTEPFile(file) {
+    if (!file) return;
+    if (!/\\.(?:step|stp)$/i.test(file.name || '') || file.size > 10 * 1024 * 1024) {
+      status.textContent = 'STEP-Import benötigt eine .step/.stp-Datei mit höchstens 10 MB.';
+      return;
+    }
+    let result = null;
+    let geometry = null;
+    try {
+      status.textContent = 'STEP-Datei wird mit dem OCCT-Kern importiert …';
+      const stepText = await file.text();
+      if (!window.__silmoOcctClient) {
+        window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+      }
+      result = await window.__silmoOcctClient.importStep(stepText);
+      if (!result || !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0 ||
+          !result.mesh?.positions?.length || !result.mesh?.indices?.length ||
+          result.mesh.positions.length % 3 !== 0 || result.mesh.indices.length % 3 !== 0) {
+        throw new Error('Die STEP-Datei enthält keinen gültigen Körper mit Darstellungsnetz.');
+      }
+      const positions = new Float32Array(result.mesh.positions.length);
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      for (let i = 0; i < positions.length; i++) {
+        const value = result.mesh.positions[i] * mmToWorld;
+        if (!Number.isFinite(value)) throw new Error('STEP-Geometrie enthält ungültige Koordinaten.');
+        positions[i] = value;
+      }
+      geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      const size = geometry.boundingBox.getSize(new THREE.Vector3());
+      if (![size.x, size.y, size.z].every(value => Number.isFinite(value) && value > CSG_EPSILON)) {
+        throw new Error('STEP-Datei hat ungültige oder leere Abmessungen.');
+      }
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
+        color: '#50b8c9', roughness: 0.42, metalness: 0.12
+      }));
+      geometry = null;
+      mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
+      mesh.userData.percent = { x: 100, y: 100, z: 100 };
+      mesh.userData.label = (file.name || 'STEP-Modell').replace(/\\.(?:step|stp)$/i, '');
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtSource = { kind: 'step', stepText };
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      recordHistory();
+      scene.add(mesh);
+      objects.push(mesh);
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      selectObject(mesh);
+      window.__silmoOcctLastCreated = {
+        shapeId: result.shapeId, volumeMM3: result.volumeMM3,
+        triangleCount: result.mesh.triangleCount, importedFormat: 'STEP'
+      };
+      result = null;
+      status.textContent = 'STEP-Modell importiert. OCCT-Volumen: ' +
+        mesh.userData.occtVolumeMM3.toFixed(2) + ' mm³.';
+    } catch (error) {
+      if (geometry) geometry.dispose();
+      if (result?.shapeId && window.__silmoOcctClient) {
+        await window.__silmoOcctClient.releaseShape(result.shapeId).catch(() => {});
+      }
+      status.textContent = 'STEP-Import fehlgeschlagen: ' + (error.message || 'Datei prüfen.');
+    }
+  }
+
+  async function exportSelectedSTEP() {
+    const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    if (targets.length !== 1) {
+      status.textContent = 'Für den STEP-Export bitte genau einen OCCT-Körper auswählen.';
+      return;
+    }
+    const shapeId = window.__silmoOcctObjectHandles?.get(targets[0]);
+    if (!Number.isInteger(shapeId) || shapeId <= 0 || !window.__silmoOcctClient) {
+      status.textContent = 'STEP-Export benötigt einen echten OCCT-B-Rep-Körper. STL-Meshes zuerst in OCCT erstellen oder importieren.';
+      return;
+    }
+    try {
+      status.textContent = 'STEP-Datei wird aus dem OCCT-B-Rep erzeugt …';
+      const stepText = await window.__silmoOcctClient.exportStep(shapeId);
+      const blob = new Blob([stepText], { type: 'application/step' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const baseName = String(targets[0].userData.label || 'silmo-modell')
+        .replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '') || 'silmo-modell';
+      link.href = url;
+      link.download = baseName + '.step';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      status.textContent = 'STEP-Datei exportiert (AP242, Millimeter).';
+    } catch (error) {
+      status.textContent = 'STEP-Export fehlgeschlagen: ' + (error.message || 'Körper prüfen.');
+    }
+  }
+
   async function createOcctShapeFromSource(source, ownedHandles) {
     if (!source || typeof source !== 'object') {
       throw new Error('Ungültige gespeicherte OCCT-Konstruktionsquelle.');
