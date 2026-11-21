@@ -233,6 +233,14 @@
     if (!source || typeof source !== 'object' || Array.isArray(source) || depth > 4) {
       throw new Error('Ungültige OCCT-Konstruktionsdaten.');
     }
+    if (source.kind === 'torus') {
+      if (![source.majorRadiusMM, source.minorRadiusMM].every(value =>
+        Number.isFinite(value) && value >= 0.01 && value <= 2000) ||
+        source.majorRadiusMM <= source.minorRadiusMM) {
+        throw new Error('Ungültige OCCT-Torusabmessungen.');
+      }
+      return;
+    }
     if (source.kind === 'cone') {
       if (![source.radiusMM, source.heightMM].every(value =>
         Number.isFinite(value) && value >= 0.01 && value <= 2000)) {
