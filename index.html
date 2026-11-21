@@ -940,6 +940,63 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       return;
     }
     const source = mesh.userData.occtSource;
+    if (source?.kind === 'boolean') {
+      const createdHandles = [];
+      let booleanResult = null;
+      try {
+        if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+        const operandIds = [];
+        for (const operand of source.operands || []) {
+          let created;
+          if (operand?.kind === 'box') {
+            created = await window.__silmoOcctClient.createBox(
+              operand.widthMM, operand.depthMM, operand.heightMM
+            );
+          } else if (operand?.kind === 'sketch' && operand.sketch?.outlinePoints) {
+            const rings = [operand.sketch.outlinePoints,
+              ...(Array.isArray(operand.sketch.holes) ? operand.sketch.holes : [])];
+            const loops = rings.map(ring => ring.map(point => [
+              worldUnitsToMm(point[0]), worldUnitsToMm(point[1])
+            ]));
+            created = await window.__silmoOcctClient.createExtrusion(loops, operand.sketch.extrusionMM);
+          } else {
+            throw new Error('Gespeicherte OCCT-Boolean-Quelle kann nicht rekonstruiert werden.');
+          }
+          createdHandles.push(created.shapeId);
+          operandIds.push(created.shapeId);
+        }
+        if (operandIds.length !== 2) throw new Error('OCCT-Undo benötigt genau zwei rekonstruierbare Ausgangskörper.');
+        booleanResult = await window.__silmoOcctClient.booleanOperation(
+          source.operation, operandIds, source.translationsMM
+        );
+        await Promise.all(createdHandles.map(shapeId =>
+          window.__silmoOcctClient.releaseShape(shapeId)
+        ));
+        if (!objects.includes(mesh)) {
+          await window.__silmoOcctClient.releaseShape(booleanResult.shapeId);
+          return;
+        }
+        window.__silmoOcctObjectHandles ||= new WeakMap();
+        window.__silmoOcctObjectHandles.set(mesh, booleanResult.shapeId);
+        mesh.userData.geometryKernel = 'occt-wasm';
+        mesh.userData.occtShapeId = booleanResult.shapeId;
+        mesh.userData.occtVolumeMM3 = booleanResult.volumeMM3;
+        window.__silmoOcctLastRestored = {
+          shapeId: booleanResult.shapeId, volumeMM3: booleanResult.volumeMM3
+        };
+      } catch (error) {
+        await Promise.all(createdHandles.map(shapeId =>
+          window.__silmoOcctClient.releaseShape(shapeId).catch(() => {})
+        ));
+        if (booleanResult?.shapeId) {
+          await window.__silmoOcctClient.releaseShape(booleanResult.shapeId).catch(() => {});
+        }
+        mesh.userData.geometryKernel = 'three-mesh-fallback';
+        status.textContent = 'OCCT-Boolean konnte nach Undo/Redo nicht wiederhergestellt werden: ' +
+          (error.message || 'Unbekannter Kernel-Fehler');
+      }
+      return;
+    }
     if (source?.kind !== 'box') return;
     let result = null;
     try {
@@ -1115,7 +1172,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       updateMoveGizmo();
       // Skizzenkörper können aus ihren gespeicherten Parametern erneut als B-Rep aufgebaut werden.
       restoredObjects.forEach(obj => {
-        if (obj.userData.sketch?.outlinePoints || obj.userData.occtSource?.kind === 'box') {
+        if (obj.userData.sketch?.outlinePoints ||
+            ['box', 'boolean'].includes(obj.userData.occtSource?.kind)) {
           rebuildOcctObjectHandle(obj);
         }
       });
