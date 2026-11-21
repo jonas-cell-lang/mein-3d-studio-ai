@@ -830,3 +830,10 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Auf Commit `e880e6ecd0c0583183fbaaaae0234d1838ab9ff1` bestanden 141/141 Unit-Tests (Code-Checks, Run `44884976939`), die vollständige Browser-Regression mit OCCT-Common, Undo/Redo, Projekt-Roundtrip und Worker-Stress (Run `44884976971`) sowie der isolierte OCCT-/WebWorker-Test (Run `44884976916`).
 - **Bewusste Grenze:** Die OCCT-Booleschen UI-Operationen setzen aktuell genau zwei echte B-Rep-Körper mit Identitätsrotation und Einheitsskalierung voraus; Verschiebungen werden an den Worker übergeben. Common ist für zwei unveränderte OCCT-B-Rep-Körper verfügbar und hat noch keinen BSP-Fallback für gewöhnliche Three.js-Meshes. Beliebige Rotation, Skalierung, mehrere Werkzeuge und verschachtelte Boolean-Ketten sind noch nicht vollständig abgedeckt.
 - PR #70 bleibt offen und Draft. Es erfolgten kein Merge, kein Deployment und keine Veröffentlichung.
+
+
+### 6.82 Dokumentationsabgleich: OCCT-Produktionsintegration und Projektformat v3 (21.11.2026)
+- Die OCCT-Prototyp-README wurde an den tatsächlichen Integrationsstand angepasst. Sie trennt jetzt klar isolierte Kerneltests, den Produktions-Worker und die Grenzen der UI-Integration.
+- Die Dokumentation des Projektformats v3 beschreibt nun das optionale Feld `occtSource`, unterstützte Rezeptfamilien, Schema-Prüfungen und die Rekonstruktion im Worker.
+- Es wird ausdrücklich festgehalten, dass v3 keine rohe native OCCT-B-Rep-Datei speichert und dass nicht alle Geometrietypen bereits OCCT-Rezepte besitzen.
+- Diese Änderung ist Dokumentation; sie ändert weder Laufzeitcode noch Projektdateien. Die zugehörigen CI-Prüfungen werden auf dem neuen Commit separat ausgewertet.
