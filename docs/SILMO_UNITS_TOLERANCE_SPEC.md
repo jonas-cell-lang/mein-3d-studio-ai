@@ -293,3 +293,4 @@ Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPS
 - Der Wert ist deshalb ausdrücklich eine Bildverarbeitungs-/Detailregel und keine Millimeter-, Welteinheiten- oder Kernel-Toleranz.
 - `src/image-studio.js` verwendet die zentrale Konstante; `tests/tolerances.test.cjs` sichert den unveränderten Zahlenwert und den Laufzeit-Verwendungs-Audit.
 - Die bisherige Konturvereinfachung bleibt numerisch unverändert. Weitere Pixel-/Farb-Schwellen werden nicht pauschal in die CAD-Toleranz-API aufgenommen.
+- Die Änderung wurde auf Commit 13f354fd9a27a3d3f631f50814d95c33d34be361 durch 124/124 Unit-Tests, den Laufzeit-Verwendungs-Audit und den vollständigen Browser-Interaktionstest validiert; der isolierte OCCT-WebWorker-Test war ebenfalls erfolgreich.
