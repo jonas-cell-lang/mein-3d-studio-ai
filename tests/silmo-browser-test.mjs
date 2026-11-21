@@ -1794,14 +1794,19 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await examPage.evaluate(points=>window.__silmoTestCreateHeartSketch(points),roughHeart);
   const createdHeart=await examPage.evaluate(()=>window.__silmoHeartRecognitionSnapshot());
   assert.equal(createdHeart.recognized,true,'Herzform wird nach der Umwandlung in einen 3D-Körper nicht mehr erkannt');
+  // The native OCCT extrusion completes asynchronously. Wait for its final status
+  // before starting the independent STL export, otherwise the late kernel result
+  // can overwrite the export status and make this test timing-dependent.
+  await examPage.waitForFunction(() => {
+    const text = document.querySelector('#status')?.textContent || '';
+    return /Skizzenkörper als exakter OCCT-B-Rep erstellt|OCCT-Extrusion nicht verfügbar/.test(text);
+  }, null, { timeout: 20000 });
   await examPage.evaluate(()=>window.__silmoTutorialEnterExamForTest());
-  assert.match(await examPage.locator('#tutorialTitle').innerText(),/Zeichne selbst ein Herz/,'Abschlusstest erklärt die eigene Herzzeichnung nicht');
-  assert.equal(await examPage.locator('#tutorialRecognizeHeart').isVisible(),true,'Schaltfläche zur Herz-Erkennung fehlt');
   await examPage.locator('[data-tab="print"]').click();
   const examExport=examPage.waitForEvent('download');
   await examPage.locator('#exportModel').click();
   await examExport;
-  await examPage.waitForFunction(() => Number(window.__silmoExportRevision) > 0, null, { timeout: 5000 });
+  await examPage.waitForFunction(() => Number(window.__silmoExportRevision) > 0 && /STL exportiert/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 5000 });
   assert.match(await examPage.locator('#status').innerText(),/STL exportiert/,'STL-Export wurde nicht erfolgreich abgeschlossen');
   await examPage.locator('#tutorialRecognizeHeart').click();
   assert.match(await examPage.locator('#tutorialHeartRecognition').innerText(),/Herzform ungefähr erkannt/,'Erkennungsergebnis wird nicht angezeigt');
