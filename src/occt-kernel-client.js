@@ -78,7 +78,7 @@
         await initialize();
         return send("createExtrusion", { loops, heightMM });
       },
-      async booleanOperation(operation, shapeIds) {
+      async booleanOperation(operation, shapeIds, translationsMM = [[0, 0, 0], [0, 0, 0]]) {
         if (!["fuse", "cut", "common"].includes(operation)) {
           throw new Error("Unbekannte OCCT-Boolean-Operation.");
         }
@@ -86,8 +86,13 @@
             shapeIds.some(id => !Number.isInteger(id) || id <= 0) || shapeIds[0] === shapeIds[1]) {
           throw new Error("Eine OCCT-Boolean-Operation benötigt zwei verschiedene Körperkennungen.");
         }
+        if (!Array.isArray(translationsMM) || translationsMM.length !== 2 ||
+            translationsMM.some(offset => !Array.isArray(offset) || offset.length !== 3 ||
+              !offset.every(value => Number.isFinite(value) && Math.abs(value) <= 200000))) {
+          throw new Error("OCCT-Boolean-Transformationen müssen zwei gültige XYZ-Verschiebungen in mm enthalten.");
+        }
         await initialize();
-        return send("booleanOperation", { operation, shapeIds });
+        return send("booleanOperation", { operation, shapeIds, translationsMM });
       },
       async releaseShape(shapeId) {
         await initialize();
