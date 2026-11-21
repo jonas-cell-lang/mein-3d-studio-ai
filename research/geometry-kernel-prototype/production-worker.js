@@ -48,8 +48,8 @@ async function execute(method, args) {
     const { stepText } = args;
     if (typeof stepText !== "string" || stepText.length < 20 ||
         stepText.length > 10 * 1024 * 1024 ||
-        !/^ISO-10303-21\\s*;/i.test(stepText.trimStart()) ||
-        !/END-ISO-10303-21\\s*;\\s*$/i.test(stepText.trim())) {
+        !/^ISO-10303-21\s*;/i.test(stepText.trimStart()) ||
+        !/END-ISO-10303-21\s*;\s*$/i.test(stepText.trim())) {
       throw new Error("STEP-Datei ist ungültig oder überschreitet 10 MB.");
     }
     let shape = null;
