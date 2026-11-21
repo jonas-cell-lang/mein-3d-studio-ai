@@ -460,6 +460,36 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'Fehlgeschlagene Boolean-Operation beschädigte ihre Ausgangskörper');
   assert.ok(Math.abs(failedCommonRecovery.afterFailureVolume - 8) < 1e-7,
     'OCCT-Worker-Queue blieb nach fehlgeschlagener Boolean-Operation blockiert');
+
+  // Vollständige affine Transformation: Rotation, ungleichmässige Skalierung und Position
+  // müssen vor dem OCCT-Fuse auf die echten B-Rep-Körper angewendet werden.
+  const affineBooleanRecovery = await occtRoundTripPage.evaluate(async () => {
+    const client = window.__silmoOcctClient;
+    const first = await client.createBox(20, 20, 20);
+    const second = await client.createBox(20, 20, 20);
+    const singular = Array(12).fill(0);
+    let singularRejected = false;
+    try { await client.booleanOperation('fuse', [first.shapeId, second.shapeId], [singular, singular]); }
+    catch { singularRejected = true; }
+    const rotatedScaled = [0, -1, 0, 20, 2, 0, 0, 0, 0, 0, 1, 0];
+    const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
+    const fused = await client.booleanOperation('fuse',
+      [first.shapeId, second.shapeId], [rotatedScaled, identity]);
+    const volumes = [
+      await client.getVolume(first.shapeId),
+      await client.getVolume(second.shapeId),
+      await client.getVolume(fused.shapeId)
+    ];
+    await Promise.all([first.shapeId, second.shapeId, fused.shapeId].map(id => client.releaseShape(id)));
+    return { singularRejected, volumes };
+  });
+  assert.equal(affineBooleanRecovery.singularRejected, true,
+    'Entartete affine Transformation wurde nicht vor dem OCCT-Aufruf abgelehnt');
+  assert.ok(Math.abs(affineBooleanRecovery.volumes[0] - 8000) < 1e-7 &&
+    Math.abs(affineBooleanRecovery.volumes[1] - 8000) < 1e-7 &&
+    Math.abs(affineBooleanRecovery.volumes[2] - 16000) < 1e-6,
+  'OCCT-Fuse hat Rotation plus ungleichmässige Skalierung nicht korrekt angewendet oder die Quellkörper verändert');
+
   assert.deepEqual(occtRoundTripErrors, [],
     'OCCT-Projekt-Roundtrip löste Browserfehler aus: ' + occtRoundTripErrors.join(' ; '));
 
@@ -519,7 +549,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const malformedOcctVariants = [
     { name: 'operation', mutate: source => { source.operation = 'explode'; } },
     { name: 'operand-count', mutate: source => { source.operands.pop(); } },
-    { name: 'translation', mutate: source => { source.translationsMM[1][0] = 200001; } }
+    { name: 'translation', mutate: source => { source.translationsMM[1][0] = 200001; } },
+    { name: 'singular-transform', mutate: source => { source.transformsMM[0] = Array(12).fill(0); } }
   ];
   for (const variant of malformedOcctVariants) {
     const activeBefore = await occtRoundTripPage.evaluate(async () => {
@@ -558,8 +589,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     assert.ok(Math.abs(rejected.volumeMM3 - 4000) < 1e-7,
       'Aktiver OCCT-B-Rep wurde nach Ablehnung von ' + variant.name + ' beschädigt');
   }
-  assert.equal(occtRoundTripErrors.length, 3,
-    'Jedes der drei ungültigen OCCT-Rezepte muss genau einen Validierungsfehler melden: ' + occtRoundTripErrors.join(' ; '));
+  assert.equal(occtRoundTripErrors.length, 4,
+    'Jedes der vier ungültigen OCCT-Rezepte muss genau einen Validierungsfehler melden: ' + occtRoundTripErrors.join(' ; '));
   assert.ok(occtRoundTripErrors.every(message =>
     message.startsWith('console: Error: Ungültige OCCT-Boolean-Konstruktionsdaten.')),
   'Ungültige OCCT-Rezepte lösten andere als die erwarteten Validierungsfehler aus: ' +
