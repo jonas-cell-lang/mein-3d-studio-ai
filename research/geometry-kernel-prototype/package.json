@@ -2,10 +2,11 @@
   "name": "silmo-occt-kernel-prototype",
   "private": true,
   "type": "module",
-  "description": "Isolated SILMO geometry-kernel evaluation; not part of the production app.",
+  "description": "Pinned OCCT-WASM prototype and production worker build for SILMO.",
   "scripts": {
     "test": "node ./prototype.mjs",
-    "test:browser": "node ./browser-worker-test.mjs"
+    "test:browser": "node ./browser-worker-test.mjs",
+    "build:worker": "vite build --config vite.occt-worker.config.mjs"
   },
   "dependencies": {
     "occt-wasm": "5.17.2",
