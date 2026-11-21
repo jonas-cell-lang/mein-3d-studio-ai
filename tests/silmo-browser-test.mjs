@@ -395,6 +395,52 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(Math.abs(restoredTorus - expectedTorusVolume) < 1e-5,
     'Redo hat den OCCT-Torus nicht als echten B-Rep-Körper rekonstruiert');
 
+  // Sichtbarer CAD-Workflow: native Kanten laden, in der Oberfläche wählen,
+  // abrunden und das Ergebnis über Undo/Redo als echten B-Rep rekonstruieren.
+  const filletSceneStart = await page.locator('#objects .object-row').count();
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  await page.locator('#loadOcctEdges').click();
+  await page.waitForFunction(() => document.querySelectorAll('#occtEdgeList option').length === 12, null, { timeout: 45000 });
+  assert.match(await page.locator('#occtTopologySummary').textContent(), /6 echte B-Rep-Flächen und 12 echte B-Rep-Kanten/,
+    'Die sichtbare Kantenliste zeigt keine vollständige native Quader-Topologie');
+  await page.locator('#occtEdgeList').selectOption('0');
+  await page.locator('#occtFilletRadius').fill('1');
+  await page.locator('#applyOcctFillet').click();
+  await page.waitForFunction(() => /^Echte OCCT-Kantenrundung erfolgreich/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  const visibleFillet = await page.evaluate(async () => ({
+    ...window.__silmoOcctLastFillet,
+    workerVolumeMM3: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastFillet.shapeId),
+    source: window.__silmoOcctLastFillet && document.querySelector('#objects .object-row')?.textContent
+  }));
+  assert.ok(visibleFillet.volumeMM3 > 0 && visibleFillet.volumeMM3 < 8000 &&
+    Math.abs(visibleFillet.workerVolumeMM3 - visibleFillet.volumeMM3) < 1e-7,
+    'Sichtbare Kantenrundung hat keinen gültigen nativen OCCT-Solid erzeugt');
+  assert.deepEqual(visibleFillet.edgeIndices, [0]);
+  assert.equal(visibleFillet.radiusMM, 1);
+  const filletUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+z');
+  await waitForOcctRestore(filletUndoGeneration);
+  const restoredBeforeFillet = await page.evaluate(async () => ({
+    volume: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId),
+    source: window.__silmoOcctLastRestored
+  }));
+  assert.ok(Math.abs(restoredBeforeFillet.volume - 8000) < 1e-7,
+    'Undo hat den ursprünglichen Quader vor der Kantenrundung nicht rekonstruiert');
+  const filletRedoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+y');
+  await waitForOcctRestore(filletRedoGeneration);
+  const restoredAfterFillet = await page.evaluate(async () =>
+    window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
+  assert.ok(Math.abs(restoredAfterFillet - visibleFillet.volumeMM3) < 1e-7,
+    'Redo hat den gerundeten OCCT-Körper nicht aus seiner Konstruktionsquelle rekonstruiert');
+  const finalFilletUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+z');
+  await waitForOcctRestore(finalFilletUndoGeneration);
+  await page.locator('#delete').click();
+  assert.equal(await page.locator('#objects .object-row').count(), filletSceneStart,
+    'Der Testkörper für die sichtbare Kantenrundung konnte nicht entfernt werden');
+
   // STEP-Export und anschliessender Import über die echte SILMO-Dateiauswahl.
   await page.locator('#objects .object-select').filter({ hasText: 'OCCT-B-Rep-Quader' }).last().evaluate(button =>
     button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
