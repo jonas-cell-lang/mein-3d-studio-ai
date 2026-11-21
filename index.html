@@ -3483,7 +3483,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const size = new THREE.Vector3(); box.getSize(size);
         const mm = [size.x,size.y,size.z].map(worldUnitsToMm);
         dimensionText = mm.map(v => Number.isFinite(v) ? v.toFixed(2) : 'ungültig').join(' × ') + ' mm';
-        if (mm.some(v => !Number.isFinite(v) || v < 0.01)) warnings.push('Abmessungen ungültig oder kleiner als 0,01 mm');
+        if (mm.some(v => !Number.isFinite(v) || v < window.SILMOTolerances.PRINT_MIN_MODEL_DIMENSION_MM)) warnings.push('Abmessungen ungültig oder kleiner als 0,01 mm');
         const bedTolerance = window.SILMOTolerances.PRINT_BED_BOUNDS_WORLD_UNITS;
         if (box.min.x < -halfW-bedTolerance || box.max.x > halfW+bedTolerance || box.min.y < -halfD-bedTolerance || box.max.y > halfD+bedTolerance) warnings.push('ausserhalb des Druckbetts');
         if (box.min.z < -window.SILMOTolerances.PRINT_BED_BOUNDS_WORLD_UNITS) warnings.push('unterhalb der Druckbettfläche');
