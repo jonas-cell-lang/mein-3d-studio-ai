@@ -44,6 +44,43 @@ async function execute(method, args) {
   }
   if (!kernel) throw new Error("OCCT-Kern wurde noch nicht initialisiert.");
 
+  if (method === "importStep") {
+    const { stepText } = args;
+    if (typeof stepText !== "string" || stepText.length < 20 ||
+        stepText.length > 10 * 1024 * 1024 ||
+        !/^ISO-10303-21\\s*;/i.test(stepText.trimStart()) ||
+        !/END-ISO-10303-21\\s*;\\s*$/i.test(stepText.trim())) {
+      throw new Error("STEP-Datei ist ungültig oder überschreitet 10 MB.");
+    }
+    let shape = null;
+    try {
+      shape = kernel.importStep(stepText);
+      const volumeMM3 = kernel.getVolume(shape);
+      const mesh = serializeMesh(kernel.tessellate(shape));
+      if (!Number.isFinite(volumeMM3) || volumeMM3 <= 0) {
+        throw new Error("STEP-Datei enthält keinen Körper mit positivem Volumen.");
+      }
+      const shapeId = nextShapeId++;
+      shapes.set(shapeId, shape);
+      shape = null;
+      return { shapeId, volumeMM3, mesh, shapeType: "solid" };
+    } finally {
+      if (shape !== null) {
+        try { kernel.release(shape); } catch { /* Fehlerpfad: best effort cleanup. */ }
+      }
+    }
+  }
+
+  if (method === "exportStep") {
+    const shape = shapes.get(args.shapeId);
+    if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
+    const stepText = kernel.exportStep(shape, { unit: "mm", schema: "AP242" });
+    if (typeof stepText !== "string" || !stepText.startsWith("ISO-10303-21")) {
+      throw new Error("OCCT konnte keine gültige STEP-Datei erzeugen.");
+    }
+    return { stepText };
+  }
+
   if (method === "createBox") {
     const { widthMM, depthMM, heightMM } = args;
     for (const [name, value] of Object.entries({ widthMM, depthMM, heightMM })) {
