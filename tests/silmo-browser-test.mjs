@@ -489,6 +489,14 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(faceSelection.selected, 0, 'Die erste native Fläche wurde nicht ausgewählt');
   assert.equal(faceSelection.highlighted, 0xffbd4a, 'Die ausgewählte native Fläche wurde nicht hervorgehoben');
   assert.match(faceSelection.summary, /400\.00 mm²/, 'Die Flächenauswahl zeigt den falschen nativen Flächeninhalt');
+  await page.locator('#toggleOcctFacePick').click();
+  const faceScreenPoint = await page.evaluate(() => window.__silmoOcctFacePickPoint(1));
+  assert.ok(faceScreenPoint && Number.isFinite(faceScreenPoint.x) && Number.isFinite(faceScreenPoint.y),
+    'Für native Fläche 2 wurde kein 3D-Auswahlpunkt berechnet');
+  await page.mouse.click(faceScreenPoint.x, faceScreenPoint.y);
+  await page.waitForFunction(() => window.__silmoOcctFaceOverlay?.selectedIndex === 1, null, { timeout: 5000 });
+  assert.equal(await page.locator('#occtFaceList').inputValue(), '1',
+    '3D-Klick hat die native Fläche nicht in der Liste ausgewählt');
   assert.match(await page.locator('#occtTopologySummary').textContent(), /6 echte B-Rep-Flächen und 12 echte B-Rep-Kanten/,
     'Die sichtbare Kantenliste zeigt keine vollständige native Quader-Topologie');
   assert.equal(await page.locator('#occtEdgeList option:not([disabled])').count(), 12,
