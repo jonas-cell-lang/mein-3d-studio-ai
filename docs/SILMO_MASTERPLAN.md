@@ -877,3 +877,13 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Konstruktionsquelle `kind: cylinder` wird schema-validiert und bei Undo/Redo sowie Projektwiederherstellung rekonstruiert.
 - Ergänzte Client-, Projektschema- und Browser-End-to-End-Tests; CI muss den aktuellen Commit noch bestätigen.
 - PR #70 bleibt Draft/offen; kein Merge, Deployment oder Release ohne ausdrückliche Freigabe.
+
+
+## 6.87 Native OCCT-Kugel (21.11.2026)
+
+- Ergänzt: analytische Kugelerzeugung im produktiven OCCT-Worker mit `makeSphere(radiusMM)` aus `occt-wasm` 5.17.2.
+- Neue SILMO-Oberflächenaktion „OCCT-B-Rep-Kugel“ erstellt einen echten B-Rep-Kugelkörper mit Radius 10 mm.
+- Begrenzungen: Radius 0,01–2000 mm; positives Volumen und Tessellierung werden vor Übernahme geprüft.
+- Konstruktionsquelle `kind: sphere` wird schema-validiert und bei Undo/Redo sowie Projektwiederherstellung rekonstruiert.
+- Ergänzte Client-, Projektschema- und Browser-End-to-End-Tests; CI muss den aktuellen Commit noch bestätigen.
+- PR #70 bleibt Draft/offen; kein Merge, Deployment oder Release ohne ausdrückliche Freigabe.
