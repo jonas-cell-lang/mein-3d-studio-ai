@@ -86,6 +86,24 @@
 
     return Object.freeze({
       initialize,
+      async importStep(stepText) {
+        if (typeof stepText !== "string" || stepText.length < 20 ||
+            stepText.length > 10 * 1024 * 1024 ||
+            !/^ISO-10303-21\\s*;/i.test(stepText.trimStart()) ||
+            !/END-ISO-10303-21\\s*;\\s*$/i.test(stepText.trim())) {
+          throw new Error("STEP-Datei ist ungültig oder überschreitet 10 MB.");
+        }
+        await initialize();
+        return send("importStep", { stepText });
+      },
+      async exportStep(shapeId) {
+        if (!Number.isInteger(shapeId) || shapeId <= 0) {
+          throw new Error("Für den STEP-Export ist eine gültige OCCT-Körperkennung erforderlich.");
+        }
+        await initialize();
+        const result = await send("exportStep", { shapeId });
+        return result.stepText;
+      },
       async createBox(widthMM, depthMM, heightMM) {
         await initialize();
         return send("createBox", { widthMM, depthMM, heightMM });
