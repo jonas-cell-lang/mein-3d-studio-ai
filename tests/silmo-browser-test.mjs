@@ -1551,6 +1551,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const examExport=examPage.waitForEvent('download');
   await examPage.locator('#exportModel').click();
   await examExport;
+  await examPage.waitForFunction(() => Number(window.__silmoExportRevision) > 0, null, { timeout: 5000 });
+  assert.match(await examPage.locator('#status').innerText(),/STL exportiert/,'STL-Export wurde nicht erfolgreich abgeschlossen');
   await examPage.locator('#tutorialRecognizeHeart').click();
   assert.match(await examPage.locator('#tutorialHeartRecognition').innerText(),/Herzform ungefähr erkannt/,'Erkennungsergebnis wird nicht angezeigt');
   await examPage.locator('#tutorialNext').click();
