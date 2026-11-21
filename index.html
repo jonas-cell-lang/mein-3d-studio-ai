@@ -1000,7 +1000,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           source.operation, operands.map(item => item.shapeId), source.translationsMM
         );
         createdHandles.push(booleanResult.shapeId);
-        await Promise.all(createdHandles.map(shapeId =>
+        await Promise.all(createdHandles.filter(shapeId => shapeId !== booleanResult.shapeId).map(shapeId =>
           window.__silmoOcctClient.releaseShape(shapeId)
         ));
         if (!objects.includes(mesh)) {
