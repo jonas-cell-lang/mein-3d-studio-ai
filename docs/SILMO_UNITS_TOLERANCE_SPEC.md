@@ -337,3 +337,8 @@ Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPS
 - `SKETCH_POLYLINE_SIMPLIFICATION_TOLERANCE_MM = 0.5` ist der bisherige Standardabstand des Douglas-Peucker-ähnlichen Vereinfachungsschritts für gezeichnete Skizzen-Polylinien.
 - Der Wert ist in Millimetern definiert. Die Laufzeit wandelt ihn vor dem geometrischen Vergleich über die Einheiten-API in Welteinheiten um; die separate Mindestschwelle `SKETCH_SIMPLIFICATION_MIN_MM = 0.01` bleibt eine Untergrenze.
 - Funktionsstandard, Produktionsaufruf und Browser-Testzugang verwenden denselben benannten Wert. Zahlenwert und bisheriges Verhalten bleiben unverändert.
+
+### 3.22 Gezeichnete Skizzen: Mindestabmessung
+- `SKETCH_DRAW_MIN_DIMENSION_WORLD_UNITS = 0.01` ist die bisherige Mindestbreite und -tiefe, ab der ein per Ziehen erzeugtes Rechteck-/Kreis-Skizzenprofil akzeptiert wird.
+- Der Wert liegt im internen Weltkoordinatenraum (bei der bestehenden Einheitenumrechnung entspricht `0.1 mm`) und ist eine Eingabe-/Geometrie-Mindestgrösse, keine universelle Kernel-Toleranz.
+- Die bisherige Grenze bleibt unverändert. Der Zeichenvorgang verwendet die zentrale Konstante; der Zahlenwert und der Laufzeit-Verwendungs-Audit werden getestet.
