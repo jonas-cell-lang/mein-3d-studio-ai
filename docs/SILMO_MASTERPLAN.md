@@ -731,47 +731,58 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 ### 6.66 Herz-Umriss-Erkennung: Geometrische Grössengrenzen benannt (21.11.2026)
 - Die Mindestbreite/-höhe und der Schutz des Höhen-Divisors bei der Herz-Umriss-Erkennung sind als getrennte, dimensionsbezogene Konstanten zentralisiert.
 - Die bisherigen Werte `1e-5` und `1e-9` bleiben unverändert. Die Seitenverhältnis-Grenzen sind Formklassifikationsparameter und bleiben bewusst ausserhalb der CAD-Längentoleranzen.
-- Der Test sichert die Werte und den Laufzeit-Verwendungs-Audit. CI für diesen Schritt steht noch aus.
+- Der Test sichert die Werte und den Laufzeit-Verwendungs-Audit. Die gebündelte CI-Prüfung auf dem Branch-Stand ist in Abschnitt 6.75 dokumentiert.
 
 
 ### 6.67 Loft-Kontur-Resampling: Mindestumfang zentral benannt (21.11.2026)
 - Der Standard-Mindestumfang für das Resampling geschlossener Loft-Konturen ist als `LOFT_PROFILE_RESAMPLE_MIN_PERIMETER_WORLD_UNITS = 1e-8` benannt.
 - Der Wert bleibt getrennt vom bestehenden Profil-Mindestumfang `PROFILE_MIN_PERIMETER_WORLD_UNITS = 1e-6`, weil beide unterschiedliche Verarbeitungsschritte absichern.
-- Der Standardwert wurde nicht verändert; Grenzfalltests sichern Ablehnung, Annahme mit explizitem Override und den Konstantenwert. CI steht noch aus.
+- Der Standardwert wurde nicht verändert; Grenzfalltests sichern Ablehnung, Annahme mit explizitem Override und den Konstantenwert. Die gebündelte CI-Prüfung auf dem Branch-Stand ist in Abschnitt 6.75 dokumentiert.
 
 
 ### 6.68 Pfadlängen- und Extrusions-Skalierungsgrenzen benannt (21.11.2026)
 - Die Mindestlänge des bestehenden CAD-Pfads vor einer Längenänderung (`0.001 mm`) und der dimensionslose Divisor-Schutz bei der Wiederherstellung der Skizzen-Extrusionshöhe (`1e-12`) sind zentral benannt.
 - Die Zahlenwerte bleiben unverändert. Die Spezifikation unterscheidet ausdrücklich Millimeter von einem dimensionslosen Skalierungsfaktor.
-- Code-, Browser- und OCCT-CI für diese Änderung stehen noch aus.
+- Die gebündelte CI-Prüfung auf dem Branch-Stand ist in Abschnitt 6.75 dokumentiert.
 
 
 ### 6.69 Hohlrahmen-Mindestabmessung zentral benannt (21.11.2026)
 - Die Standard-Mindestabmessung des erzeugten Hohlrahmens (`1e-9` Welteinheiten) ist zentral definiert und wird vom Geometrie-API-Standardparameter verwendet.
 - Ein expliziter Aufrufer-Override bleibt möglich; die Hauptanwendung übergibt weiterhin ihre strengere CSG-Grenze. Bestehendes Verhalten bleibt erhalten.
-- Neue Grenzfalltests prüfen Standardgrenze und Override. CI steht noch aus.
+- Neue Grenzfalltests prüfen Standardgrenze und Override. Die gebündelte CI-Prüfung auf dem Branch-Stand ist in Abschnitt 6.75 dokumentiert.
 
 ### 6.70 Parametrische Skizzenprofile: Mindest-Eckenradius benannt (21.11.2026)
 - Die bisherige Untergrenze `0.01` für den Eckenradius abgerundeter Rechteckprofile ist als `SKETCH_PROFILE_MIN_CORNER_RADIUS_WORLD_UNITS` zentral benannt.
 - Der Wert und das bisherige Verhalten bleiben unverändert. Ein gezielter Geometrietest prüft den tatsächlich erzeugten Profilstartpunkt bei einem Radius-Eingabewert von `0`.
-- Die zentrale Toleranzwertprüfung und der Laufzeit-Verwendungs-Audit sichern die Konstante. CI für diesen Schritt steht noch aus.
+- Die zentrale Toleranzwertprüfung und der Laufzeit-Verwendungs-Audit sichern die Konstante. Die gebündelte CI-Prüfung auf dem Branch-Stand ist in Abschnitt 6.75 dokumentiert.
 
 ### 6.71 Skizzen-Polylinien: Vereinfachungsabstand benannt (21.11.2026)
 - Der bisherige Standardabstand von `0.5 mm` bei der Vereinfachung gezeichneter Skizzen-Polylinien ist als `SKETCH_POLYLINE_SIMPLIFICATION_TOLERANCE_MM` zentral benannt.
 - Funktionsstandard, Produktionsaufruf und Browser-Testzugang teilen die Konstante. Die vorhandene Mindestschwelle von `0.01 mm` bleibt separat; Werte und Geometrieverhalten ändern sich nicht.
-- Der zentrale Zahlenwerttest und Laufzeit-Verwendungs-Audit wurden erweitert. CI für diesen Schritt steht noch aus.
+- Der zentrale Zahlenwerttest und Laufzeit-Verwendungs-Audit wurden erweitert. Die gebündelte CI-Prüfung auf dem Branch-Stand ist in Abschnitt 6.75 dokumentiert.
 
 ### 6.72 Gezeichnete Skizzen: Mindestabmessung benannt (21.11.2026)
 - Die bisherige Mindestbreite und -tiefe von `0.01` Welteinheiten für per Ziehen erzeugte Rechteck-/Kreis-Skizzenprofile ist als `SKETCH_DRAW_MIN_DIMENSION_WORLD_UNITS` zentral benannt.
 - Der Wert und das bisherige Verhalten bleiben gleich. Die Spezifikation ordnet ihn als Geometrie-Mindestgrösse im Weltkoordinatenraum ein, nicht als allgemeines Kernel-Epsilon.
-- Der zentrale Toleranztest und Laufzeit-Verwendungs-Audit wurden erweitert. CI für diesen Schritt steht noch aus.
+- Der zentrale Toleranztest und Laufzeit-Verwendungs-Audit wurden erweitert. Die gebündelte CI-Prüfung auf dem Branch-Stand ist in Abschnitt 6.75 dokumentiert.
 
 ### 6.73 Druckvorprüfung: minimale Modellabmessung benannt (21.11.2026)
 - Die bisherige diagnostische Untergrenze `0.01 mm` für Modell-Bounding-Box-Abmessungen ist als `PRINT_MIN_MODEL_DIMENSION_MM` zentral benannt.
 - Die Warnlogik, der Schwellenwert und der Meldungstext bleiben unverändert. Die Konstante ist ausdrücklich von STL-Weld- und CAD-Kernel-Toleranzen getrennt.
-- Der zentrale Zahlenwerttest und Laufzeit-Verwendungs-Audit wurden erweitert. CI für diesen Schritt steht noch aus.
+- Der zentrale Zahlenwerttest und Laufzeit-Verwendungs-Audit wurden erweitert. Die gebündelte CI-Prüfung auf dem Branch-Stand ist in Abschnitt 6.75 dokumentiert.
 
 ### 6.74 Manuell gezeichnete Bildkonturen: Mindestfläche benannt (21.11.2026)
 - Die bisherige Mindestfläche von `0.5 Pixel²` für das Speichern manuell gezeichneter Image-Studio-Konturen ist als `IMAGE_MIN_DRAWN_CONTOUR_AREA_PIXELS2` zentral benannt.
 - Die Bildpixel-Fläche bleibt ausdrücklich von der CAD-Mindestfläche in mm² getrennt; Verhalten und Grenzwert ändern sich nicht.
-- Der zentrale Zahlenwerttest und Laufzeit-Verwendungs-Audit wurden erweitert. CI für diesen Schritt steht noch aus.
+- Der zentrale Zahlenwerttest und Laufzeit-Verwendungs-Audit wurden erweitert. Die gebündelte CI-Prüfung auf dem Branch-Stand ist in Abschnitt 6.75 dokumentiert.
+
+
+### 6.75 Gebündelte Validierung des Toleranz-Audits und Browser-/OCCT-Regressionen (21.11.2026)
+- Der gemeinsame Branch-Stand `4aeae6e8c23552d347511120abaf70c48619e444` enthält die in den Abschnitten 6.65–6.74 dokumentierten Benennungen. Die Werte und das bisherige Laufzeitverhalten wurden nicht verändert.
+- Code-Checks (Run 44877541315) erfolgreich: 127/127 Unit-Tests bestanden, 0 fehlgeschlagen. Zusätzlich waren JavaScript-Syntax, Manifest-/HTML-ID-Prüfungen und die lokale Pages-Paketvalidierung erfolgreich.
+- Browser-Interaktion (Run 44877541291) erfolgreich. Der Test deckt unter anderem 3D-Start, CAD-Zeichenarbeitsplatz, Skizzenbearbeitung, Konturpunkt-Editor, Kantenbearbeitung, Loft, Sweep, geometrische Beziehungen, Pfadlänge/Objektabstand, CSG-Verbindung/Trennung, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln und Drehring ab.
+- Der Browser-History-Lastfall behielt 40 von 45 angeforderten Snapshots. Aufzeichnung: Median 0,9 ms; Undo 1,6 ms; Redo 1,3 ms. Der berechnete ArrayBuffer-Payload für 40 Snapshot-Kopien betrug rund 55,9 MB. Dies ist eine Nutzdatenabschätzung, keine Messung des gesamten Browser-RAM.
+- Der Browser-Roundtrip für 24'999 3D-Punkte war exakt: Positionen, Normalen, UV-Koordinaten und Indizes stimmten nach Wiederherstellung überein. Gemessen wurden 6,4 ms für Serialisierung und 10,8 ms für Wiederherstellung. Diese Zeiten sind ein einzelner synthetischer CI-Lauf, keine Leistungszusage für beliebige Projekte.
+- Isolierter OCCT-Prototyp (Run 44877541285) erfolgreich: analytischer Geometrietest und Browser-WebWorker-Smoke-Test bestanden. Der dokumentierte Stressfall erzeugte 12 Bohrungen; das Volumen lag bei 5811.504440784614 gegenüber erwarteten 5811.504440784613, mit einem zusammenhängenden Solid und 1308 Dreiecken.
+- Diese Ergebnisse bestätigen die geprüften Regressionen und den isolierten Worker-Prototyp. Sie bedeuten noch nicht, dass OCCT bereits in den produktiven SILMO-Modellierkern integriert ist oder dass alle CAD-Funktionen OCCT verwenden.
+- PR #70 bleibt offen und Draft. Es erfolgten kein Merge, kein Deployment, keine Veröffentlichung und keine kostenpflichtigen Schritte.
