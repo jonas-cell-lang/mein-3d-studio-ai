@@ -1170,13 +1170,18 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       updateObjects();
       showProperties();
       updateMoveGizmo();
-      // Skizzenkörper können aus ihren gespeicherten Parametern erneut als B-Rep aufgebaut werden.
-      restoredObjects.forEach(obj => {
+      // Alle OCCT-Körper einer Undo/Redo-Wiederherstellung gemeinsam nachverfolgbar machen.
+      // So können Tests und spätere Abläufe warten, bis wirklich jeder Worker-Handle bereit ist.
+      const restoreGeneration = (window.__silmoOcctRestoreGeneration || 0) + 1;
+      window.__silmoOcctRestoreGeneration = restoreGeneration;
+      window.__silmoOcctLastRestored = null;
+      window.__silmoOcctRestorePromise = Promise.all(restoredObjects.map(obj => {
         if (obj.userData.sketch?.outlinePoints ||
             ['box', 'boolean'].includes(obj.userData.occtSource?.kind)) {
-          rebuildOcctObjectHandle(obj);
+          return rebuildOcctObjectHandle(obj);
         }
-      });
+        return null;
+      }));
     } catch (error) {
       if (!committed) {
         restoredObjects.forEach(obj => {
