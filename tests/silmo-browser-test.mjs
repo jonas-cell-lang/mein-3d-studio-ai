@@ -5,6 +5,7 @@ import { readFileSync, statSync } from 'node:fs';
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-gl=swiftshader'] });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 const pageErrors = [];
+let allowExpectedConsoleError = false;
 async function showCreateSubtab(index) {
   await page.locator('[data-tab="create"]').click();
   const tabs = page.locator('#pane-create-left > .inner-tab-nav button');
@@ -42,7 +43,7 @@ async function showDrawRightSubtab(index) {
 }
 page.on('pageerror', error => pageErrors.push(error.message));
 page.on('console', message => {
-  if (message.type() === 'error') pageErrors.push('console: ' + message.text());
+  if (message.type() === 'error' && !allowExpectedConsoleError) pageErrors.push('console: ' + message.text());
 });
 
 // Die Kernanwendung muss auch dann starten, wenn externe HTTPS-Zugriffe blockiert sind.
@@ -78,6 +79,29 @@ assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.seria
 assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.restoreObjectForUnion), 'function', 'Union-Wiederherstellung ist nicht verfügbar');
 assert.equal(await page.evaluate(() => typeof window.SILMOProjectIO?.createProjectIO), 'function', 'Projektdatei-I/O-Modul ist nicht verfügbar');
 assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), 'function', 'BSP-CSG-Modul ist nicht verfügbar');
+  assert.equal(await page.evaluate(() => typeof window.SILMOOCCTClient?.createClient), 'function', 'OCCT-Client ist nicht verfügbar');
+  await showCreateSubtab(0);
+  const occtStartCount = await page.locator('#objects .object-row').count();
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  assert.equal(await page.locator('#objects .object-row').count(), occtStartCount + 1,
+    'OCCT-B-Rep-Körper wurde nicht in die SILMO-Szene übernommen');
+  const occtResult = await page.evaluate(async () => {
+    const created = window.__silmoOcctLastCreated;
+    return { ...created, workerVolumeMM3: await window.__silmoOcctClient.getVolume(created.shapeId) };
+  });
+  assert.equal(occtResult.volumeMM3, 8000, 'OCCT-Quader besitzt nicht das analytische Volumen von 8000 mm³');
+  assert.equal(occtResult.workerVolumeMM3, 8000, 'B-Rep-Körper blieb im Worker nicht abfragbar');
+  assert.equal(occtResult.triangleCount > 0, true, 'OCCT-B-Rep wurde nicht in ein Three.js-Darstellungsnetz tesselliert');
+  assert.deepEqual(occtResult.dimensionsMM, [20, 20, 20], 'OCCT-Testkörper hat falsche Sollabmessungen');
+  await page.evaluate(() => window.__silmoOcctClient.releaseAll());
+  await page.locator('[data-tab="edit"]').click();
+  await page.locator('#delete').click();
+  assert.equal(await page.locator('#objects .object-row').count(), occtStartCount,
+    'OCCT-Testkörper konnte nicht wieder aus der Szene entfernt werden');
+  await showCreateSubtab(0);
+
+
 
   // Browser-History-Benchmark mit echten Three.js-BufferGeometries und dem SILMO-History-Modul.
   // Synthetischer CAD-ähnlicher Lastfall: 50 Meshes, 999 Vertices, 45 Aufzeichnungen bei Limit 40.
@@ -1049,7 +1073,9 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
       return originalDispose.call(this);
     };
   });
-  await page.locator('#booleanUnion').click();
+  allowExpectedConsoleError = true;
+  try { await page.locator('#booleanUnion').click(); }
+  finally { allowExpectedConsoleError = false; }
   const csgFailureProbe = await page.evaluate(() => {
     const probe = window.__silmoCSGFailureProbe;
     window.SILMOCSG = probe.originalCSG;
