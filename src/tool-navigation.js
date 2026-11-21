@@ -47,8 +47,8 @@
   ['addCube','addOcctBox','addSphere','addCylinder','addCone','addHexPrism','addTorus','duplicate'].forEach(id=>put(paneMap.create.left,id));
   heading(paneMap.create.left,'Formen kombinieren');
   const booleanHelp=document.createElement('p'); booleanHelp.className='note'; booleanHelp.textContent='Wähle mindestens zwei Objekte in der Objektliste. Mit Strg-Klick kannst du mehrere auswählen. Das erste ausgewählte Objekt ist die Grundform.'; paneMap.create.left.appendChild(booleanHelp);
-  ['booleanUnion','booleanSubtract'].forEach(id=>put(paneMap.create.left,id));
-  const booleanNote=document.createElement('p'); booleanNote.className='note'; booleanNote.textContent='Beim Abziehen bleibt die erste Form erhalten; alle weiteren ausgewählten Formen schneiden sie aus. Verbundene Formen kannst du später wieder trennen.'; paneMap.create.left.appendChild(booleanNote);
+  ['booleanUnion','booleanSubtract','booleanIntersect'].forEach(id=>put(paneMap.create.left,id));
+  const booleanNote=document.createElement('p'); booleanNote.className='note'; booleanNote.textContent='Beim Abziehen bleibt die erste Form erhalten; alle weiteren ausgewählten Formen schneiden sie aus. Die Schnittmenge benötigt zwei unveränderte OCCT-B-Rep-Körper.'; paneMap.create.left.appendChild(booleanNote);
   const booleanSeparateButton=document.createElement('button'); booleanSeparateButton.type='button'; booleanSeparateButton.id='booleanSeparate'; booleanSeparateButton.className='wide'; booleanSeparateButton.textContent='↗ Verbindung lösen'; paneMap.create.left.appendChild(booleanSeparateButton);
   const booleanSeparateNote=document.createElement('p'); booleanSeparateNote.className='note'; booleanSeparateNote.textContent='Stellt die ursprünglichen Einzelobjekte einer verbundenen Form wieder her – auch nach dem Speichern und Öffnen.'; paneMap.create.left.appendChild(booleanSeparateNote);
   heading(paneMap.create.left,'Objektliste'); put(paneMap.create.left,'objects');
