@@ -5,7 +5,7 @@
   const left = document.querySelector('.left-panel');
   const right = document.querySelector('.right-panel');
   const ids = [
-    'addCube','addOcctBox','addSphere','addCylinder','addCone','addHexPrism','addTorus','duplicate','booleanUnion','booleanSubtract','booleanIntersect','importModel','exportModel',
+    'addCube','addOcctBox','addOcctCylinder','addSphere','addCylinder','addCone','addHexPrism','addTorus','duplicate','booleanUnion','booleanSubtract','booleanIntersect','importModel','exportModel',
     'saveProjectButton','openProjectButton','fileInput','projectFileInput','delete',
     'dropToBed','checkBed','fitView','bedWidth','bedDepth','applyBedSize','objects',
     'status','positionFields','scaleLock','sizeFields','percentFields','color','expertCenterToggle'
@@ -44,7 +44,7 @@
   const put = (pane, id) => { const n=nodes.get(id); if(n) pane.appendChild(n); };
 
   heading(paneMap.create.left,'Objekte');
-  ['addCube','addOcctBox','addSphere','addCylinder','addCone','addHexPrism','addTorus','duplicate'].forEach(id=>put(paneMap.create.left,id));
+  ['addCube','addOcctBox','addOcctCylinder','addSphere','addCylinder','addCone','addHexPrism','addTorus','duplicate'].forEach(id=>put(paneMap.create.left,id));
   heading(paneMap.create.left,'Formen kombinieren');
   const booleanHelp=document.createElement('p'); booleanHelp.className='note'; booleanHelp.textContent='Wähle mindestens zwei Objekte in der Objektliste. Mit Strg-Klick kannst du mehrere auswählen. Das erste ausgewählte Objekt ist die Grundform.'; paneMap.create.left.appendChild(booleanHelp);
   ['booleanUnion','booleanSubtract','booleanIntersect'].forEach(id=>put(paneMap.create.left,id));
