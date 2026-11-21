@@ -104,6 +104,11 @@
         const result = await send("exportStep", { shapeId });
         return result.stepText;
       },
+      async createSphere(radiusMM) {
+        if (!Number.isFinite(radiusMM) || radiusMM < 0.01 || radiusMM > 2000) throw new Error("Kugelradius muss zwischen 0.01 und 2000 mm liegen.");
+        await initialize();
+        return send("createSphere", { radiusMM });
+      },
       async createCylinder(radiusMM, heightMM) {
         if (![radiusMM, heightMM].every(value =>
           Number.isFinite(value) && value >= 0.01 && value <= 2000)) {
