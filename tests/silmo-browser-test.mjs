@@ -177,7 +177,11 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
   assert.equal(await page.locator('#objects .object-row').count(), booleanSceneStart + 2,
     'Zwei OCCT-Testkörper wurden nicht in die Szene übernommen');
-  await page.locator('#objects .object-select').nth(booleanSceneStart).click({ modifiers: ['Control'] });
+  await page.evaluate(index => {
+    const button = document.querySelectorAll('#objects .object-select')[index];
+    if (!button) throw new Error('OCCT-Mehrfachauswahl: Objektzeile fehlt.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+  }, booleanSceneStart);
   const previousBooleanShapeId = await page.evaluate(() => window.__silmoOcctLastBoolean?.shapeId || 0);
   await page.locator('#booleanUnion').click();
   await page.waitForFunction(previous => Number.isFinite(window.__silmoOcctLastBoolean?.shapeId) &&
