@@ -726,3 +726,9 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die bisherige Mindest-Pixelzahl und das Verhalten bleiben unverändert. Die beiden Werte beschreiben unterschiedliche Regeln im Bildpixelraum und werden nicht mit Modell-/Kernel-Toleranzen vermischt.
 - Der Test sichert den Zahlenwert und den Laufzeit-Verwendungs-Audit; die Farb-/Kontrastparameter der Segmentierungsheuristik bleiben separat und werden nur nach eigener fachlicher Prüfung klassifiziert.
 - Code-, Browser- und OCCT-CI für diesen Schritt stehen noch aus.
+
+
+### 6.66 Herz-Umriss-Erkennung: Geometrische Grössengrenzen benannt (21.11.2026)
+- Die Mindestbreite/-höhe und der Schutz des Höhen-Divisors bei der Herz-Umriss-Erkennung sind als getrennte, dimensionsbezogene Konstanten zentralisiert.
+- Die bisherigen Werte `1e-5` und `1e-9` bleiben unverändert. Die Seitenverhältnis-Grenzen sind Formklassifikationsparameter und bleiben bewusst ausserhalb der CAD-Längentoleranzen.
+- Der Test sichert die Werte und den Laufzeit-Verwendungs-Audit. CI für diesen Schritt steht noch aus.
