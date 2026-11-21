@@ -125,11 +125,16 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#delete').click();
   assert.equal(await page.locator('#objects .object-row').count(), occtStartCount,
     'OCCT-Testkörper konnte nicht wieder aus der Szene entfernt werden');
-  assert.equal(await page.waitForFunction(async shapeId => {
+  await page.waitForFunction(async shapeId => {
     try { await window.__silmoOcctClient.getVolume(shapeId); return false; }
     catch { return true; }
-  }, occtResult.shapeId, { timeout: 10000 }).then(() => true), true,
-  'Beim Löschen des Szenenobjekts wurde sein OCCT-B-Rep nicht freigegeben');
+  }, occtResult.shapeId, { timeout: 10000 });
+  await page.keyboard.press('Control+z');
+  await page.waitForFunction(() => Number.isFinite(window.__silmoOcctLastRestored?.shapeId), null, { timeout: 15000 });
+  const restoredOcctVolume = await page.evaluate(async () =>
+    window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
+  assert.ok(Math.abs(restoredOcctVolume - 8000) < 1e-7,
+    'Undo stellte den OCCT-B-Rep-Quader nicht mit seinem korrekten Volumen wieder her');
   await showCreateSubtab(0);
 
 
