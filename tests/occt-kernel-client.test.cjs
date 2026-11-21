@@ -27,6 +27,12 @@ class FakeWorker {
           shapeId: 8, volumeMM3: 5500, shapeType: "solid",
           mesh: { positions: new Float32Array([0, 0, 0]), indices: new Uint32Array([0]), triangleCount: 1 }
         } } });
+      } else if (message.method === "booleanOperation") {
+        this.onmessage({ data: { id: message.id, ok: true, result: {
+          shapeId: 9, volumeMM3: message.args.operation === "fuse" ? 8000 : 4000,
+          operation: message.args.operation,
+          mesh: { positions: new Float32Array([0, 0, 0]), indices: new Uint32Array([0]), triangleCount: 1 }
+        } } });
       } else if (message.method === "releaseShape") {
         this.onmessage({ data: { id: message.id, ok: true, result: { released: true } } });
       } else if (message.method === "releaseAll") {
@@ -100,5 +106,25 @@ test("OCCT client forwards sketch loops and extrusion height and releases indivi
   assert.deepEqual(worker.messages.find(message => message.method === "createExtrusion").args.loops, loops);
   assert.equal(await client.releaseShape(8), true);
   assert.deepEqual(worker.messages.map(message => message.method), ["initialize", "createExtrusion", "releaseShape"]);
+  await client.dispose();
+});
+
+
+test("OCCT client validates and forwards fuse, cut and common operations", async () => {
+  let worker;
+  const client = createClient({
+    WorkerClass: class extends FakeWorker { constructor(url, options) { super(url, options); worker = this; } }
+  });
+  await assert.rejects(client.booleanOperation("shell", [1, 2]), /Unbekannte OCCT-Boolean-Operation/);
+  await assert.rejects(client.booleanOperation("cut", [1, 1]), /zwei verschiedene Körperkennungen/);
+  for (const operation of ["fuse", "cut", "common"]) {
+    const result = await client.booleanOperation(operation, [11, 12]);
+    assert.equal(result.operation, operation);
+    assert.equal(result.shapeId, 9);
+    assert.ok(result.volumeMM3 > 0);
+    assert.equal(result.mesh.triangleCount, 1);
+  }
+  assert.deepEqual(worker.messages.filter(message => message.method === "booleanOperation")
+    .map(message => message.args.operation), ["fuse", "cut", "common"]);
   await client.dispose();
 });
