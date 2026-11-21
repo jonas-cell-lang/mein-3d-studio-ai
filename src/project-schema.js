@@ -252,11 +252,26 @@
       return;
     }
     if (source.kind === 'boolean') {
+      const validMatrix = matrix => {
+        if (!Array.isArray(matrix) || matrix.length !== 12 ||
+            !matrix.every(Number.isFinite) ||
+            matrix.some((value, index) => index % 4 === 3
+              ? Math.abs(value) > 200000
+              : Math.abs(value) > 1000)) return false;
+        const determinant =
+          matrix[0] * (matrix[5] * matrix[10] - matrix[6] * matrix[9]) -
+          matrix[1] * (matrix[4] * matrix[10] - matrix[6] * matrix[8]) +
+          matrix[2] * (matrix[4] * matrix[9] - matrix[5] * matrix[8]);
+        return Number.isFinite(determinant) && Math.abs(determinant) > 1e-12;
+      };
       if (!['fuse', 'cut', 'common'].includes(source.operation) ||
           !Array.isArray(source.operands) || source.operands.length !== 2 ||
           !Array.isArray(source.translationsMM) || source.translationsMM.length !== 2 ||
           source.translationsMM.some(offset => !Array.isArray(offset) || offset.length !== 3 ||
-            !offset.every(value => Number.isFinite(value) && Math.abs(value) <= 200000))) {
+            !offset.every(value => Number.isFinite(value) && Math.abs(value) <= 200000)) ||
+          (source.transformsMM != null &&
+            (!Array.isArray(source.transformsMM) || source.transformsMM.length !== 2 ||
+             !source.transformsMM.every(validMatrix)))) {
         throw new Error('Ungültige OCCT-Boolean-Konstruktionsdaten.');
       }
       source.operands.forEach(operand => validateOcctSource(operand, depth + 1));
