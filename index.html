@@ -1290,6 +1290,17 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       updateObjects();
       showProperties();
       updateMoveGizmo();
+
+      // Gespeicherte OCCT-Rezepte nach dem atomaren Projektimport wieder als echte B-Reps aufbauen.
+      const projectRestoreGeneration = (window.__silmoOcctProjectRestoreGeneration || 0) + 1;
+      window.__silmoOcctProjectRestoreGeneration = projectRestoreGeneration;
+      window.__silmoOcctProjectRestorePromise = Promise.all(objects.map(obj => {
+        if (obj.userData.sketch?.outlinePoints ||
+            ['box', 'boolean'].includes(obj.userData.occtSource?.kind)) {
+          return rebuildOcctObjectHandle(obj);
+        }
+        return null;
+      }));
     }
   });
   const { saveProject, openProjectFile } = projectIO;
