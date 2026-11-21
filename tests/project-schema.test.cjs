@@ -218,6 +218,7 @@ test('OCCT-Konstruktionsrezepte für Quader, Skizzen und Boolesche Körper werde
   project.objects.push(
     { occtSource: { kind: 'box', widthMM: 20, depthMM: 30, heightMM: 40 } },
     { occtSource: { kind: 'cylinder', radiusMM: 5, heightMM: 20 } },
+    { occtSource: { kind: 'sphere', radiusMM: 10 } },
     { occtSource: { kind: 'sketch', sketch: {
       type: 'freeform2d', outlinePoints: [[0,0],[40,0],[40,30],[0,30]],
       holes: [[[10,10],[10,20],[20,20],[20,10]]], extrusionMM: 5
@@ -241,20 +242,24 @@ test('OCCT-Konstruktionsrezepte für Quader, Skizzen und Boolesche Körper werde
   invalidBox.objects[0].occtSource.widthMM = Infinity;
   assert.throws(() => schema.validateProjectEnvelope(invalidBox), /OCCT-Quaderabmessungen/);
 
+  const invalidSphere = structuredClone(project);
+  invalidSphere.objects[2].occtSource.radiusMM = 0;
+  assert.throws(() => schema.validateProjectEnvelope(invalidSphere), /OCCT-Kugelradius/);
+
   const invalidSketch = structuredClone(project);
-  invalidSketch.objects[2].occtSource.sketch.outlinePoints = [[0,0],[1,1]];
+  invalidSketch.objects[3].occtSource.sketch.outlinePoints = [[0,0],[1,1]];
   assert.throws(() => schema.validateProjectEnvelope(invalidSketch), /OCCT-Skizzenquelle/);
 
   const invalidBoolean = structuredClone(project);
-  invalidBoolean.objects[3].occtSource.translationsMM[1][0] = 200001;
+  invalidBoolean.objects[4].occtSource.translationsMM[1][0] = 200001;
   assert.throws(() => schema.validateProjectEnvelope(invalidBoolean), /OCCT-Boolean-Konstruktionsdaten/);
 
   const unsupported = structuredClone(project);
-  unsupported.objects[3].occtSource.operation = 'shell';
+  unsupported.objects[4].occtSource.operation = 'shell';
   assert.throws(() => schema.validateProjectEnvelope(unsupported), /OCCT-Boolean-Konstruktionsdaten/);
 
   const missingOperand = structuredClone(project);
-  missingOperand.objects[3].occtSource.operands.pop();
+  missingOperand.objects[4].occtSource.operands.pop();
   assert.throws(() => schema.validateProjectEnvelope(missingOperand), /OCCT-Boolean-Konstruktionsdaten/);
 });
 
