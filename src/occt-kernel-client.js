@@ -104,6 +104,14 @@
         const result = await send("exportStep", { shapeId });
         return result.stepText;
       },
+      async createCone(radiusMM, heightMM) {
+        if (![radiusMM, heightMM].every(value =>
+          Number.isFinite(value) && value >= 0.01 && value <= 2000)) {
+          throw new Error("Kegelradius und -höhe müssen zwischen 0.01 und 2000 mm liegen.");
+        }
+        await initialize();
+        return send("createCone", { radiusMM, heightMM });
+      },
       async createSphere(radiusMM) {
         if (!Number.isFinite(radiusMM) || radiusMM < 0.01 || radiusMM > 2000) throw new Error("Kugelradius muss zwischen 0.01 und 2000 mm liegen.");
         await initialize();
