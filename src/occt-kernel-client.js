@@ -94,7 +94,7 @@
         await initialize();
         return send("createExtrusion", { loops, heightMM });
       },
-      async booleanOperation(operation, shapeIds, translationsMM = [[0, 0, 0], [0, 0, 0]]) {
+      async booleanOperation(operation, shapeIds, transforms = [[0, 0, 0], [0, 0, 0]]) {
         if (!["fuse", "cut", "common"].includes(operation)) {
           throw new Error("Unbekannte OCCT-Boolean-Operation.");
         }
@@ -102,13 +102,33 @@
             shapeIds.some(id => !Number.isInteger(id) || id <= 0) || shapeIds[0] === shapeIds[1]) {
           throw new Error("Eine OCCT-Boolean-Operation benötigt zwei verschiedene Körperkennungen.");
         }
-        if (!Array.isArray(translationsMM) || translationsMM.length !== 2 ||
-            translationsMM.some(offset => !Array.isArray(offset) || offset.length !== 3 ||
-              !offset.every(value => Number.isFinite(value) && Math.abs(value) <= 200000))) {
-          throw new Error("OCCT-Boolean-Transformationen müssen zwei gültige XYZ-Verschiebungen in mm enthalten.");
+        if (!Array.isArray(transforms) || transforms.length !== 2) {
+          throw new Error("OCCT benötigt genau zwei gültige Körpertransformationen.");
+        }
+        const transformsMM = transforms.map(transform => {
+          if (!Array.isArray(transform)) return null;
+          if (transform.length === 3) {
+            const [x, y, z] = transform;
+            return [1, 0, 0, x, 0, 1, 0, y, 0, 0, 1, z];
+          }
+          return transform;
+        });
+        const validMatrix = matrix => {
+          if (!Array.isArray(matrix) || matrix.length !== 12 ||
+              !matrix.every(Number.isFinite) ||
+              matrix.slice(0, 11).some((value, index) => index % 4 !== 3 && Math.abs(value) > 1000) ||
+              [matrix[3], matrix[7], matrix[11]].some(value => Math.abs(value) > 200000)) return false;
+          const determinant =
+            matrix[0] * (matrix[5] * matrix[10] - matrix[6] * matrix[9]) -
+            matrix[1] * (matrix[4] * matrix[10] - matrix[6] * matrix[8]) +
+            matrix[2] * (matrix[4] * matrix[9] - matrix[5] * matrix[8]);
+          return Number.isFinite(determinant) && Math.abs(determinant) > 1e-12;
+        };
+        if (!transformsMM.every(validMatrix)) {
+          throw new Error("OCCT-Transformationen müssen zwei gültige, nicht entartete 3×4-Matrizen in mm enthalten.");
         }
         await initialize();
-        return send("booleanOperation", { operation, shapeIds, translationsMM });
+        return send("booleanOperation", { operation, shapeIds, transformsMM });
       },
       async releaseShape(shapeId) {
         await initialize();
