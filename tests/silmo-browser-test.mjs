@@ -934,7 +934,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.match(await examPage.locator('#tutorialNext').innerText(),/Kurs beenden/,'Bestandener Abschlusstest zeigt keinen Kurs-beenden-Knopf');
   await examPage.locator('#tutorialNext').click();
   assert.equal(await examPage.locator('#tutorialCard').isVisible(),false,'Kurs-beenden-Knopf schliesst den Kurs nicht');
-  assert.match(await examPage.locator('#status').innerText(),/Lernkurs erfolgreich abgeschlossen/,'Kursabschluss wird nicht bestätigt');
+  assert.equal(await examPage.evaluate(() => localStorage.getItem('silmoCourseCompleted')), 'true', 'Kursabschluss wurde nicht dauerhaft gespeichert');
   assert.equal(await examPage.locator('#tutorialLaunch').innerText(),'Lernkurs erneut starten','Kursstart zeigt den Abschluss nicht an');
   await examPage.close();
 
