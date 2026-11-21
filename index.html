@@ -954,6 +954,114 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
   }
 
+  let occtEdgePickMode = false;
+
+  function clearOcctEdgeOverlay() {
+    const overlay = window.__silmoOcctEdgeOverlay;
+    if (overlay?.group?.parent) overlay.group.parent.remove(overlay.group);
+    if (overlay?.group) {
+      overlay.group.children.forEach(line => {
+        line.geometry?.dispose();
+        line.material?.dispose();
+      });
+    }
+    window.__silmoOcctEdgeOverlay = null;
+    occtEdgePickMode = false;
+    const toggle = $('toggleOcctEdgePick');
+    if (toggle) { toggle.disabled = true; toggle.textContent = '⌖ 3D-Kantenauswahl einschalten'; }
+    if ($('occtEdgeList')) {
+      $('occtEdgeList').replaceChildren();
+      $('occtEdgeList').disabled = true;
+    }
+    if ($('applyOcctFillet')) $('applyOcctFillet').disabled = true;
+  }
+
+  function updateOcctEdgeHighlight() {
+    const overlay = window.__silmoOcctEdgeOverlay;
+    if (!overlay) return;
+    for (const line of overlay.group.children) {
+      const active = overlay.selectedIndices.has(line.userData.occtEdgeIndex);
+      line.material.color.set(active ? 0xffbd4a : 0x48a9e8);
+      line.material.opacity = active ? 1 : 0.82;
+    }
+    for (const option of $('occtEdgeList').options) {
+      option.selected = overlay.selectedIndices.has(Number(option.value));
+    }
+    $('applyOcctFillet').disabled = overlay.selectedIndices.size === 0;
+    $('occtTopologySummary').textContent =
+      overlay.selectedIndices.size + ' Kante(n) ausgewählt. Klicke weitere Kanten im 3D-Modell oder in der Liste an.';
+  }
+
+  function buildOcctEdgeOverlay(sourceMesh, wireframe) {
+    clearOcctEdgeOverlay();
+    const group = new THREE.Group();
+    group.name = 'SILMO OCCT native edge overlay';
+    const visibleIndices = new Set();
+    for (let i = 0; i < wireframe.edgeGroups.length; i += 3) {
+      const start = wireframe.edgeGroups[i];
+      const count = wireframe.edgeGroups[i + 1];
+      const edgeIndex = wireframe.edgeGroups[i + 2];
+      if (!Number.isInteger(edgeIndex) || edgeIndex < 0 || start < 0 ||
+          count < 6 || start + count > wireframe.points.length) continue;
+      const positions = new Float32Array(count);
+      for (let p = 0; p < count; p++) {
+        positions[p] = wireframe.points[start + p] * window.SILMOUnits.mmToWorldUnits(1);
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const material = new THREE.LineBasicMaterial({
+        color: 0x48a9e8, transparent: true, opacity: 0.82,
+        depthTest: true, depthWrite: false
+      });
+      const line = new THREE.Line(geometry, material);
+      line.userData.occtEdgeIndex = edgeIndex;
+      line.frustumCulled = false;
+      group.add(line);
+      visibleIndices.add(edgeIndex);
+    }
+    if (!group.children.length) throw new Error('OCCT lieferte keine darstellbaren Kanten-Polylinien.');
+    sourceMesh.add(group);
+    window.__silmoOcctEdgeOverlay = { sourceMesh, group, visibleIndices, selectedIndices: new Set() };
+    window.__silmoOcctEdgePickPoint = edgeIndex => {
+      const overlay = window.__silmoOcctEdgeOverlay;
+      const line = overlay?.group.children.find(item => item.userData.occtEdgeIndex === edgeIndex);
+      if (!line) return null;
+      overlay.group.updateMatrixWorld(true);
+      const attr = line.geometry.getAttribute('position');
+      const point = new THREE.Vector3().fromBufferAttribute(attr, Math.floor(attr.count / 2));
+      point.applyMatrix4(line.matrixWorld).project(camera);
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: rect.left + (point.x + 1) * rect.width / 2,
+        y: rect.top + (1 - point.y) * rect.height / 2
+      };
+    };
+    $('toggleOcctEdgePick').disabled = false;
+    $('toggleOcctEdgePick').textContent = '⌖ 3D-Kantenauswahl einschalten';
+    updateOcctEdgeHighlight();
+    return visibleIndices;
+  }
+
+  function syncOcctEdgeSelectionFromList() {
+    const overlay = window.__silmoOcctEdgeOverlay;
+    if (!overlay) return;
+    overlay.selectedIndices = new Set(Array.from($('occtEdgeList').selectedOptions, option => Number(option.value)));
+    updateOcctEdgeHighlight();
+  }
+
+  function toggleOcctEdgePickMode() {
+    const overlay = window.__silmoOcctEdgeOverlay;
+    if (!overlay) return;
+    occtEdgePickMode = !occtEdgePickMode;
+    $('toggleOcctEdgePick').textContent = occtEdgePickMode
+      ? '✓ 3D-Kantenauswahl aktiv'
+      : '⌖ 3D-Kantenauswahl einschalten';
+    canvas.style.cursor = occtEdgePickMode ? 'crosshair' : 'default';
+    status.textContent = occtEdgePickMode
+      ? 'Klicke direkt auf blaue Kanten im 3D-Modell. Ausgewählte Kanten werden orange markiert.'
+      : '3D-Kantenauswahl ausgeschaltet.';
+  }
+
   async function loadSelectedOcctEdges() {
     const button = $('loadOcctEdges');
     const list = $('occtEdgeList');
@@ -970,17 +1078,26 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     try {
       const result = await window.__silmoOcctClient.listSubShapes(shapeId);
       if (!Array.isArray(result.edge) || !Array.isArray(result.face)) throw new Error('OCCT lieferte keine gültige Topologie.');
+      const wireframe = await window.__silmoOcctClient.getWireframe(shapeId);
+      if (selected !== sourceMesh || window.__silmoOcctObjectHandles?.get(sourceMesh) !== shapeId) {
+        throw new Error('Der ausgewählte Körper hat sich während des Ladens geändert.');
+      }
+      const visibleIndices = buildOcctEdgeOverlay(sourceMesh, wireframe);
       result.edge.forEach(edge => {
         const option = document.createElement('option');
         option.value = String(edge.index);
         option.textContent = 'Kante ' + (edge.index + 1) + ' · ' + edge.geometryType + ' · ' + Number(edge.lengthMM).toFixed(2) + ' mm';
+        option.disabled = !visibleIndices.has(edge.index);
+        if (option.disabled) option.textContent += ' · nicht darstellbar';
         list.appendChild(option);
       });
       list.disabled = result.edge.length === 0;
-      apply.disabled = result.edge.length === 0;
-      $('occtTopologySummary').textContent = result.face.length + ' echte B-Rep-Flächen und ' + result.edge.length + ' echte B-Rep-Kanten geladen.';
+      apply.disabled = true;
+      $('toggleOcctEdgePick').disabled = visibleIndices.size === 0;
+      $('occtTopologySummary').textContent = result.face.length + ' echte B-Rep-Flächen, ' + result.edge.length + ' native Kanten und ' + visibleIndices.size + ' direkt auswählbare Kanten geladen.';
       window.__silmoOcctLastSubShapes = result;
-      status.textContent = 'OCCT-Topologie geladen. Wähle eine oder mehrere Kanten aus der Liste.';
+      window.__silmoOcctLastWireframe = wireframe;
+      status.textContent = 'Topologie geladen. Aktiviere die 3D-Kantenauswahl und klicke direkt auf eine Kante – alternativ kannst du die Liste verwenden.';
     } catch (error) {
       $('occtTopologySummary').textContent = 'Kanten konnten nicht geladen werden.';
       status.textContent = 'OCCT-Kantenauswahl fehlgeschlagen: ' + (error.message || 'Unbekannter Fehler');
@@ -1045,6 +1162,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       };
       recordHistory();
       const oldIndex = objects.indexOf(sourceMesh);
+      clearOcctEdgeOverlay();
       scene.remove(sourceMesh);
       if (oldIndex >= 0) objects.splice(oldIndex, 1, mesh); else objects.push(mesh);
       scene.add(mesh);
@@ -1848,6 +1966,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   $('projectFileInput').addEventListener('change', event => openProjectFile(event.target.files && event.target.files[0]));
 
   function selectObject(obj) {
+    if (window.__silmoOcctEdgeOverlay && window.__silmoOcctEdgeOverlay.sourceMesh !== obj) {
+      clearOcctEdgeOverlay();
+    }
     individualGroupEdit = false;
     activeRotationAxis = null;
     setRotationGuideAxis(null);
@@ -2639,7 +2760,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     <h2>OCCT-Kantenbearbeitung</h2>
     <p class="note">Wähle einen nativen OCCT-Körper aus. Lade seine echten B-Rep-Kanten und markiere eine oder mehrere Kanten für eine präzise Rundung.</p>
     <button class="wide" id="loadOcctEdges" type="button">↻ Kanten des Körpers laden</button>
-    <div class="field"><label for="occtEdgeList">Native Kanten (Mehrfachauswahl)</label><select id="occtEdgeList" multiple size="6" disabled style="width:100%;min-height:112px;padding:7px;background:#0b1422;color:#edf4ff;border:1px solid #2b405a;border-radius:8px"></select></div>
+    <button class="wide" id="toggleOcctEdgePick" type="button" disabled>⌖ 3D-Kantenauswahl einschalten</button>
+    <div class="field"><label for="occtEdgeList">Native Kanten (Mehrfachauswahl oder 3D-Klick)</label><select id="occtEdgeList" multiple size="6" disabled style="width:100%;min-height:112px;padding:7px;background:#0b1422;color:#edf4ff;border:1px solid #2b405a;border-radius:8px"></select></div>
     <div class="field"><label for="occtFilletRadius">Rundungsradius (mm)</label><input id="occtFilletRadius" type="number" min="0.01" max="2000" step="0.1" value="1"></div>
     <button class="wide primary" id="applyOcctFillet" type="button" disabled>◒ Ausgewählte Kanten abrunden</button>
     <p class="note" id="occtTopologySummary">Noch keine Kanten geladen.</p>`;
@@ -2647,6 +2769,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   if (!occtTorusButton) throw new Error('OCCT-Werkzeugleiste konnte nicht gefunden werden.');
   occtTorusButton.insertAdjacentElement('afterend', occtFilletPanel);
   $('loadOcctEdges').onclick = loadSelectedOcctEdges;
+  $('toggleOcctEdgePick').onclick = toggleOcctEdgePickMode;
+  $('occtEdgeList').onchange = syncOcctEdgeSelectionFromList;
   $('applyOcctFillet').onclick = applySelectedOcctFillet;
   $('addSphere').onclick = () => createObject('Kugel');
   $('addCylinder').onclick = () => createObject('Zylinder');
@@ -4186,6 +4310,29 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const rotationHit = rotationHits.find(hit => hit.object.userData.rotationAxis);
       const gizmoHits = moveGizmo ? raycaster.intersectObjects(moveGizmo.children, true) : [];
       const axisHit = gizmoHits.find(hit => hit.object.userData.axis || (hit.object.parent && hit.object.parent.userData.axis));
+      if (occtEdgePickMode && window.__silmoOcctEdgeOverlay?.sourceMesh === selected) {
+        const previousThreshold = raycaster.params.Line.threshold;
+        raycaster.params.Line.threshold = window.SILMOUnits.mmToWorldUnits(1.8);
+        const edgeHits = raycaster.intersectObjects(window.__silmoOcctEdgeOverlay.group.children, false);
+        raycaster.params.Line.threshold = previousThreshold;
+        if (edgeHits.length) {
+          const edgeIndex = edgeHits[0].object.userData.occtEdgeIndex;
+          const picked = window.__silmoOcctEdgeOverlay.selectedIndices;
+          if (picked.has(edgeIndex)) picked.delete(edgeIndex); else picked.add(edgeIndex);
+          updateOcctEdgeHighlight();
+          status.textContent = 'Kante ' + (edgeIndex + 1) + (picked.has(edgeIndex) ? ' ausgewählt.' : ' abgewählt.');
+        } else {
+          status.textContent = 'Keine Kante getroffen. Zoome näher heran oder klicke direkt auf eine blaue Kante.';
+        }
+        dragging = false;
+        draggingObject = false;
+        rotatingView = false;
+        activeAxis = null;
+        pointerId = null;
+        canvas.style.cursor = 'crosshair';
+        e.preventDefault();
+        return;
+      }
       const hits = raycaster.intersectObjects(objects, false);
       if (rotationHit && selected && getSelectedTargets().length) {
         const axis = rotationHit.object.userData.rotationAxis;
