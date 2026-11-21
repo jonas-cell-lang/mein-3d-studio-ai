@@ -6,7 +6,9 @@ const runtimeFiles = [
   ['node_modules/three/build/three.min.js', 'vendor/three/three.min.js'],
   ['node_modules/three/examples/js/loaders/STLLoader.js', 'vendor/three/STLLoader.js'],
   ['node_modules/three/examples/js/exporters/STLExporter.js', 'vendor/three/STLExporter.js'],
-  ['node_modules/three/LICENSE', 'vendor/three/LICENSE']
+  ['node_modules/three/LICENSE', 'vendor/three/LICENSE'],
+  ['research/geometry-kernel-prototype/dist-production/silmo-occt-worker.js', 'vendor/occt/silmo-occt-worker.js'],
+  ['research/geometry-kernel-prototype/node_modules/occt-wasm/dist/occt-wasm.wasm', 'vendor/occt/occt-wasm.wasm']
 ];
 
 for (const [sourceRelative, targetRelative] of runtimeFiles) {
@@ -16,11 +18,11 @@ for (const [sourceRelative, targetRelative] of runtimeFiles) {
     const info = await stat(source);
     if (!info.isFile() || info.size === 0) throw new Error('Datei ist leer oder kein reguläres File.');
   } catch (error) {
-    throw new Error(`Three.js-Runtime-Datei fehlt: ${sourceRelative}. Bitte zuerst npm ci ausführen. ${error.message}`);
+    throw new Error(`Runtime-Datei fehlt: ${sourceRelative}. Bitte zuerst die Root- und OCCT-Prototyp-Abhängigkeiten installieren und den Worker bauen. ${error.message}`);
   }
   await mkdir(dirname(target), { recursive: true });
   await copyFile(source, target);
   console.log(`Bereitgestellt: ${targetRelative}`);
 }
 
-console.log('Three.js r128 und beide STL-Erweiterungen wurden lokal bereitgestellt.');
+console.log('Three.js r128, STL-Erweiterungen und der produktive OCCT-WASM-Worker wurden lokal bereitgestellt.');
