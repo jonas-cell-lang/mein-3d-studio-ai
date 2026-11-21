@@ -233,6 +233,13 @@
     if (!source || typeof source !== 'object' || Array.isArray(source) || depth > 4) {
       throw new Error('Ungültige OCCT-Konstruktionsdaten.');
     }
+    if (source.kind === 'cone') {
+      if (![source.radiusMM, source.heightMM].every(value =>
+        Number.isFinite(value) && value >= 0.01 && value <= 2000)) {
+        throw new Error('Ungültige OCCT-Kegelabmessungen.');
+      }
+      return;
+    }
     if (source.kind === 'sphere') {
       if (!Number.isFinite(source.radiusMM) || source.radiusMM < 0.01 || source.radiusMM > 2000) throw new Error('Ungültiger OCCT-Kugelradius.');
       return;
