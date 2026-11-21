@@ -1050,7 +1050,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return null;
     const project = point => {
-      const projected = point.clone().applyMatrix4(overlay.group.matrixWorld).project(camera);
+      const projected = point.clone().project(camera);
       return {
         x: rect.left + (projected.x + 1) * rect.width / 2,
         y: rect.top + (1 - projected.y) * rect.height / 2,
