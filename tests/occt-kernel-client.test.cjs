@@ -15,6 +15,15 @@ class FakeWorker {
       if (this.terminated) return;
       if (message.method === "initialize") {
         this.onmessage({ data: { id: message.id, ok: true, result: { ready: true } } });
+      } else if (message.method === "importStep") {
+        this.onmessage({ data: { id: message.id, ok: true, result: {
+          shapeId: 10, volumeMM3: 8000, shapeType: "solid",
+          mesh: { positions: new Float32Array([0, 0, 0]), indices: new Uint32Array([0]), triangleCount: 1 }
+        } } });
+      } else if (message.method === "exportStep") {
+        this.onmessage({ data: { id: message.id, ok: true, result: {
+          stepText: "ISO-10303-21;\\nHEADER;\\nENDSEC;\\nDATA;\\nENDSEC;\\nEND-ISO-10303-21;"
+        } } });
       } else if (message.method === "createBox") {
         this.onmessage({ data: { id: message.id, ok: true, result: {
           shapeId: 7, volumeMM3: 8000,
@@ -46,6 +55,26 @@ class FakeWorker {
   }
   terminate() { this.terminated = true; }
 }
+
+test("OCCT client imports and exports STEP text through the worker", async () => {
+  let worker;
+  const client = createClient({
+    WorkerClass: class extends FakeWorker { constructor(url, options) { super(url, options); worker = this; } }
+  });
+  const stepText = "ISO-10303-21;\\nHEADER;\\nENDSEC;\\nDATA;\\nENDSEC;\\nEND-ISO-10303-21;";
+  const imported = await client.importStep(stepText);
+  assert.equal(imported.shapeId, 10);
+  assert.equal(imported.volumeMM3, 8000);
+  assert.equal(imported.shapeType, "solid");
+  assert.equal(imported.mesh.triangleCount, 1);
+  assert.equal(await client.exportStep(10), stepText);
+  assert.deepEqual(worker.messages.map(message => message.method),
+    ["initialize", "importStep", "exportStep"]);
+  assert.equal(worker.messages[1].args.stepText, stepText);
+  await assert.rejects(client.importStep("not a STEP file"), /STEP-Datei ist ungültig/);
+  await assert.rejects(client.exportStep(0), /gültige OCCT-Körperkennung/);
+  await client.dispose();
+});
 
 test("OCCT client initializes lazily and sends CAD commands through one module worker", async () => {
   let worker;
