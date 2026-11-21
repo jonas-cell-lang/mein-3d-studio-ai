@@ -1,6 +1,6 @@
 # SILMO – isolierter OCCT-WASM-Prototyp
 
-Dieser Ordner ist eine Forschungs-/Testumgebung. Er wird nicht von der SILMO-Live-App geladen und ändert keine Produktionsfunktionen.
+Dieser Ordner enthält weiterhin die isolierten Kandidatentests und zusätzlich den reproduzierbaren Build für den ersten produktiven OCCT-Worker. Der Worker-Build wird in die SILMO-Runtime kopiert; die Testprogramme und Smoke-Seiten selbst werden nicht von der App geladen.
 
 ## Gepinnter Kandidat
 
@@ -10,7 +10,7 @@ Dieser Ordner ist eine Forschungs-/Testumgebung. Er wird nicht von der SILMO-Liv
 - Geometrieeinheiten im Test: Millimeter (OCCT API)
 - Testtoleranz für analytische Volumenvergleiche: 1e-6 relativ (Testvergleich, keine SILMO-Kerneltoleranz)
 
-## Lokaler Test
+## Worker-Build für SILMO\n\nNach `npm install` erzeugt `npm run build:worker` den Produktions-Worker unter `dist-production/silmo-occt-worker.js`. Das Root-Skript `npm run prepare:runtime` kopiert anschliessend den Worker und `occt-wasm.wasm` nach `vendor/occt/`.\n\nDie App lädt den Worker erst beim ersten Klick auf „OCCT-B-Rep-Quader“.\n\n## Lokaler Test
 
 Im Ordner research/geometry-kernel-prototype:
 
@@ -41,6 +41,6 @@ npm test
 - Noch kein Vergleichslauf mit Replicad, moket-io/occt-wasm oder OpenGeometry
 - Noch keine Last-/Langzeitmessung
 - Kein Nachweis der Kompatibilität mit SILMO-Projektdateien
-- Keine Integration in die bestehende Anwendung
+- Erste vertikale Integration: OCCT erzeugt einen Quader im Worker; Three.js zeigt dessen Tessellierung. Bestehende CAD-Werkzeuge und BSP-CSG verwenden OCCT noch nicht. B-Rep-Projektspeicherung und Migration bleiben offen.
 
 Ein erfolgreicher Lauf ist nur ein Kandidaten-Smoke-Test und keine Freigabe für die spätere Produktionsintegration.
