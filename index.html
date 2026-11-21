@@ -415,6 +415,14 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   <button class="wide" id="addOcctSphere" title="Erzeugt eine analytische OCCT-B-Rep-Kugel">＋ OCCT-B-Rep-Kugel</button>
   <button class="wide" id="addOcctCone" title="Erzeugt einen analytischen OCCT-B-Rep-Kegel">＋ OCCT-B-Rep-Kegel</button>
   <button class="wide" id="addOcctTorus" title="Erzeugt einen analytischen OCCT-B-Rep-Torus">＋ OCCT-B-Rep-Torus</button>
+    <div class="panel-rule"></div>
+    <h2>OCCT-Kantenbearbeitung</h2>
+    <p class="note">Wähle einen nativen OCCT-Körper aus. Lade seine echten B-Rep-Kanten und markiere eine oder mehrere Kanten für eine präzise Rundung.</p>
+    <button class="wide" id="loadOcctEdges">↻ Kanten des Körpers laden</button>
+    <div class="field"><label for="occtEdgeList">Native Kanten (Mehrfachauswahl)</label><select id="occtEdgeList" multiple size="6" disabled style="width:100%;min-height:112px;padding:7px;background:#0b1422;color:#edf4ff;border:1px solid #2b405a;border-radius:8px"></select></div>
+    <div class="field"><label for="occtFilletRadius">Rundungsradius (mm)</label><input id="occtFilletRadius" type="number" min="0.01" max="2000" step="0.1" value="1"></div>
+    <button class="wide primary" id="applyOcctFillet" disabled>◒ Ausgewählte Kanten abrunden</button>
+    <p class="note" id="occtTopologySummary">Noch keine Kanten geladen.</p>
     <button class="wide" id="addSphere">＋ Kugel</button>
     <button class="wide" id="addCylinder">＋ Zylinder</button>
      <button class="wide" id="addCone">＋ Kegel</button>
@@ -954,6 +962,122 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
   }
 
+  async function loadSelectedOcctEdges() {
+    const button = $('loadOcctEdges');
+    const list = $('occtEdgeList');
+    const apply = $('applyOcctFillet');
+    if (button.disabled) return;
+    if (!selected) { status.textContent = 'Bitte zuerst einen OCCT-Körper auswählen.'; return; }
+    const shapeId = window.__silmoOcctObjectHandles?.get(selected);
+    if (!Number.isInteger(shapeId) || shapeId <= 0 || !window.__silmoOcctClient) {
+      status.textContent = 'Bitte einen nativen OCCT-B-Rep-Körper auswählen. Normale STL-/Mesh-Objekte haben keine editierbaren B-Rep-Kanten.';
+      return;
+    }
+    button.disabled = true; apply.disabled = true; list.replaceChildren();
+    $('occtTopologySummary').textContent = 'Native Flächen und Kanten werden eingelesen …';
+    try {
+      const result = await window.__silmoOcctClient.listSubShapes(shapeId);
+      if (!Array.isArray(result.edges) || !Array.isArray(result.faces)) throw new Error('OCCT lieferte keine gültige Topologie.');
+      result.edges.forEach(edge => {
+        const option = document.createElement('option');
+        option.value = String(edge.index);
+        option.textContent = 'Kante ' + (edge.index + 1) + ' · ' + edge.curveType + ' · ' + Number(edge.lengthMM).toFixed(2) + ' mm';
+        list.appendChild(option);
+      });
+      list.disabled = result.edges.length === 0;
+      apply.disabled = result.edges.length === 0;
+      $('occtTopologySummary').textContent = result.faces.length + ' echte B-Rep-Flächen und ' + result.edges.length + ' echte B-Rep-Kanten geladen.';
+      window.__silmoOcctLastSubShapes = result;
+      status.textContent = 'OCCT-Topologie geladen. Wähle eine oder mehrere Kanten aus der Liste.';
+    } catch (error) {
+      $('occtTopologySummary').textContent = 'Kanten konnten nicht geladen werden.';
+      status.textContent = 'OCCT-Kantenauswahl fehlgeschlagen: ' + (error.message || 'Unbekannter Fehler');
+    } finally { button.disabled = false; }
+  }
+
+  async function applySelectedOcctFillet() {
+    const button = $('applyOcctFillet');
+    if (button.disabled) return;
+    const sourceMesh = selected;
+    const shapeId = sourceMesh && window.__silmoOcctObjectHandles?.get(sourceMesh);
+    const edgeIndices = Array.from($('occtEdgeList').selectedOptions, option => Number(option.value));
+    const radiusMM = Number($('occtFilletRadius').value);
+    if (!sourceMesh || !Number.isInteger(shapeId) || shapeId <= 0) {
+      status.textContent = 'Der ausgewählte Körper besitzt keinen aktiven OCCT-B-Rep-Handle.'; return;
+    }
+    if (!edgeIndices.length || edgeIndices.some(index => !Number.isInteger(index) || index < 0)) {
+      status.textContent = 'Bitte mindestens eine native Kante auswählen.'; return;
+    }
+    if (!Number.isFinite(radiusMM) || radiusMM < 0.01 || radiusMM > 2000) {
+      status.textContent = 'Der Rundungsradius muss zwischen 0,01 und 2000 mm liegen.'; return;
+    }
+    const baseSource = sourceMesh.userData.occtSource;
+    if (!baseSource || typeof baseSource !== 'object') {
+      status.textContent = 'Für Undo/Redo braucht dieser Körper eine gespeicherte OCCT-Konstruktionsquelle. Dieser importierte oder veränderte Körper kann hier noch nicht abgerundet werden.';
+      return;
+    }
+    button.disabled = true;
+    let result = null;
+    try {
+      status.textContent = 'OCCT berechnet die exakte B-Rep-Kantenrundung …';
+      result = await window.__silmoOcctClient.filletEdges(shapeId, edgeIndices, radiusMM);
+      if (!result?.mesh?.positions?.length || !result.mesh.indices?.length ||
+          !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0) {
+        throw new Error('OCCT lieferte kein gültiges gerundetes Volumen mit Darstellungsnetz.');
+      }
+      if (!objects.includes(sourceMesh) || selected !== sourceMesh ||
+          window.__silmoOcctObjectHandles?.get(sourceMesh) !== shapeId) {
+        throw new Error('Die Auswahl hat sich während der Berechnung geändert. Ergebnis wurde nicht eingesetzt.');
+      }
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      const positions = new Float32Array(result.mesh.positions.length);
+      for (let i = 0; i < positions.length; i++) positions[i] = result.mesh.positions[i] * mmToWorld;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+      const size = new THREE.Vector3(); geometry.boundingBox.getSize(size);
+      if (![size.x,size.y,size.z].every(value => Number.isFinite(value) && value > 0)) {
+        geometry.dispose(); throw new Error('Das gerundete Ergebnis besitzt ungültige Abmessungen.');
+      }
+      const mesh = new THREE.Mesh(geometry, sourceMesh.material.clone());
+      mesh.position.copy(sourceMesh.position); mesh.rotation.copy(sourceMesh.rotation); mesh.scale.copy(sourceMesh.scale);
+      mesh.userData.baseDimensions = {x:size.x,y:size.y,z:size.z};
+      mesh.userData.percent = {...(sourceMesh.userData.percent || {x:100,y:100,z:100})};
+      mesh.userData.label = (sourceMesh.userData.label || 'OCCT-Körper') + ' · gerundet';
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      mesh.userData.occtSource = {
+        kind: 'fillet', base: JSON.parse(JSON.stringify(baseSource)),
+        edgeIndices: edgeIndices.slice(), radiusMM
+      };
+      recordHistory();
+      const oldIndex = objects.indexOf(sourceMesh);
+      scene.remove(sourceMesh);
+      if (oldIndex >= 0) objects.splice(oldIndex, 1, mesh); else objects.push(mesh);
+      scene.add(mesh);
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      sourceMesh.geometry.dispose();
+      (Array.isArray(sourceMesh.material) ? sourceMesh.material : [sourceMesh.material]).forEach(material => material.dispose());
+      selectObject(mesh);
+      window.__silmoOcctLastFillet = {
+        shapeId: result.shapeId, volumeMM3: result.volumeMM3,
+        edgeIndices: edgeIndices.slice(), radiusMM
+      };
+      if (window.__silmoOcctObjectHandles?.get(sourceMesh)) {
+        // Der alte Körper wird erst nach dem erfolgreichen Szenenwechsel freigegeben.
+        await window.__silmoOcctClient.releaseShape(shapeId).catch(() => {});
+      }
+      $('occtTopologySummary').textContent = edgeIndices.length + ' Kante(n) mit ' + radiusMM + ' mm gerundet. Neues Volumen: ' + result.volumeMM3.toFixed(2) + ' mm³.';
+      status.textContent = 'Echte OCCT-Kantenrundung erfolgreich angewendet. Undo/Redo kann den Körper aus seiner Konstruktionsquelle rekonstruieren.';
+      $('occtEdgeList').replaceChildren(); $('occtEdgeList').disabled = true; $('applyOcctFillet').disabled = true;
+    } catch (error) {
+      if (result?.shapeId && window.__silmoOcctClient) await window.__silmoOcctClient.releaseShape(result.shapeId).catch(() => {});
+      status.textContent = 'Kantenrundung fehlgeschlagen: ' + (error.message || 'Unbekannter OCCT-Fehler');
+    } finally { button.disabled = false; }
+  }
+
   async function createOcctBox() {
     const button = $('addOcctBox');
     if (button.disabled) return;
@@ -1348,6 +1472,16 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       ownedHandles.push(result.shapeId);
       return result;
     }
+    if (source.kind === 'fillet' && source.base &&
+        Array.isArray(source.edgeIndices) && source.edgeIndices.length > 0 &&
+        Number.isFinite(source.radiusMM)) {
+      const base = await createOcctShapeFromSource(source.base, ownedHandles);
+      const result = await window.__silmoOcctClient.filletEdges(
+        base.shapeId, source.edgeIndices, source.radiusMM
+      );
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
     throw new Error('Gespeicherte OCCT-Konstruktionsquelle kann nicht rekonstruiert werden.');
   }
 
@@ -1358,44 +1492,36 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       return;
     }
     const source = mesh.userData.occtSource;
-    if (source?.kind === 'boolean') {
+    if (source?.kind === 'boolean' || source?.kind === 'fillet') {
       const createdHandles = [];
-      let booleanResult = null;
+      let rebuiltResult = null;
       try {
         if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
-        const operands = [];
-        for (const operand of source.operands || []) {
-          operands.push(await createOcctShapeFromSource(operand, createdHandles));
-        }
-        if (operands.length !== 2) throw new Error('OCCT-Undo benötigt genau zwei rekonstruierbare Ausgangskörper.');
-        booleanResult = await window.__silmoOcctClient.booleanOperation(
-          source.operation, operands.map(item => item.shapeId), source.transformsMM ?? source.translationsMM
-        );
-        createdHandles.push(booleanResult.shapeId);
-        await Promise.all(createdHandles.filter(shapeId => shapeId !== booleanResult.shapeId).map(shapeId =>
-          window.__silmoOcctClient.releaseShape(shapeId)
-        ));
+        rebuiltResult = await createOcctShapeFromSource(source, createdHandles);
         if (!objects.includes(mesh)) {
-          await window.__silmoOcctClient.releaseShape(booleanResult.shapeId);
+          await window.__silmoOcctClient.releaseShape(rebuiltResult.shapeId);
           return;
         }
+        await Promise.all(createdHandles.filter(shapeId => shapeId !== rebuiltResult.shapeId).map(shapeId =>
+          window.__silmoOcctClient.releaseShape(shapeId)
+        ));
         window.__silmoOcctObjectHandles ||= new WeakMap();
-        window.__silmoOcctObjectHandles.set(mesh, booleanResult.shapeId);
+        window.__silmoOcctObjectHandles.set(mesh, rebuiltResult.shapeId);
         mesh.userData.geometryKernel = 'occt-wasm';
-        mesh.userData.occtShapeId = booleanResult.shapeId;
-        mesh.userData.occtVolumeMM3 = booleanResult.volumeMM3;
+        mesh.userData.occtShapeId = rebuiltResult.shapeId;
+        mesh.userData.occtVolumeMM3 = rebuiltResult.volumeMM3;
         window.__silmoOcctLastRestored = {
-          shapeId: booleanResult.shapeId, volumeMM3: booleanResult.volumeMM3
+          shapeId: rebuiltResult.shapeId, volumeMM3: rebuiltResult.volumeMM3
         };
       } catch (error) {
         await Promise.all(createdHandles.map(shapeId =>
           window.__silmoOcctClient.releaseShape(shapeId).catch(() => {})
         ));
-        if (booleanResult?.shapeId) {
-          await window.__silmoOcctClient.releaseShape(booleanResult.shapeId).catch(() => {});
+        if (rebuiltResult?.shapeId) {
+          await window.__silmoOcctClient.releaseShape(rebuiltResult.shapeId).catch(() => {});
         }
         mesh.userData.geometryKernel = 'three-mesh-fallback';
-        status.textContent = 'OCCT-Boolean konnte nach Undo/Redo nicht wiederhergestellt werden: ' +
+        status.textContent = 'OCCT-Körper konnte nach Undo/Redo nicht wiederhergestellt werden: ' +
           (error.message || 'Unbekannter Kernel-Fehler');
       }
       return;
@@ -1590,7 +1716,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       window.__silmoOcctLastRestored = null;
       window.__silmoOcctRestorePromise = Promise.all(restoredObjects.map(obj => {
         if (obj.userData.sketch?.outlinePoints ||
-            ['box', 'sphere', 'cylinder', 'cone', 'torus', 'step', 'boolean'].includes(obj.userData.occtSource?.kind)) {
+            ['box', 'sphere', 'cylinder', 'cone', 'torus', 'step', 'boolean', 'fillet'].includes(obj.userData.occtSource?.kind)) {
           return rebuildOcctObjectHandle(obj);
         }
         return null;
@@ -2511,6 +2637,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   $('addOcctCone').onclick = createOcctCone;
   $('addOcctTorus').onclick = createOcctTorus;
   $('inspectOcctShape').onclick = inspectSelectedOcctShape;
+  $('loadOcctEdges').onclick = loadSelectedOcctEdges;
+  $('applyOcctFillet').onclick = applySelectedOcctFillet;
   $('addSphere').onclick = () => createObject('Kugel');
   $('addCylinder').onclick = () => createObject('Zylinder');
   $('addCone').onclick = () => createObject('Kegel');
