@@ -328,6 +328,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await page.locator('#objects .object-row').count(), multiBodyStart,
     'Mehrkörper-OCCT-Ergebnis konnte nicht entfernt werden');
 
+  await page.locator('#objects .object-select').nth(booleanSceneStart).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
   await page.locator('#delete').evaluate(button => {
     if (button.disabled) throw new Error('Löschen-Schaltfläche ist deaktiviert.');
     button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
