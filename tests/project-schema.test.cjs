@@ -260,6 +260,23 @@ test('OCCT-Konstruktionsrezepte für Quader, Skizzen und Boolesche Körper werde
   invalidSketch.objects[3].occtSource.sketch.outlinePoints = [[0,0],[1,1]];
   assert.throws(() => schema.validateProjectEnvelope(invalidSketch), /OCCT-Skizzenquelle/);
 
+  const validFillet = validProject();
+  validFillet.objects.push({ occtSource: {
+    kind: 'fillet', base: { kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20 },
+    edgeIndices: [0, 3], radiusMM: 1.5
+  } });
+  assert.equal(schema.validateProjectEnvelope(validFillet), validFillet);
+  for (const invalidSource of [
+    { kind: 'fillet', base: { kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20 }, edgeIndices: [], radiusMM: 1 },
+    { kind: 'fillet', base: { kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20 }, edgeIndices: [0, 0], radiusMM: 1 },
+    { kind: 'fillet', base: { kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20 }, edgeIndices: [0], radiusMM: 0 },
+    { kind: 'fillet', base: { kind: 'unknown' }, edgeIndices: [0], radiusMM: 1 }
+  ]) {
+    const invalidFillet = validProject();
+    invalidFillet.objects.push({ occtSource: invalidSource });
+    assert.throws(() => schema.validateProjectEnvelope(invalidFillet));
+  }
+
   const invalidBoolean = structuredClone(project);
   invalidBoolean.objects[4].occtSource.translationsMM[1][0] = 200001;
   assert.throws(() => schema.validateProjectEnvelope(invalidBoolean), /OCCT-Boolean-Konstruktionsdaten/);
