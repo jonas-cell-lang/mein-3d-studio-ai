@@ -415,6 +415,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   <button class="wide" id="addOcctSphere" title="Erzeugt eine analytische OCCT-B-Rep-Kugel">＋ OCCT-B-Rep-Kugel</button>
   <button class="wide" id="addOcctCone" title="Erzeugt einen analytischen OCCT-B-Rep-Kegel">＋ OCCT-B-Rep-Kegel</button>
   <button class="wide" id="addOcctTorus" title="Erzeugt einen analytischen OCCT-B-Rep-Torus">＋ OCCT-B-Rep-Torus</button>
+  <button class="wide" id="inspectOcctShape" title="Prüft Volumen und Abmessungen des ausgewählten nativen OCCT-Körpers">⌕ OCCT-Körper prüfen</button>
     <button class="wide" id="addSphere">＋ Kugel</button>
     <button class="wide" id="addCylinder">＋ Zylinder</button>
      <button class="wide" id="addCone">＋ Kegel</button>
@@ -929,6 +930,29 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     status.textContent = 'Objekt erstellt';
   }
 
+
+  async function inspectSelectedOcctShape() {
+    const button = $('inspectOcctShape');
+    if (button.disabled) return;
+    if (!selected) { status.textContent = 'Bitte zuerst einen OCCT-Körper auswählen.'; return; }
+    const shapeId = window.__silmoOcctObjectHandles?.get(selected);
+    if (!Number.isInteger(shapeId) || shapeId <= 0 || !window.__silmoOcctClient) {
+      status.textContent = 'Das ausgewählte Objekt besitzt keinen aktiven nativen OCCT-Körper. Gewöhnliche Meshes können hier noch nicht geprüft werden.';
+      return;
+    }
+    button.disabled = true;
+    status.textContent = 'OCCT-Körper wird geprüft …';
+    try {
+      const result = await window.__silmoOcctClient.inspectShape(shapeId);
+      const size = result.boundingBoxMM.size.map(value => value.toFixed(2));
+      window.__silmoOcctLastInspection = result;
+      status.textContent = 'OCCT-Prüfung: Volumen ' + result.volumeMM3.toFixed(2) + ' mm³; Abmessungen ' + size.join(' × ') + ' mm; ' + result.mesh.triangleCount + ' Dreiecke.';
+    } catch (error) {
+      status.textContent = 'OCCT-Körperprüfung fehlgeschlagen: ' + (error.message || 'Unbekannter Fehler');
+    } finally {
+      button.disabled = false;
+    }
+  }
 
   async function createOcctBox() {
     const button = $('addOcctBox');
@@ -2486,6 +2510,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   $('addOcctSphere').onclick = createOcctSphere;
   $('addOcctCone').onclick = createOcctCone;
   $('addOcctTorus').onclick = createOcctTorus;
+  $('inspectOcctShape').onclick = inspectSelectedOcctShape;
   $('addSphere').onclick = () => createObject('Kugel');
   $('addCylinder').onclick = () => createObject('Zylinder');
   $('addCone').onclick = () => createObject('Kegel');
