@@ -118,7 +118,7 @@ test("OCCT client validates and forwards fuse, cut and common operations", async
   await assert.rejects(client.booleanOperation("shell", [1, 2]), /Unbekannte OCCT-Boolean-Operation/);
   await assert.rejects(client.booleanOperation("cut", [1, 1]), /zwei verschiedene Körperkennungen/);
   for (const operation of ["fuse", "cut", "common"]) {
-    const result = await client.booleanOperation(operation, [11, 12]);
+    const result = await client.booleanOperation(operation, [11, 12], [[5, 0, 0], [0, 0, 0]]);
     assert.equal(result.operation, operation);
     assert.equal(result.shapeId, 9);
     assert.ok(result.volumeMM3 > 0);
@@ -126,5 +126,9 @@ test("OCCT client validates and forwards fuse, cut and common operations", async
   }
   assert.deepEqual(worker.messages.filter(message => message.method === "booleanOperation")
     .map(message => message.args.operation), ["fuse", "cut", "common"]);
+  assert.deepEqual(worker.messages.filter(message => message.method === "booleanOperation")[0].args.translationsMM,
+    [[5, 0, 0], [0, 0, 0]]);
+  await assert.rejects(client.booleanOperation("cut", [11, 12], [[Infinity, 0, 0], [0, 0, 0]]),
+    /gültige XYZ-Verschiebungen/);
   await client.dispose();
 });
