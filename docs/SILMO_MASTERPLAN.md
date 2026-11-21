@@ -744,3 +744,9 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Mindestlänge des bestehenden CAD-Pfads vor einer Längenänderung (`0.001 mm`) und der dimensionslose Divisor-Schutz bei der Wiederherstellung der Skizzen-Extrusionshöhe (`1e-12`) sind zentral benannt.
 - Die Zahlenwerte bleiben unverändert. Die Spezifikation unterscheidet ausdrücklich Millimeter von einem dimensionslosen Skalierungsfaktor.
 - Code-, Browser- und OCCT-CI für diese Änderung stehen noch aus.
+
+
+### 6.69 Hohlrahmen-Mindestabmessung zentral benannt (21.11.2026)
+- Die Standard-Mindestabmessung des erzeugten Hohlrahmens (`1e-9` Welteinheiten) ist zentral definiert und wird vom Geometrie-API-Standardparameter verwendet.
+- Ein expliziter Aufrufer-Override bleibt möglich; die Hauptanwendung übergibt weiterhin ihre strengere CSG-Grenze. Bestehendes Verhalten bleibt erhalten.
+- Neue Grenzfalltests prüfen Standardgrenze und Override. CI steht noch aus.
