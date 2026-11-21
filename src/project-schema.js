@@ -28,7 +28,8 @@
     let positionCount = 0;
     for (const [name, item] of Object.entries(data.attributes)) {
       if (!/^[a-zA-Z][a-zA-Z0-9_]{0,31}$/.test(name) ||
-          !item || typeof item !== 'object' || !Array.isArray(item.array)) {
+          !item || typeof item !== 'object' || !Array.isArray(item.array) ||
+          (item.normalized != null && typeof item.normalized !== 'boolean')) {
         throw new Error('Ungültiges Geometrieattribut.');
       }
       const valueRange = attributeTypeRanges[item.arrayType];
@@ -85,6 +86,21 @@
         !Number.isFinite(frame.wallThicknessMM) || frame.wallThicknessMM < 0.2 || frame.wallThicknessMM > 100 ||
         !Number.isFinite(frame.wallHeightMM) || frame.wallHeightMM < 0.2 || frame.wallHeightMM > 2000) {
       throw new Error('Ungültige Hohlrahmen-Metadaten: Wandstärke oder Rahmenhöhe liegt ausserhalb des unterstützten Bereichs.');
+    }
+  }
+
+  function validateObjectTransformMetadata(object) {
+    if (!object || typeof object !== 'object' || Array.isArray(object)) return;
+    for (const [name, maximum] of [['position', 10000], ['rotation', 10000], ['scale', 1000]]) {
+      const values = object[name];
+      // Fehlende/nicht-arrayförmige Alt-Metadaten behalten die bisherigen Defaults
+      // im Projekt-I/O. Vorhandene Arrays müssen aber sicher anwendbar sein.
+      if (!Array.isArray(values)) continue;
+      if (values.length < 3 || values.slice(0, 3).some(value =>
+        !Number.isFinite(value) || Math.abs(value) > maximum ||
+        (name === 'scale' && value === 0))) {
+        throw new Error('Ungültige Objektposition, Drehung oder Skalierung.');
+      }
     }
   }
 
@@ -266,7 +282,7 @@
       throw new Error('Die Projektdatei enthält eine ungültige Objektliste (maximal 100 Objekte).');
     }
     validateProjectObjectIdentities(project.objects);
-    project.objects.forEach(object => { validateContourFrameMetadata(object); validateSketchMetadata(object); validateLoftMetadata(object); });
+    project.objects.forEach(object => { validateObjectTransformMetadata(object); validateContourFrameMetadata(object); validateSketchMetadata(object); validateLoftMetadata(object); });
     validateProjectGeometryBudget(project.objects);
     return project;
   }
