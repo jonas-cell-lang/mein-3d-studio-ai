@@ -1,26 +1,769 @@
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
+import { readFileSync, statSync } from 'node:fs';
 
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-gl=swiftshader'] });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 const pageErrors = [];
+let allowExpectedConsoleError = false;
 async function showCreateSubtab(index) {
   await page.locator('[data-tab="create"]').click();
-  await page.locator('#pane-create-left > .inner-tab-nav button').nth(index).click();
+  const tabs = page.locator('#pane-create-left > .inner-tab-nav button');
+  await tabs.nth(index).click();
+  const state = await page.locator('#addCube').evaluate(el => {
+    const ancestors = [];
+    for (let node = el; node; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      ancestors.push({
+        tag: node.tagName,
+        id: node.id || null,
+        className: typeof node.className === 'string' ? node.className : null,
+        hidden: node.hidden,
+        display: style.display,
+        visibility: style.visibility
+      });
+    }
+    return {
+      visible: el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden',
+      selectedTab: document.querySelector('[data-tab="create"]')?.getAttribute('aria-selected'),
+      selectedSubtab: tabsState(),
+      ancestors
+    };
+    function tabsState() {
+      return [...document.querySelectorAll('#pane-create-left > .inner-tab-nav button')]
+        .map(button => ({label: button.textContent, selected: button.getAttribute('aria-selected')}));
+    }
+  });
+  if (index === 0 && !state.visible) {
+    throw new Error('Grundformen-Unterreiter wurde aktiviert, aber Würfel-Button bleibt unsichtbar: ' + JSON.stringify(state));
+  }
 }
 async function showDrawRightSubtab(index) {
   await page.locator('#pane-draw-right > .inner-tab-nav button').nth(index).click();
 }
+async function waitForSelectedSketchOcct() {
+  await page.waitForFunction(() => window.__silmoSketchSnapshot()?.geometryKernel === 'occt-wasm', null, { timeout: 45000 });
+}
+async function waitForOcctRestore(previousGeneration) {
+  await page.waitForFunction(previous => Number.isInteger(window.__silmoOcctRestoreGeneration) &&
+    window.__silmoOcctRestoreGeneration > previous, previousGeneration, { timeout: 20000 });
+  await page.evaluate(async () => {
+    if (window.__silmoOcctRestorePromise) await window.__silmoOcctRestorePromise;
+  });
+}
 page.on('pageerror', error => pageErrors.push(error.message));
 page.on('console', message => {
-  if (message.type() === 'error') pageErrors.push('console: ' + message.text());
+  if (message.type() === 'error' && !allowExpectedConsoleError) pageErrors.push('console: ' + message.text());
 });
+
+// Die Kernanwendung muss auch dann starten, wenn externe HTTPS-Zugriffe blockiert sind.
+await page.route('https://**/*', route => route.abort());
 
 try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
+  const runtimeInfo = await page.evaluate(() => ({
+    revision: window.THREE?.REVISION,
+    loader: typeof window.THREE?.STLLoader,
+    exporter: typeof window.THREE?.STLExporter
+  }));
+  assert.deepEqual(runtimeInfo, { revision: '128', loader: 'function', exporter: 'function' }, 'Lokale Three.js r128 Runtime oder STL-Erweiterungen fehlen');
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v90/, 'Build-Metadaten zeigen nicht v82');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v94/, 'Build-Metadaten zeigen nicht v94');
+  assert.equal(await page.evaluate(() => window.SILMOUnits?.mmToWorldUnits(10)), 1, 'Zentrale Einheiten-API ist im Browser nicht verfügbar');
+  assert.equal(await page.evaluate(() => window.SILMOUnits?.worldUnitsToMm(1)), 10, 'Zentrale Einheiten-API liefert falsche Millimeterwerte');
+  assert.equal(await page.evaluate(() => window.SILMOTolerances?.CSG_GEOMETRY_WORLD_UNITS), 1e-5, 'Zentrale Toleranz-API ist nicht verfügbar oder hat den falschen CSG-Wert');
+  assert.equal(await page.evaluate(() => window.SILMOTolerances?.PRINT_BED_BOUNDS_WORLD_UNITS), 1e-4, 'Druckbett-Toleranz hat sich unerwartet geändert');
+  assert.equal(await page.evaluate(() => typeof window.SILMOPrimitiveGeometry?.createPrimitiveGeometry), 'function', 'Grundkörper-Geometriemodul ist nicht verfügbar');
+  assert.equal(await page.evaluate(() => typeof window.SILMOSketchGeometry?.createExtrusionGeometry), 'function', 'Skizzen-Geometriemodul ist nicht verfügbar');
+  assert.equal(await page.evaluate(() => typeof window.SILMOSketchGeometry?.createParametricProfile), 'function', 'Parametrische Skizzenprofile sind nicht verfügbar');
+  assert.equal(await page.evaluate(() => typeof window.SILMOSketchGeometry?.createLoftGeometry), 'function', 'Loft-Geometrie ist nicht verfügbar');
+  assert.equal(await page.evaluate(() => typeof window.SILMOSketchGeometry?.createSweepGeometry), 'function', 'Sweep-Geometrie ist nicht verfügbar');
+  assert.equal(await page.evaluate(() => typeof window.SILMOSketchGeometry?.createPathCurve), 'function', 'CAD-Pfadkurven sind nicht verfügbar');
+  assert.equal(await page.evaluate(() => typeof window.SILMOSketchGeometry?.createPathTubeGeometry), 'function', 'CAD-Pfadrohre sind nicht verfügbar');
+  assert.equal(await page.evaluate(() => typeof window.SILMOSketchGeometry?.createContourFrameGeometry), 'function', 'Hohlrahmen-Geometrie ist nicht verfügbar');
+  assert.equal(await page.evaluate(() => window.SILMOProjectSchema?.CURRENT_PROJECT_VERSION), 3, 'Projektformat-Version 3 ist nicht registriert');
+assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.serializeGeometry), 'function', 'Projektgeometrie-Serialisierung ist nicht verfügbar');
+assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.restoreGeometry), 'function', 'Projektgeometrie-Wiederaufbau ist nicht verfügbar');
+assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.serializeObjectForUnion), 'function', 'Union-Serialisierung ist nicht verfügbar');
+assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.restoreObjectForUnion), 'function', 'Union-Wiederherstellung ist nicht verfügbar');
+assert.equal(await page.evaluate(() => typeof window.SILMOProjectIO?.createProjectIO), 'function', 'Projektdatei-I/O-Modul ist nicht verfügbar');
+assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), 'function', 'BSP-CSG-Modul ist nicht verfügbar');
+  assert.equal(await page.evaluate(() => typeof window.SILMOOCCTClient?.createClient), 'function', 'OCCT-Client ist nicht verfügbar');
+  await showCreateSubtab(0);
+  const occtStartCount = await page.locator('#objects .object-row').count();
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  assert.equal(await page.locator('#objects .object-row').count(), occtStartCount + 1,
+    'OCCT-B-Rep-Körper wurde nicht in die SILMO-Szene übernommen');
+  const occtResult = await page.evaluate(async () => {
+    const created = window.__silmoOcctLastCreated;
+    return { ...created, workerVolumeMM3: await window.__silmoOcctClient.getVolume(created.shapeId) };
+  });
+  assert.ok(Math.abs(occtResult.volumeMM3 - 8000) < 1e-7, 'OCCT-Quader besitzt nicht das analytische Volumen von 8000 mm³');
+  assert.ok(Math.abs(occtResult.workerVolumeMM3 - 8000) < 1e-7, 'B-Rep-Körper blieb im Worker nicht mit korrektem Volumen abfragbar');
+  assert.equal(occtResult.triangleCount > 0, true, 'OCCT-B-Rep wurde nicht in ein Three.js-Darstellungsnetz tesselliert');
+  assert.deepEqual(occtResult.dimensionsMM, [20, 20, 20], 'OCCT-Testkörper hat falsche Sollabmessungen');
+  const occtExtrusion = await page.evaluate(async () => {
+    const loops = [
+      [[0, 0], [40, 0], [40, 30], [0, 30]],
+      [[10, 10], [10, 20], [20, 20], [20, 10]]
+    ];
+    const result = await window.__silmoOcctClient.createExtrusion(loops, 5);
+    return {
+      ...result,
+      workerVolumeMM3: await window.__silmoOcctClient.getVolume(result.shapeId),
+      meshValues: result.mesh.positions.length,
+      indexValues: result.mesh.indices.length
+    };
+  });
+  assert.equal(occtExtrusion.shapeType, 'solid', 'Skizzenextrusion erzeugte keinen OCCT-Solid');
+  assert.ok(Math.abs(occtExtrusion.volumeMM3 - 5500) < 1e-6, 'OCCT-Skizzenextrusion hat falsches Volumen mit Innenloch');
+  assert.ok(Math.abs(occtExtrusion.workerVolumeMM3 - 5500) < 1e-6, 'OCCT-B-Rep-Extrusion blieb nicht im Worker abfragbar');
+  assert.ok(occtExtrusion.mesh.triangleCount > 0 && occtExtrusion.meshValues > 0 && occtExtrusion.indexValues > 0,
+    'OCCT-Skizzenextrusion lieferte kein Darstellungsnetz');
+  assert.equal(await page.evaluate(shapeId => window.__silmoOcctClient.releaseShape(shapeId), occtExtrusion.shapeId), true,
+    'Einzelner OCCT-Skizzenkörper konnte nicht freigegeben werden');
+  assert.equal(await page.evaluate(async shapeId => {
+    try { await window.__silmoOcctClient.getVolume(shapeId); return false; }
+    catch { return true; }
+  }, occtExtrusion.shapeId), true, 'Freigegebener OCCT-Körper blieb weiterhin abfragbar');
+  const booleanResults = await page.evaluate(async () => {
+    const first = await window.__silmoOcctClient.createBox(20, 20, 20);
+    const second = await window.__silmoOcctClient.createBox(10, 20, 20);
+    const results = {};
+    try {
+      for (const operation of ['fuse', 'cut', 'common']) {
+        const result = await window.__silmoOcctClient.booleanOperation(operation, [first.shapeId, second.shapeId]);
+        results[operation] = {
+          volumeMM3: result.volumeMM3,
+          triangleCount: result.mesh.triangleCount,
+          meshValues: result.mesh.positions.length,
+          indexValues: result.mesh.indices.length
+        };
+        await window.__silmoOcctClient.releaseShape(result.shapeId);
+      }
+    } finally {
+      await window.__silmoOcctClient.releaseShape(first.shapeId);
+      await window.__silmoOcctClient.releaseShape(second.shapeId);
+    }
+    return results;
+  });
+  assert.ok(Math.abs(booleanResults.fuse.volumeMM3 - 8000) < 1e-7,
+    'OCCT-Fuse lieferte falsches Volumen');
+  assert.ok(Math.abs(booleanResults.cut.volumeMM3 - 4000) < 1e-7,
+    'OCCT-Cut lieferte falsches Volumen');
+  assert.ok(Math.abs(booleanResults.common.volumeMM3 - 4000) < 1e-7,
+    'OCCT-Common lieferte falsches Volumen');
+  for (const operation of ['fuse', 'cut', 'common']) {
+    assert.ok(booleanResults[operation].triangleCount > 0 &&
+      booleanResults[operation].meshValues > 0 && booleanResults[operation].indexValues > 0,
+    'OCCT-' + operation + ' lieferte kein verwendbares Darstellungsnetz');
+  }
+
+  // OCCT-Worker-Belastung: sechs Zyklen mit je Fuse, Cut und Common.
+  // Jeder Durchlauf prüft Volumen, Tessellierung und anschliessende Freigabe aller Handles.
+  const occtStress = await page.evaluate(async () => {
+    const expected = { fuse: 12000, cut: 4000, common: 4000 };
+    const translationsMM = [[0, 0, 0], [10, 0, 0]];
+    const completed = [];
+    const released = [];
+    for (let cycle = 0; cycle < 6; cycle++) {
+      const first = await window.__silmoOcctClient.createBox(20, 20, 20);
+      const second = await window.__silmoOcctClient.createBox(20, 20, 20);
+      try {
+        for (const operation of ['fuse', 'cut', 'common']) {
+          const result = await window.__silmoOcctClient.booleanOperation(
+            operation, [first.shapeId, second.shapeId], translationsMM
+          );
+          const workerVolumeMM3 = await window.__silmoOcctClient.getVolume(result.shapeId);
+          if (Math.abs(result.volumeMM3 - expected[operation]) > 1e-7 ||
+              Math.abs(workerVolumeMM3 - expected[operation]) > 1e-7 ||
+              !(result.mesh?.triangleCount > 0) ||
+              !(result.mesh?.positions?.length > 0) ||
+              !(result.mesh?.indices?.length > 0)) {
+            throw new Error('OCCT-Stresstest Zyklus ' + cycle + ', ' + operation +
+              ': Volumen oder Tessellierung ungültig.');
+          }
+          await window.__silmoOcctClient.releaseShape(result.shapeId);
+          let resultReleased = false;
+          try { await window.__silmoOcctClient.getVolume(result.shapeId); }
+          catch { resultReleased = true; }
+          if (!resultReleased) throw new Error('OCCT-Ergebnis-Handle blieb nach Freigabe aktiv.');
+          released.push(result.shapeId);
+          completed.push({ cycle, operation, volumeMM3: result.volumeMM3 });
+        }
+      } finally {
+        await window.__silmoOcctClient.releaseShape(first.shapeId);
+        await window.__silmoOcctClient.releaseShape(second.shapeId);
+      }
+      for (const shapeId of [first.shapeId, second.shapeId]) {
+        let sourceReleased = false;
+        try { await window.__silmoOcctClient.getVolume(shapeId); }
+        catch { sourceReleased = true; }
+        if (!sourceReleased) throw new Error('OCCT-Quellkörper-Handle blieb nach Freigabe aktiv.');
+        released.push(shapeId);
+      }
+    }
+    return { cycles: 6, operations: completed.length, releasedHandles: released.length, completed };
+  });
+  assert.equal(occtStress.operations, 18, 'OCCT-Stresstest hat nicht alle 18 Boolean-Operationen ausgeführt');
+  assert.equal(occtStress.releasedHandles, 30, 'OCCT-Stresstest hat nicht alle 30 Worker-Handles freigegeben');
+
+  await page.locator('[data-tab="edit"]').click();
+  await page.locator('#delete').evaluate(button => {
+    if (button.disabled) throw new Error('Löschen-Schaltfläche ist deaktiviert.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  assert.equal(await page.locator('#objects .object-row').count(), occtStartCount,
+    'OCCT-Testkörper konnte nicht wieder aus der Szene entfernt werden');
+  await page.waitForFunction(async shapeId => {
+    try { await window.__silmoOcctClient.getVolume(shapeId); return false; }
+    catch { return true; }
+  }, occtResult.shapeId, { timeout: 10000 });
+  const boxUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+z');
+  await waitForOcctRestore(boxUndoGeneration);
+  const restoredOcctVolume = await page.evaluate(async () =>
+    window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
+  assert.ok(Math.abs(restoredOcctVolume - 8000) < 1e-7,
+    'Undo stellte den OCCT-B-Rep-Quader nicht mit seinem korrekten Volumen wieder her');
+
+  // End-to-end: two scene objects selected in the normal object list are fused by OCCT.
+  const booleanSceneStart = await page.locator('#objects .object-row').count();
+  await showCreateSubtab(0);
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  assert.equal(await page.locator('#objects .object-row').count(), booleanSceneStart + 2,
+    'Zwei OCCT-Testkörper wurden nicht in die Szene übernommen');
+  await page.evaluate(index => {
+    const button = document.querySelectorAll('#objects .object-select')[index];
+    if (!button) throw new Error('OCCT-Mehrfachauswahl: Objektzeile fehlt.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+  }, booleanSceneStart);
+  const previousBooleanShapeId = await page.evaluate(() => window.__silmoOcctLastBoolean?.shapeId || 0);
+  await page.locator('#booleanUnion').evaluate(button => {
+    if (button.disabled) throw new Error('OCCT-Fuse-Schaltfläche ist deaktiviert.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  await page.waitForFunction(previous => Number.isFinite(window.__silmoOcctLastBoolean?.shapeId) &&
+    window.__silmoOcctLastBoolean.shapeId > previous, previousBooleanShapeId, { timeout: 20000 });
+  const sceneBoolean = await page.evaluate(async () => ({
+    ...window.__silmoOcctLastBoolean,
+    workerVolumeMM3: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastBoolean.shapeId)
+  }));
+  assert.equal(sceneBoolean.operation, 'fuse', 'SILMO-Schaltfläche hat keine OCCT-Fuse-Operation ausgelöst');
+  assert.ok(Math.abs(sceneBoolean.volumeMM3 - 8000) < 1e-7 &&
+    Math.abs(sceneBoolean.workerVolumeMM3 - 8000) < 1e-7,
+  'SILMO-OCCT-Fuse lieferte für zwei identische Körper nicht das erwartete Volumen');
+  assert.equal(await page.locator('#objects .object-row').count(), booleanSceneStart + 1,
+    'OCCT-Fuse hat die zwei Ausgangsobjekte nicht durch ein Ergebnisobjekt ersetzt');
+
+  const booleanUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+z');
+  await waitForOcctRestore(booleanUndoGeneration);
+  assert.equal(await page.locator('#objects .object-row').count(), booleanSceneStart + 2,
+    'Undo hat die beiden OCCT-Ausgangskörper nicht wiederhergestellt');
+  const booleanRedoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+y');
+  await waitForOcctRestore(booleanRedoGeneration);
+  const redoneBooleanVolume = await page.evaluate(async () =>
+    window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
+  assert.ok(Math.abs(redoneBooleanVolume - 8000) < 1e-7,
+    'Redo stellte das OCCT-Boolean-Ergebnis nicht als echten B-Rep-Körper wieder her');
+  await page.locator('#delete').evaluate(button => {
+    if (button.disabled) throw new Error('Löschen-Schaltfläche ist deaktiviert.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  assert.equal(await page.locator('#objects .object-row').count(), booleanSceneStart,
+    'OCCT-Boolean-Ergebnis konnte nach Redo nicht aus der Szene entfernt werden');
+
+  // End-to-end: Cut über die SILMO-Oberfläche mit zwei um 10 mm überlappenden OCCT-Quadern.
+  const cutSceneStart = await page.locator('#objects .object-row').count();
+  await showCreateSubtab(0);
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  assert.equal(await page.locator('#objects .object-row').count(), cutSceneStart + 2,
+    'Zwei OCCT-Körper für den Cut-Test wurden nicht erstellt');
+  // Den zweiten Quader über die normale SILMO-Tastaturbedienung um 10 mm verschieben.
+  await page.locator('#objects .object-select').nth(cutSceneStart + 1).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  await page.keyboard.press('Shift+ArrowRight');
+  // Ersten Quader als Grundform wählen, danach den verschobenen Quader hinzufügen.
+  await page.locator('#objects .object-select').nth(cutSceneStart).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  await page.locator('#objects .object-select').nth(cutSceneStart + 1).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true })));
+  const previousCutShapeId = await page.evaluate(() => window.__silmoOcctLastBoolean?.shapeId || 0);
+  await page.locator('#booleanSubtract').evaluate(button => {
+    if (button.disabled) throw new Error('OCCT-Cut-Schaltfläche ist deaktiviert.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  await page.waitForFunction(previous => window.__silmoOcctLastBoolean?.operation === 'cut' &&
+    Number.isFinite(window.__silmoOcctLastBoolean?.shapeId) &&
+    window.__silmoOcctLastBoolean.shapeId > previous, previousCutShapeId, { timeout: 20000 });
+  const sceneCut = await page.evaluate(async () => ({
+    ...window.__silmoOcctLastBoolean,
+    workerVolumeMM3: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastBoolean.shapeId)
+  }));
+  assert.ok(Math.abs(sceneCut.volumeMM3 - 4000) < 1e-7 &&
+    Math.abs(sceneCut.workerVolumeMM3 - 4000) < 1e-7,
+  'SILMO-OCCT-Cut lieferte für 10 mm Überlappung nicht das erwartete Volumen von 4000 mm³');
+  assert.equal(await page.locator('#objects .object-row').count(), cutSceneStart + 1,
+    'OCCT-Cut hat die Ausgangskörper nicht durch einen Ausschnitt ersetzt');
+
+  const cutUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+z');
+  await waitForOcctRestore(cutUndoGeneration);
+  assert.equal(await page.locator('#objects .object-row').count(), cutSceneStart + 2,
+    'Undo stellte die beiden OCCT-Cut-Ausgangskörper nicht wieder her');
+  const cutRedoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+y');
+  await waitForOcctRestore(cutRedoGeneration);
+  const redoneCutVolume = await page.evaluate(async () =>
+    window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
+  assert.ok(Math.abs(redoneCutVolume - 4000) < 1e-7,
+    'Redo stellte das OCCT-Cut-Ergebnis nicht als echten B-Rep-Körper wieder her');
+
+  // OCCT-Projekt-Roundtrip: echten Cut-Körper speichern und in einem frischen Browserkontext rekonstruieren.
+  await page.locator('[data-tab="print"]').click();
+  await page.locator('#saveProjectButton').waitFor({ state: 'visible', timeout: 5000 });
+  const occtProjectDownloadPromise = page.waitForEvent('download', { timeout: 10000 });
+  await page.locator('#saveProjectButton').click();
+  const occtProjectDownload = await occtProjectDownloadPromise;
+  const occtProjectPath = await occtProjectDownload.path();
+  assert.ok(occtProjectPath && statSync(occtProjectPath).size > 1000,
+    'OCCT-Projektdatei wurde nicht vollständig heruntergeladen');
+  const occtSavedProject = JSON.parse(readFileSync(occtProjectPath, 'utf8'));
+  assert.equal(occtSavedProject.objects.length, cutSceneStart + 1,
+    'Gespeichertes OCCT-Projekt enthält nicht die erwartete Objektanzahl');
+  const savedOcctSource = occtSavedProject.objects.at(-1).occtSource;
+  assert.equal(savedOcctSource?.kind, 'boolean',
+    'OCCT-Boolean-Konstruktionsrezept wurde nicht in die Projektdatei geschrieben');
+  assert.equal(savedOcctSource.operation, 'cut',
+    'OCCT-Cut-Operation ging beim Speichern verloren');
+  assert.deepEqual(savedOcctSource.translationsMM, [[0,0,0],[10,0,0]],
+    'OCCT-Boolean-Transformationen gingen beim Speichern verloren');
+
+  const occtRoundTripPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const occtRoundTripErrors = [];
+  occtRoundTripPage.on('pageerror', error => occtRoundTripErrors.push(error.message));
+  occtRoundTripPage.on('console', message => {
+    if (message.type() === 'error') occtRoundTripErrors.push('console: ' + message.text());
+  });
+  await occtRoundTripPage.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
+  await occtRoundTripPage.waitForSelector('#viewport canvas', { timeout: 20000 });
+  await occtRoundTripPage.locator('#projectFileInput').setInputFiles({
+    name: 'occt-roundtrip.silmo.json',
+    mimeType: 'application/json',
+    buffer: readFileSync(occtProjectPath)
+  });
+  await occtRoundTripPage.waitForFunction(() =>
+    /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 10000 });
+  await occtRoundTripPage.waitForFunction(() =>
+    Number.isInteger(window.__silmoOcctProjectRestoreGeneration) &&
+    window.__silmoOcctProjectRestoreGeneration > 0, null, { timeout: 10000 });
+  await occtRoundTripPage.evaluate(async () => {
+    if (window.__silmoOcctProjectRestorePromise) await window.__silmoOcctProjectRestorePromise;
+  });
+  const reopenedOcctProject = await occtRoundTripPage.evaluate(async () => {
+    const restored = window.__silmoOcctProjectRestoreSummary?.at(-1);
+    return {
+      objectCount: document.querySelectorAll('#objects .object-row').length,
+      kernel: restored?.geometryKernel,
+      source: restored?.occtSource,
+      shapeId: restored?.shapeId,
+      volumeMM3: restored?.shapeId ? await window.__silmoOcctClient.getVolume(restored.shapeId) : null
+    };
+  });
+  assert.equal(reopenedOcctProject.objectCount, cutSceneStart + 1,
+    'OCCT-Projekt wurde nach erneutem Öffnen nicht vollständig geladen');
+  assert.equal(reopenedOcctProject.kernel, 'occt-wasm',
+    'Gespeicherter OCCT-Körper wurde nach erneutem Öffnen nicht als echter B-Rep rekonstruiert');
+  assert.equal(reopenedOcctProject.source?.operation, 'cut',
+    'OCCT-Cut-Rezept ging beim erneuten Öffnen verloren');
+  assert.ok(Number.isInteger(reopenedOcctProject.shapeId) &&
+    Math.abs(reopenedOcctProject.volumeMM3 - 4000) < 1e-7,
+  'Wiedergeöffneter OCCT-B-Rep-Körper besitzt nicht mehr das korrekte Worker-Volumen von 4000 mm³');
+  assert.deepEqual(occtRoundTripErrors, [],
+    'OCCT-Projekt-Roundtrip löste Browserfehler aus: ' + occtRoundTripErrors.join(' ; '));
+  await occtRoundTripPage.close();
+
+  // Parallel-Roundtrip: acht identische OCCT-Cut-Konstruktionsrezepte in einem neuen Dokument.
+  // Das prüft konkurrierenden Worker-Aufbau, eindeutige Handles und vollständige Wiederherstellung.
+  const stressSourceObject = occtSavedProject.objects.at(-1);
+  const occtParallelProject = {
+    ...occtSavedProject,
+    objects: Array.from({ length: 8 }, (_, index) => ({
+      ...structuredClone(stressSourceObject),
+      objectId: 'occt-parallel-roundtrip-' + index,
+      label: 'OCCT-Cut-Roundtrip-' + index,
+      position: [index * 3, 0, 0]
+    }))
+  };
+  const occtParallelPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const occtParallelErrors = [];
+  occtParallelPage.on('pageerror', error => occtParallelErrors.push(error.message));
+  occtParallelPage.on('console', message => {
+    if (message.type() === 'error') occtParallelErrors.push('console: ' + message.text());
+  });
+  await occtParallelPage.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
+  await occtParallelPage.waitForSelector('#viewport canvas', { timeout: 20000 });
+  await occtParallelPage.locator('#projectFileInput').setInputFiles({
+    name: 'occt-parallel-roundtrip.silmo.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(occtParallelProject))
+  });
+  await occtParallelPage.waitForFunction(() =>
+    /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 10000 });
+  await occtParallelPage.waitForFunction(() =>
+    Number.isInteger(window.__silmoOcctProjectRestoreGeneration) &&
+    window.__silmoOcctProjectRestoreGeneration > 0, null, { timeout: 10000 });
+  await occtParallelPage.evaluate(async () => {
+    if (window.__silmoOcctProjectRestorePromise) await window.__silmoOcctProjectRestorePromise;
+  });
+  const parallelOcctRestore = await occtParallelPage.evaluate(async () => {
+    const restored = window.__silmoOcctProjectRestoreSummary || [];
+    const volumes = await Promise.all(restored.map(item =>
+      item.shapeId ? window.__silmoOcctClient.getVolume(item.shapeId) : Promise.resolve(null)
+    ));
+    return {
+      objectCount: document.querySelectorAll('#objects .object-row').length,
+      restoredCount: restored.length,
+      kernels: restored.map(item => item.geometryKernel),
+      shapeIds: restored.map(item => item.shapeId),
+      volumes
+    };
+  });
+  assert.equal(parallelOcctRestore.objectCount, 8,
+    'Paralleler OCCT-Projektimport hat nicht alle acht Körper geladen');
+  assert.equal(parallelOcctRestore.restoredCount, 8,
+    'Nicht alle acht OCCT-Körper wurden in der Wiederherstellungsübersicht erfasst');
+  assert.ok(parallelOcctRestore.kernels.every(kernel => kernel === 'occt-wasm'),
+    'Mindestens ein parallel importierter Körper blieb ein Three.js-Fallback');
+  assert.ok(parallelOcctRestore.shapeIds.every(Number.isInteger) &&
+    new Set(parallelOcctRestore.shapeIds).size === 8,
+  'Paralleler OCCT-Projektimport erzeugte fehlende oder doppelte Worker-Handles');
+  assert.ok(parallelOcctRestore.volumes.every(volume =>
+    Number.isFinite(volume) && Math.abs(volume - 4000) < 1e-7),
+  'Mindestens ein parallel rekonstruierter OCCT-Cut-Körper besitzt nicht 4000 mm³');
+  assert.deepEqual(occtParallelErrors, [],
+    'Paralleler OCCT-Projektimport löste Browserfehler aus: ' + occtParallelErrors.join(' ; '));
+  await occtParallelPage.close();
+
+  // OCCT-Lifecycle-Stresstest in einem isolierten Worker:
+  // wiederholtes Erzeugen, Boolean-Cut, Freigeben und Prüfen ungültiger Handles.
+  const occtLifecyclePage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const occtLifecycleErrors = [];
+  occtLifecyclePage.on('pageerror', error => occtLifecycleErrors.push(error.message));
+  occtLifecyclePage.on('console', message => {
+    if (message.type() === 'error') occtLifecycleErrors.push('console: ' + message.text());
+  });
+  await occtLifecyclePage.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
+  await occtLifecyclePage.waitForSelector('#viewport canvas', { timeout: 20000 });
+  const occtLifecycle = await occtLifecyclePage.evaluate(async () => {
+    const client = window.SILMOOCCTClient.createClient();
+    await client.initialize();
+    const cycles = [];
+    const releasedHandlesRejected = [];
+    for (let index = 0; index < 12; index++) {
+      const left = await client.createBox(20, 20, 20);
+      const right = await client.createBox(20, 20, 20);
+      const cut = await client.booleanOperation('cut',
+        [left.shapeId, right.shapeId], [[0, 0, 0], [10, 0, 0]]);
+      const measuredVolume = await client.getVolume(cut.shapeId);
+      cycles.push({ volume: cut.volumeMM3, measuredVolume });
+      for (const shapeId of [cut.shapeId, left.shapeId, right.shapeId]) {
+        await client.releaseShape(shapeId);
+        try {
+          await client.getVolume(shapeId);
+          releasedHandlesRejected.push(false);
+        } catch {
+          releasedHandlesRejected.push(true);
+        }
+      }
+    }
+    const concurrent = await Promise.all(Array.from({ length: 8 }, () =>
+      client.createBox(10, 10, 10)));
+    const concurrentVolumes = await Promise.all(concurrent.map(item => client.getVolume(item.shapeId)));
+    await client.releaseAll();
+    let releaseAllRejected = false;
+    try {
+      await client.getVolume(concurrent[0].shapeId);
+    } catch {
+      releaseAllRejected = true;
+    }
+    const afterReleaseAll = await client.createBox(5, 5, 5);
+    const afterReleaseAllVolume = await client.getVolume(afterReleaseAll.shapeId);
+    await client.dispose();
+    let disposedRejected = false;
+    try {
+      await client.createBox(5, 5, 5);
+    } catch {
+      disposedRejected = true;
+    }
+    return {
+      cycles,
+      releasedHandlesRejected,
+      concurrentVolumes,
+      releaseAllRejected,
+      afterReleaseAllVolume,
+      disposedRejected
+    };
+  });
+  assert.equal(occtLifecycle.cycles.length, 12,
+    'OCCT-Lifecycle-Test hat nicht alle zwölf Erstellungs-/Löschzyklen ausgeführt');
+  assert.ok(occtLifecycle.cycles.every(item =>
+    Math.abs(item.volume - 4000) < 1e-7 && Math.abs(item.measuredVolume - 4000) < 1e-7),
+  'OCCT-Boolean-Cut lieferte während wiederholter Lifecycle-Zyklen ein falsches Volumen');
+  assert.equal(occtLifecycle.releasedHandlesRejected.length, 36,
+    'Nicht alle 36 freigegebenen OCCT-Handles wurden geprüft');
+  assert.ok(occtLifecycle.releasedHandlesRejected.every(Boolean),
+    'Ein freigegebener OCCT-Körper blieb über seine Handle-ID erreichbar');
+  assert.ok(occtLifecycle.concurrentVolumes.every(volume => Math.abs(volume - 1000) < 1e-7),
+    'Gleichzeitige OCCT-Anfragen lieferten falsche Körpervolumen');
+  assert.equal(occtLifecycle.releaseAllRejected, true,
+    'releaseAll hat nicht alle Worker-Handles unzugänglich gemacht');
+  assert.ok(Math.abs(occtLifecycle.afterReleaseAllVolume - 125) < 1e-7,
+    'OCCT-Worker konnte nach releaseAll keinen neuen Körper mehr erstellen');
+  assert.equal(occtLifecycle.disposedRejected, true,
+    'Ein geschlossener OCCT-Client akzeptierte weiterhin neue Aufträge');
+  assert.deepEqual(occtLifecycleErrors, [],
+    'OCCT-Lifecycle-Stresstest löste Browserfehler aus: ' + occtLifecycleErrors.join(' ; '));
+  await occtLifecyclePage.close();
+
+  await page.locator('#delete').evaluate(button => {
+    if (button.disabled) throw new Error('Löschen-Schaltfläche ist deaktiviert.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  assert.equal(await page.locator('#objects .object-row').count(), cutSceneStart,
+    'OCCT-Cut-Ergebnis konnte nach Redo nicht aus der Szene entfernt werden');
+
+  // End-to-end: Common/Schnittmenge über die SILMO-Oberfläche inklusive Undo/Redo.
+  const commonSceneStart = await page.locator('#objects .object-row').count();
+  await showCreateSubtab(0);
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  await page.locator('#objects .object-select').nth(commonSceneStart + 1).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.locator('#objects .object-select').nth(commonSceneStart).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  await page.locator('#objects .object-select').nth(commonSceneStart + 1).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true })));
+  const previousCommonShapeId = await page.evaluate(() => window.__silmoOcctLastBoolean?.shapeId || 0);
+  await page.locator('#booleanIntersect').evaluate(button => {
+    if (button.disabled) throw new Error('OCCT-Common-Schaltfläche ist deaktiviert.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  await page.waitForFunction(previous => window.__silmoOcctLastBoolean?.operation === 'common' &&
+    Number.isFinite(window.__silmoOcctLastBoolean?.shapeId) &&
+    window.__silmoOcctLastBoolean.shapeId > previous, previousCommonShapeId, { timeout: 20000 });
+  const sceneCommon = await page.evaluate(async () => ({
+    ...window.__silmoOcctLastBoolean,
+    workerVolumeMM3: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastBoolean.shapeId)
+  }));
+  assert.ok(Math.abs(sceneCommon.volumeMM3 - 4000) < 1e-7 &&
+    Math.abs(sceneCommon.workerVolumeMM3 - 4000) < 1e-7,
+  'SILMO-OCCT-Common lieferte für zwei um 10 mm überlappende Quader nicht 4000 mm³');
+  assert.equal(await page.locator('#objects .object-row').count(), commonSceneStart + 1,
+    'OCCT-Common hat die Ausgangskörper nicht durch die Schnittmenge ersetzt');
+  const commonUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+z');
+  await waitForOcctRestore(commonUndoGeneration);
+  assert.equal(await page.locator('#objects .object-row').count(), commonSceneStart + 2,
+    'Undo stellte die beiden OCCT-Common-Ausgangskörper nicht wieder her');
+  const commonRedoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+y');
+  await waitForOcctRestore(commonRedoGeneration);
+  const redoneCommonVolume = await page.evaluate(async () =>
+    window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
+  assert.ok(Math.abs(redoneCommonVolume - 4000) < 1e-7,
+    'Redo stellte die OCCT-Schnittmenge nicht als echten B-Rep-Körper wieder her');
+  await page.locator('#delete').evaluate(button => {
+    if (button.disabled) throw new Error('Löschen-Schaltfläche ist deaktiviert.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  assert.equal(await page.locator('#objects .object-row').count(), commonSceneStart,
+    'OCCT-Common-Ergebnis konnte nach Redo nicht aus der Szene entfernt werden');
+  await showCreateSubtab(0);
+
+
+
+  // Browser-History-Benchmark mit echten Three.js-BufferGeometries und dem SILMO-History-Modul.
+  // Synthetischer CAD-ähnlicher Lastfall: 50 Meshes, 999 Vertices, 45 Aufzeichnungen bei Limit 40.
+  // Zeiten und Browser-Heap sind informativ; es gibt keine maschinenabhängigen Pass/Fail-Grenzwerte.
+  const browserHistoryBenchmark = await page.evaluate(async () => {
+    const THREE = window.THREE;
+    const objectCount = 50;
+    const verticesPerObject = 999;
+    const recordAttempts = 45;
+    const limit = 40;
+    const makeObject = index => {
+      const positions = new Float32Array(verticesPerObject * 3);
+      const indices = new Uint32Array(verticesPerObject);
+      for (let i = 0; i < verticesPerObject; i++) {
+        const angle = i / verticesPerObject * Math.PI * 2;
+        positions[i * 3] = Math.cos(angle) * (1 + index * 0.001);
+        positions[i * 3 + 1] = Math.sin(angle) * (1 + index * 0.001);
+        positions[i * 3 + 2] = (i % 31) * 0.002;
+        indices[i] = i;
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+      geometry.computeVertexNormals();
+      return {
+        geometry,
+        material: new THREE.MeshStandardMaterial({ color: 0x4b91ed }),
+        position: new THREE.Vector3(index * 0.01, 0, 0),
+        rotation: new THREE.Euler(),
+        scale: new THREE.Vector3(1, 1, 1),
+        userData: { label: 'Browser-History-' + index }
+      };
+    };
+    const cloneState = state => state.map(object => ({
+      geometry: object.geometry.clone(),
+      material: object.material.clone(),
+      position: object.position.clone(),
+      rotation: object.rotation.clone(),
+      scale: object.scale.clone(),
+      userData: structuredClone(object.userData)
+    }));
+    const disposeState = state => state.forEach(object => {
+      object.geometry.dispose();
+      object.material.dispose();
+    });
+    const arrayBufferBytes = state => state.reduce((total, object) => {
+      const attributes = Object.values(object.geometry.attributes)
+        .reduce((sum, attribute) => sum + attribute.array.byteLength, 0);
+      return total + attributes + (object.geometry.index?.array.byteLength || 0);
+    }, 0);
+    const heapBytes = () => performance.memory?.usedJSHeapSize ?? null;
+    let objects = Array.from({ length: objectCount }, (_, index) => makeObject(index));
+    const initialArrayBufferBytes = arrayBufferBytes(objects);
+    const history = window.SILMOHistory.createHistory({
+      limit,
+      captureState: () => cloneState(objects),
+      restoreState: state => {
+        const restored = cloneState(state);
+        disposeState(objects);
+        objects = restored;
+      },
+      disposeState
+    });
+    const heapBefore = heapBytes();
+    const recordTimesMs = [];
+    for (let step = 0; step < recordAttempts; step++) {
+      const start = performance.now();
+      history.record();
+      recordTimesMs.push(performance.now() - start);
+      objects.forEach(object => {
+        object.position.x += 0.01;
+        object.geometry.attributes.position.array[0] += 0.01;
+      });
+    }
+    const heapAfterSnapshots = heapBytes();
+    const statsAtLimit = history.getStats();
+    const undoStart = performance.now();
+    const undoSucceeded = history.undo();
+    const undoMs = performance.now() - undoStart;
+    const redoStart = performance.now();
+    const redoSucceeded = history.redo();
+    const redoMs = performance.now() - redoStart;
+    history.dispose();
+    const statsAfterDispose = history.getStats();
+    disposeState(objects);
+    objects = [];
+    const sorted = recordTimesMs.slice().sort((a, b) => a - b);
+    return {
+      objectCount,
+      verticesPerObject,
+      recordAttempts,
+      configuredLimit: limit,
+      retainedSnapshots: statsAtLimit.undoCount,
+      initialArrayBufferBytes,
+      estimatedSnapshotArrayBufferBytesAtLimit: initialArrayBufferBytes * limit,
+      recordMedianMs: Number((sorted[Math.floor(sorted.length / 2)] || 0).toFixed(3)),
+      undoMs: Number(undoMs.toFixed(3)),
+      redoMs: Number(redoMs.toFixed(3)),
+      browserHeapBeforeBytes: heapBefore,
+      browserHeapAfterSnapshotsBytes: heapAfterSnapshots,
+      undoSucceeded,
+      redoSucceeded,
+      statsAfterDispose
+    };
+  });
+  assert.equal(browserHistoryBenchmark.retainedSnapshots, 40, 'Browser-History hält nicht das konfigurierte Limit von 40 Snapshots ein');
+  assert.equal(browserHistoryBenchmark.undoSucceeded, true, 'Browser-History-Benchmark konnte Undo nicht ausführen');
+  assert.equal(browserHistoryBenchmark.redoSucceeded, true, 'Browser-History-Benchmark konnte Redo nicht ausführen');
+  assert.equal(browserHistoryBenchmark.statsAfterDispose.undoCount, 0, 'Browser-History hat Undo-Snapshots nach Dispose nicht freigegeben');
+  assert.equal(browserHistoryBenchmark.statsAfterDispose.redoCount, 0, 'Browser-History hat Redo-Snapshots nach Dispose nicht freigegeben');
+  console.log('SILMO_BROWSER_HISTORY_BENCHMARK ' + JSON.stringify(browserHistoryBenchmark));
+
+  // Reale Browser-Runtime: grosses Mesh im Projektformat serialisieren und wiederherstellen.
+  // Die Laufzeit wird protokolliert, aber nicht mit maschinenabhängigen Grenzwerten bewertet.
+  const browserGeometryRoundtrip = await page.evaluate(() => {
+    const vertexCount = 24999;
+    const positions = new Float32Array(vertexCount * 3);
+    const normals = new Float32Array(vertexCount * 3);
+    const uvs = new Float32Array(vertexCount * 2);
+    const indices = new Uint32Array(vertexCount);
+    for (let i = 0; i < vertexCount; i++) {
+      const angle = (i / vertexCount) * Math.PI * 2;
+      const radius = 10 + (i % 97) * 0.01;
+      positions[i * 3] = Math.cos(angle) * radius;
+      positions[i * 3 + 1] = Math.sin(angle) * radius;
+      positions[i * 3 + 2] = (i % 251) * 0.02;
+      normals[i * 3] = Math.cos(angle);
+      normals[i * 3 + 1] = Math.sin(angle);
+      uvs[i * 2] = i / vertexCount;
+      uvs[i * 2 + 1] = (i % 127) / 126;
+      indices[i] = i;
+    }
+    const source = new THREE.BufferGeometry();
+    source.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    source.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    source.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    source.setIndex(new THREE.BufferAttribute(indices, 1));
+    const start = performance.now();
+    const serialized = window.SILMOProjectGeometry.serializeGeometry(source);
+    const serializedAt = performance.now();
+    const restored = window.SILMOProjectGeometry.restoreGeometry(serialized);
+    const restoredAt = performance.now();
+    const exact = (actual, expected) => actual.length === expected.length &&
+      actual.every((value, index) => value === expected[index]);
+    const result = {
+      vertexCount: restored.attributes.position.count,
+      indexCount: restored.index.count,
+      positionsExact: exact(restored.attributes.position.array, positions),
+      normalsExact: exact(restored.attributes.normal.array, normals),
+      uvsExact: exact(restored.attributes.uv.array, uvs),
+      indicesExact: exact(restored.index.array, indices),
+      hasFiniteBounds: Boolean(restored.boundingBox && restored.boundingSphere &&
+        Number.isFinite(restored.boundingSphere.radius) && restored.boundingSphere.radius > 0),
+      serializeMs: Number((serializedAt - start).toFixed(2)),
+      restoreMs: Number((restoredAt - serializedAt).toFixed(2))
+    };
+    source.dispose();
+    restored.dispose();
+    return result;
+  });
+  assert.equal(browserGeometryRoundtrip.vertexCount, 24999, 'Browser-Roundtrip verliert Mesh-Vertices');
+  assert.equal(browserGeometryRoundtrip.indexCount, 24999, 'Browser-Roundtrip verliert Mesh-Indizes');
+  assert.equal(browserGeometryRoundtrip.positionsExact, true, 'Browser-Roundtrip verändert Positionen');
+  assert.equal(browserGeometryRoundtrip.normalsExact, true, 'Browser-Roundtrip verändert Normalen');
+  assert.equal(browserGeometryRoundtrip.uvsExact, true, 'Browser-Roundtrip verändert UV-Koordinaten');
+  assert.equal(browserGeometryRoundtrip.indicesExact, true, 'Browser-Roundtrip verändert Indizes');
+  assert.equal(browserGeometryRoundtrip.hasFiniteBounds, true, 'Browser-Roundtrip erzeugt ungültige Begrenzungen');
+  console.log('SILMO browser geometry roundtrip:', JSON.stringify(browserGeometryRoundtrip));
+
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -123,15 +866,29 @@ try {
     const safeHole=[[10,10],[15,10],[15,15],[10,15]];
     const edgeHole=[[0.2,10],[4,10],[4,14],[0.2,14]];
     const overlapHole=[[14,10],[19,10],[19,15],[14,15]];
+    const exactWallHole=[[0.8,10],[4.8,10],[4.8,14],[0.8,14]];
+    const underWallHole=[[0.799,10],[4.799,10],[4.799,14],[0.799,14]];
+    const exactAreaHole=[[10,10],[10.1,10],[10.1,10.1],[10,10.1]];
+    const underAreaHole=[[10,10],[10.099,10],[10.099,10.099],[10,10.099]];
     const valid=window.__silmoImageStudioValidateForPrintTest(outer,[safeHole]);
     const edge=window.__silmoImageStudioValidateForPrintTest(outer,[edgeHole]);
     const overlap=window.__silmoImageStudioValidateForPrintTest(outer,[safeHole,overlapHole]);
+    const exactWall=window.__silmoImageStudioValidateForPrintTest(outer,[exactWallHole]);
+    const underWall=window.__silmoImageStudioValidateForPrintTest(outer,[underWallHole]);
+    const exactArea=window.__silmoImageStudioValidateForPrintTest(outer,[exactAreaHole]);
+    const underArea=window.__silmoImageStudioValidateForPrintTest(outer,[underAreaHole]);
     const crossed=window.__silmoImageStudioValidateForPrintTest([[0,0],[40,30],[0,30],[40,0]],[safeHole]);
-    return {valid:valid.holes.length,edge:edge.holes.length,overlap:overlap.holes.length,crossed:crossed.ok};
+    return {valid:valid.holes.length,edge:edge.holes.length,overlap:overlap.holes.length,
+      exactWall:exactWall.holes.length,underWall:underWall.holes.length,
+      exactArea:exactArea.holes.length,underArea:underArea.holes.length,crossed:crossed.ok};
   });
   assert.equal(printGeometryChecks.valid,1,'Eine ausreichend grosse und korrekt platzierte Aussparung wird nicht übernommen');
   assert.equal(printGeometryChecks.edge,0,'Eine zu nahe an der Aussenkante liegende Aussparung wird nicht ausgeschlossen');
   assert.equal(printGeometryChecks.overlap,1,'Überlappende Innenlöcher werden nicht zuverlässig gefiltert');
+  assert.equal(printGeometryChecks.exactWall,1,'Eine Aussparung mit exakt 0,8 mm Mindestwand wird fälschlich abgewiesen');
+  assert.equal(printGeometryChecks.underWall,0,'Eine Aussparung mit weniger als 0,8 mm Mindestwand wird fälschlich akzeptiert');
+  assert.equal(printGeometryChecks.exactArea,1,'Eine Kontur mit exakt 0,01 mm² Mindestfläche wird fälschlich abgewiesen');
+  assert.equal(printGeometryChecks.underArea,0,'Eine Kontur unter 0,01 mm² wird fälschlich akzeptiert');
   assert.equal(printGeometryChecks.crossed,false,'Eine selbstschneidende Aussenkontur wird nicht zurückgewiesen');
 
 
@@ -177,7 +934,7 @@ try {
   assert.match(await examPage.locator('#tutorialNext').innerText(),/Kurs beenden/,'Bestandener Abschlusstest zeigt keinen Kurs-beenden-Knopf');
   await examPage.locator('#tutorialNext').click();
   assert.equal(await examPage.locator('#tutorialCard').isVisible(),false,'Kurs-beenden-Knopf schliesst den Kurs nicht');
-  assert.match(await examPage.locator('#status').innerText(),/Lernkurs erfolgreich abgeschlossen/,'Kursabschluss wird nicht bestätigt');
+  assert.equal(await examPage.evaluate(() => localStorage.getItem('silmoCourseCompleted')), 'true', 'Kursabschluss wurde nicht dauerhaft gespeichert');
   assert.equal(await examPage.locator('#tutorialLaunch').innerText(),'Lernkurs erneut starten','Kursstart zeigt den Abschluss nicht an');
   await examPage.close();
 
@@ -314,7 +1071,10 @@ try {
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/Downloads-Ordner/,'Aufgabe 26 erklärt den Import aus Downloads nicht');
   const saveDownload=page.waitForEvent('download');
   await page.locator('#saveProjectButton').click();
-  await saveDownload;
+  const savedProjectDownload = await saveDownload;
+  const savedProjectPath = await savedProjectDownload.path();
+  const savedProject = JSON.parse(readFileSync(savedProjectPath, 'utf8'));
+  assert.equal(savedProject.version, 3, 'Gespeicherte Projekte verwenden nicht mehr Formatversion 3');
   const exportDownload=page.waitForEvent('download');
   await page.locator('#exportModel').click();
   await exportDownload;
@@ -328,6 +1088,41 @@ try {
   });
   await page.waitForFunction(()=>Number(window.__silmoImportRevision||0)>0,null,{timeout:5000});
   assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeImport+1,'STL-Drop importiert kein zusätzliches Modell oder hat bestehende Modelle ersetzt');
+  const modelCountBeforeDegenerateImport=await page.locator('#objects .object-row').count();
+  await page.locator('#stlDropZone').evaluate(zone=>{
+    const stl='solid degenerate\\nfacet normal 0 0 1\\nouter loop\\nvertex 0 0 0\\nvertex 10 0 0\\nvertex 20 0 0\\nendloop\\nendfacet\\nendsolid degenerate';
+    const transfer=new DataTransfer();
+    transfer.items.add(new File([stl],'degenerate.stl',{type:'model/stl'}));
+    zone.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+    zone.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+  });
+  await page.waitForFunction(()=>/entartetes Dreieck/.test(document.querySelector('#status')?.textContent||''),null,{timeout:5000});
+  assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeDegenerateImport,'STL mit Nullflächen-Dreieck wurde importiert');
+  // Binäre STL-Dateien mit NaN-Koordinaten müssen vor dem Modellaufbau abgewiesen werden.
+  const modelCountBeforeNonFiniteImport=await page.locator('#objects .object-row').count();
+  await page.locator('#stlDropZone').evaluate(zone=>{
+    const buffer=new ArrayBuffer(134);
+    const view=new DataView(buffer);
+    view.setUint32(80,1,true);
+    const values=[0,0,1, 0,0,0, 10,0,0, 0,10,0];
+    values.forEach((value,index)=>view.setFloat32(84+index*4,value,true));
+    view.setFloat32(84+4*4,NaN,true);
+    const transfer=new DataTransfer();
+    transfer.items.add(new File([buffer],'non-finite-test.stl',{type:'model/stl'}));
+    zone.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+    zone.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+  });
+  await page.waitForFunction(()=>/vollständigen, gültigen Dreiecke/.test(document.querySelector('#status')?.textContent||''),null,{timeout:5000});
+  assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeNonFiniteImport,'STL mit nicht endlichen Koordinaten hat den Modellbestand verändert');
+  const modelCountBeforeInvalidImport=await page.locator('#objects .object-row').count();
+  await page.locator('#stlDropZone').evaluate(zone=>{
+    const transfer=new DataTransfer();
+    transfer.items.add(new File(['kein gültiges STL-Mesh'],'broken.stl',{type:'model/stl'}));
+    zone.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+    zone.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+  });
+  await page.waitForFunction(()=>/STL-Datei konnte nicht gelesen werden/.test(document.querySelector('#status')?.textContent||''),null,{timeout:5000});
+  assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeInvalidImport,'Ungültiger STL-Import hat den bestehenden Modellbestand verändert');
   // Ein vom Download-Button gezogener Web-Link liefert oft keinen File-Eintrag, sondern text/uri-list.
   // Simuliere eine vom Browser erlaubte CORS-Antwort und prüfe, dass SILMO den Link direkt lädt.
   await page.route('https://example.com/test-from-web.stl',route=>route.fulfill({status:200,contentType:'model/stl',body:'solid web\\nfacet normal 0 0 1\\nouter loop\\nvertex 0 0 0\\nvertex 12 0 0\\nvertex 0 12 0\\nendloop\\nendfacet\\nendsolid web'}));
@@ -339,6 +1134,42 @@ try {
   });
   await page.waitForFunction(()=>Number(window.__silmoImportRevision||0)>1,null,{timeout:5000});
   assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeImport+2,'STL-Weblink wurde nicht als zusätzliches Modell importiert');
+  // Binäres STL mit einem gültigen Dreieck muss ebenso importierbar sein.
+  const modelCountBeforeBinaryImport=await page.locator('#objects .object-row').count();
+  await page.locator('#stlDropZone').evaluate(zone=>{
+    const buffer=new ArrayBuffer(134);
+    const view=new DataView(buffer);
+    const header=new TextEncoder().encode('SILMO binary STL fixture');
+    new Uint8Array(buffer,0,header.length).set(header);
+    view.setUint32(80,1,true);
+    const values=[0,0,1, 0,0,0, 10,0,0, 0,10,0];
+    values.forEach((value,index)=>view.setFloat32(84+index*4,value,true));
+    view.setUint16(132,0,true);
+    const transfer=new DataTransfer();
+    transfer.items.add(new File([buffer],'binary-test.stl',{type:'model/stl'}));
+    zone.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+    zone.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+  });
+  await page.waitForFunction(()=>Number(window.__silmoImportRevision||0)>2,null,{timeout:5000});
+  assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeBinaryImport+1,'Gültige binäre STL-Datei wurde nicht importiert');
+  const cubeFixture = readFileSync(new URL('./fixtures/stl/cube-10mm.stl', import.meta.url), 'utf8');
+  await page.locator('#stlDropZone').evaluate((zone,stl)=>{
+    const transfer=new DataTransfer();
+    transfer.items.add(new File([stl],'cube-10mm.stl',{type:'model/stl'}));
+    zone.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+    zone.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+  },cubeFixture);
+  await page.waitForFunction(()=>Number(window.__silmoImportRevision||0)>3&&/Topologie: geschlossenes Dreiecksnetz/.test(document.querySelector('#status')?.textContent||''),null,{timeout:5000});
+  assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeBinaryImport+2,'Reale ASCII-STL-Würfelreferenz wurde nicht importiert');
+  const openFixture = readFileSync(new URL('./fixtures/stl/open-triangle.stl', import.meta.url), 'utf8');
+  await page.locator('#stlDropZone').evaluate((zone,stl)=>{
+    const transfer=new DataTransfer();
+    transfer.items.add(new File([stl],'open-triangle.stl',{type:'model/stl'}));
+    zone.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+    zone.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+  },openFixture);
+  await page.waitForFunction(()=>Number(window.__silmoImportRevision||0)>4&&/3 offene Kanten/.test(document.querySelector('#status')?.textContent||''),null,{timeout:5000});
+  assert.equal(await page.locator('#objects .object-row').count(),modelCountBeforeBinaryImport+3,'Offene STL-Referenz wurde nicht importiert oder ihre Topologiewarnung fehlt');
   await page.waitForFunction(()=>document.querySelector('#tutorialNext')?.disabled===false,null,{timeout:5000});
   assert.match(await page.locator('#tutorialFeedback').innerText(),/Erfolgskontrolle bestanden/,'Aufgabe 26 erkennt Speichern, Export und STL-Import nicht');
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(0)),true,'Tutorial kann nach dem Aufgabe-13-Test nicht zur ersten Aufgabe zurückkehren');
@@ -416,6 +1247,29 @@ try {
   assert.ok(canvasSize.width > 0 && canvasSize.height > 0, '3D canvas hat keine gültige Grösse');
 
   // Zeichenmodus: Rechtsklick-Ziehen darf die Kamera nicht drehen.
+  // Mathematische Referenzprüfung der drei grundlegenden CAD-Körper.
+  await page.locator('[data-tab="create"]').click();
+  await showCreateSubtab(0);
+  for (const id of ['addCube', 'addSphere', 'addCylinder']) await page.locator('#' + id).click();
+  const basicPrimitiveBounds = (await page.evaluate(() => window.__silmoTutorialModelAudit())).slice(-3);
+  const expectedBasicBounds = [
+    { label: 'Würfel', size: [15, 15, 15] },
+    { label: 'Kugel', size: [16, 16, 16] },
+    { label: 'Zylinder', size: [14, 14, 15] }
+  ];
+  for (let i = 0; i < expectedBasicBounds.length; i++) {
+    const actual = basicPrimitiveBounds[i], expected = expectedBasicBounds[i];
+    assert.equal(actual.label, expected.label, 'Grundkörper-Reihenfolge oder Typ ist falsch');
+    assert.ok(actual.vertexCount > 0, expected.label + ' enthält keine Geometriepunkte');
+    for (const key of ['width', 'depth', 'height']) {
+      const axis = key === 'width' ? 0 : key === 'depth' ? 1 : 2;
+      assert.ok(Number.isFinite(actual[key]), expected.label + ' hat eine nicht endliche Ausdehnung');
+      assert.ok(Math.abs(actual[key] - expected.size[axis]) < 1e-4,
+        expected.label + ' hat eine falsche geometrische Ausdehnung (' + key +
+        '): erwartet ' + expected.size[axis] + ' mm, erhalten ' + actual[key] + ' mm');
+    }
+  }
+
   await page.locator('[data-tab="draw"]').click();
   await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('rectangle');
@@ -468,6 +1322,7 @@ try {
   await page.locator('#clickContourFinish').click();
   assert.equal(await page.locator('#createSketchSolid').isEnabled(),true,'Abgeschlossene Punktkontur ist nicht als 3D-Körper bereit');
   await page.locator('#createSketchSolid').click();
+  await waitForSelectedSketchOcct();
 
   // 2D-Skizze: Rechteck auf der XY-Ebene zeichnen und mit exakten Massen extrudieren.
   await page.locator('[data-tab="draw"]').click();
@@ -485,11 +1340,13 @@ try {
   await page.locator('#sketchDepthMM').fill('15');
   await page.locator('#sketchHeightMM').fill('5');
   await page.locator('#createSketchSolid').click();
+  await waitForSelectedSketchOcct();
   const sketchSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
   assert.equal(sketchSnapshot.type, 'rectangle', 'Rechteck-Skizze wurde nicht als Rechteck erkannt');
   assert.ok(Math.abs(sketchSnapshot.actualWidthMM - 25) < 0.01, 'Exakte Rechteckbreite wurde nicht übernommen');
   assert.ok(Math.abs(sketchSnapshot.actualDepthMM - 15) < 0.01, 'Exakte Rechtecktiefe wurde nicht übernommen');
   assert.ok(Math.abs(sketchSnapshot.actualHeightMM - 5) < 0.01, 'Extrusionshöhe wurde nicht übernommen');
+  assert.ok(Math.abs(sketchSnapshot.occtVolumeMM3 - 1875) < 1e-6, 'OCCT-Rechteck besitzt nicht das exakte Volumen von 1875 mm³');
   assert.equal(await page.locator('#createSketchSolid').isDisabled(), true, 'Erstellte Skizze bleibt fälschlich zur erneuten Extrusion bereit');
   await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('circle');
@@ -508,6 +1365,7 @@ try {
   await page.mouse.move(ellipseEnd.x, ellipseEnd.y, { steps: 8 }); await page.mouse.up();
   await page.locator('#sketchWidthMM').fill('30'); await page.locator('#sketchDepthMM').fill('12'); await page.locator('#sketchHeightMM').fill('4');
   await page.locator('#createSketchSolid').click();
+  await waitForSelectedSketchOcct();
   const ellipseSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
   assert.equal(ellipseSnapshot.type, 'ellipse', 'Ellipse wurde nicht als Ellipse gespeichert');
   assert.ok(Math.abs(ellipseSnapshot.actualWidthMM - 30) < 0.01, 'Ellipsenbreite stimmt nicht');
@@ -525,6 +1383,7 @@ try {
   await page.mouse.move(triangleEnd.x, triangleEnd.y, { steps: 8 }); await page.mouse.up();
   await page.locator('#sketchWidthMM').fill('24'); await page.locator('#sketchDepthMM').fill('18'); await page.locator('#sketchHeightMM').fill('6');
   await page.locator('#createSketchSolid').click();
+  await waitForSelectedSketchOcct();
   const triangleSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
   assert.equal(triangleSnapshot.type, 'triangle', 'Dreieck wurde nicht als Dreieck gespeichert');
   assert.ok(Math.abs(triangleSnapshot.actualWidthMM - 24) < 0.01, 'Dreiecksbreite stimmt nicht');
@@ -561,6 +1420,7 @@ try {
   await page.mouse.move(snapEnd.x, snapEnd.y, { steps: 10 });
   await page.mouse.up();
   await page.locator('#createSketchSolid').click();
+  await waitForSelectedSketchOcct();
   const snappedSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
   assert.equal(snappedSnapshot.type, 'rectangle', 'Rasterfang-Test hat kein Rechteck erstellt');
   assert.ok(Math.abs(snappedSnapshot.widthMM / 5 - Math.round(snappedSnapshot.widthMM / 5)) < 0.001, 'Rechteckbreite liegt nicht auf dem 5-mm-Raster');
@@ -586,9 +1446,23 @@ try {
   for (const point of freeformPoints.slice(1)) await page.mouse.move(point.x, point.y, { steps: 4 });
   await page.mouse.up();
   assert.equal(await page.locator('#createSketchSolid').isEnabled(), true, 'Freiform wurde nicht als geschlossene Skizze vorbereitet');
+  const freeformBeforeCreate = await page.evaluate(() => ({
+    tool: document.getElementById('sketchTool').value,
+    draft: window.__silmoSketchDraftSnapshot(),
+    status: document.getElementById('sketchStatus').textContent
+  }));
+  assert.equal(freeformBeforeCreate.tool, 'freeform2d', 'Skizzenwerkzeug wechselte vor der Freiform-Extrusion: ' + JSON.stringify(freeformBeforeCreate));
+  assert.equal(freeformBeforeCreate.draft?.type, 'freeform2d', 'Freiform-Zeichenpunkte gingen vor der Extrusion verloren: ' + JSON.stringify(freeformBeforeCreate));
   await page.locator('#createSketchSolid').click();
-  const freeformSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
-  assert.equal(freeformSnapshot.type, 'freeform2d', 'Freiform wurde nicht als Freiformkörper gespeichert');
+  await waitForSelectedSketchOcct();
+  const freeformAfterCreate = await page.evaluate(() => ({
+    snapshot: window.__silmoSketchSnapshot(),
+    status: document.getElementById('status')?.textContent,
+    sketchStatus: document.getElementById('sketchStatus')?.textContent,
+    tool: document.getElementById('sketchTool')?.value
+  }));
+  const freeformSnapshot = freeformAfterCreate.snapshot;
+  assert.equal(freeformSnapshot.type, 'freeform2d', 'Freiform wurde nicht als Freiformkörper gespeichert: ' + JSON.stringify(freeformAfterCreate));
   assert.ok(freeformSnapshot.points >= 3, 'Freiform enthält zu wenige Konturpunkte');
   assert.ok(freeformSnapshot.areaMM2 > 0, 'Freiform hat keine gültige Fläche');
   assert.ok(freeformSnapshot.perimeterMM > 0, 'Freiform hat keinen Umfang');
@@ -667,6 +1541,62 @@ try {
   assert.equal(await page.locator('#gizmoModeToggle').isDisabled(), false, 'Drehfunktion wurde nach dem Beenden nicht freigegeben');
   await showCreateSubtab(0);
 
+  // Ein Fehler im zweiten CSG-Schritt muss alle temporären Geometrien freigeben
+  // und darf keines der drei Originalobjekte aus der Szene entfernen.
+  const csgFailureStartCount = await page.locator('#objects .object-row').count();
+  await showCreateSubtab(0);
+  await page.locator('#addCube').click();
+  await page.locator('#addCube').click();
+  await page.locator('#addCube').click();
+  await page.locator('[data-tab="edit"]').click();
+  await page.locator('#multiSelectToggle').click();
+  await showCreateSubtab(2);
+  await page.locator('#objects .object-select').nth(csgFailureStartCount).click();
+  await page.locator('#objects .object-select').nth(csgFailureStartCount + 1).click();
+  assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 3,
+    'CSG-Fehlerfall konnte nicht alle drei Originalobjekte auswählen');
+  await showCreateSubtab(1);
+  await page.evaluate(() => {
+    const originalCSG = window.SILMOCSG;
+    const originalCombine = originalCSG.combineMeshes;
+    const originalDispose = THREE.BufferGeometry.prototype.dispose;
+    window.__silmoCSGFailureProbe = { calls: 0, disposeCalls: 0, originalCSG, originalDispose };
+    window.SILMOCSG = {
+      combineMeshes(...args) {
+        window.__silmoCSGFailureProbe.calls += 1;
+        if (window.__silmoCSGFailureProbe.calls === 2) throw new Error('simulierter zweiter CSG-Schrittfehler');
+        return originalCombine(...args);
+      }
+    };
+    THREE.BufferGeometry.prototype.dispose = function () {
+      window.__silmoCSGFailureProbe.disposeCalls += 1;
+      return originalDispose.call(this);
+    };
+  });
+  allowExpectedConsoleError = true;
+  try { await page.locator('#booleanUnion').click(); }
+  finally { allowExpectedConsoleError = false; }
+  const csgFailureProbe = await page.evaluate(() => {
+    const probe = window.__silmoCSGFailureProbe;
+    window.SILMOCSG = probe.originalCSG;
+    THREE.BufferGeometry.prototype.dispose = probe.originalDispose;
+    delete window.__silmoCSGFailureProbe;
+    return { calls: probe.calls, disposeCalls: probe.disposeCalls };
+  });
+  assert.equal(csgFailureProbe.calls, 2, 'Der erzwungene Fehler trat nicht im zweiten CSG-Schritt auf');
+  assert.equal(csgFailureProbe.disposeCalls, 2, 'Temporäre CSG-Geometrien wurden nicht vollständig freigegeben');
+  assert.equal(await page.locator('#objects .object-row').count(), csgFailureStartCount + 3,
+    'Ein fehlgeschlagener CSG-Vorgang hat Originalobjekte entfernt');
+  assert.match(await page.locator('#status').innerText(), /simulierter zweiter CSG-Schrittfehler/,
+    'Der simulierte CSG-Fehler wurde nicht kontrolliert gemeldet');
+  await page.locator('[data-tab="edit"]').click();
+  await page.locator('#delete').click();
+  await page.locator('#multiSelectToggle').click();
+  assert.equal(await page.locator('#objects .object-row').count(), csgFailureStartCount,
+    'Die drei CSG-Fehlerfall-Testobjekte wurden nicht sauber entfernt');
+  await page.locator('[data-tab="create"]').click();
+  await showCreateSubtab(0);
+
   // Boolesche Verbindung muss sich wieder in die ursprünglichen Formen zerlegen lassen.
   const unionStartCount=await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click(); await page.locator('#addSphere').click();
@@ -696,6 +1626,25 @@ try {
   assert.equal((await page.evaluate(()=>window.__silmoUnionSnapshot())).partCount,2,'Rückgängig verliert die gespeicherten Einzelteile');
   await page.locator('#booleanSeparate').click();
   assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+2,'Verbindung kann nach Rückgängig nicht erneut gelöst werden');
+
+  // Boolesche Differenz muss den zweiten Körper aus dem ersten ausschneiden.
+  const subtractStartCount = await page.locator('#objects .object-row').count();
+  await showCreateSubtab(0);
+  await page.locator('#addCube').click();
+  await page.locator('#addSphere').click();
+  await page.locator('[data-tab="edit"]').click();
+  await page.locator('#multiSelectToggle').click();
+  await showCreateSubtab(2);
+  // Die Kugel ist nach dem Erstellen bereits ausgewählt; nur den Würfel ergänzen.
+  await page.locator('#objects .object-select').nth(subtractStartCount).click();
+  assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 2, 'Differenz-Test konnte nicht beide Formen auswählen');
+  await showCreateSubtab(1);
+  await page.locator('#booleanSubtract').click();
+  assert.equal(await page.locator('#objects .object-row').count(), subtractStartCount + 1, 'Differenz erzeugt nicht genau ein Ergebnisobjekt');
+  assert.match(await page.locator('#status').innerText(), /Ausschnitt erfolgreich berechnet/, 'Boolesche Differenz wurde nicht erfolgreich ausgeführt');
+  // Den Mehrfachauswahlmodus für die nachfolgenden, unabhängigen Regressionen zurücksetzen.
+  await page.locator('[data-tab="edit"]').click();
+  await page.locator('#multiSelectToggle').click();
 
   // Die App kann bereits ein Startobjekt enthalten. Nur die beiden neu erstellten prüfen.
   const initialCount = await page.locator('#objects .object-row').count();
@@ -860,6 +1809,27 @@ try {
   const primitiveStart = await page.locator('#objects .object-row').count();
   await page.locator('#addCone').click(); await page.locator('#addHexPrism').click(); await page.locator('#addTorus').click();
   assert.equal(await page.locator('#objects .object-row').count(),primitiveStart+3,'Zusätzliche CAD-Grundkörper werden nicht erstellt');
+
+  // Mathematische Referenzprüfung der neu ergänzten Grundkörper.
+  // Die Abmessungen werden direkt aus der tatsächlich erzeugten BufferGeometry gelesen.
+  const primitiveBounds = (await page.evaluate(() => window.__silmoTutorialModelAudit())).slice(-3);
+  const expectedPrimitiveBounds = [
+    { label: 'Kegel', size: [16, 16, 15] },
+    { label: 'Sechskant-Prisma', size: [2 * 8.5 * Math.cos(Math.PI / 6), 17, 15] },
+    { label: 'Ring / Torus', size: [16.6, 16.6, 3.6] }
+  ];
+  for (let i = 0; i < expectedPrimitiveBounds.length; i++) {
+    const actual = primitiveBounds[i], expected = expectedPrimitiveBounds[i];
+    assert.equal(actual.label, expected.label, 'Grundkörper-Reihenfolge oder Typ ist falsch');
+    assert.ok(actual.vertexCount > 0, expected.label + ' enthält keine Geometriepunkte');
+    for (const key of ['width', 'depth', 'height']) {
+      const axis = key === 'width' ? 0 : key === 'depth' ? 1 : 2;
+      assert.ok(Number.isFinite(actual[key]), expected.label + ' hat eine nicht endliche Ausdehnung');
+      assert.ok(Math.abs(actual[key] - expected.size[axis]) < 1e-4,
+        expected.label + ' hat eine falsche geometrische Ausdehnung (' + key +
+        '): erwartet ' + expected.size[axis] + ' mm, erhalten ' + actual[key] + ' mm');
+    }
+  }
   await page.locator('[data-tab="draw"]').click();
   const drawSubtabs=page.locator('#pane-draw-left > .inner-tab-nav button');
   assert.equal(await drawSubtabs.count(),2,'v90: Unterreiter Zeichnen fehlen');
@@ -918,11 +1888,116 @@ try {
   assert.ok(pointEditTest.widthMM>21.9&&pointEditTest.widthMM<22.1,'Geometrie wurde nach Punktänderung nicht neu aufgebaut');
   assert.ok(pointEditTest.vertices>0,'Punktbearbeitung erzeugt keine 3D-Geometrie');
   const proCadTest=await page.evaluate(()=>window.__silmoTestRunProCad());
-  for (const key of ['dimensionOK','filletOK','chamferOK','loftOK','sweepOK']) assert.equal(proCadTest[key],true,'Professionelle CAD-Funktion '+key+' funktioniert nicht');
-  assert.ok(proCadTest.loftVertices>0&&proCadTest.sweepVertices>0,'Loft/Sweep erzeugt keine Geometrie');
+  for (const key of ['dimensionOK','filletOK','chamferOK','loftOK','hollowLoftOK','sweepOK']) assert.equal(proCadTest[key],true,'Professionelle CAD-Funktion '+key+' funktioniert nicht');
+  for (const [axis,expected] of Object.entries({x:30,y:25,z:4})) assert.ok(Math.abs(proCadTest.dimensionsMM[axis]-expected)<0.01,'Skizzen-Extrusion hat falsche '+axis.toUpperCase()+'-Abmessung: '+proCadTest.dimensionsMM[axis]+' mm statt '+expected+' mm');
+  assert.ok(proCadTest.loftVertices>0&&proCadTest.hollowLoftVertices>0&&proCadTest.sweepVertices>0,'Loft/Hohl-Loft/Sweep erzeugt keine Geometrie');
+  const loftTopologyTest = await page.evaluate(() => {
+    const makeRing = (radius, z, reverse = false) => {
+      const points = [
+        new THREE.Vector3(-radius, -radius, z),
+        new THREE.Vector3(radius, -radius, z),
+        new THREE.Vector3(radius, radius, z),
+        new THREE.Vector3(-radius, radius, z)
+      ];
+      return reverse ? points.reverse() : points;
+    };
+    const outerA = makeRing(2, 0), outerB = makeRing(2, 3, true);
+    const holeA = makeRing(1, 0, true), holeB = makeRing(1, 3);
+    const geometry = window.SILMOSketchGeometry.createLoftGeometry(
+      outerA, outerB, { holesA: [holeA], holesB: [holeB] }
+    );
+    try {
+      const p = geometry.attributes.position.array;
+      let volume = 0;
+      for (let i = 0; i < p.length; i += 9) {
+        const ax=p[i], ay=p[i+1], az=p[i+2];
+        const bx=p[i+3], by=p[i+4], bz=p[i+5];
+        const cx=p[i+6], cy=p[i+7], cz=p[i+8];
+        volume += (ax*(by*cz-bz*cy)+ay*(bz*cx-bx*cz)+az*(bx*cy-by*cx))/6;
+      }
+      return { volume: Math.abs(volume), vertices: geometry.attributes.position.count };
+    } finally {
+      geometry.dispose();
+    }
+  });
+  assert.ok(Math.abs(loftTopologyTest.volume - 36) < 1e-4,
+    'Loft mit geneigten/umgekehrten Konturen und Innenloch hat falsches Volumen: '+loftTopologyTest.volume);
+  assert.ok(loftTopologyTest.vertices > 0, 'Loft-Innenloch erzeugt kein Mesh');
   const relationTest=await page.evaluate(()=>window.__silmoTestRunSketchRelations());
   for (const key of ['parallelOK','perpendicularOK','tangentOK','concentricOK','lengthOK','distanceOK']) assert.equal(relationTest[key],true,'Skizzenbedingung/Bemaßung '+key+' funktioniert nicht');
 
+  // Hohl-Loft-Metadaten müssen Speichern und erneutes Öffnen überstehen.
+  await page.locator('[data-tab="print"]').click();
+  const hollowLoftDownloadPromise=page.waitForEvent('download');
+  await page.locator('#saveProjectButton').click();
+  const hollowLoftDownload=await hollowLoftDownloadPromise;
+  const hollowLoftSavedPath=await hollowLoftDownload.path();
+  const hollowLoftProject=JSON.parse(readFileSync(hollowLoftSavedPath,'utf8'));
+  const savedHollowLoft=hollowLoftProject.objects.find(item=>item.loft?.innerContourCount===1);
+  assert.ok(savedHollowLoft,'Projektdatei speichert keine Hohl-Loft-Metadaten');
+  assert.equal(savedHollowLoft.loft.sourceHoles.length,1,'Innenkontur-Zuordnung fehlt in der Projektdatei');
+  const hollowLoftRoundTripPage=await browser.newPage();
+  await hollowLoftRoundTripPage.goto(page.url());
+  await hollowLoftRoundTripPage.waitForFunction(()=>typeof window.SILMOProjectSchema?.validateProjectEnvelope==='function',null,{timeout:15000});
+  await hollowLoftRoundTripPage.locator('[data-tab="print"]').click();
+  await hollowLoftRoundTripPage.locator('#projectFileInput').setInputFiles(hollowLoftSavedPath);
+  await hollowLoftRoundTripPage.waitForFunction(()=>window.__silmoLoftMetadataSnapshot?.().some(item=>item.innerContourCount===1&&item.sourceHoleCount===1&&item.sourceReferencesResolve),null,{timeout:15000});
+  const restoredHollowLoft=await hollowLoftRoundTripPage.evaluate(()=>window.__silmoLoftMetadataSnapshot());
+  assert.ok(restoredHollowLoft.some(item=>item.innerContourCount===1&&item.sourceHoleCount===1&&item.sourceReferencesResolve),
+    'Projektimport stellt die Hohl-Loft-Zuordnung oder Quellprofil-IDs nicht wieder her');
+  await hollowLoftRoundTripPage.close();
+
+  // Eine einzelne Freiform-Skizze erhält echte Innenlöcher samt editierbaren Konturdaten.
+  const sketchHolePage=await browser.newPage({viewport:{width:1280,height:900},acceptDownloads:true});
+  await sketchHolePage.goto(page.url(),{waitUntil:'domcontentloaded'});
+  await sketchHolePage.waitForSelector('#viewport canvas',{timeout:20000});
+  const sketchHoleResult=await sketchHolePage.evaluate(()=>window.__silmoImageStudioCreateFromPoints(
+    [[0,0],[40,0],[40,30],[0,30]],10,
+    [[[10,10],[10,20],[20,20],[20,10]]]
+  ));
+  assert.equal(sketchHoleResult.ok,true,'Freiform mit Innenloch konnte nicht erstellt werden: '+(sketchHoleResult.message||''));
+  const sketchHoleSnapshot=await sketchHolePage.evaluate(()=>window.__silmoSketchHoleMetadataSnapshot());
+  assert.ok(sketchHoleSnapshot.some(item=>item.holeCount===1&&item.outerPointCount>=3),'Einzelne Skizze speichert die Innenkontur nicht');
+  const invalidSketchHole=await sketchHolePage.evaluate(()=>window.__silmoImageStudioCreateFromPoints(
+    [[0,0],[40,0],[40,30],[0,30]],10,
+    [[[50,50],[50,55],[55,55],[55,50]]]
+  ));
+  assert.equal(invalidSketchHole.ok,false,'Innenloch ausserhalb der Aussenkontur wurde akzeptiert');
+  await sketchHolePage.locator('[data-tab="print"]').click();
+  const sketchHoleDownloadPromise=sketchHolePage.waitForEvent('download',{timeout:10000});
+  await sketchHolePage.locator('#saveProjectButton').click();
+  const sketchHoleDownload=await sketchHoleDownloadPromise;
+  const sketchHolePath=await sketchHoleDownload.path();
+  const sketchHoleProject=JSON.parse(readFileSync(sketchHolePath,'utf8'));
+  assert.ok(sketchHoleProject.objects.some(item=>item.sketch?.type==='freeform2d'&&item.sketch.holes?.length===1),
+    'Projektdatei speichert die editierbaren Innenkonturen nicht');
+  const sketchHoleReload=await browser.newPage({viewport:{width:1280,height:900}});
+  await sketchHoleReload.goto(page.url(),{waitUntil:'domcontentloaded'});
+  await sketchHoleReload.waitForSelector('#viewport canvas',{timeout:20000});
+  await sketchHoleReload.locator('#projectFileInput').setInputFiles(sketchHolePath);
+  await sketchHoleReload.waitForFunction(()=>window.__silmoSketchHoleMetadataSnapshot?.().some(item=>item.holeCount===1),null,{timeout:15000});
+  await sketchHoleReload.close();
+  const editedHole=await sketchHolePage.evaluate(()=>window.__silmoTestEditSketchHolePoint());
+  assert.equal(editedHole.holeCount,1,'Innenloch ging bei der Punktbearbeitung verloren');
+  assert.ok(editedHole.pointXMM< -19,'Innenloch-Punkt wurde nach Massstabsänderung nicht verändert');
+  assert.ok(editedHole.outerPointXMM< -40,'Aussenkontur-Punkt wurde nach Massstabsänderung nicht verändert');
+  assert.equal(editedHole.holeCount,1,'Innenloch ging bei der anschliessenden Aussenkonturbearbeitung verloren');
+  assert.ok(editedHole.vertices>0,'Bearbeitete Skizze besitzt keine Geometrie');
+  const contourPointCounts=await sketchHolePage.evaluate(()=>window.__silmoTestInsertDeleteSketchContourPoint());
+  assert.equal(contourPointCounts.afterInsert,5,'Neuer Punkt wurde nicht in die Innenkontur eingefügt');
+  assert.equal(contourPointCounts.afterDelete,4,'Punkt wurde nicht korrekt aus der Innenkontur entfernt');
+  assert.equal(contourPointCounts.holeCount,1,'Innenloch ging beim Einfügen/Entfernen verloren');
+  assert.ok(contourPointCounts.vertices>0,'Kontur besitzt nach Punktbearbeitung keine Geometrie');
+  const removedHole=await sketchHolePage.evaluate(()=>window.__silmoTestRemoveSketchHole());
+  assert.equal(removedHole.holeCount,0,'Innenloch wurde nicht vollständig entfernt');
+  assert.equal(removedHole.outerPointCount,4,'Aussenkontur wurde beim Entfernen eines Innenlochs beschädigt');
+  assert.ok(removedHole.vertices>0,'Körper ohne Innenloch besitzt keine gültige Geometrie');
+  const editableLoft=await sketchHolePage.evaluate(()=>window.__silmoTestUpdateLoftFromSources());
+  assert.ok(editableLoft.sourceReferencesResolve,'Loft-Quellprofile konnten nicht wiedergefunden werden');
+  assert.ok(editableLoft.afterMaxZ>editableLoft.beforeMaxZ,'Loft wurde nach Änderung eines Quellprofils nicht aktualisiert');
+  assert.ok(editableLoft.vertices>0,'Aktualisiertes Loft besitzt keine Geometrie');
+  await sketchHolePage.close();
+  await page.locator('[data-tab="draw"]').click();
 
   // SILMO Image Studio Phase 1: separater Arbeitsbereich, Import, Rotation,
   // persistente Vorlagendaten und Übergabe an die bestehende CAD-Freiform.
@@ -992,6 +2067,139 @@ try {
   assert.match(await page.locator('#imageStudioStatus').innerText(),/3D-Körper erstellt/,'Bildkontur wird nicht in einen vorhandenen CAD-Körper übertragen');
   assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),false,'Image Studio schliesst nach erfolgreicher CAD-Übertragung nicht');
   assert.ok((await page.locator('#objects .object-row').count())>0,'CAD-Übergabe hat kein Objekt erstellt');
+
+  // Projektformat v3: echtes Fixture laden und unbekannte Version atomar ablehnen.
+  const validationPage = await browser.newPage({viewport:{width:1280,height:900}});
+  const validationPageErrors = [];
+  validationPage.on('pageerror', error => validationPageErrors.push(error.message));
+  await validationPage.goto('http://127.0.0.1:4173', {waitUntil:'domcontentloaded'});
+  await validationPage.waitForSelector('#viewport canvas', {timeout:20000});
+  const projectFixture = readFileSync(new URL('./fixtures/project-v3-minimal.json', import.meta.url));
+  await validationPage.locator('#projectFileInput').setInputFiles({name:'project-v3-minimal.json',mimeType:'application/json',buffer:projectFixture});
+  await validationPage.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Projekt geöffnet (1 Objekt(e))'), null, {timeout:5000});
+  assert.equal(await validationPage.locator('#objects .object-row').count(),1,'Projektformat-v3-Fixture wurde nicht korrekt geladen');
+  assert.match(await validationPage.locator('#objects').innerText(),/Fixture Würfel v3/,'Projektformat-v3-Fixture hat den falschen Objektinhalt');
+  const unsupportedProject = JSON.parse(projectFixture.toString('utf8'));
+  unsupportedProject.version = 4;
+  await validationPage.locator('#projectFileInput').setInputFiles({name:'unsupported-project-v4.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(unsupportedProject))});
+  await validationPage.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Nicht unterstützte Projektversion 4'), null, {timeout:5000});
+  assert.equal(await validationPage.locator('#objects .object-row').count(),1,'Ungültige Projektversion hat das bestehende Projekt verändert');
+  assert.match(await validationPage.locator('#objects').innerText(),/Fixture Würfel v3/,'Ungültige Projektversion hat das geladene v3-Projekt ersetzt');
+  assert.deepEqual(validationPageErrors,[],'Projektformat-v3-Fixture löst Browserfehler aus');
+  await validationPage.close();
+
+  // Erweitertes v3-Fixture: Gruppen, Boolesche Ursprungsformen, Skizzenkontur,
+  // Konturrahmen und gespeicherte Image-Studio-Vorlage müssen erhalten bleiben.
+  // Dieser isolierte Browserkontext muss Downloads explizit erlauben.
+  // Die übrigen Tests bleiben unverändert; der Download wird weiterhin vollständig geprüft.
+  const advancedContext = await browser.newContext({viewport:{width:1280,height:900},acceptDownloads:true});
+  const advancedPage = await advancedContext.newPage();
+  const advancedErrors = [];
+  advancedPage.on('pageerror', error => advancedErrors.push(error.message));
+  advancedPage.on('console', message => { if(message.type()==='error') advancedErrors.push('console: '+message.text()); });
+  await advancedPage.goto('http://127.0.0.1:4173', {waitUntil:'domcontentloaded'});
+  await advancedPage.waitForSelector('#viewport canvas', {timeout:20000});
+  const advancedFixture = readFileSync(new URL('./fixtures/project-v3-advanced.json', import.meta.url));
+  await advancedPage.locator('#projectFileInput').setInputFiles({name:'project-v3-advanced.json',mimeType:'application/json',buffer:advancedFixture});
+  await advancedPage.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Projekt geöffnet (3 Objekt(e))'), null, {timeout:10000});
+  await advancedPage.waitForFunction(() => window.__silmoImageStudioSnapshot?.().loaded === true, null, {timeout:10000});
+  assert.equal(await advancedPage.locator('#objects .object-row').count(),3,'Erweitertes v3-Fixture hat nicht alle drei Objekte geladen');
+  const advancedImageState = await advancedPage.evaluate(() => window.__silmoImageStudioSnapshot());
+  assert.equal(advancedImageState.fileName,'fixture-image.png','Image-Studio-Dateiname wurde nicht geladen');
+  assert.equal(advancedImageState.rotation,90,'Image-Studio-Drehung wurde nicht geladen');
+  assert.equal(advancedImageState.contourCount,1,'Image-Studio-Kontur wurde nicht geladen');
+  // Die Speichern-Funktion liegt im Druck-Reiter. Erst dorthin wechseln,
+  // dann sicherstellen, dass der Button wirklich sichtbar und anklickbar ist.
+  await advancedPage.locator('[data-tab="print"]').click();
+  await advancedPage.locator('#saveProjectButton').waitFor({state:'visible',timeout:5000});
+  // Diagnose the browser's actual handling of the generated download link.
+  await advancedPage.evaluate(() => {
+    window.__silmoDownloadClicks = [];
+    document.addEventListener('click', event => {
+      const link = event.target instanceof Element ? event.target.closest('a[download]') : null;
+      if (!link) return;
+      const record = { href: link.href, download: link.download, trusted: event.isTrusted };
+      queueMicrotask(() => {
+        record.defaultPrevented = event.defaultPrevented;
+        window.__silmoDownloadClicks.push(record);
+      });
+    }, true);
+  });
+  const advancedSavePromise = advancedPage.waitForEvent('download', {timeout:10000}).catch(() => null);
+  await advancedPage.locator('#saveProjectButton').click();
+  await advancedPage.waitForFunction(() => {
+    const text = document.querySelector('#status')?.textContent || '';
+    return /Vollständiges Projekt gespeichert|Projekt konnte nicht gespeichert werden/.test(text);
+  }, null, {timeout:10000});
+  const advancedSaveStatus = await advancedPage.locator('#status').innerText();
+  assert.equal(advancedSaveStatus, 'Vollständiges Projekt gespeichert',
+    'Erweitertes Projekt konnte nicht gespeichert werden: ' + advancedSaveStatus +
+    (advancedErrors.length ? ' | Browserfehler: ' + advancedErrors.join(' ; ') : ''));
+  const advancedSave = await advancedSavePromise;
+  if (!advancedSave) {
+    const downloadDiagnostics = await advancedPage.evaluate(() => ({
+      clicks: window.__silmoDownloadClicks || [],
+      remainingDownloadLinks: Array.from(document.querySelectorAll('a[download]')).map(link => ({
+        href: link.href, download: link.download
+      }))
+    }));
+    assert.ok(advancedSave, 'Kein Browser-Download trotz erfolgreicher Statusmeldung. Download-Diagnose: ' + JSON.stringify(downloadDiagnostics));
+  }
+  const advancedSavedPath = await advancedSave.path();
+  assert.ok(advancedSavedPath && statSync(advancedSavedPath).size > 1000,'Erweitertes Projekt wurde nicht vollständig gespeichert');
+  const advancedSavedProject = JSON.parse(readFileSync(advancedSavedPath,'utf8'));
+  assert.deepEqual(advancedSavedProject.objects.slice(0,2).map(item => item.groupId),['fixture-gruppe-01','fixture-gruppe-01'],'Gruppenzugehörigkeit ging beim Speichern verloren');
+  assert.equal(advancedSavedProject.objects[2].unionParts.length,2,'Ursprüngliche Teile der verbundenen Form gingen verloren');
+  assert.equal(advancedSavedProject.objects[2].sketchOutline.length,4,'Skizzenkontur ging beim Speichern verloren');
+  assert.deepEqual(advancedSavedProject.objects[2].contourFrame,{wallThicknessMM:1.2,wallHeightMM:12},'Konturrahmen-Metadaten gingen beim Speichern verloren');
+  assert.equal(advancedSavedProject.imageStudio.fileName,'fixture-image.png','Image-Studio-Datei ging beim Speichern verloren');
+  assert.equal(advancedSavedProject.imageStudio.rotation,90,'Image-Studio-Drehung ging beim Speichern verloren');
+  assert.equal(advancedSavedProject.imageStudio.contours.length,1,'Image-Studio-Kontur ging beim Speichern verloren');
+  assert.deepEqual(advancedErrors,[],'Erweitertes v3-Fixture löst Browserfehler aus');
+  await advancedContext.close();
+
+  // Vertikaler Referenzablauf: gespeichertes Projekt erneut öffnen und als STL exportieren.
+  assert.ok(savedProject.objects.length > 0,'Referenzprojekt enthält keine Modellobjekte');
+  const roundTripPage = await browser.newPage({viewport:{width:1280,height:900}});
+  const roundTripErrors = [];
+  roundTripPage.on('pageerror', error => roundTripErrors.push(error.message));
+  roundTripPage.on('console', message => {
+    if(message.type()==='error' && !message.text().includes('Positionsdaten müssen das itemSize 3 haben')) {
+      roundTripErrors.push('console: '+message.text());
+    }
+  });
+  await roundTripPage.goto('http://127.0.0.1:4173', {waitUntil:'domcontentloaded'});
+  await roundTripPage.waitForSelector('#viewport canvas', {timeout:20000});
+  await roundTripPage.locator('#projectFileInput').setInputFiles(savedProjectPath);
+  await roundTripPage.waitForFunction(() => /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, {timeout:10000});
+  assert.equal(await roundTripPage.locator('#objects .object-row').count(),savedProject.objects.length,'Gespeichertes Projekt wurde nicht vollständig wiederhergestellt');
+
+  // Ungültige Geometriedaten dürfen das bereits geöffnete Projekt nicht ersetzen.
+  const invalidGeometryProject = structuredClone(savedProject);
+  invalidGeometryProject.objects[0].geometry.attributes.position.itemSize = 2;
+  await roundTripPage.locator('#projectFileInput').setInputFiles({
+    name: 'invalid-geometry.silmo.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(invalidGeometryProject))
+  });
+  await roundTripPage.waitForFunction(() => /Projekt konnte nicht geöffnet werden/.test(document.querySelector('#status')?.textContent || ''), null, {timeout:10000});
+  assert.match(await roundTripPage.locator('#status').innerText(),/Positionsdaten müssen das itemSize 3 haben/,'Ungültige Positionsdaten werden nicht mit einer klaren Meldung abgewiesen');
+  assert.equal(await roundTripPage.locator('#objects .object-row').count(),savedProject.objects.length,'Ungültige Geometriedaten haben das zuvor geöffnete Projekt verändert');
+
+  await roundTripPage.locator('[data-tab="print"]').click();
+  await roundTripPage.waitForFunction(() => typeof window.THREE?.STLExporter === 'function', null, {timeout:15000});
+  const roundTripExportPromise = roundTripPage.waitForEvent('download',{timeout:5000}).catch(() => null);
+  await roundTripPage.locator('#exportModel').click();
+  await roundTripPage.waitForFunction(() => /STL exportiert|STL-Export fehlgeschlagen|STL-Export konnte nicht geladen werden|Es gibt keine Objekte/.test(document.querySelector('#status')?.textContent || ''), null, {timeout:5000});
+  const roundTripExportStatus = await roundTripPage.locator('#status').innerText();
+  assert.match(roundTripExportStatus,/STL exportiert/,'STL-Export nach Projekt-Wiederöffnung fehlgeschlagen: '+roundTripExportStatus);
+  const roundTripStl = await roundTripExportPromise;
+  assert.ok(roundTripStl,'STL-Export meldet Erfolg, aber der Browser hat keinen Download erhalten');
+  assert.match(roundTripStl.suggestedFilename(),/\.stl$/i,'STL-Export erzeugt keine STL-Datei');
+  const roundTripStlPath = await roundTripStl.path();
+  assert.ok(roundTripStlPath && statSync(roundTripStlPath).size > 84,'STL-Export enthält keine nutzbaren Geometriedaten');
+  assert.deepEqual(roundTripErrors,[],'Projekt-Wiederöffnung oder STL-Export löst Browserfehler aus');
+  await roundTripPage.close();
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
   console.log('BESTANDEN: 3D-Start, CAD-Zeichenarbeitsplatz, Werkzeugpalette, exakte Skizzenposition, Skizzenbearbeitung, Konturpunkt-Editor, Kantenbearbeitung, Loft, Sweep, Parallel/Senkrecht, Tangential/Konzentrisch, Pfadlänge und Objektabstand, Zeichnen, allgemeine CAD-Konstruktion, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');

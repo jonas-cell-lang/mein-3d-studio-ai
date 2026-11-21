@@ -1,8 +1,8 @@
 # SILMO – Spezifikation für Einheiten und Toleranzen
 
-**Stand:** 15.11.2026
+**Stand:** 20.11.2026
 **Basis:** Direkte Quellcodeprüfung von index.html, insbesondere Zeilen 1267–1321, 1359–1463, 2846–2860, 3007–3011, 4284–4353 sowie der Projektserialisierung.
-**Status:** Ist-Zustand und Migrationsanforderungen. Noch keine Änderung am Laufzeitcode.
+**Status:** Ist-Zustand, Migrationsanforderungen und erste Phase-1-Implementierung (PR in Prüfung).
 
 ## 1. Verifizierter Ist-Zustand
 
@@ -29,7 +29,7 @@ Das wird im Code konkret bestätigt:
 |---|---:|---|
 | CSG | `CSG_EPSILON = 1e-5` (Zeile 1362) | BSP-Klassifikation, Ebenen-Schnitt und Filterung degenerierter Dreiecke; Koordinaten sind interne Three.js-Koordinaten. Entspricht bei der aktuellen Skala 0,0001 mm. |
 | Skizzenvereinfachung | Standard `toleranceMM = 0.5`; intern `max(0.001, toleranceMM / MM_PER_UNIT)` (Zeilen 3007–3011) | Fachliche Vereinfachungstoleranz in mm mit interner Untergrenze 0,001 Welteinheiten (= 0,01 mm). |
-| Druckbettprüfung | `bedTolerance = 1e-5` (Zeilen 3776–3780) | Wird direkt mit internen Weltkoordinaten verglichen; bei aktueller Skala entspricht dies 0,0001 mm. |
+| Druckbettprüfung | `PRINT_BED_BOUNDS_WORLD_UNITS = 1e-4` | Wird direkt mit internen Weltkoordinaten verglichen; bei aktueller Skala entspricht dies 0,001 mm. |
 | Geometrie-/Skizzenvergleiche | Mehrere Schwellen wie `1e-7`, `1e-6`, `0.01`, `0.02` (u. a. Zeilen 2058–2091, 3207–3227, 3477–3571) | Nicht pauschal als Modelliertoleranz interpretieren. Jede Stelle braucht eine eigene fachliche Zuordnung. |
 
 Die Werte dürfen nicht zu einer einzigen globalen Toleranz zusammengezogen werden. Einige sind geometrische Grenzwerte, andere dienen Vergleich, Vereinfachung, Kamera-/Interaktionsverhalten oder Darstellungsabständen.
@@ -47,7 +47,73 @@ Die Werte dürfen nicht zu einer einzigen globalen Toleranz zusammengezogen werd
 9. Jeder neue Toleranzwert braucht eine dokumentierte fachliche Begründung, Einheit, betroffene Operation und positive/negative Grenzfalltests.
 10. Ein Kernel darf seine eigene interne Toleranzverwaltung haben; die SILMO-Adapter-Schicht muss die verwendeten Werte und Einheiten jedoch explizit übergeben oder dokumentieren.
 
-## 3. Zielstruktur der zentralen API (Spezifikation, noch kein Code)
+## 3. Quellcode-Inventar der vorhandenen Toleranzen
+
+Die folgenden Werte wurden direkt im aktuellen `index.html` geprüft. Sie werden hier bewusst klassifiziert und noch nicht vereinheitlicht. Unterschiedliche Einheiten und Zwecke dürfen nicht in einen einzigen globalen Wert umgewandelt werden.
+
+| Fundstelle / Funktion | Aktueller Wert | Tatsächliche Bedeutung | Einordnung |
+|---|---:|---|---|
+| `CSG_EPSILON`, BSP-Klassifikation | `1e-5` Welteinheiten | Ebenen-/Polygonklassifikation und Filterung degenerierter CSG-Flächen; entspricht bei aktueller Skala `0,0001 mm` | Geometriekern-Toleranz |
+| Objektverteilung | `1e-7` Welteinheiten | Kleine negative Restlücke wird als Rundungsrest behandelt; entspricht `0,000001 mm` | Numerische Vergleichsschwelle |
+| Objekt-Ausrichtung | `1e-8` Welteinheiten | Delta darunter gilt als unverändert; entspricht `0,0000001 mm` | Numerische Vergleichsschwelle |
+| Skizzenvereinfachung | Standard `0,5 mm`, Untergrenze `0,01 mm` | Fachliche Ramer-Douglas-Peucker-Abweichung, danach Umrechnung in Welteinheiten | Benutzer-/Geometriequalität, keine Kernel-Epsilon |
+| Skizzenpunkt-Abstände | z. B. `0,015` und `0,02` Welteinheiten | Mindestabstand beim interaktiven Zeichnen; entspricht `0,15 mm` bzw. `0,2 mm` | Interaktions-/Eingabegrenze |
+| Vorschauversatz | `0,025` Welteinheiten | Zeichenvorschau liegt leicht über der Skizzenebene; entspricht `0,25 mm` | Darstellung, keine Geometrietoleranz |
+| Hohlrahmen-Konstruktion | `1e-5`, `0,0001`, `0,02` an verschiedenen Stellen | Prüft kurze Kontursegmente, Flächen und Offset-Schnittpunkte; mehrere unterschiedliche Kriterien | Fachliche Konturvalidierung; einzeln zu testen |
+| Druckbettprüfung | `1e-4` Welteinheiten | Erlaubter Bounding-Box-Rundungsrand; entspricht `0,001 mm` | Druckbett-/Importvergleich |
+| Mesh-Druckprüfung | `1e-5` Quantisierung; `1e-8` Welteinheiten² für degenerierte Dreiecke | Eckpunkte werden zur Kanten-Zuordnung quantisiert; Dreiecksfläche wird separat geprüft | Mesh-Analyse; Längen- und Flächenschwellen getrennt halten |
+| Image-Studio-Konturen | `1,1` Pixel beim Konturvereinfachen | Vereinfachung erfolgt vor der Umrechnung auf reale Millimeter | Bild-/Pixelraum, nicht CAD-Kernel |
+| Image-Studio-Druckkonturen | `0,01 mm²` Flächenminimum; `0,8 mm` Mindestwand | Konturen werden vor dem 3D-Aufbau bereits in reale Millimeter abgebildet | Fertigungs-/Druckbarkeitsregel |
+
+### Konsequenzen für die Migration
+
+- Werte mit gleicher Schreibweise können verschiedene Dimensionen haben: Längen, Flächen, Winkel, Pixel oder dimensionslose Faktoren.
+- `1e-8` in einer Orientierungsprüfung ist nicht austauschbar mit `1e-8` als Flächenschwelle.
+- Bildraumtoleranzen dürfen nicht mit Modellkoordinaten vermischt werden.
+- Druckbarkeitsregeln wie die Mindestwand von `0,8 mm` sind fachliche Anforderungen und keine numerischen Kernel-Epsilons.
+- Der Z-Vorschauversatz von `0,025` ist eine Darstellungsentscheidung und darf nicht als Modellgenauigkeit ausgegeben werden.
+- Vor jeder Änderung muss die jeweilige Schwelle mit positiven und negativen Grenzfällen im Browser oder als mathematischer Unit-Test abgesichert sein.
+
+
+### 3.1 Bildkontur- und Lernkurs-Schwellen
+
+| API-Konstante | Wert | Dimension / Zweck |
+|---|---:|---|
+| `IMAGE_POLYGON_RAY_DENOMINATOR_FALLBACK_MM` | `1e-12` | Millimeter; Nenner-Fallback bei nahezu horizontaler Kante im Punkt-in-Polygon-Test nach der Abbildung in CAD-Masse |
+| `IMAGE_SEGMENT_BOUNDS_EPSILON_MM` | `1e-8` | Millimeter; Einschlussrand für Punkt-auf-Segment-Prüfung an abgebildeten Konturen |
+| `IMAGE_SEGMENT_ORIENTATION_EPSILON_MM2` | `1e-8` | mm²; Kollinearitätsgrenze des 2D-Kreuzprodukts an abgebildeten Konturen |
+| `IMAGE_POLYGON_MIN_EDGE_MM` | `1e-5` | Millimeter; Mindestlänge einer Polygonkante nach der Abbildung |
+| `IMAGE_POLYGON_MIN_NONADJACENT_GAP_MM` | `1e-7` | Millimeter; Mindestabstand nicht benachbarter Polygonsegmente nach der Abbildung |
+| `IMAGE_MIN_WALL_COMPARISON_EPSILON_MM` | `1e-6` | Millimeter; Vergleichsrand bei der Prüfung der Mindestwand zwischen Konturen |
+| `TUTORIAL_POSITION_CHANGE_WORLD_UNITS` | `1e-5` | interne Welteinheiten; erkennt Positionsänderungen für die Lernkurs-Erfolgskontrolle |
+
+Die Konturerkennungs-Schwellen im Bildraum (Pixel/Pixel²) sind von den nach der Abbildung geprüften Konturen in Millimeter/mm² getrennt. Die oben aufgeführten Punkt-in-Polygon- und Segmentprüfungen werden nur auf bereits in reale Modellmasse abgebildete Konturen angewendet. Der Lernkurswert prüft eine Interaktionsänderung und ist keine Fertigungstoleranz.
+
+### 3.2 Weitere einzeln benannte Kontur- und Skizzenschwellen
+
+| Rastergrenzen | `GRID_BOUNDARY_EPSILON_WORLD_UNITS` | `1e-8` | interne Welteinheiten; nur Einschluss des letzten Rasterpunkts an der Bettkante |
+| Gruppenrotation | `GROUP_ROTATION_MIN_RADIANS` | `1e-12` | Radiant; ignoriert numerisch vernachlässigbare Rotationsänderungen |
+| Profil-Quellabmessung | `PROFILE_MIN_SOURCE_DIMENSION_WORLD_UNITS` | `1e-6` | interne Welteinheiten; verhindert Skalierung aus praktisch nullgrossen Ausgangsabmessungen |
+| Skizzenprofil-Schliessung | `SKETCH_PROFILE_CLOSURE_WORLD_UNITS` | `1e-7` | interne Welteinheiten; entfernt den doppelten Endpunkt einer geschlossenen Profilkontur |
+| Strahl-/Skizzenebenen-Nenner | `SKETCH_RAY_PARALLEL_DENOMINATOR_MIN` | `1e-6` | Schwelle des algebraischen Nenners; keine direkte Längenangabe |
+
+
+Bei der weiteren Quellcodeprüfung wurden zusätzliche Schwellen in klar begrenzten Funktionen zugeordnet. Die bisherigen Zahlenwerte wurden nicht verändert:
+
+| API-Konstante | Wert | Dimension / Zweck |
+|---|---:|---|
+| `CONTOUR_FRAME_MIN_EDGE_WORLD_UNITS` | `1e-5` | Mindestlänge einer Kante beim Aufbau eines Kontur-Hohlrahmens |
+| `CONTOUR_FRAME_PARALLEL_CROSS_MIN` | `1e-5` | dimensionsloser Kreuzprodukt-Grenzwert zur Erkennung nahezu paralleler Kantenrichtungen |
+| `CONTOUR_FRAME_MIN_NORMAL_WORLD_UNITS` | `1e-5` | Mindestlänge des kombinierten Normalenvektors an einem Konturknick |
+| `CONTOUR_FRAME_MIN_AREA_WORLD_UNITS2` | `1e-4` | Mindestfläche der äusseren und inneren Hohlrahmen-Kontur |
+| `SKETCH_OUTLINE_MIN_AREA2_WORLD_UNITS2` | `1e-7` | Grenzwert für den doppelt orientierten Flächeninhalt der editierbaren Skizzenkontur |
+| `SKETCH_OUTLINE_MIN_EDGE_WORLD_UNITS` | `1e-5` | Mindestabstand benachbarter editierter Skizzenpunkte |
+| `CAD_PATH_MIN_DIRECTION_WORLD_UNITS` | `1e-6` | Mindestlänge einer Pfadrichtung vor der Richtungs-/Quaternionenberechnung |
+| `PROFILE_MIN_PERIMETER_WORLD_UNITS` | `1e-6` | Mindestumfang einer Profilkontur vor der Resampling-Operation |
+
+Diese Konstanten sind bewusst getrennt: Der Kreuzproduktwert ist dimensionslos, die Flächenwerte sind keine Längen, und die übrigen Werte prüfen unterschiedliche geometrische Bedingungen. Die Zuordnung ist eine Benennung des bestehenden Verhaltens, keine neue globale Genauigkeitsgarantie.
+
+## 4. Zielstruktur der zentralen API
 
 Die API soll mindestens folgende getrennte Aufgaben anbieten:
 
@@ -61,7 +127,19 @@ Die API soll mindestens folgende getrennte Aufgaben anbieten:
 
 Es werden hier bewusst keine neuen globalen Zahlenwerte festgelegt. Die bestehenden Schwellen müssen zuerst vollständig mit ihren Aufrufstellen und Tests inventarisiert werden.
 
-## 4. Migrations- und Testanforderungen
+## 5. Erste Implementierung in Phase 1
+
+- `src/units.js` stellt eine unveränderliche, zentrale API bereit: `mmToWorldUnits`, `worldUnitsToMm`, `mm2ToWorldUnits2`, `worldUnits2ToMm2`, `mm3ToWorldUnits3` und `worldUnits3ToMm3`.
+- Die bestätigte Basisskala bleibt unverändert: 1 Three.js-Welteinheit = 10 mm.
+- `src/tolerances.js` stellt die bereits inventarisierten, fachlich getrennten Schwellen unveränderlich bereit: CSG-Geometrie, Ausrichtungs-/Änderungsschwellen, Mindestwert der Skizzenvereinfachung, Skizzen-Druckbettgrenze sowie Druckbett- und Dreiecksprüfung.
+- Die ersten produktiven Aufrufstellen verwenden diese benannten Werte. Die Zahlen bleiben gegenüber dem vorherigen Stand unverändert; die Änderung macht ihren Zweck und ihre Einheit sichtbar.
+- `index.html` lädt das Modul synchron vor dem CAD-Hauptskript. Die Längen- und Flächenumrechnungen im CAD-Hauptskript verwenden jetzt die passenden API-Funktionen; der alte `MM_PER_UNIT`-Kompatibilitätsalias wurde nach der vollständigen Migration der bisherigen Verwendungen entfernt.
+- Die zentrale API wird für die Anzeige von Objektabmessungen, die präzise X-/Y-Positionierung von Skizzen, Druckbett-/Rastermasse, Skizzenbegrenzung, Skizzenvereinfachung, Eingabedimensionen, STL-Import/-Export, Ausrichtung/Abstandsverteilung, Tastaturschritte und Druckbett-/Druckmassenausgabe verwendet.
+- Die bisherigen direkten Verwendungen des Faktors wurden einzeln auf die API umgestellt. Eine Quellcodeprüfung bestätigt, dass `MM_PER_UNIT` in `index.html` nicht mehr verwendet wird und keine direkten `* 10`-/`/ 10`-Längenkonvertierungen übrig sind.
+- `tests/units.test.cjs` prüft Längen, negative und gebrochene Werte, Flächenfaktoren und Unveränderlichkeit; `tests/tolerances.test.cjs` sichert die inventarisierten Toleranzwerte und ihre Unveränderlichkeit. Der Code-Check-Workflow führt beide Tests aus.
+- Die App-Metadaten tragen auf dem Implementierungsbranch die Version v93. Die Produktionsversion bleibt bis zur Review und zum Merge unverändert.
+
+## 6. Migrations- und Testanforderungen
 
 ### Referenzkonvertierungen
 - 10 mm müssen exakt 1,0 interne Welteinheit ergeben.
@@ -83,7 +161,7 @@ Es werden hier bewusst keine neuen globalen Zahlenwerte festgelegt. Die bestehen
 - Browser-Tests prüfen, dass die Oberfläche dieselben Millimeterwerte zeigt und dieselben STL-Abmessungen exportiert.
 - Kein bestehendes Projekt wird durch die neue API stillschweigend skaliert.
 
-## 5. Offene Quellcodeprüfung
+## 7. Offene Quellcodeprüfung
 
 - Alle Längen- und Abstandsgrenzen in index.html einer Einheit zuordnen.
 - Prüfen, welche Schwellen numerische Stabilität und welche nur UI-/Interaktionsabstände betreffen.
@@ -92,7 +170,7 @@ Es werden hier bewusst keine neuen globalen Zahlenwerte festgelegt. Die bestehen
 - Prüfen, ob Projektformat v3 die Basiseinheit explizit speichert oder sie nur implizit voraussetzt.
 - Testfälle für alle Einheiten-Grenzen aus dem vorhandenen Browser-Test und den Diagnosefunktionen ableiten.
 
-## 6. Quellen
+## 8. Quellen
 
 - `index.html`: Zeilen 1267–1321 (Druckbett und Umrechnungsfaktor)
 - `index.html`: Zeilen 1353–1357 (Objektabmessungen in mm)
@@ -103,3 +181,174 @@ Es werden hier bewusst keine neuen globalen Zahlenwerte festgelegt. Die bestehen
 - [Technische Bestandsaufnahme v90](SILMO_CURRENT_STATE_AUDIT.md)
 - [Funktions- und Abhängigkeitsmatrix](SILMO_FUNCTION_DEPENDENCY_MATRIX.md)
 - [Masterplan](SILMO_MASTERPLAN.md)
+
+
+### 3.3 Skizzen- und Kontur-Interaktionsschwellen
+
+Die folgende Gruppe wurde beim weiteren Audit in den CAD-Skizzenfunktionen gefunden. Die bisherigen Zahlenwerte bleiben unverändert; die Konstantennamen unterscheiden Eingabeabstand, Konturabschluss, Vorschau und mathematische Degenerationsgrenzen.
+
+| API-Konstante | Wert | Dimension / Zweck |
+|---|---:|---|
+| `SKETCH_POLYLINE_SAMPLE_MIN_DISTANCE_WORLD_UNITS` | 0,015 | Welteinheiten; Mindestabstand für neu aufgenommene Punkte bei interaktiver Skizzenlinien-Eingabe |
+| `SKETCH_POLYLINE_MIN_LENGTH_WORLD_UNITS` | 0,02 | Welteinheiten; Mindestlänge einer fertigen Skizzenlinie/-kurve |
+| `SKETCH_DRAW_POINT_MIN_DISTANCE_WORLD_UNITS` | 0,02 | Welteinheiten; Mindestabstand aufeinanderfolgender Punkte beim interaktiven Zeichnen |
+| `SKETCH_PREVIEW_OFFSET_WORLD_UNITS` | 0,025 | Welteinheiten; Z-Versatz für die 2D-Skizzenvorschau, keine Modelliertoleranz |
+| `CLICK_CONTOUR_CLOSE_DISTANCE_WORLD_UNITS` | 0,025 | Welteinheiten; Abstand zum ersten Punkt, ab dem eine Klickkontur geschlossen wird |
+| `CLICK_CONTOUR_POINT_MIN_DISTANCE_WORLD_UNITS` | 0,01 | Welteinheiten; Mindestabstand zwischen aufgenommenen Klickkonturpunkten |
+| `CLICK_CONTOUR_STRAIGHTEN_MIN_DISTANCE_WORLD_UNITS` | 0,0001 | Welteinheiten; ignoriert nahezu nullgrosse Schritte beim 45°-Ausrichten von Konturpunkten |
+| `SKETCH_POLYLINE_DEGENERATE_LENGTH_SQUARED_WORLD_UNITS2` | 1e-12 | Welteinheiten²; Nenner-Fallback bei nahezu punktförmigen Segmenten der RDP-Skizzenvereinfachung |
+| `FREEFORM_MIN_AREA_WORLD_UNITS2` | 0,0001 | Welteinheiten²; Mindestfläche einer geschlossenen Freiform vor Extrusion |
+
+Diese Werte sind keine globalen CAD-Genauigkeitsversprechen. Insbesondere Vorschauversatz, Punktaufnahme und Konturabschluss sind Bedien-/Darstellungsregeln und bleiben getrennt von CSG- und Druckbett-Toleranzen.
+
+
+### 3.4 Bild-Studio: eindeutig zugeordnete Druckbarkeitsgrenzen
+
+| API-Konstante | Wert | Dimension / Zweck |
+|---|---:|---|
+| `IMAGE_MIN_COMPONENT_AREA_FRACTION` | 0,000025 | Dimensionsloser Anteil der Bildfläche; Mindestgrösse einer erkannten zusammenhängenden Bildkomponente (zusätzlich mindestens 4 Pixel) |
+| `IMAGE_MIN_PRINT_CONTOUR_AREA_MM2` | 0,01 | mm²; Mindestfläche einer auf reale Modellmasse abgebildeten Aussen-/Innenkontur vor der CAD-Übergabe |
+| `IMAGE_MIN_WALL_THICKNESS_MM` | 0,8 | mm; Mindestmaterialstärke zwischen Aussparungen sowie zwischen Aussparung und Aussenkante |
+
+Die Flächenschwelle in `polygonIsSimple` wird ausschliesslich innerhalb von `validatePrintableContours` auf bereits auf reale Modellmasse abgebildete Konturen angewendet. Sie ist deshalb als `IMAGE_MIN_SIMPLE_POLYGON_AREA_MM2` mit 0,01 mm² benannt und getestet.
+
+
+### 3.5 Präzisierung der getrennten Druckbettgrenzen
+
+Die Quellcodeprüfung unterscheidet zwei verschiedene Grenzen:
+- Skizzenkontur innerhalb der Druckplatte: `SKETCH_BED_BOUNDS_WORLD_UNITS = 1e-5` Welteinheiten.
+- Prüfung der fertigen Modell-Bounding-Box: `PRINT_BED_BOUNDS_WORLD_UNITS = 1e-4` Welteinheiten (= 0,001 mm).
+
+Die frühere Zeile in Abschnitt 1.2 hatte den Wert der Skizzenprüfung fälschlich der fertigen Druckbettprüfung zugeordnet. Die Tabelle ist korrigiert; die Zahlenwerte im Programm wurden nicht verändert.
+
+
+### 3.6 Kontur-Hohlrahmen: Miter-/Gehrungsbegrenzung
+
+| API-Konstante | Wert | Dimension / Zweck |
+|---|---:|---|
+| `CONTOUR_FRAME_MITER_LIMIT_FACTOR` | 8 | Dimensionsloser Faktor; begrenzt die Länge eines inneren Gehrungs-/Offset-Schnittpunkts relativ zur Wandstärke |
+| `CONTOUR_FRAME_MITER_ALLOWANCE_WORLD_UNITS` | 0,02 | Welteinheiten; zusätzlicher Rundungs-/Geometriespielraum in der bestehenden Gehrungsbegrenzung |
+
+Beide Werte sind Bestandteile derselben Sicherheitsprüfung und bleiben getrennt nach Dimension. Die Werte wurden nicht verändert.
+
+
+### 3.7 Weitere Punktabstandsgrenzen für Freiform und Herz-Kontur
+
+| API-Konstante | Wert | Dimension / Zweck |
+|---|---:|---|
+| `SKETCH_FREEFORM_MIN_POINT_SPACING_WORLD_UNITS` | 0,005 | Welteinheiten; entfernt nahezu doppelte benachbarte Punkte vor der Freiformvereinfachung |
+| `HEART_OUTLINE_POINT_DEDUPLICATION_WORLD_UNITS` | 1e-5 | Welteinheiten; entfernt aufeinanderfolgende bzw. abschliessend doppelte Punkte bei der Herz-Konturklassifikation |
+
+Die Herz-Konturklassifikation ist ein spezieller Erkennungspfad und keine allgemeine Bild-zu-CAD-Erkennung. Die Schwelle wird hier nur als bestehende Geometrie-Aufbereitungsregel dokumentiert.
+
+
+### 3.8 Browser-Grenzfälle der Bildkontur-Druckbarkeit
+
+Die Browser-Regression prüft jetzt zusätzlich die exakten und knapp unterschrittenen Grenzen:
+- Mindestwandstärke 0,8 mm: exakt 0,8 mm muss akzeptiert werden; 0,799 mm muss abgewiesen werden.
+- Mindestkonturfläche 0,01 mm²: exakt 0,01 mm² muss akzeptiert werden; 0,009801 mm² muss abgewiesen werden.
+
+Diese Fälle schützen die Vergleichsrichtung der Grenzwerte vor späteren versehentlichen Änderungen.
+
+
+### 3.9 Numerisch robuste Flächen-Grenzvergleiche
+
+Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPSILON_MM2 = 1e-12`. Das ist ein kleiner numerischer Vergleichsspielraum in mm², damit eine mathematisch exakt auf 0,01 mm² liegende Kontur nicht wegen binärer Gleitkomma-Rundung als knapp zu klein abgewiesen wird. Die deutlich kleinere Testfläche 0,009801 mm² bleibt unterhalb der Grenze und wird abgewiesen.
+
+
+### 3.10 Vollständigkeitsprüfung der zentralen Toleranz-API (20.11.2026)
+
+- Die API enthält aktuell 45 benannte Schwellen.
+- Ein automatisierter Quellcode-Audit vergleicht die Namen jeder exportierten Konstante mit den produktiven Laufzeitdateien (CAD-Hauptskript, CSG, Bild-Studio, Lernkurs sowie Geometrie-Module).
+- Dabei wurde `TUTORIAL_POSITION_CHANGE_WORLD_UNITS` zunächst als scheinbar unbenutzt erkannt. Die Aufrufstelle liegt tatsächlich in `src/tutorial.js`; der bisherige Audit hatte dieses Modul nicht in der Suchmenge.
+- Der Unit-Test liest deshalb jetzt zusätzlich `src/tutorial.js` und weist künftig jede Toleranzkonstante zurück, die in keinem der geprüften Laufzeitmodule verwendet wird.
+- Alle 45 Konstanten sind zusätzlich weiterhin einzeln mit ihrem dokumentierten Zahlenwert abgesichert. Dieser Audit ändert keine Toleranzwerte und führt keine pauschale Vereinheitlichung durch.
+- Die neuen Prüfungen sind implementiert; ihr erfolgreicher CI-Lauf muss noch bestätigt werden.
+
+
+### 3.11 Loft-Toleranzen (20.11.2026)
+- `LOFT_PROFILE_PLANARITY_WORLD_UNITS = 1e-6` begrenzt die Abweichung eines Endprofils von seiner berechneten Ebene.
+- `LOFT_PROFILE_MIN_NORMAL_WORLD_UNITS = 1e-9` schützt die Ebenennormalenberechnung vor entarteten Konturen.
+- Beide Werte werden von `src/sketch-geometry.js` verwendet und sind in `tests/tolerances.test.cjs` einzeln festgeschrieben.
+- Die Toleranzen sind bewusst dimensionsbezogen und verändern keine bestehenden Bild-, Druck- oder Skizzenwerte.
+
+
+### 3.12 Skizzen-Kantenbearbeitung: dimensionsgetrennte Schnittpunkttoleranzen (20.11.2026)
+- Die Selbstüberschneidungs- und Kollinearitätsprüfung der Kantenbearbeitung verwendet nun `SKETCH_GEOMETRY_ORIENTATION_EPSILON_WORLD_UNITS2 = 1e-12` für Kreuzprodukt-/Orientierungsvergleiche.
+- Die Begrenzungsprüfung eines Punktes auf einem Segment verwendet `SKETCH_GEOMETRY_BOUNDS_EPSILON_WORLD_UNITS = 1e-12` für Koordinatenvergleiche.
+- Die bisherigen Zahlenwerte bleiben unverändert. Die Trennung dokumentiert, dass Kreuzprodukte eine Flächendimension haben, während Segmentgrenzen Längenkoordinaten vergleichen.
+- Der bestehende Test für selbstüberschneidende und überlappende Konturen bleibt als Verhaltensregression bestehen; beide Konstanten werden zusätzlich im zentralen Toleranzwerttest und im Laufzeit-Verwendungs-Audit erfasst.
+
+
+### 3.13 Projektimport: getrennte Toleranzen für Skizzenringe (20.11.2026)
+- Die Validierung gespeicherter Skizzenringe verwendet nun `PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM` für Koordinaten-/Segmentgrenzen, `PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2` für Kreuzprodukt- und Flächenvergleiche sowie `PROJECT_SKETCH_RING_MIN_EDGE_MM` für minimale Kantenlängen.
+- Alle drei Werte behalten den bisherigen Zahlenwert `1e-12`; die Änderung trennt ausschliesslich ihre Dimension und fachliche Bedeutung.
+- `src/project-schema.js` erhält die zentrale Toleranz-API explizit. Das Laufzeit-Ladeschema lädt `src/tolerances.js` bereits vor `src/project-schema.js`.
+- Unit-Tests sichern die drei Werte und nehmen `project-schema.js` in den Laufzeit-Verwendungs-Audit auf. Die bestehenden positiven und negativen Projektimporttests bleiben Regressionstests.
+
+
+### 3.14 Image-Studio: Konturvereinfachung im Pixelraum (21.11.2026)
+- Die Ramer-Douglas-Peucker-Vereinfachung der aus dem Bild extrahierten Konturen verwendet `IMAGE_CONTOUR_SIMPLIFICATION_TOLERANCE_PIXELS = 1.1`.
+- Der Wert wird auf Konturpunkten im ursprünglichen Bildpixelraum angewendet, bevor die Punkte mit Bildskalierung und physischer Breite in CAD-Millimeter umgerechnet werden.
+- Der Wert ist deshalb ausdrücklich eine Bildverarbeitungs-/Detailregel und keine Millimeter-, Welteinheiten- oder Kernel-Toleranz.
+- `src/image-studio.js` verwendet die zentrale Konstante; `tests/tolerances.test.cjs` sichert den unveränderten Zahlenwert und den Laufzeit-Verwendungs-Audit.
+- Die bisherige Konturvereinfachung bleibt numerisch unverändert. Weitere Pixel-/Farb-Schwellen werden nicht pauschal in die CAD-Toleranz-API aufgenommen.
+- Die Änderung wurde auf Commit 13f354fd9a27a3d3f631f50814d95c33d34be361 durch 124/124 Unit-Tests, den Laufzeit-Verwendungs-Audit und den vollständigen Browser-Interaktionstest validiert; der isolierte OCCT-WebWorker-Test war ebenfalls erfolgreich.
+
+
+### 3.15 Image-Studio: Mindestgrösse erkannter Komponenten (21.11.2026)
+- Die Bildsegmentierung verwirft Komponenten unterhalb von `IMAGE_MIN_COMPONENT_PIXEL_COUNT = 4` Pixeln. Zusätzlich gilt weiterhin die bildgrössenabhängige relative Mindestfläche `IMAGE_MIN_COMPONENT_AREA_FRACTION = 0.000025`.
+- Die beiden Grenzen sind bewusst getrennt: eine absolute Mindestanzahl von Bildpixeln und ein Anteil an der gesamten Bildfläche. Beide wirken ausschliesslich vor der Abbildung in CAD-Millimeter.
+- Der bisherige Mindestwert von vier Pixeln und das bestehende Verhalten bleiben unverändert. Der Wert wird zentral benannt und durch `tests/tolerances.test.cjs` sowie den Laufzeit-Verwendungs-Audit geprüft.
+- Farb-/Kontrastschwellen der Segmentierungsheuristik bleiben algorithmische Bildklassifikationsparameter und werden nicht als CAD-Toleranzen umgedeutet.
+
+
+### 3.16 Herz-Umriss-Erkennung: Mindestabmessung und Nenner-Schutz (21.11.2026)
+- Die Erkennung prüft die projizierte Breite und Höhe gegen `HEART_OUTLINE_MIN_SPAN_WORLD_UNITS = 1e-5`.
+- Für die Seitenverhältnis-Berechnung wird die Höhe mit `HEART_OUTLINE_HEIGHT_DENOMINATOR_MIN_WORLD_UNITS = 1e-9` nach unten begrenzt, damit eine praktisch flache Projektion keinen instabilen Divisor erzeugt.
+- Beide Werte wirken im internen Welteinheitenraum. Die Seitenverhältnis-Akzeptanzgrenzen 0.35 und 2.5 bleiben eigenständige Formklassifikationsparameter und werden nicht als Längentoleranzen ausgegeben.
+- Die bisherigen Werte und das Verhalten bleiben unverändert; der Test prüft die Werte und den Laufzeit-Verwendungs-Audit.
+
+
+### 3.17 Loft-Kontur-Resampling: Mindestumfang (21.11.2026)
+- `LOFT_PROFILE_RESAMPLE_MIN_PERIMETER_WORLD_UNITS = 1e-8` begrenzt den minimalen Gesamtumfang einer geschlossenen 2D-Kontur vor dem gleichmässigen Resampling.
+- Dieser Wert ist bewusst getrennt von `PROFILE_MIN_PERIMETER_WORLD_UNITS = 1e-6`, das eine andere Profilvalidierung absichert.
+- Der bisherige Standardwert bleibt unverändert. Der optionale Funktionsparameter kann weiterhin explizit überschrieben werden; der benannte API-Wert ist der Standard, sofern die Toleranz-API geladen ist.
+- Positiver/negativer Grenzfall und explizites Unterschreiten per Funktionsparameter sind in `tests/sketch-geometry.test.cjs` abgedeckt.
+
+
+### 3.18 Pfadlängenprüfung und Skizzen-Extrusionsskalierung (21.11.2026)
+- `PATH_LENGTH_MIN_CURRENT_MM = 0.001` mm ist die Mindestlänge des bestehenden Pfads in Millimetern, bevor eine neue Ziellänge durch Skalierung angewendet wird.
+- `SKETCH_EXTRUSION_SCALE_DENOMINATOR_MIN = 1e-12` ist eine dimensionslose Untergrenze für den Nenner bei der Rückrechnung einer gespeicherten Extrusionshöhe über den absoluten Z-Skalierungsfaktor.
+- Beide Werte sind unterschiedliche Schutzregeln: eine fachliche Pfadlängengrenze in mm und ein numerischer Divisor-Schutz für einen dimensionslosen Skalierungsfaktor. Die bisherigen Werte und das Verhalten bleiben unverändert.
+
+
+### 3.19 Hohlrahmen: Mindestabmessung des erzeugten Ergebnisses (21.11.2026)
+- `CONTOUR_FRAME_MIN_RESULT_DIMENSION_WORLD_UNITS = 1e-9` ist die Standard-Untergrenze für jede erzeugte Hohlrahmen-Abmessung (X, Y und Z).
+- Der Erzeuger kann weiterhin eine explizite `minimumDimension` übergeben; die Hauptanwendung verwendet dafür bewusst die strengere CSG-Geometriegrenze. Der benannte Wert gilt für direkte API-Aufrufe ohne Override.
+- Der bisherige Standardwert bleibt unverändert. Tests prüfen die Standardablehnung unterhalb der Grenze sowie einen erfolgreichen expliziten kleineren Override.
+
+### 3.20 Parametrische Skizzenprofile: Mindest-Eckenradius
+- `SKETCH_PROFILE_MIN_CORNER_RADIUS_WORLD_UNITS = 0.01` ist die bisherige Untergrenze für den Eckenradius eines abgerundeten parametrischen Rechteckprofils.
+- Der Wert wirkt in internen Welteinheiten und verhindert, dass ein als abgerundet gewähltes Rechteck durch Radius `0` oder einen negativen Radius zu einem scharfkantigen Profil wird.
+- Der bisherige Wert bleibt unverändert. Ein Test prüft den tatsächlich erzeugten Startpunkt bei Radius `0`; der zentrale Toleranztest sichert den Zahlenwert und den Laufzeit-Verwendungs-Audit.
+
+### 3.21 Skizzen-Polylinien: Vereinfachungsabstand
+- `SKETCH_POLYLINE_SIMPLIFICATION_TOLERANCE_MM = 0.5` ist der bisherige Standardabstand des Douglas-Peucker-ähnlichen Vereinfachungsschritts für gezeichnete Skizzen-Polylinien.
+- Der Wert ist in Millimetern definiert. Die Laufzeit wandelt ihn vor dem geometrischen Vergleich über die Einheiten-API in Welteinheiten um; die separate Mindestschwelle `SKETCH_SIMPLIFICATION_MIN_MM = 0.01` bleibt eine Untergrenze.
+- Funktionsstandard, Produktionsaufruf und Browser-Testzugang verwenden denselben benannten Wert. Zahlenwert und bisheriges Verhalten bleiben unverändert.
+
+### 3.22 Gezeichnete Skizzen: Mindestabmessung
+- `SKETCH_DRAW_MIN_DIMENSION_WORLD_UNITS = 0.01` ist die bisherige Mindestbreite und -tiefe, ab der ein per Ziehen erzeugtes Rechteck-/Kreis-Skizzenprofil akzeptiert wird.
+- Der Wert liegt im internen Weltkoordinatenraum (bei der bestehenden Einheitenumrechnung entspricht `0.1 mm`) und ist eine Eingabe-/Geometrie-Mindestgrösse, keine universelle Kernel-Toleranz.
+- Die bisherige Grenze bleibt unverändert. Der Zeichenvorgang verwendet die zentrale Konstante; der Zahlenwert und der Laufzeit-Verwendungs-Audit werden getestet.
+
+### 3.23 Druckvorprüfung: minimale Modellabmessung
+- `PRINT_MIN_MODEL_DIMENSION_MM = 0.01` ist die bisherige Untergrenze für jede gemessene Modell-Bounding-Box-Abmessung, unterhalb der die Druckvorprüfung eine Grössenwarnung ausgibt.
+- Der Wert wird nach Umrechnung der Bounding-Box-Abmessungen in Millimeter geprüft. Er ist eine diagnostische Mindestgrösse und weder eine STL-Weld-Toleranz noch eine Garantie für Druckbarkeit.
+- Die Warnschwelle und der Wortlaut bleiben unverändert; der Zahlenwert und die Laufzeitverwendung werden durch den Toleranztest und den Audit geprüft.
+
+### 3.24 Manuell gezeichnete Bildkonturen: Mindestfläche
+- `IMAGE_MIN_DRAWN_CONTOUR_AREA_PIXELS2 = 0.5` ist die bisherige Mindestfläche, ab der eine manuell im Image-Studio gezeichnete Kontur gespeichert wird.
+- Der Wert gilt im Bildpixel-Koordinatenraum (Pixel²) und ist von der späteren Mindestfläche in CAD-mm² (`IMAGE_MIN_PRINT_CONTOUR_AREA_MM2`) getrennt.
+- Die Mindestpunktzahl von drei Punkten und die Flächenbedingung bleiben unverändert. Der zentrale Zahlenwerttest und Laufzeit-Verwendungs-Audit sichern die Konstante.

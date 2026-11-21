@@ -1,0 +1,120 @@
+{
+  "app": "SILMO 3D Studio AI",
+  "version": 3,
+  "imageStudio": null,
+  "bedWidthMM": 220,
+  "bedDepthMM": 220,
+  "uniform": true,
+  "objects": [
+    {
+      "label": "Fixture Würfel v3",
+      "position": [
+        1,
+        2,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "color": "#3986f6",
+      "baseDimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "percent": {
+        "x": 100,
+        "y": 100,
+        "z": 100
+      },
+      "locked": false,
+      "groupId": null,
+      "unionParts": null,
+      "sketchOutline": null,
+      "contourFrame": null,
+      "geometry": {
+        "attributes": {
+          "position": {
+            "arrayType": "Float32Array",
+            "array": [
+              -0.5,
+              -0.5,
+              -0.5,
+              0.5,
+              -0.5,
+              -0.5,
+              0.5,
+              0.5,
+              -0.5,
+              -0.5,
+              0.5,
+              -0.5,
+              -0.5,
+              -0.5,
+              0.5,
+              0.5,
+              -0.5,
+              0.5,
+              0.5,
+              0.5,
+              0.5,
+              -0.5,
+              0.5,
+              0.5
+            ],
+            "itemSize": 3,
+            "normalized": false
+          }
+        },
+        "index": {
+          "arrayType": "Uint16Array",
+          "array": [
+            0,
+            2,
+            1,
+            0,
+            3,
+            2,
+            4,
+            5,
+            6,
+            4,
+            6,
+            7,
+            0,
+            1,
+            5,
+            0,
+            5,
+            4,
+            3,
+            7,
+            6,
+            3,
+            6,
+            2,
+            0,
+            4,
+            7,
+            0,
+            7,
+            3,
+            1,
+            2,
+            6,
+            1,
+            6,
+            5
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -780,36 +780,52 @@ Eine Version gilt erst als veröffentlicht, wenn:
 
 # 16. Aktueller Status und nächste konkrete Schritte
 
-## 16.1 Aktueller Status am 14.11.2026
+## 16.1 Aktueller Status am 18.11.2026
 
-**App:** v90  
-**Letzter App-Code-Commit:** `f1caa90cb246db2bb66b35e24ca91cac0d838fa3`
+**Entwicklungs-App-Metadaten:** v93 (Produktionsstand auf `main` bleibt unverändert)  
+**Entwicklungsbranch:** `phase1/central-units-api`  
+**Aktueller PR:** [PR 69 – Draft, nicht gemergt](https://github.com/jonas-cell-lang/mein-3d-studio-ai/pull/69)  
+**Letzter vollständig erfolgreich geprüfter Stand:** `b3de4af99c30fe5d9d29dfb2ad5dc2bf3923218c` (Code-Checks und Browser-Regression erfolgreich).
 
-Für v90 wurden bestätigt:
-- SILMO code checks: erfolgreich
-- Browser interaction tests: erfolgreich
-- GitHub Pages build/deployment: erfolgreich
+### Technische Fortschritte seit der letzten Sicherung
 
-Die Dokumentationsarbeit nach v90 wurde in diesen Commits veröffentlicht:
-- Masterplan: `63952de963b28518b1b0a23e1a11c4dbde75fa0b`
-- Bestandsaufnahme: `d960c71cb7300b2cef13f163e5c4f7cf1a030579`
+- Zentrale Einheiten-API in `src/units.js`; bestätigte Skala bleibt 1 Three.js-Welteinheit = 10 mm.
+- Die zentrale Einheiten-API wird nun für Längen- und Flächenumrechnungen in den bisherigen direkten Aufrufstellen verwendet: Druckbett/Raster, Skizzenbegrenzung und -vereinfachung, Eingabedimensionen, STL-Import/-Export, Ausrichtung/Abstandsverteilung, Tastaturschritte, Skizzengeometrie und Druckmassenausgabe. Der alte `MM_PER_UNIT`-Alias wurde entfernt.
+- Benannte Toleranz-API in `src/tolerances.js` mit getrennten Werten für CSG, Ausrichtung, Skizzenvereinfachung und Druckbett-/Dreiecksprüfung. Die bisherigen Zahlenwerte wurden dabei nicht verändert.
+- Projektformat v3 besitzt nun einen separaten Geometrievalidator in `src/project-schema.js`.
+- `src/project-geometry.js` kapselt die Geometrie-Serialisierung und den validierten Wiederaufbau von Meshes sowie Union-Formteilen.
+- `src/project-io.js` kapselt Projekt-Speichern und -Öffnen. Es baut neue Objekte vollständig auf und ersetzt das aktuelle Modell erst nach erfolgreicher Vorbereitung.
+- `src/csg.js` kapselt den BSP-Kern für Boolesche Verbindung und Differenz; der Browserlauf prüft beide Operationen. Er prüft vor dem Wiederaufbau unter anderem Positionen mit itemSize 3, Attributlängen, endliche Werte, Indexgrenzen und vollständige Dreiecksgruppen.
+- Repräsentative minimale und erweiterte v3-Fixtures sowie Tests für ungültige Geometriedaten sind vorhanden.
+- Ein zusätzlicher Browser-Regressionstest lädt absichtlich fehlerhafte Positionsdaten und prüft, dass das zuvor geöffnete Projekt vollständig erhalten bleibt.
+- Three.js r128, STLLoader und STLExporter werden nicht mehr von externen CDNs geladen. Die Bibliotheken werden aus der exakt festgelegten npm-Version lokal bereitgestellt.
+- `package.json`, `package-lock.json`, `scripts/prepare-runtime.mjs` und `.gitignore` richten die Runtime ein. Die Three.js-Lizenz wird mit den Laufzeitdateien übernommen.
+- Code- und Browser-CI bereiten die Runtime vor. Der Browser-Test blockiert externe HTTPS-Zugriffe und prüft den lokalen Start sowie STL-Funktionen.
+- `src/developer-diagnostics.js`, `src/tool-navigation.js`, `src/tutorial.js` und `src/image-studio.js` wurden aus selbstständigen Inline-IIFEs ausgelagert; Reihenfolge und bestehende Schnittstellen blieben erhalten.
+- `src/project-geometry.js` wurde als separates Modul für Projektgeometrie ergänzt.
+- `docs/SILMO_MODULE_EXTRACTION_MAP.md` dokumentiert die Modulgrenzen und die Abhängigkeiten für die nächste Projektdatei-I/O-Extraktion.
+- Die CI und der Pages-Build prüfen, dass alle sieben Module im lokalen Seitenpaket vorhanden sind. Die statische Funktionsprüfung durchsucht den ausgelagerten Navigationscode mit.
+- Lokale Startanleitung und Runtime-/Toleranz-/Projektformat-Dokumentation wurden aktualisiert.
 
-Für den aktuellen Dokumentationscommit `d960c71cb7300b2cef13f163e5c4f7cf1a030579` waren Code-Prüfung, Browser-Tests und Pages-Deployment erfolgreich.
+### Nachweisbare Tests
+
+Für den aktuellen Stand `b3de4af99c30fe5d9d29dfb2ad5dc2bf3923218c`:
+- SILMO code checks: erfolgreich.
+- SILMO browser interaction tests: erfolgreich.
+- Der Browserlauf deckt weiterhin die Zeichenwerkzeuge einschliesslich Freiform-Extrusion sowie Projektimport/-export und die sichere Zurückweisung fehlerhafter Geometrie ab.
+
+Für frühere Änderungen an der lokalen Runtime wurden ebenfalls beide Prüfungen erfolgreich abgeschlossen, unter anderem für Commit `5440c78`. Fehlerhafte Zwischenstände bei der neuen Geometrievalidierung wurden anhand der CI-Logs korrigiert; sie sind nicht der aktuelle geprüfte Code-Stand.
+
+Für den aktuellen geprüften Code-Stand `78fe921` sind sowohl Code-Prüfung als auch Browser-Regression erfolgreich. Die sechs ausgelagerten Module sind im Browserlauf enthalten. Es gibt keinen neuen Produktionsdeploy.
 
 ## 16.2 Was als Nächstes getan werden soll
 
-**Nicht sofort neue Werkzeuge in die Oberfläche einbauen.**
-
-Der nächste Arbeitsabschnitt ist eine technische Architektur- und Geometriekern-Studie:
-
-1. Aktuelle Anwendung und Abhängigkeiten noch einmal gegen den neuesten Commit prüfen.
-2. Vollständige Funktions- und Abhängigkeitsmatrix erstellen.
-3. Einheiten-/Toleranzkonzept spezifizieren.
-4. Geometriekern-Kandidaten anhand konkreter Kriterien vergleichen.
-5. Einen isolierten Prototyp für die schwierigsten Geometrieoperationen erstellen.
-6. Testfälle für Boolesche Operationen, Flächen, Kanten, Körper und ungültige Eingaben festlegen.
-7. Erst danach eine fundierte Entscheidung über den langfristigen Geometriekern treffen.
-8. Migration in kleinen Schritten planen, damit v90-Funktionen erhalten bleiben.
+1. CI für den neuesten Dokumentationsstand abschliessen lassen.
+2. Als Nächstes die verbleibenden Geometrie- und Skizzenfunktionen nach Abhängigkeiten modularisieren, ohne Modellzustand, Undo/Redo und bestehende Werkzeuge zu beschädigen.
+3. Dokument-/Projektverwaltung und Import-/Export-Grenzen weiter modularisieren, ohne die bestehende Geometrie- und Undo/Redo-Logik zu beschädigen.
+4. Geometrievalidierung und Toleranzinventar mit zusätzlichen Grenzfalltests vervollständigen.
+5. Phase 1 gegen den Masterplan vollständig abgleichen und alle noch offenen Punkte dokumentiert abarbeiten.
+6. Erst nach ausreichender technischer Basis die isolierte CAD-Kern-Prototypstudie fortsetzen; keine voreilige Integration in die Produktions-App.
 
 ## 16.3 Keine voreilige Entscheidung
 Three.js soll zunächst Darstellung, Kamera und Interaktion weiter übernehmen können. Ob ein WebAssembly-basierter CAD-Kern wie Open CASCADE integriert wird, ist erst nach einem erfolgreichen Prototypenvergleich zu entscheiden.
@@ -845,12 +861,23 @@ Three.js soll zunächst Darstellung, Kamera und Interaktion weiter übernehmen k
 - Masterplan: `docs/SILMO_MASTERPLAN.md`
 - Technische Bestandsaufnahme: `docs/SILMO_CURRENT_STATE_AUDIT.md`
 - Diese vollständige Sicherung: `docs/SILMO_PROJECT_BACKUP.md`
+- Runtime-Abhängigkeitsprüfung: `docs/SILMO_RUNTIME_DEPENDENCY_AUDIT.md`
+- Einheiten- und Toleranzspezifikation: `docs/SILMO_UNITS_TOLERANCE_SPEC.md`
+- Projektformat v3: `docs/SILMO_PROJECT_FORMAT_V3.md`
+- Lokaler Start: `docs/LOCAL_START.md`
+- Zentrale Einheiten-API: `src/units.js`
+- Zentrale Toleranz-API: `src/tolerances.js`
+- Projekt-/Geometrievalidierung: `src/project-schema.js`
+- Geometrievalidierungstests: `tests/project-schema.test.cjs`
 
 ## Bestätigte Commits
 - v77 Smooth Sketch: `b7016db585e5bf5f237ff89866c5e093e983c911`
 - v90 App-Code: `f1caa90cb246db2bb66b35e24ca91cac0d838fa3`
 - Masterplan-Dokument: `63952de963b28518b1b0a23e1a11c4dbde75fa0b`
 - Technische Bestandsaufnahme: `d960c71cb7300b2cef13f163e5c4f7cf1a030579`
+- Lokale Runtime / CDN-freier Browserlauf: `5440c78f2bddef1b1d9f4f9f648df5ff660be77b`
+- Zentrale Toleranzen: `2abc639121673ef39877d16847fb7a9bfe4a4d0a`
+- Geometrievalidierung und sicherer Fehlerfall im Browser: `d131d4ec23fe0c30349f548205dd819e759f3ec8`
 
 ---
 
@@ -876,3 +903,367 @@ Vor Beginn einer neuen Aufgabe:
 **Endgültiger Projektleitsatz:**
 
 # SILMO – Einfach zu bedienen. Professionell in den Möglichkeiten. Präzise in der Technik. Eigenständig als 3D-Studio.
+
+
+## Ergänzung – weiterer Entwicklungsstand am 20.11.2026
+
+- PR 70 ergänzt auf dem separaten Branch `phase1/history-foundation` die Auslagerung der Undo-/Redo-Verwaltung in `src/history.js`.
+- Die Code-Checks und Playwright-Browser-Regression waren nach dem Playwright-Update auf Commit `da26cb15438e30efd90fbf2d29ff76568e44c668` erfolgreich.
+- Weitere bestehende Schwellen für Rastergrenzen, Gruppenrotation, Profilquellabmessungen, Profil-Schliessung und Strahl-/Skizzenebenen-Berechnung wurden einzeln benannt und durch Unit-Tests abgesichert; die Zahlenwerte wurden nicht verändert.
+- Die folgenden Änderungen müssen nach dem letzten Toleranz-Audit erneut durch Code- und Browser-CI laufen.
+- Keine Änderung an `main`, kein Live-Deployment, keine kostenpflichtigen Dienste; Kostenlimit CHF 0.00.
+
+
+## Ergänzung – CI-Nachweis und Bildkontur-Audit am 20.11.2026
+
+- Auf Commit `ef35d6f5fa8b9409fd8a271d0e9baa5d89a9ef7c` waren sowohl die Code-Checks als auch die vollständige Playwright-Browser-Regression erfolgreich.
+- Die Code-Checks führten `node --test tests/*.test.cjs`, Inline-JavaScript-Syntaxprüfung, Manifest-/HTML-ID-Prüfung und lokalen Pages-Paket-Test aus.
+- Die Browser-Regression startete SILMO mit lokaler Three.js-Runtime und führte `tests/silmo-browser-test.mjs` in Chromium erfolgreich aus.
+- Der Toleranz-Audit umfasst nun zusätzlich Pixel-/Pixel²-Schwellen der Bildkonturprüfung, Mindestwandvergleich in mm und die Positionsänderungsprüfung des Lernkurses. Die Werte sind getrennt benannt und durch Unit-Tests abgesichert; ihre bisherigen Zahlenwerte wurden nicht verändert.
+- Dokumentationsstand wurde danach auf Commit `88473a6b28d68d0dd4085800503e18eb050364c1` aktualisiert.
+- PR 69 und PR 70 bleiben Drafts. Kein Merge nach `main`, kein Live-Deployment, keine Ausgaben.
+
+
+## Ergänzung – Projektimport-Ressourcen und abschliessende CI am 20.11.2026
+
+- `src/project-geometry.js` gibt eine teilweise aufgebaute `BufferGeometry` bei jedem Fehler während der Wiederherstellung frei, bevor der Fehler weitergereicht wird.
+- `tests/project-geometry.test.cjs` simuliert einen Fehler beim Setzen des Normalenattributs und prüft, dass die bereits angelegte Geometrie genau einmal entsorgt wird.
+- Für Commit `717ff6c1eea5eb7bda4f5d7e26cf8e3bcdc6e3f2` waren Code-Checks und vollständige Chromium-/Playwright-Browser-Regression erfolgreich.
+- Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44735662941
+- Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44735662796
+- Kein Merge nach `main`, kein Live-Deployment, keine kostenpflichtigen Dienste; Kostenlimit CHF 0.00.
+
+
+## Ergänzung – Hohlrahmen-Metadatenprüfung und Browser-CI am 20.11.2026
+
+- `src/project-schema.js` prüft beim Projektimport Hohlrahmen-Metadaten gegen dieselben Eingabegrenzen wie die CAD-Oberfläche: Wandstärke 0,2–100 mm, Rahmenhöhe 0,2–2000 mm. Der frühere Alias `caseWallFrame` wird ebenfalls geprüft; auch falsy ungültige Werte werden zurückgewiesen.
+- `tests/project-schema.test.cjs` deckt gültige Grenzwerte, zu kleine und zu grosse Werte, fehlende/ungültige Zahlen sowie ungültige falsy Werte ab.
+- Für Code-Commit `0f32a9ca60adb78a0510a2facac1236aa03176a0` waren Code-Checks und vollständige Playwright-Browser-Regression erfolgreich.
+- Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44736126833
+- Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44736126756
+- Kein Merge nach `main`, kein Live-Deployment, keine kostenpflichtigen Dienste; Kostenlimit CHF 0.00.
+
+
+## Ergänzung – STL-Adapter-Auslagerung am 20.11.2026
+
+- Der STL-Import/-Export wurde in `src/stl-io.js` ausgelagert. Die Oberfläche behält Dateiauswahl, Drag-and-drop und Web-Link-Handling; das Modul übernimmt Parsing, Validierung, mm-/Welteinheiten-Konvertierung, ASCII-Export und temporäre Exportgeometrien.
+- Die neue Datei ist in den Code-Checks und Pages-Artefaktlisten eingetragen.
+- Import prüft Positionsdaten und entsorgt nicht übernommene Geometrie-/Materialressourcen bei Fehlern. Export arbeitet mit Kopien und entsorgt diese nach Abschluss.
+- Die Browser-Regression muss diesen Stand noch vollständig prüfen; bis dahin gilt die Auslagerung als implementiert, aber nicht abgenommen.
+- Kein Merge nach `main`, kein Live-Deployment, keine Kosten.
+
+
+## Ergänzung – STL-Adapter und erfolgreiche Gesamtregression am 20.11.2026
+
+- `src/stl-io.js` kapselt STL-Import und ASCII-STL-Export. Dateiauswahl, Drag-and-drop und Web-Link-Handling bleiben im CAD-Hauptskript; das Modul übernimmt Parsing, Positionsdatenprüfung, Einheitenumrechnung, Exportkopien und Ressourcenfreigabe.
+- Der neue Adapter ist in `index.html`, den Code-Asset-Prüfungen und dem Pages-Paketmanifest eingebunden.
+- Für Code-Commit `1e69a14ee41043d76fe95886b2e75938f791e2f9` waren Code-Checks und vollständige Playwright-Browser-Regression erfolgreich.
+- Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44736758062
+- Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44736758290
+- Der STL-Browserlauf prüft Dateiimport per Drop, Web-Link-Import sowie Export/erneuten Export nach Projekt-Wiederöffnung.
+- Kein Merge nach `main`, kein Live-Deployment, keine Kosten.
+
+
+## Ergänzung – STL-Fehlerfalltest am 20.11.2026
+
+- Die Browser-Regression enthält jetzt zusätzlich einen ungültigen STL-Importfall. Er prüft, dass ein beschädigter STL-Upload abgewiesen wird und die bereits vorhandenen Modelle unverändert erhalten bleiben.
+- Dieser zusätzliche Browser-Test ist im aktuellen Branch enthalten; ein eigener neuer Actions-Lauf dafür ist noch nicht sichtbar.
+
+
+## Ergänzung – STL-Fehlerbehandlung aus Browser-Regression abgeleitet am 20.11.2026
+
+- Der erste Negativtest zeigte, dass Three.js beim Parsen einer beschädigten STL-Datei einen `RangeError` auslöst. SILMO fing ihn bereits ab, protokollierte ihn aber als `console.error`, wodurch der Browser-Regressionslauf einen unerwarteten Laufzeitfehler erkannte.
+- Der STL-Adapter behandelt diesen erwartbaren Benutzereingabefehler nun als Importwarnung (`console.warn`) und zeigt weiterhin eine verständliche Statusmeldung. Der Negativtest prüft zusätzlich, dass keine vorhandenen Modelle verändert werden.
+- Die korrigierte Version benötigt einen erneuten vollständigen Code- und Browser-CI-Nachweis.
+
+
+## Ergänzung – abgeschlossene STL-Fehlerfallregression am 20.11.2026
+
+- Der beschädigte STL-Test zeigte zunächst, dass Three.js beim Parsen einen `RangeError` in der Konsole ausgibt. SILMO fing den Fehler bereits ab; die Meldung wurde von `console.error` auf eine erwartbare Importwarnung umgestellt.
+- Auf Commit `f1d97ad7f03ca6fc9efd126e704b6bbd74b2f33d` waren anschliessend Code-Checks und vollständige Playwright-Browser-Regression erfolgreich.
+- Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44737483853
+- Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44737483844
+- Der Browser-Test bestätigt nun: beschädigter STL-Import wird abgewiesen, der bestehende Modellbestand bleibt unverändert und es entsteht kein unerwarteter Konsolenfehler.
+
+
+## Ergänzung – erste reproduzierbare History-Leistungsbaseline am 20.11.2026
+
+- `scripts/benchmark-history.mjs` wurde ergänzt und über `npm run benchmark:history` in die Code-Checks eingebunden.
+- Er misst 1, 10 und 50 Objekte mit je 999 Vertices, fünf Snapshots, Snapshot-Aufnahmezeit, Undo-/Redo-Zeit sowie Node-Speicherwerte vor/nach Snapshot und nach Freigabe/GC.
+- Der Benchmark ist bewusst informativ und verwendet keine maschinenabhängigen Schwellenwerte. Er ist eine isolierte History-Baseline, noch keine vollständige Browser-/CAD-Leistungsmessung.
+- Der neue Benchmark muss durch den nächsten Code-Check-Lauf ausgeführt und auf seine Messausgabe geprüft werden.
+
+
+## Ergänzung – reproduzierbare History-Baseline am 20.11.2026
+
+- `npm run benchmark:history` wurde in die Code-Checks aufgenommen. Der Benchmark verwendet Node v22.23.5 und Three.js r128, misst je 999 Vertices pro Objekt, fünf Snapshots und 1/10/50 Objekte.
+- Messung auf dem GitHub-Runner (nur Referenzwerte, keine Pass/Fail-Grenzen):
+  - 1 Objekt: Snapshot-Median 0,035 ms; Undo 0,192 ms; Redo 0,106 ms.
+  - 10 Objekte: Snapshot-Median 0,095 ms; Undo 0,277 ms; Redo 0,224 ms.
+  - 50 Objekte: Snapshot-Median 0,669 ms; Undo 1,429 ms; Redo 1,480 ms.
+- Bei 50 Objekten stiegen die ArrayBuffer-Werte während fünf Snapshots von rund 1,22 MB auf 7,21 MB und fielen nach History-Dispose und GC auf rund 20,8 KB zurück. Die History-Stacks waren danach leer und als disposed markiert.
+- Die Code-Checks inklusive Benchmark und die vollständige Playwright-Browser-Regression waren auf Commit `8ee614b10654e99b77d286c9bad66ae47e8342da` erfolgreich.
+- Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44738160483
+- Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44738160492
+- Dies ist eine erste isolierte Node-History-Baseline, keine Aussage über Browserleistung oder grosse CAD-Modelle.
+
+
+## Ergänzung – Skizzen-/Kontur-Toleranz-Audit am 20.11.2026
+
+- Neun bisher direkt im CAD-Hauptskript verwendete Werte wurden in `src/tolerances.js` mit dimensionsspezifischen Namen versehen.
+- Betroffen sind Punktaufnahme, Mindestlinienlänge, Zeichenpunktabstand, Vorschauversatz, Klickkonturabschluss, Klickkonturpunktabstand, minimale Straightening-Bewegung, RDP-Degenerationsnenner und Mindestfläche einer Freiform.
+- Alle numerischen Werte bleiben unverändert; Aufrufstellen verwenden jetzt die zentrale API. Die Unit-Tests sichern die Werte.
+- Spezifikation und Masterplan wurden ergänzt. Der neue Stand benötigt noch den automatischen Code- und Browser-Regressionslauf.
+
+
+## Ergänzung – Bild-Studio-Druckbarkeitsgrenzen am 20.11.2026
+
+- Die Bildkomponenten-Mindestgrösse (dimensionsloser Bildflächenanteil), die Mindestfläche real abgebildeter Konturen (mm²) und die Mindestwandstärke (mm) wurden in `src/tolerances.js` benannt und in `src/image-studio.js` auf die zentrale API umgestellt.
+- Die bisherigen Werte 0,000025, 0,01 mm² und 0,8 mm bleiben unverändert. Unit-Tests sichern die Werte.
+- Die gemischte Flächenschwelle in `polygonIsSimple` wurde bewusst nicht migriert: die Funktion wird in mehreren Koordinatenräumen genutzt und muss zuerst sauber getrennt werden.
+- Der neue Stand benötigt noch den automatischen Code- und Browser-Regressionsnachweis.
+
+
+## Ergänzung – Einheitenprüfung der Bildkonturfläche abgeschlossen am 20.11.2026
+
+- Alle Aufrufstellen von `polygonIsSimple` wurden geprüft. Die Funktion wird ausschliesslich von `validatePrintableContours` auf Konturen aufgerufen, die bereits in reale Millimeter abgebildet wurden.
+- Die bisherige Mindestfläche 0,01 wird deshalb korrekt als `IMAGE_MIN_SIMPLE_POLYGON_AREA_MM2` benannt und in `src/image-studio.js` verwendet.
+- Die neue Konstante wird durch `tests/tolerances.test.cjs` gesichert. Die zuvor offene mögliche Einheitenvermischung ist damit für diese Stelle geklärt.
+- Die abschliessende Code- und Browser-CI-Prüfung für den gesamten Audit-Stand steht noch aus.
+
+
+## Ergänzung – Korrektur der Druckbett-Toleranzdokumentation am 20.11.2026
+
+- Die aktuelle Quellcodeprüfung bestätigt zwei getrennte Werte: Skizzenkontur-Grenze `SKETCH_BED_BOUNDS_WORLD_UNITS = 1e-5` und fertige Modell-Druckbettprüfung `PRINT_BED_BOUNDS_WORLD_UNITS = 1e-4` Welteinheiten.
+- Eine ältere Tabellenzeile hatte die Werte verwechselt. Die technische Spezifikation ist korrigiert; am Programmverhalten wurde nichts geändert.
+
+
+## Ergänzung – Kontur-Hohlrahmen-Gehrungsgrenze am 20.11.2026
+
+- Die Begrenzung der inneren Gehrungs-/Offset-Schnittpunkte verwendet nun `CONTOUR_FRAME_MITER_LIMIT_FACTOR = 8` und `CONTOUR_FRAME_MITER_ALLOWANCE_WORLD_UNITS = 0.02` aus der zentralen Toleranz-API.
+- Die Dimensionen (dimensionsloser Faktor und Welteinheiten) bleiben getrennt; Werte und Verhalten wurden nicht verändert.
+- Unit-Tests und Browser-Regression müssen den neuen Stand noch bestätigen.
+
+
+## Ergänzung – Freiform-/Herz-Kontur-Punktabstände am 20.11.2026
+
+- Die Freiform-Punktbereinigung nutzt nun `SKETCH_FREEFORM_MIN_POINT_SPACING_WORLD_UNITS = 0.005`.
+- Die spezielle Herz-Konturklassifikation nutzt `HEART_OUTLINE_POINT_DEDUPLICATION_WORLD_UNITS = 1e-5`.
+- Beide Werte sind unverändert und durch Toleranz-Unit-Tests abgesichert. Die Erkennungslogik wurde nicht geändert.
+
+
+## Ergänzung – Bildkontur-Grenzfalltests am 20.11.2026
+
+- Der Browser-Test prüft nun die Druckbarkeitsgrenzen exakt: 0,8 mm Mindestwand wird akzeptiert, 0,799 mm abgewiesen; 0,01 mm² Mindestkonturfläche wird akzeptiert, 0,009801 mm² abgewiesen.
+- Bestehende Prüfungen für Randabstand, überlappende Innenlöcher und selbstschneidende Konturen bleiben bestehen.
+- Diese zusätzlichen Browserfälle müssen noch in einem vollständigen Actions-Lauf erfolgreich bestätigt werden.
+
+
+## Ergänzung – numerischer Bildflächen-Grenzfall am 20.11.2026
+
+- Der Browser-Test deckte einen Gleitkomma-Grenzfall auf: eine mathematisch exakt 0,01 mm² grosse Kontur wurde durch binäre Rundung knapp unter dem Mindestwert eingeordnet.
+- Die Vergleiche verwenden jetzt `IMAGE_MIN_AREA_COMPARISON_EPSILON_MM2 = 1e-12`. Die fachliche Mindestfläche bleibt 0,01 mm²; 0,009801 mm² muss weiterhin abgewiesen werden.
+- Der korrigierte Stand muss den vollständigen Code- und Browser-Testlauf noch bestehen.
+
+
+## Ergänzung – Einheitenkorrektur der Bildkonturprüfung am 20.11.2026
+
+- Die Quellcode-Aufrufstellen bestätigen, dass Punkt-in-Polygon- und Segmentabstandsprüfungen nur auf bereits in reale Millimeter abgebildete Konturen angewendet werden.
+- Fünf Toleranznamen wurden deshalb von irreführenden Pixel-/Pixel²-Endungen auf mm-/mm²-Endungen korrigiert. Die Zahlenwerte und das Laufzeitverhalten blieben unverändert.
+- Die Bildraster-Erkennung bleibt weiterhin im Pixelraum; die Druckkonturprüfung bleibt im Modellmassraum.
+
+
+## Ergänzung – vollständige Regression nach Bildflächen- und Einheitenkorrektur am 20.11.2026
+
+- Der Code-Check und der vollständige Playwright-Browserlauf sind auf Code-Commit `e96d550896e7b18e0ea912a13a8b22b7a93fd4ca` erfolgreich.
+- Der Lauf enthält die numerisch robuste Mindestflächenprüfung (0,01 mm² mit separatem 1e-12-mm²-Vergleichsspielraum) und die korrekt als mm/mm² benannten Punkt-in-Polygon-/Segmenttoleranzen.
+- Ein weiterer Code-Check auf dem nachfolgenden Dokumentationsstand `8df0875ca835099f3a9034150e09a263c439e7df` ist ebenfalls erfolgreich; der dazugehörige Browserlauf läuft noch. Die Programmdateien sind seit `e96d...` unverändert.
+
+
+## Ergänzung – zusätzliche STL- und Projektgeometrie-Regressionen am 20.11.2026
+
+- Der Browser-Test prüft jetzt zusätzlich eine binäre STL-Datei mit nicht endlichen Koordinaten (NaN). Der Import muss vor dem Modellaufbau abgewiesen werden; die Anzahl vorhandener Modelle muss unverändert bleiben.
+- Für Commit `690ff7c5d1bdec0645a6ffb8796bccd40d4be496` waren Code-Checks und vollständige Playwright-Browser-Regression erfolgreich.
+- Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44753695266
+- Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44753695318
+- `tests/project-schema.test.cjs` prüft zusätzlich, dass nicht-indizierte Meshes mit vollständigen Dreiecksgruppen akzeptiert und unvollständige Dreiecksgruppen abgewiesen werden.
+- Für Commit `414a79af11bd4554fef6f3049a8666dc25ea0c20` waren Code-Checks und vollständige Playwright-Browser-Regression erfolgreich.
+- Code-Check-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44754049101
+- Browser-Lauf: https://github.com/jonas-cell-lang/mein-3d-studio-ai/actions/runs/44754049089
+- PR #70 bleibt Draft. Kein Merge nach `main`, kein Live-Deployment und keine kostenpflichtigen Dienste; Kostenlimit CHF 0.00.
+
+
+## Ergänzung – projektweite Geometrie-Obergrenze (20.11.2026)
+
+- Die bisherige Schema-Prüfung begrenzte die Geometriedaten pro einzelnes Mesh, nicht aber die Summe über alle Projektobjekte und verbundene Union-Teile.
+- `src/project-schema.js` validiert Geometrien nun bereits beim Prüfen des Projektumschlags und zählt Positions-/Normal-/weitere Attributwerte sowie Indizes projektweit.
+- Die neue Obergrenze beträgt 15'000'000 numerische Geometriewerte pro Projekt. Sie verhindert, dass bis zu 100 Objekte jeweils das individuelle Mesh-Limit ausschöpfen und zusammen einen unverhältnismässig grossen Import erzeugen.
+- Der Grenzfalltest prüft 15'000'000 Werte als akzeptierte Grenze und weist einen zusätzlichen Mesh-Anteil innerhalb eines Union-Teils ab.
+- Noch ausstehend: Code-Checks und vollständiger Browserlauf auf dem neuen Commit; bis dahin gilt die Änderung als implementiert, aber noch nicht verifiziert.
+- Kein Merge, kein Deployment; CHF 0.00.
+
+
+## Ergänzung – Grundkörper-Modul und erweiterte OCCT-Prüfung (20.11.2026)
+- Die reine Geometrieerzeugung der sechs Grundkörper ist in `src/primitive-geometry.js` ausgelagert. Objektanlage, Materialien, Auswahl und App-Zustand verbleiben im CAD-Hauptskript.
+- Die Unit-Tests prüfen die mathematischen Bounding-Box-Abmessungen von Würfel, Kugel, Zylinder, Kegel, Sechskant-Prisma und Torus sowie den bisherigen Fallback.
+- Auf Code-Commit `1880cc057d8c332d13cbf50691bb3864a3461bea` sind 37/37 Unit-Tests erfolgreich; die vollständige SILMO-Browser-Regression ist ebenfalls erfolgreich.
+- OCCT-Prototyp-Run `44761699676` ist erfolgreich: 40-Bohrungs-Musterplatte, analytisches Volumen, ein Solid und Tessellierung; die Boolean-Berechnung dauerte im GitHub-Runner rund 353 ms.
+- Chromium-WebWorker-Smoke-Test: zwölf sequenzielle Durchgangsbohrungen, Volumen 5811,504440784614 mm³ gegenüber Soll 5811,504440784613 mm³, genau ein Solid und ein verwendbares Mesh.
+- Der CAD-Kern bleibt isolierte Forschung und ist nicht in die Produktions-App integriert. PR #70 bleibt Draft; kein Merge, kein Deployment und CHF 0.00.
+
+
+## Ergänzung – Skizzenextrusions-Modul (20.11.2026)
+- `src/sketch-geometry.js` übernimmt die Erstellung der Extrusionsgeometrie aus einem bereits aufgebauten Three.js-2D-Profil sowie die Berechnung von Normalen, Bounding Box und Bounding Sphere.
+- Die reguläre Freiform-Extrusion (inklusive echter Innenlöcher) und die Extrusion der parametrischen 2D-Skizzen verwenden diese Factory.
+- Skizzeneingabe, Profilaufbau, Masse, Constraints, Positionierung, Druckbettprüfung, Metadaten, Material, Undo-History und Szene-Commit bleiben im Hauptskript.
+- Neue Tests prüfen 4×3×2-Quader mit Volumen 24, eine Innenloch-Extrusion mit Volumen 22, Kreisprofil, Geometrieinstanzen und Fehlerfall.
+- Auf Commit `4f6b1be0983651f590977a10ab48e34b3146d551` sind 41/41 Unit-Tests, die vollständige Browser-Regression sowie der isolierte OCCT-/WebWorker-Test erfolgreich.
+- PR #70 bleibt Draft und ungemergt. Kein Deployment. Kosten: CHF 0.00.
+
+
+## Ergänzung – Parametrische Skizzenprofile (20.11.2026)
+- Das Skizzen-Geometriemodul erzeugt nun die parametrischen Profile Kreis, Ellipse, Dreieck, Rechteck und abgerundetes Rechteck.
+- Die gemeinsame Funktion für abgerundete Rechteckpfade wird sowohl von der Skizzenvorschau als auch von der Profilgenerierung verwendet. Die umgekehrte Konturrichtung für Innenkonturen ist weiter verfügbar.
+- Die App validiert weiterhin die Eingabegrenzen (z.B. Eckenradius); das Geometriemodul kontrolliert zusätzlich positive Profilabmessungen.
+- Neue Tests ergänzen die Extrusions-/Lochtests um die Soll-Aussenabmessungen aller Profilformen und die umgekehrte Konturrichtung.
+- Commit `2af76685ebf31a417bc0cf1896a7b161a199567c`: 44/44 Unit-Tests, Browser-Regression und OCCT-WebWorker erfolgreich.
+
+
+## Ergänzung – Loft- und Sweep-Geometrie (20.11.2026)
+- `src/sketch-geometry.js` übernimmt jetzt auch das Resampling geschlossener Konturen, die Erzeugung von Loft-Geometrien mit Endkappen und Sweep-Geometrien entlang einer 3D-Catmull-Rom-Kurve.
+- Das Hauptskript verwaltet weiterhin Quellobjektauswahl, Welttransformationen, Undo-History, Material, Szene-Commit und UI.
+- Zusätzliche Tests prüfen analytische Sollvolumen für einen Loft-Quader (8 Einheiten³) und einen Sweep-Quader (12 Einheiten³), Abmessungen, endliche Geometriedaten und ungültige Eingaben.
+- Bekannte Loft-Grenzen bleiben dokumentiert: Die Kappentriangulation arbeitet in XY-Weltprojektion und ist nicht für beliebig geneigte Profile oder Innenlöcher abgesichert. Die optimale Zuordnung der Kontur-Startpunkte ist noch offen.
+- Code-Head `9bf75280747d879f5980df6c9cc45b5da199fea1`: 48/48 Unit-Tests, Browser-Regression und isolierter OCCT-/WebWorker-Test erfolgreich.
+- Keine Versionsänderung, kein Merge, kein Deployment; Kosten CHF 0.00.
+
+
+## Ergänzung – CAD-Pfadkurven und Pfadrohre (20.11.2026)
+- Das Geometriemodul erzeugt nun auch gerade 2D-Pfadkurven, Catmull-Rom-Kurven und die zugehörigen Rohrgeometrien.
+- Die App verwendet die gemeinsame Factory bei Skizzenanlage und Pfadlängenänderung. Pfadbearbeitung, mm-Konvertierung, History, Objektverwaltung und UI bleiben im Hauptskript.
+- Tests prüfen Pfadlänge, Linien-/Kurvenverhalten, Rohrabmessungen und Parameterfehler.
+
+- Code-Head `fdb0139a9b48188b39f92ecbe1beb5260618781c`: 51/51 Unit-Tests, Browser-Regression und OCCT-/WebWorker-Test erfolgreich. Die anschliessende Änderung `1be5a96` betrifft nur die Projektdokumentation.
+
+
+## Ergänzung – Hohlrahmen-Geometrie (20.11.2026)
+- Die Erzeugung der versetzten Innenkontur und des extrudierten Hohlrahmens wurde nach `src/sketch-geometry.js` verschoben.
+- Die UI-/Modellzuständigkeiten bleiben im Hauptskript. Ein Mindestabstandscheck weist zu grosse Wandstärken zurück, die zuvor über den Kollapspunkt der Innenkontur hinauslaufen konnten.
+- Tests decken Volumen, Abmessungen, beide Konturrichtungen und ungültige Wandstärken ab.
+- Code-Head `208815fd7d101f1af4520d2834c8437a9ea8bad4`: 54/54 Unit-Tests, Browser-Regression und OCCT-/WebWorker-Test erfolgreich.
+
+
+## Ergänzung – Kantenbearbeitung und Toleranz-Audit (20.11.2026)
+- Die Geometrieerzeugung für Abrunden und Abfasen wurde nach `src/sketch-geometry.js` ausgelagert; App-Auswahl, Eingabeprüfung, History und UI verbleiben in `index.html`.
+- Unit-Tests für beide Modi prüfen endliche Mesh-Daten, Normalen, Bounding-Box/-Sphere, Sollabmessungen und ungültige Parameter.
+- Der Toleranz-Audit umfasst 45 benannte Werte. Ein neuer Quellcode-Test prüft, dass jede Konstante in mindestens einem Laufzeitmodul verwendet wird; Lernkurs-Schwellen werden dazu korrekt in `src/tutorial.js` gesucht.
+- Die neuen Prüfungen sind implementiert; CI-Erfolg ist noch nicht bestätigt.
+
+
+## Ergänzung – Loft-Qualität (20.11.2026)
+- Loft-Geometrie unterstützt jetzt beliebig orientierte planare 3D-Endprofile, mehrere paarweise Innenkonturen, Kappentriangulation mit Löchern und Mantelflächen für Innenwände.
+- Profilstartpunkt und Laufrichtung werden standardmässig zur Reduktion von Verdrehungen abgeglichen; optional mit `alignProfiles: false` deaktivierbar.
+- Zwei neue zentrale Loft-Toleranzen sichern Planaritäts- und Normalenprüfung ab.
+- Neue Unit- und Browsertests prüfen geneigte Profile, umgekehrte Kontur-Reihenfolge, Hohl-Loft-Volumen und Fehlerfälle.
+- Die UI-/Projektformat-Unterstützung für das Zeichnen und Speichern mehrerer Innenkonturen ist noch offen; die neue Funktion ist derzeit auf Factory-/API-Ebene verfügbar.
+
+
+## Ergänzung – Hohl-Loft vollständig in App-Workflow eingebunden (20.11.2026)
+- Die Loft-Funktion nimmt jetzt zwei Aussenprofile und anschliessend paarweise separate Innenprofile an (bis zu acht Löcher).
+- Auswahlreihenfolge wird im Profi-CAD-Bereich erklärt.
+- Das Ergebnis speichert Loft-Metadaten mit Quell-UUIDs und Innenkonturanzahl.
+- Projektformat v3 schreibt diese Metadaten mit und stellt sie beim Import wieder her; das Schema prüft die Struktur und Referenzen.
+- Browser-Regression ergänzt den Vier-Profil-Workflow sowie einen Projekt-Speichern-/Laden-Roundtrip in einer zweiten Browserinstanz.
+- Grenzen: Löcher entstehen aus separaten Skizzenobjekten; direkte Innenkonturzeichnung in einem einzigen Skizzenprofil und assoziative Feature-Neuberechnung bleiben offen.
+
+- Zusätzlich bleiben die UUIDs der Quellobjekte beim Speichern und Öffnen erhalten. Die Loft-Metadaten verweisen dadurch nach dem Projekt-Roundtrip weiterhin auf dieselben Quellprofile; das Schema prüft Eindeutigkeit und Format der IDs.
+
+
+## Ergänzung – direkte Innenlochzeichnung in einer Freiform-Skizze (20.11.2026)
+- Die Punkt-für-Punkt-Zeichenhilfe unterstützt nun zwei Stufen: zuerst Aussenkontur, danach ein oder mehrere Innenlöcher.
+- Neue Schaltfläche: „Innenloch in dieser Skizze zeichnen“. Das Werkzeug nutzt denselben Punktmodus, dieselbe Raster-/45°-Ausrichtung, Rückgängig-Funktion und Konturabschluss.
+- Fertige Löcher erscheinen gemeinsam mit der Aussenkontur in der Vorschau und werden als echte Öffnungen extrudiert.
+- Ungültige Innenkonturen werden zurückgewiesen: ausserhalb, Selbstüberschneidung, Berührung der Aussenkante oder Überschneidung mit einem anderen Loch.
+- Skizzen-Metadaten enthalten die Innenring-Koordinaten und werden in Projektformat v3 gespeichert und wiederhergestellt. Die bestehende Mesh-Geometrie bleibt zusätzlich vollständig gespeichert.
+- Das Projektschema prüft die Metadaten und begrenzt Innenringe auf maximal 1000 Punkte sowie maximal 100 Innenringe.
+- Tests: Code-Checks einschliesslich Unit-/Schema-Tests erfolgreich (Run 44771243349). Browser-Regression für Innenlochzeichnung und Projekt-Roundtrip läuft noch; OCCT-Prototyp ist unabhängig davon.
+- Noch nicht umgesetzt: nachträgliche assoziative Bearbeitung eines bereits erzeugten 3D-Körpers; der Skizzenentwurf kann vor dem Erzeugen des Körpers bearbeitet werden.
+
+
+## Ergänzung – Kontur-Feature nachträglich bearbeiten (20.11.2026)
+- Der Konturpunkt-Editor unterstützt jetzt die Auswahl zwischen Aussenkontur und gespeicherten Innenlöchern.
+- Ein Punkt eines Innenlochs kann nach der Extrusion verschoben werden. Die Geometrie wird mit allen Ringen neu aufgebaut; bestehende Öffnungen bleiben echte Öffnungen.
+- Validierung prüft Mindestfläche, Kantenabstand, Innenlage, Selbstüberschneidung und Überschneidung mit anderen Innenlöchern, bevor die bisherige Geometrie ersetzt wird.
+- History/Undo wird vor dem Austausch der Geometrie erfasst.
+- Kantenbearbeitete Körper sind vorerst von diesem direkten Neuaufbau ausgeschlossen, damit eine Punktänderung nicht unbemerkt Abrundungen oder Fasen entfernt.
+- Automatischer Browser-Test ändert nach der Extrusion zuerst die Gesamtmasse und verschiebt danach einen Innenloch- sowie einen Aussenkontur-Punkt. Die Öffnung muss dabei erhalten bleiben; gespeicherte Konturdaten werden gemeinsam mit der Geometrie skaliert.
+
+
+## Ergänzung – Manuelles Aktualisieren assoziativer Loft-Körper (20.11.2026)
+- Jeder neu erzeugte Loft speichert UUID-Referenzen seiner beiden Aussenprofile und aller gepaarten Innenprofile.
+- Die Schaltfläche „Aus Quellprofilen aktualisieren“ baut einen ausgewählten Loft aus den aktuellen Konturen und Transformationen dieser Quellobjekte neu auf.
+- Die neu erzeugte Weltgeometrie wird in den lokalen Koordinatenraum des Loft-Objekts transformiert. Dadurch bleiben Position, Rotation und Skalierung des Loft-Objekts erhalten.
+- Fehlende Quellobjekte, unvollständige Lochpaare, ungültige Profile und gesperrte Loft-Körper werden vor dem Austausch abgewiesen. Die alte Geometrie bleibt bestehen, wenn die Neuerzeugung scheitert.
+- Der Workflow ist manuell und kein Live-Update. Vollständige Feature-Abhängigkeitsverwaltung und automatische Aktualisierung bleiben offen.
+- Automatischer Browser-Test verschiebt ein Quellprofil und prüft, dass der Loft-Körper eine entsprechend veränderte Geometrie erhält.
+
+
+## Ergänzung – Konturpunkte einfügen und entfernen (20.11.2026)
+- Der Profi-CAD-Konturpunkt-Editor kann auf der ausgewählten Kante einen Mittelpunkt einfügen oder den ausgewählten Punkt entfernen.
+- Die Auswahl funktioniert für Aussenkontur und alle gespeicherten Innenlöcher.
+- Eine Kontur kann nie unter drei Punkte fallen; pro Kontur gilt ein Maximum von 1000 Punkten.
+- Nach jedem Vorgang wird die gesamte Skizzenextrusion mit allen Innenlöchern validiert und neu aufgebaut. Die History wird erst vor dem Austausch der gültigen Geometrie erfasst.
+- Browser-Test prüft 4 → 5 → 4 Punkte an einer Innenkontur und kontrolliert, dass die echte Öffnung erhalten bleibt.
+
+
+## Ergänzung – Ganzes Innenloch entfernen (20.11.2026)
+- Über „Ganzes Innenloch entfernen“ kann die aktuell ausgewählte Innenkontur aus einer Skizzenextrusion entfernt werden.
+- Die Aussenkontur kann über diese Aktion nicht entfernt werden.
+- Alle übrigen Konturen bleiben erhalten; die Geometrie wird vor dem Austausch neu aufgebaut und geprüft.
+- Browser-Test erstellt eine Skizze mit einem Loch, entfernt das Loch und prüft, dass der Körper ohne Öffnung weiterhin eine gültige Geometrie besitzt.
+
+
+## Ergänzung – Topologische Validierung von Skizzen-Innenlöchern (20.11.2026)
+- Das Projekt-Schema prüft gespeicherte Freiform-Innenlöcher auf gültige einfache Ringe.
+- Für Projekte mit Innenlöchern ist eine gültige Aussenkontur erforderlich.
+- Jedes Loch muss vollständig innerhalb der Aussenkontur liegen und darf diese nicht berühren oder kreuzen.
+- Innenlöcher dürfen sich weder überschneiden noch berühren oder ineinander liegen.
+- Die Prüfungen sind unabhängig von Three.js und schützen bereits beim Import vor strukturell ungültigen Konturdaten.
+
+
+## Ergänzung – Laufzeitgrenzen der Projektimport-Topologieprüfung
+- Pro Skizzenobjekt gilt ein gemeinsames Budget von maximal 5000 Punkten über Aussenkontur und alle Innenlöcher.
+- Maximal 100 Innenlöcher und 1000 Punkte pro Ring bleiben zusätzlich bestehen.
+- Bounding-Box-Vorprüfung überspringt Segmentvergleiche für klar getrennte Ringe.
+- Der Zweck ist, die Importprüfung bei manipulierten oder extrem grossen Projektdateien zeitlich zu begrenzen.
+
+
+## Ergänzung – Eindeutigkeit von Loft-Quellprofilen
+- Die Loft-Metadaten müssen unterschiedliche IDs für beide Aussenprofile und jedes Innenprofil-Paar enthalten.
+- Doppelte Profil-IDs werden bereits beim Projektimport abgewiesen.
+- Fehlende Quellobjekte bleiben als historische Referenzen erlaubt, damit bestehende Loft-Geometrie nicht beim Löschen der Ursprungsskizzen ungültig wird.
+
+
+## Ergänzung – Projektdatei-I/O absichern
+- Vor dem Download wird die erzeugte Projektstruktur mit dem Projekt-v3-Schema validiert.
+- JSON-Dateien über 25 MB werden nicht exportiert, weil der Import dieselbe Dateigrenze besitzt.
+- Importdateigrösse und FileReader-Fehler werden kontrolliert behandelt.
+- Der Modellbestand wird erst nach vollständigem Aufbau aller importierten Meshes ersetzt; bei einem Teilfehler werden vorbereitete Geometrien und Materialien freigegeben.
+- Isolierte Unit-Tests decken Save/Open, Roundtrip, ungültige Transformationen, Teilfehler und Importgrenzen ab.
+
+## Ergänzung – STL-I/O absichern
+- STL-Import ist zusätzlich zur 50-MB-Dateigrenze auf 500'000 Dreiecke und Koordinaten zwischen ±10'000'000 mm begrenzt.
+- STL-Export validiert Geometrieattribute, Dreiecksindizes, Positionen, Drehungen und Skalierungen; Nullskalierungen werden abgewiesen.
+- Die Umrechnung in mm erfolgt weiterhin auf temporären Kopien, nicht auf dem sichtbaren Modell.
+- Neue Unit-Tests prüfen Import-Skalierung/Zentrierung, vorhandene Modellbestände, beschädigte und übergrosse Dreiecksdateien sowie Export ohne Veränderung des Ursprungsmodells.
+
+
+## Ergänzung – STL-Topologie-Diagnose und Referenz-Fixtures am 20.11.2026
+
+- `src/stl-io.js` prüft importierte STL-Dreiecksnetze zusätzlich zur bisherigen Dateiformat- und Koordinatenvalidierung. Die Prüfung verändert die Geometrie nicht und blockiert den Import bei Topologieproblemen nicht.
+- Erkannte Probleme: offene Randkanten, nicht-manifold Kanten (mehr als zwei angrenzende Dreiecke), widersprüchliche Dreiecksorientierung, doppelte Dreiecke, durch die definierte Verschweisstoleranz zusammengefallene Dreiecke und negatives orientiertes Gesamtvolumen bei geschlossenen Netzen.
+- STL-Vertices werden mit der zentral dokumentierten Toleranz aus `src/tolerances.js` räumlich zusammengeführt. Die Toleranz wird von Weltkoordinaten korrekt in Millimeter umgerechnet.
+- Zur Begrenzung von Laufzeit und Speicher wird die vollständige Topologieprüfung bei mehr als 100'000 Dreiecken übersprungen. Der STL-Import selbst bleibt bis zur bestehenden Grenze von 500'000 Dreiecken möglich.
+- Reale ASCII-Referenzdateien: `tests/fixtures/stl/cube-10mm.stl` (12 Dreiecke, geschlossener Würfel) und `tests/fixtures/stl/open-triangle.stl` (offenes Dreiecksnetz).
+- Unit- und Browser-Regressionen prüfen geschlossene und offene Netze, doppelte Flächen, nicht-manifold Kanten, lokale und globale Orientierungsfehler sowie den Import der beiden realen STL-Dateien.
+- Die Diagnose ist eine geometrische Vorprüfung und keine automatische Reparatur oder Garantie für einen erfolgreichen 3D-Druck.
