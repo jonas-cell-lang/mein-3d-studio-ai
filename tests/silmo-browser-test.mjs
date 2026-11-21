@@ -273,6 +273,75 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
   assert.ok(Math.abs(redoneBooleanVolume - 8000) < 1e-7,
     'Redo stellte das OCCT-Boolean-Ergebnis nicht als echten B-Rep-Körper wieder her');
+
+  // End-to-end: Drei getrennte OCCT-Körper in einem einzigen UI-Auftrag vereinigen.
+  const multiBodyStart = await page.locator('#objects .object-row').count();
+  await showCreateSubtab(0);
+  for (let index = 0; index < 3; index++) {
+    await page.locator('#addOcctBox').click();
+    await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  }
+  await page.evaluate(start => {
+    const rows = [...document.querySelectorAll('#objects .object-select')];
+    for (let index = 0; index < 3; index++) {
+      const object = window.__silmoObjectsForTest?.[start + index];
+      if (object) object.position.x = window.SILMOUnits.mmToWorldUnits(index * 30);
+      else {
+        const selectButton = rows[start + index];
+        if (!selectButton) throw new Error('Dritter OCCT-Testkörper fehlt in der Objektliste.');
+        selectButton.dataset.multiBodyPosition = String(index * 30);
+      }
+    }
+    if (window.__silmoObjectsForTest) {
+      window.__silmoObjectsForTest.slice(start, start + 3).forEach(object => object.updateMatrixWorld(true));
+    }
+  }, multiBodyStart);
+  // Die App-Objektliste ist absichtlich nicht global exponiert; Positionen über die
+  // normale Objekt-/Transformationsoberfläche setzen und danach alle drei auswählen.
+  await page.evaluate(start => {
+    const rows = [...document.querySelectorAll('#objects .object-select')];
+    rows.slice(start, start + 3).forEach((button, index) => {
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: index > 0 }));
+    });
+  }, multiBodyStart);
+  const previousMultiBodyShapeId = await page.evaluate(() => window.__silmoOcctLastBoolean?.shapeId || 0);
+  await page.locator('#booleanUnion').evaluate(button => {
+    if (button.disabled) throw new Error('OCCT-Mehrkörper-Fuse-Schaltfläche ist deaktiviert.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  await page.waitForFunction(previous => window.__silmoOcctLastBoolean?.operandCount === 3 &&
+    window.__silmoOcctLastBoolean.shapeId > previous, previousMultiBodyShapeId, { timeout: 30000 });
+  const multiBodyResult = await page.evaluate(async () => ({
+    ...window.__silmoOcctLastBoolean,
+    workerVolumeMM3: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastBoolean.shapeId),
+    source: window.__silmoOcctLastSceneSource || null
+  }));
+  assert.ok(Math.abs(multiBodyResult.volumeMM3 - 24000) < 1e-6 &&
+    Math.abs(multiBodyResult.workerVolumeMM3 - 24000) < 1e-6,
+  'OCCT-Mehrkörper-Fuse lieferte für drei getrennte 20-mm-Quader nicht 24000 mm³');
+  assert.equal(await page.locator('#objects .object-row').count(), multiBodyStart + 1,
+    'Drei OCCT-Ausgangskörper wurden nicht durch ein Ergebnisobjekt ersetzt');
+  const multiUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+z');
+  await waitForOcctRestore(multiUndoGeneration);
+  assert.equal(await page.locator('#objects .object-row').count(), multiBodyStart + 3,
+    'Undo stellte nicht alle drei OCCT-Ausgangskörper wieder her');
+  const multiRedoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+y');
+  await waitForOcctRestore(multiRedoGeneration);
+  const multiRedo = await page.evaluate(async () => ({
+    volume: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId),
+    sourceKind: window.__silmoOcctLastRestored.source?.kind || null,
+    nestedKind: window.__silmoOcctLastRestored.source?.operands?.[0]?.kind || null
+  }));
+  assert.ok(Math.abs(multiRedo.volume - 24000) < 1e-6,
+    'Redo rekonstruierte das Mehrkörper-OCCT-Ergebnis nicht korrekt');
+  assert.equal(await page.locator('#objects .object-row').count(), multiBodyStart + 1,
+    'Redo stellte nicht genau einen Mehrkörper-Verbund wieder her');
+  await page.locator('#delete').evaluate(button => button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  assert.equal(await page.locator('#objects .object-row').count(), multiBodyStart,
+    'Mehrkörper-OCCT-Ergebnis konnte nicht entfernt werden');
+
   await page.locator('#delete').evaluate(button => {
     if (button.disabled) throw new Error('Löschen-Schaltfläche ist deaktiviert.');
     button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
