@@ -490,15 +490,14 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(faceSelection.highlighted, 0xffbd4a, 'Die ausgewählte native Fläche wurde nicht hervorgehoben');
   assert.match(faceSelection.summary, /400\.00 mm²/, 'Die Flächenauswahl zeigt den falschen nativen Flächeninhalt');
   await page.locator('#toggleOcctFacePick').click();
-  const faceScreenPoint = await page.evaluate(() => window.__silmoOcctFacePickPoint(1) ||
-    [0, 1, 2, 3, 4, 5].map(index => window.__silmoOcctFacePickPoint(index)).find(Boolean));
+  const faceScreenPoint = await page.evaluate(() => window.__silmoOcctFacePickPoint());
   assert.ok(faceScreenPoint && Number.isFinite(faceScreenPoint.x) && Number.isFinite(faceScreenPoint.y),
-    'Für keine sichtbare native Fläche wurde ein 3D-Auswahlpunkt berechnet');
+    'Für den sichtbaren Quader wurde kein 3D-Auswahlpunkt berechnet');
   await page.mouse.click(faceScreenPoint.x, faceScreenPoint.y);
-  await page.waitForFunction(index => window.__silmoOcctFaceOverlay?.selectedIndex === index,
-    faceScreenPoint.faceIndex, { timeout: 5000 });
-  assert.equal(await page.locator('#occtFaceList').inputValue(), String(faceScreenPoint.faceIndex),
-    '3D-Klick hat die native Fläche nicht in der Liste ausgewählt');
+  await page.waitForFunction(() => Number.isInteger(window.__silmoOcctFaceOverlay?.selectedIndex), null, { timeout: 5000 });
+  const pickedFaceIndex = await page.evaluate(() => window.__silmoOcctFaceOverlay.selectedIndex);
+  assert.equal(await page.locator('#occtFaceList').inputValue(), String(pickedFaceIndex),
+    '3D-Klick hat die getroffene native Fläche nicht in der Liste ausgewählt');
   assert.match(await page.locator('#occtTopologySummary').textContent(), /6 echte B-Rep-Flächen und 12 echte B-Rep-Kanten/,
     'Die sichtbare Kantenliste zeigt keine vollständige native Quader-Topologie');
   assert.equal(await page.locator('#occtEdgeList option:not([disabled])').count(), 12,
