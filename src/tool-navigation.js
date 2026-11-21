@@ -5,7 +5,7 @@
   const left = document.querySelector('.left-panel');
   const right = document.querySelector('.right-panel');
   const ids = [
-    'addCube','addOcctBox','addSphere','addCylinder','addCone','addHexPrism','addTorus','duplicate','booleanUnion','booleanSubtract','importModel','exportModel',
+    'addCube','addOcctBox','addSphere','addCylinder','addCone','addHexPrism','addTorus','duplicate','booleanUnion','booleanSubtract','booleanIntersect','importModel','exportModel',
     'saveProjectButton','openProjectButton','fileInput','projectFileInput','delete',
     'dropToBed','checkBed','fitView','bedWidth','bedDepth','applyBedSize','objects',
     'status','positionFields','scaleLock','sizeFields','percentFields','color','expertCenterToggle'
