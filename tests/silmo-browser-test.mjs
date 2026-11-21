@@ -230,6 +230,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'Undo stellte den OCCT-B-Rep-Quader nicht mit seinem korrekten Volumen wieder her');
 
   // Echter OCCT-Zylinder über die SILMO-Oberfläche inklusive Undo/Redo-Rekonstruktion.
+  await page.locator('[data-tab="create"]').click();
   const cylinderSceneStart = await page.locator('#objects .object-row').count();
   await page.locator('#addOcctCylinder').click();
   await page.waitForFunction(() => /^OCCT-B-Rep-Zylinder erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
