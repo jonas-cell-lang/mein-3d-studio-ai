@@ -913,5 +913,6 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Prüfung liefert das exakte OCCT-Volumen in mm³ sowie eine aus der OCCT-Tessellierung berechnete Bounding Box (Minimum, Maximum, Ausdehnung und Mittelpunkt in mm).
 - Zusätzlich werden Vertex-, Dreiecks- und Indexanzahl des Darstellungsnetzes gemeldet. Diese Mesh-Kennzahlen beschreiben die Visualisierung und sind keine native OCCT-Topologiezählung von Kanten oder Flächen.
 - Der SILMO-OCCT-Client stellt die Methode mit positiver Ganzzahl-Handlevalidierung bereit. Worker- und Client-Unit-Tests prüfen Rückgabeform, Weiterleitung und ungültige Handles.
-- Browser-End-to-End- und OCCT-Kernel-CI müssen den neuen Stand noch bestätigen. Die Funktion ist zunächst eine technische Prüf-API; eine sichtbare Eigenschaften-Seitenleiste und native Kanten-/Flächenabfragen sind separate Folgeschritte.
+- In der Oberfläche gibt es die Aktion „OCCT-Körper prüfen“. Sie prüft das aktuell ausgewählte Objekt nur dann, wenn dafür ein aktiver nativer OCCT-Handle existiert, und zeigt Volumen, Abmessungen und Dreiecksanzahl im Statusbereich.
+- Der Browser-End-to-End-Test führt die Prüfung an einem echten OCCT-Torus aus und kontrolliert Volumen, Bounding-Box-Abmessungen sowie konsistente Mesh-Kennzahlen. Native Kanten-/Flächenabfragen bleiben ein separater Folgeschritt.
 - PR #70 bleibt offen und Draft; kein Merge, Deployment oder Veröffentlichung.
