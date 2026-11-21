@@ -391,6 +391,58 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   'Wiedergeöffneter OCCT-B-Rep-Körper besitzt nicht mehr das korrekte Worker-Volumen von 4000 mm³');
   assert.deepEqual(occtRoundTripErrors, [],
     'OCCT-Projekt-Roundtrip löste Browserfehler aus: ' + occtRoundTripErrors.join(' ; '));
+
+  // Wiederholtes Speichern/Öffnen: fünf weitere Reloads desselben echten OCCT-Cut-Projekts.
+  // Jeder Durchlauf muss neue Handles erzeugen, das korrekte Volumen behalten und alte Handles freigeben.
+  const repeatedRoundTrips = [];
+  for (let cycle = 0; cycle < 5; cycle++) {
+    const previous = await occtRoundTripPage.evaluate(() => ({
+      generation: window.__silmoOcctProjectRestoreGeneration || 0,
+      shapeId: window.__silmoOcctProjectRestoreSummary?.at(-1)?.shapeId ?? null
+    }));
+    assert.ok(Number.isInteger(previous.shapeId), 'Vorheriger OCCT-Handle fehlt vor Roundtrip ' + cycle);
+    await occtRoundTripPage.locator('#projectFileInput').setInputFiles({
+      name: 'occt-roundtrip-repeat-' + cycle + '.silmo.json',
+      mimeType: 'application/json',
+      buffer: readFileSync(occtProjectPath)
+    });
+    await occtRoundTripPage.waitForFunction(() =>
+      /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 10000 });
+    await occtRoundTripPage.waitForFunction(generation =>
+      Number.isInteger(window.__silmoOcctProjectRestoreGeneration) &&
+      window.__silmoOcctProjectRestoreGeneration > generation,
+      previous.generation, { timeout: 10000 });
+    await occtRoundTripPage.evaluate(async () => {
+      if (window.__silmoOcctProjectRestorePromise) await window.__silmoOcctProjectRestorePromise;
+    });
+    const current = await occtRoundTripPage.evaluate(async () => {
+      const restored = window.__silmoOcctProjectRestoreSummary?.at(-1);
+      return {
+        objectCount: document.querySelectorAll('#objects .object-row').length,
+        kernel: restored?.geometryKernel,
+        shapeId: restored?.shapeId ?? null,
+        volumeMM3: restored?.shapeId ? await window.__silmoOcctClient.getVolume(restored.shapeId) : null
+      };
+    });
+    assert.equal(current.objectCount, occtSavedProject.objects.length,
+      'Objektanzahl nach wiederholtem OCCT-Roundtrip ' + cycle + ' stimmt nicht');
+    assert.equal(current.kernel, 'occt-wasm',
+      'OCCT-Roundtrip ' + cycle + ' wurde nicht als echter B-Rep rekonstruiert');
+    assert.ok(Number.isInteger(current.shapeId) && current.shapeId !== previous.shapeId &&
+      Math.abs(current.volumeMM3 - 4000) < 1e-7,
+    'OCCT-Roundtrip ' + cycle + ' besitzt keinen neuen Handle mit 4000 mm³');
+    const oldHandleReleased = await occtRoundTripPage.evaluate(async shapeId => {
+      try { await window.__silmoOcctClient.getVolume(shapeId); return false; }
+      catch { return true; }
+    }, previous.shapeId);
+    assert.equal(oldHandleReleased, true,
+      'Alter OCCT-Handle blieb nach Roundtrip ' + cycle + ' aktiv');
+    repeatedRoundTrips.push({ cycle, shapeId: current.shapeId, volumeMM3: current.volumeMM3 });
+  }
+  assert.deepEqual(occtRoundTripErrors, [],
+    'Wiederholte OCCT-Roundtrips lösten Browserfehler aus: ' + occtRoundTripErrors.join(' ; '));
+  console.log('OCCT-Roundtrip-Stresstest bestanden: ' + repeatedRoundTrips.length + ' zusätzliche Ladezyklen.');
+
   await occtRoundTripPage.close();
 
   // Parallel-Roundtrip: acht identische OCCT-Cut-Konstruktionsrezepte in einem neuen Dokument.
