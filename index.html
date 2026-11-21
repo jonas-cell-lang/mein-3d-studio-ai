@@ -1082,6 +1082,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     return nearest;
   }
   window.__silmoOcctFindEdgeAtScreenPoint = findOcctEdgeAtScreenPoint;
+  window.__silmoOcctEdgePickReady = () => ({
+    enabled: occtEdgePickMode,
+    overlayExists: Boolean(window.__silmoOcctEdgeOverlay),
+    sourceMatchesSelected: Boolean(window.__silmoOcctEdgeOverlay?.sourceMesh === selected),
+    canvas: (() => { const r = canvas.getBoundingClientRect(); return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}; })()
+  });
 
   function syncOcctEdgeSelectionFromList() {
     const overlay = window.__silmoOcctEdgeOverlay;
