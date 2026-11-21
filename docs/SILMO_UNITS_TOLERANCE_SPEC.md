@@ -294,3 +294,10 @@ Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPS
 - `src/image-studio.js` verwendet die zentrale Konstante; `tests/tolerances.test.cjs` sichert den unveränderten Zahlenwert und den Laufzeit-Verwendungs-Audit.
 - Die bisherige Konturvereinfachung bleibt numerisch unverändert. Weitere Pixel-/Farb-Schwellen werden nicht pauschal in die CAD-Toleranz-API aufgenommen.
 - Die Änderung wurde auf Commit 13f354fd9a27a3d3f631f50814d95c33d34be361 durch 124/124 Unit-Tests, den Laufzeit-Verwendungs-Audit und den vollständigen Browser-Interaktionstest validiert; der isolierte OCCT-WebWorker-Test war ebenfalls erfolgreich.
+
+
+### 3.15 Image-Studio: Mindestgrösse erkannter Komponenten (21.11.2026)
+- Die Bildsegmentierung verwirft Komponenten unterhalb von `IMAGE_MIN_COMPONENT_PIXEL_COUNT = 4` Pixeln. Zusätzlich gilt weiterhin die bildgrössenabhängige relative Mindestfläche `IMAGE_MIN_COMPONENT_AREA_FRACTION = 0.000025`.
+- Die beiden Grenzen sind bewusst getrennt: eine absolute Mindestanzahl von Bildpixeln und ein Anteil an der gesamten Bildfläche. Beide wirken ausschliesslich vor der Abbildung in CAD-Millimeter.
+- Der bisherige Mindestwert von vier Pixeln und das bestehende Verhalten bleiben unverändert. Der Wert wird zentral benannt und durch `tests/tolerances.test.cjs` sowie den Laufzeit-Verwendungs-Audit geprüft.
+- Farb-/Kontrastschwellen der Segmentierungsheuristik bleiben algorithmische Bildklassifikationsparameter und werden nicht als CAD-Toleranzen umgedeutet.
