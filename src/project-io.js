@@ -40,6 +40,7 @@
             sketch: obj.userData.sketch || null,
             contourFrame: obj.userData.contourFrame || null,
             loft: obj.userData.loft || null,
+            occtSource: obj.userData.occtSource ? JSON.parse(JSON.stringify(obj.userData.occtSource)) : null,
             geometry: projectGeometry.serializeGeometry(obj.geometry)
           }))
         };
@@ -135,7 +136,8 @@
                   sourceA: item.loft.sourceA, sourceB: item.loft.sourceB, sections: item.loft.sections,
                   innerContourCount: item.loft.innerContourCount,
                   sourceHoles: item.loft.sourceHoles.map(pair => ({ a: pair.a, b: pair.b }))
-                } : null
+                } : null,
+                occtSource: item.occtSource ? JSON.parse(JSON.stringify(item.occtSource)) : null
               };
               if (Array.isArray(item.unionParts)) {
                 if (item.unionParts.length < 2 || item.unionParts.length > 100) throw new Error('Ungültige Anzahl ursprünglicher Formteile.');
