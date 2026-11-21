@@ -755,3 +755,8 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die bisherige Untergrenze `0.01` für den Eckenradius abgerundeter Rechteckprofile ist als `SKETCH_PROFILE_MIN_CORNER_RADIUS_WORLD_UNITS` zentral benannt.
 - Der Wert und das bisherige Verhalten bleiben unverändert. Ein gezielter Geometrietest prüft den tatsächlich erzeugten Profilstartpunkt bei einem Radius-Eingabewert von `0`.
 - Die zentrale Toleranzwertprüfung und der Laufzeit-Verwendungs-Audit sichern die Konstante. CI für diesen Schritt steht noch aus.
+
+### 6.71 Skizzen-Polylinien: Vereinfachungsabstand benannt (21.11.2026)
+- Der bisherige Standardabstand von `0.5 mm` bei der Vereinfachung gezeichneter Skizzen-Polylinien ist als `SKETCH_POLYLINE_SIMPLIFICATION_TOLERANCE_MM` zentral benannt.
+- Funktionsstandard, Produktionsaufruf und Browser-Testzugang teilen die Konstante. Die vorhandene Mindestschwelle von `0.01 mm` bleibt separat; Werte und Geometrieverhalten ändern sich nicht.
+- Der zentrale Zahlenwerttest und Laufzeit-Verwendungs-Audit wurden erweitert. CI für diesen Schritt steht noch aus.
