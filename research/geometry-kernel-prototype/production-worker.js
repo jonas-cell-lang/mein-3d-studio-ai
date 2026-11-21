@@ -320,6 +320,36 @@ async function execute(method, args) {
     return { released: true };
   }
 
+  if (method === "inspectShape") {
+    const shape = shapes.get(args.shapeId);
+    if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
+    const volumeMM3 = kernel.getVolume(shape);
+    const mesh = serializeMesh(kernel.tessellate(shape));
+    const positions = mesh.positions;
+    if (positions.length < 9 || positions.length % 3 !== 0 ||
+        !Array.from(positions).every(Number.isFinite)) {
+      throw new Error("OCCT-Körper besitzt keine gültigen 3D-Darstellungskoordinaten.");
+    }
+    const min = [Infinity, Infinity, Infinity];
+    const max = [-Infinity, -Infinity, -Infinity];
+    for (let i = 0; i < positions.length; i += 3) {
+      for (let axis = 0; axis < 3; axis++) {
+        const value = positions[i + axis];
+        if (value < min[axis]) min[axis] = value;
+        if (value > max[axis]) max[axis] = value;
+      }
+    }
+    const size = max.map((value, axis) => value - min[axis]);
+    const center = max.map((value, axis) => (value + min[axis]) / 2);
+    if (!Number.isFinite(volumeMM3) || volumeMM3 <= 0 ||
+        ![...min, ...max, ...size, ...center].every(Number.isFinite)) {
+      throw new Error("OCCT-Körperprüfung lieferte ungültige Messwerte.");
+    }
+    return { shapeId: args.shapeId, shapeType: "solid", volumeMM3,
+      mesh: { vertexCount: positions.length / 3, triangleCount: mesh.triangleCount, indexCount: mesh.indices.length },
+      boundingBoxMM: { min, max, size, center } };
+  }
+
   if (method === "getVolume") {
     const shape = shapes.get(args.shapeId);
     if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
