@@ -701,3 +701,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Unit-Tests prüfen die drei Werte und beziehen `project-schema.js` in den Laufzeit-Verwendungs-Audit ein. Die Tests für gültige und ungültige gespeicherte Konturen bleiben bestehen.
 - Auf Commit 15a3523a0cacb42f8715b4080e039c455eaf340b bestanden 124/124 Unit-Tests, die History-Benchmark, Inline-JavaScript-Syntaxprüfung, Manifest-/HTML-ID-Prüfung und der lokale Pages-Pakettest. Browser-Interaktion und OCCT-WebWorker waren beim Dokumentationszeitpunkt noch in Bearbeitung.
 - Dies ist ein gezielter weiterer Schritt des Toleranz-Audits; das vollständige Inventar und die fachliche Prüfung aller verbleibenden Schwellen sind weiterhin offen.
+
+
+### 6.63 Image-Studio: Bildkontur-Vereinfachung benannt (21.11.2026)
+- Die Konturvereinfachung des Image-Studios verwendet jetzt `IMAGE_CONTOUR_SIMPLIFICATION_TOLERANCE_PIXELS = 1.1` statt eines nicht benannten Zahlenliterals.
+- Die Schwelle wirkt ausschliesslich im Bildpixelraum vor der Abbildung auf reale CAD-Millimeter. Sie darf nicht als Modelliertoleranz oder Kernel-Epsilon interpretiert werden.
+- Der bisherige Wert und das Konturverhalten bleiben unverändert; die zentrale Toleranzwertprüfung und der Laufzeit-Verwendungs-Audit sichern die Zuordnung.
+- Die Änderung ist ein gezielter weiterer Schritt des offenen Toleranz-Audits. Andere Pixel-, Farb- und Bildklassifikationsparameter werden erst nach separater fachlicher Einordnung migriert.
+- Code-, Browser- und OCCT-CI für den neuen Commit stehen noch aus.
