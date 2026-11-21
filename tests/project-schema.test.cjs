@@ -25,6 +25,7 @@ test('Projektformat v3 wird akzeptiert und nicht verändert', () => {
   const project = validProject();
   assert.equal(schema.CURRENT_PROJECT_VERSION, 3);
   assert.deepEqual(schema.SUPPORTED_PROJECT_VERSIONS, [3]);
+  project.objects.push({ occtSource: { kind: 'cone', radiusMM: 10, heightMM: 30 } });
   assert.equal(schema.validateProjectEnvelope(project), project);
   assert.deepEqual(project, validProject());
 });
@@ -241,6 +242,10 @@ test('OCCT-Konstruktionsrezepte für Quader, Skizzen und Boolesche Körper werde
   const invalidBox = structuredClone(project);
   invalidBox.objects[0].occtSource.widthMM = Infinity;
   assert.throws(() => schema.validateProjectEnvelope(invalidBox), /OCCT-Quaderabmessungen/);
+
+  const invalidCone = structuredClone(project);
+  invalidCone.objects[invalidCone.objects.length - 1].occtSource.heightMM = 0;
+  assert.throws(() => schema.validateProjectEnvelope(invalidCone), /OCCT-Kegelabmessungen/);
 
   const invalidSphere = structuredClone(project);
   invalidSphere.objects[2].occtSource.radiusMM = 0;
