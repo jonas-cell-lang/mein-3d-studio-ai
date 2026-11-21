@@ -233,6 +233,13 @@
     if (!source || typeof source !== 'object' || Array.isArray(source) || depth > 4) {
       throw new Error('Ungültige OCCT-Konstruktionsdaten.');
     }
+    if (source.kind === 'cylinder') {
+      if (![source.radiusMM, source.heightMM].every(value =>
+        Number.isFinite(value) && value >= 0.01 && value <= 2000)) {
+        throw new Error('Ungültige OCCT-Zylinderabmessungen.');
+      }
+      return;
+    }
     if (source.kind === 'box') {
       if (![source.widthMM, source.depthMM, source.heightMM].every(value =>
         Number.isFinite(value) && value > 0 && value <= 200000)) {
