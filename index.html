@@ -410,6 +410,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   <aside class="left-panel" aria-label="Werkzeuge und Objektliste">
     <h2>Objekte</h2>
     <button class="wide" id="addCube">＋ Würfel</button>
+  <button class="wide" id="addOcctBox" title="Erzeugt einen exakten OCCT-B-Rep-Körper im Hintergrundkern">＋ OCCT-B-Rep-Quader</button>
     <button class="wide" id="addSphere">＋ Kugel</button>
     <button class="wide" id="addCylinder">＋ Zylinder</button>
      <button class="wide" id="addCone">＋ Kegel</button>
@@ -511,6 +512,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 <script src="./src/tolerances.js"></script>
 <script src="./src/sketch-geometry.js"></script>
 <script src="./src/csg.js"></script>
+<script src="./src/occt-kernel-client.js"></script>
 <script src="./src/project-schema.js"></script>
 <script src="./src/project-geometry.js"></script>
 <script src="./src/project-io.js"></script>
@@ -759,6 +761,55 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     status.textContent = 'Objekt erstellt';
   }
 
+
+  async function createOcctBox() {
+    const button = $('addOcctBox');
+    if (button.disabled) return;
+    button.disabled = true;
+    status.textContent = 'OCCT-Kern wird im Hintergrund geladen …';
+    try {
+      if (!window.__silmoOcctClient) {
+        window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+      }
+      const result = await window.__silmoOcctClient.createBox(20, 20, 20);
+      if (!result || !Number.isFinite(result.volumeMM3) || !result.mesh?.positions?.length || !result.mesh?.indices?.length) {
+        throw new Error('OCCT lieferte keinen vollständigen Körper und kein Darstellungsnetz.');
+      }
+      const positions = new Float32Array(result.mesh.positions.length);
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      for (let i = 0; i < positions.length; i++) positions[i] = result.mesh.positions[i] * mmToWorld;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      const size = new THREE.Vector3();
+      geometry.boundingBox.getSize(size);
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
+        color: '#50b8c9', roughness: 0.42, metalness: 0.12
+      }));
+      mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
+      mesh.userData.percent = { x: 100, y: 100, z: 100 };
+      mesh.userData.label = 'OCCT-B-Rep-Quader';
+      mesh.userData.geometryKernel = 'occt-wasm';
+      recordHistory();
+      scene.add(mesh);
+      objects.push(mesh);
+      selectObject(mesh);
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      window.__silmoOcctLastCreated = {
+        shapeId: result.shapeId, volumeMM3: result.volumeMM3,
+        triangleCount: result.mesh.triangleCount, dimensionsMM: [20, 20, 20]
+      };
+      status.textContent = 'OCCT-B-Rep-Quader erstellt: 20 × 20 × 20 mm; Volumen ' + result.volumeMM3.toFixed(2) + ' mm³.';
+    } catch (error) {
+      status.textContent = 'OCCT-Kern konnte keinen Körper erstellen: ' + (error.message || 'Unbekannter Fehler');
+    } finally {
+      button.disabled = false;
+    }
+  }
 
   // Tastenkürzel, Auswahl mehrerer Objekte und einfacher Änderungsverlauf
   let selectedObjects = [];
@@ -1714,6 +1765,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   });
 
   $('addCube').onclick = () => createObject('Würfel');
+  $('addOcctBox').onclick = createOcctBox;
   $('addSphere').onclick = () => createObject('Kugel');
   $('addCylinder').onclick = () => createObject('Zylinder');
   $('addCone').onclick = () => createObject('Kegel');
