@@ -453,6 +453,102 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   'Mindestens ein parallel rekonstruierter OCCT-Cut-Körper besitzt nicht 4000 mm³');
   assert.deepEqual(occtParallelErrors, [],
     'Paralleler OCCT-Projektimport löste Browserfehler aus: ' + occtParallelErrors.join(' ; '));
+
+  // Projektwechsel-Stresstest im selben Browserkontext:
+  // Acht aktive B-Reps durch ein einzelnes Projekt ersetzen und danach erneut acht laden.
+  const previousProjectGeneration = await occtParallelPage.evaluate(() =>
+    window.__silmoOcctProjectRestoreGeneration || 0);
+  const singleOcctProject = {
+    ...occtParallelProject,
+    objects: [{
+      ...structuredClone(stressSourceObject),
+      objectId: 'occt-project-switch-single',
+      label: 'OCCT-Projektwechsel-Einzelkörper'
+    }]
+  };
+  await occtParallelPage.locator('#projectFileInput').setInputFiles({
+    name: 'occt-project-switch-single.silmo.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(singleOcctProject))
+  });
+  await occtParallelPage.waitForFunction(() =>
+    /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 10000 });
+  await occtParallelPage.waitForFunction(previous =>
+    Number.isInteger(window.__silmoOcctProjectRestoreGeneration) &&
+    window.__silmoOcctProjectRestoreGeneration > previous,
+    previousProjectGeneration, { timeout: 10000 });
+  await occtParallelPage.evaluate(async () => {
+    if (window.__silmoOcctProjectRestorePromise) await window.__silmoOcctProjectRestorePromise;
+  });
+  const switchedSingle = await occtParallelPage.evaluate(async () => {
+    const restored = window.__silmoOcctProjectRestoreSummary || [];
+    return {
+      objectCount: document.querySelectorAll('#objects .object-row').length,
+      restoredCount: restored.length,
+      volume: restored[0]?.shapeId
+        ? await window.__silmoOcctClient.getVolume(restored[0].shapeId)
+        : null,
+      shapeId: restored[0]?.shapeId ?? null
+    };
+  });
+  assert.equal(switchedSingle.objectCount, 1,
+    'Projektwechsel hat die acht vorherigen Körper nicht durch den Einzelkörper ersetzt');
+  assert.equal(switchedSingle.restoredCount, 1,
+    'Einzelkörper wurde nach dem Projektwechsel nicht als OCCT-Körper rekonstruiert');
+  assert.ok(Number.isInteger(switchedSingle.shapeId) &&
+    Math.abs(switchedSingle.volume - 4000) < 1e-7,
+  'Einzelkörper besitzt nach dem Projektwechsel keinen gültigen OCCT-B-Rep-Handle');
+  const oldProjectHandlesReleased = await occtParallelPage.evaluate(async ids => {
+    const results = await Promise.all(ids.map(async shapeId => {
+      try { await window.__silmoOcctClient.getVolume(shapeId); return false; }
+      catch { return true; }
+    }));
+    return results;
+  }, parallelOcctRestore.shapeIds);
+  assert.ok(oldProjectHandlesReleased.every(Boolean),
+    'Beim Projektwechsel blieben OCCT-Handles des vorherigen Projekts aktiv');
+
+  const singleProjectGeneration = await occtParallelPage.evaluate(() =>
+    window.__silmoOcctProjectRestoreGeneration || 0);
+  await occtParallelPage.locator('#projectFileInput').setInputFiles({
+    name: 'occt-project-switch-eight.silmo.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(occtParallelProject))
+  });
+  await occtParallelPage.waitForFunction(() =>
+    /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 10000 });
+  await occtParallelPage.waitForFunction(previous =>
+    Number.isInteger(window.__silmoOcctProjectRestoreGeneration) &&
+    window.__silmoOcctProjectRestoreGeneration > previous,
+    singleProjectGeneration, { timeout: 10000 });
+  await occtParallelPage.evaluate(async () => {
+    if (window.__silmoOcctProjectRestorePromise) await window.__silmoOcctProjectRestorePromise;
+  });
+  const switchedBack = await occtParallelPage.evaluate(async () => {
+    const restored = window.__silmoOcctProjectRestoreSummary || [];
+    const volumes = await Promise.all(restored.map(item =>
+      item.shapeId ? window.__silmoOcctClient.getVolume(item.shapeId) : Promise.resolve(null)
+    ));
+    return {
+      objectCount: document.querySelectorAll('#objects .object-row').length,
+      restoredCount: restored.length,
+      shapeIds: restored.map(item => item.shapeId),
+      volumes
+    };
+  });
+  assert.equal(switchedBack.objectCount, 8,
+    'Erneutes Laden des Acht-Körper-Projekts hat nicht alle Objekte wiederhergestellt');
+  assert.equal(switchedBack.restoredCount, 8,
+    'Erneutes Laden hat nicht alle acht OCCT-Konstruktionsrezepte rekonstruiert');
+  assert.ok(switchedBack.shapeIds.every(Number.isInteger) &&
+    new Set(switchedBack.shapeIds).size === 8 &&
+    !switchedBack.shapeIds.includes(switchedSingle.shapeId),
+  'Erneuter Projektimport hat keine neuen, eindeutigen OCCT-Handles erzeugt');
+  assert.ok(switchedBack.volumes.every(volume =>
+    Number.isFinite(volume) && Math.abs(volume - 4000) < 1e-7),
+  'Mindestens ein Körper hat nach wiederholtem Projektwechsel sein B-Rep-Volumen verloren');
+  assert.deepEqual(occtParallelErrors, [],
+    'Wiederholter OCCT-Projektwechsel löste Browserfehler aus: ' + occtParallelErrors.join(' ; '));
   await occtParallelPage.close();
 
   // OCCT-Lifecycle-Stresstest in einem isolierten Worker:
