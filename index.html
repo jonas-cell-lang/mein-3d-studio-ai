@@ -945,7 +945,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const result = await window.__silmoOcctClient.inspectShape(shapeId);
       const size = result.boundingBoxMM.size.map(value => value.toFixed(2));
       window.__silmoOcctLastInspection = result;
-      status.textContent = 'OCCT-Prüfung: Volumen ' + result.volumeMM3.toFixed(2) + ' mm³; Abmessungen ' + size.join(' × ') + ' mm; ' + result.mesh.triangleCount + ' Dreiecke.';
+      const topology = result.topology;
+      status.textContent = 'OCCT-Analyse: Volumen ' + result.volumeMM3.toFixed(2) + ' mm³; Oberfläche ' + result.surfaceAreaMM2.toFixed(2) + ' mm²; Abmessungen ' + size.join(' × ') + ' mm; ' + topology.face + ' Flächen, ' + topology.edge + ' Kanten, ' + topology.vertex + ' Eckpunkte; ' + result.mesh.triangleCount + ' Dreiecke.';
     } catch (error) {
       status.textContent = 'OCCT-Körperprüfung fehlgeschlagen: ' + (error.message || 'Unbekannter Fehler');
     } finally {
