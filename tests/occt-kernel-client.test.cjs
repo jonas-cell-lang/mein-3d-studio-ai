@@ -132,3 +132,56 @@ test("OCCT client validates and forwards fuse, cut and common operations", async
     /gültige XYZ-Verschiebungen/);
   await client.dispose();
 });
+
+
+test("OCCT client discards a crashed worker and can initialize a replacement", async () => {
+  const workers = [];
+  class CrashOnceWorker extends FakeWorker {
+    constructor(url, options) {
+      super(url, options);
+      this.crashOnBox = workers.length === 0;
+      workers.push(this);
+    }
+    postMessage(message) {
+      if (this.crashOnBox && message.method === "createBox") {
+        this.messages.push(message);
+        return;
+      }
+      super.postMessage(message);
+    }
+  }
+  const client = createClient({ WorkerClass: CrashOnceWorker });
+  const firstRequest = client.createBox(10, 10, 10);
+  await new Promise(resolve => setImmediate(resolve));
+  const firstWorker = workers[0];
+  assert.ok(firstWorker);
+  firstWorker.onerror({ message: "simulierter Worker-Absturz", preventDefault() {} });
+  await assert.rejects(firstRequest, /simulierter Worker-Absturz/);
+  assert.equal(firstWorker.terminated, true);
+  const recovered = await client.createBox(20, 20, 20);
+  assert.equal(recovered.volumeMM3, 8000);
+  assert.equal(workers.length, 2, "Nach dem Absturz wurde kein neuer Worker gestartet");
+  assert.equal(workers[1].messages.filter(message => message.method === "initialize").length, 1);
+  await client.dispose();
+});
+
+test("OCCT client treats unreadable worker messages as a worker failure", async () => {
+  const workers = [];
+  class MessageErrorWorker extends FakeWorker {
+    constructor(url, options) { super(url, options); workers.push(this); }
+    postMessage(message) {
+      if (message.method === "createBox") {
+        this.messages.push(message);
+        return;
+      }
+      super.postMessage(message);
+    }
+  }
+  const client = createClient({ WorkerClass: MessageErrorWorker });
+  const request = client.createBox(10, 10, 10);
+  await new Promise(resolve => setImmediate(resolve));
+  workers[0].onmessageerror({ preventDefault() {} });
+  await assert.rejects(request, /unlesbare Nachricht/);
+  assert.equal(workers[0].terminated, true);
+  await client.dispose();
+});
