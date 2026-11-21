@@ -977,16 +977,16 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     $('occtTopologySummary').textContent = 'Native Flächen und Kanten werden eingelesen …';
     try {
       const result = await window.__silmoOcctClient.listSubShapes(shapeId);
-      if (!Array.isArray(result.edges) || !Array.isArray(result.faces)) throw new Error('OCCT lieferte keine gültige Topologie.');
-      result.edges.forEach(edge => {
+      if (!Array.isArray(result.edge) || !Array.isArray(result.face)) throw new Error('OCCT lieferte keine gültige Topologie.');
+      result.edge.forEach(edge => {
         const option = document.createElement('option');
         option.value = String(edge.index);
-        option.textContent = 'Kante ' + (edge.index + 1) + ' · ' + edge.curveType + ' · ' + Number(edge.lengthMM).toFixed(2) + ' mm';
+        option.textContent = 'Kante ' + (edge.index + 1) + ' · ' + edge.geometryType + ' · ' + Number(edge.lengthMM).toFixed(2) + ' mm';
         list.appendChild(option);
       });
-      list.disabled = result.edges.length === 0;
-      apply.disabled = result.edges.length === 0;
-      $('occtTopologySummary').textContent = result.faces.length + ' echte B-Rep-Flächen und ' + result.edges.length + ' echte B-Rep-Kanten geladen.';
+      list.disabled = result.edge.length === 0;
+      apply.disabled = result.edge.length === 0;
+      $('occtTopologySummary').textContent = result.face.length + ' echte B-Rep-Flächen und ' + result.edge.length + ' echte B-Rep-Kanten geladen.';
       window.__silmoOcctLastSubShapes = result;
       status.textContent = 'OCCT-Topologie geladen. Wähle eine oder mehrere Kanten aus der Liste.';
     } catch (error) {
