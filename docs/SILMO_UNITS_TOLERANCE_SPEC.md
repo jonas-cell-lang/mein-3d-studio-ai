@@ -321,3 +321,9 @@ Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPS
 - `PATH_LENGTH_MIN_CURRENT_MM = 0.001` mm ist die Mindestlänge des bestehenden Pfads in Millimetern, bevor eine neue Ziellänge durch Skalierung angewendet wird.
 - `SKETCH_EXTRUSION_SCALE_DENOMINATOR_MIN = 1e-12` ist eine dimensionslose Untergrenze für den Nenner bei der Rückrechnung einer gespeicherten Extrusionshöhe über den absoluten Z-Skalierungsfaktor.
 - Beide Werte sind unterschiedliche Schutzregeln: eine fachliche Pfadlängengrenze in mm und ein numerischer Divisor-Schutz für einen dimensionslosen Skalierungsfaktor. Die bisherigen Werte und das Verhalten bleiben unverändert.
+
+
+### 3.19 Hohlrahmen: Mindestabmessung des erzeugten Ergebnisses (21.11.2026)
+- `CONTOUR_FRAME_MIN_RESULT_DIMENSION_WORLD_UNITS = 1e-9` ist die Standard-Untergrenze für jede erzeugte Hohlrahmen-Abmessung (X, Y und Z).
+- Der Erzeuger kann weiterhin eine explizite `minimumDimension` übergeben; die Hauptanwendung verwendet dafür bewusst die strengere CSG-Geometriegrenze. Der benannte Wert gilt für direkte API-Aufrufe ohne Override.
+- Der bisherige Standardwert bleibt unverändert. Tests prüfen die Standardablehnung unterhalb der Grenze sowie einen erfolgreichen expliziten kleineren Override.
