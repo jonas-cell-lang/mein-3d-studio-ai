@@ -74,6 +74,15 @@
         await initialize();
         return send("createBox", { widthMM, depthMM, heightMM });
       },
+      async createExtrusion(loops, heightMM) {
+        await initialize();
+        return send("createExtrusion", { loops, heightMM });
+      },
+      async releaseShape(shapeId) {
+        await initialize();
+        const result = await send("releaseShape", { shapeId });
+        return result.released === true;
+      },
       async getVolume(shapeId) {
         await initialize();
         const result = await send("getVolume", { shapeId });
