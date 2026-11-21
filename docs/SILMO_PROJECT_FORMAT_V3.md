@@ -67,10 +67,12 @@ Version 3 kann bei Modellobjekten optional ein Feld `occtSource` enthalten. Es b
 Unterstützte Rezeptfamilien:
 - Quader mit Abmessungen in Millimetern;
 - unterstützte Skizzenextrusionen mit Aussen- und Innenkonturen sowie Extrusionshöhe;
-- Boolesche Ergebnisse mit Operation, zwei Ausgangsrezepten und zwei Verschiebungsvektoren in Millimetern.
+- Boolesche Ergebnisse mit Operation, zwei Ausgangsrezepten und zwei vollständigen 3×4-Affinmatrizen in Millimetern.
 
-Die Schema-Prüfung validiert Rezepttyp, Abmessungen, Konturen, Boolean-Operation, Operandenzahl, Verschiebungswerte und Rekursionstiefe vor dem Aufbau der Szene. Bestehende v3-Dateien ohne `occtSource` bleiben gültig. Die Versionsnummer bleibt 3, weil das Feld optional und rückwärtskompatibel ist.
+Neue Boolean-Rezepte speichern `transformsMM` als zwei zeilenweise angeordnete 3×4-Matrizen. Damit werden Rotation, Skalierung und Verschiebung gemeinsam und reproduzierbar auf die echten OCCT-B-Rep-Operandenkörper angewendet. Das bisherige Feld `translationsMM` bleibt enthalten und wird für ältere v3-Dateien ohne `transformsMM` weiterhin unterstützt.
+
+Die Schema-Prüfung validiert Rezepttyp, Abmessungen, Konturen, Boolean-Operation, Operandenzahl, Matrixwerte, nicht entartete Transformationen und Rekursionstiefe vor dem Aufbau der Szene. Bestehende v3-Dateien ohne `occtSource` sowie ältere Boolean-Rezepte nur mit `translationsMM` bleiben gültig. Die Versionsnummer bleibt 3, weil die neuen Felder optional und rückwärtskompatibel sind.
 
 Beim Öffnen baut SILMO die unterstützten OCCT-Formen im Worker aus den Rezepten neu auf. Die gespeicherte triangulierte Geometrie dient weiterhin der Darstellung. Die Projektdatei enthält keine rohe OCCT-B-Rep-Datei.
 
-**Grenzen:** Nicht alle Geometrietypen besitzen bereits ein OCCT-Rezept. Verschachtelte Boolean-Ketten, beliebige Transformationskombinationen und die vollständige Migration aller Werkzeuge sind noch nicht abgedeckt. Für nicht unterstützte Fälle bleibt der bisherige Mesh-/BSP-Pfad relevant.
+**Grenzen:** Nicht alle Geometrietypen besitzen bereits ein OCCT-Rezept. Beliebige Meshes, mehrere Operanden in einer einzelnen UI-Operation und die vollständige Migration aller Werkzeuge sind noch nicht abgedeckt. Für nicht unterstützte Fälle bleibt der bisherige Mesh-/BSP-Pfad relevant.
