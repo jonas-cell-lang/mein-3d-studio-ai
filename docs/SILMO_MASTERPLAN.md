@@ -907,3 +907,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Konstruktionsquelle `kind: torus` wird schema-validiert und bei Undo/Redo sowie Projektwiederherstellung rekonstruiert.
 - Client-, Schema- und Browser-End-to-End-Tests prüfen Volumen, Worker-Körper, Undo und Redo.
 - PR #70 bleibt Draft/offen; kein Merge, Deployment oder Release ohne ausdrückliche Freigabe.
+
+### 6.90 OCCT-Körperprüfung: Volumen, Bounding Box und Tessellierungsdaten (21.11.2026)
+- Der produktive OCCT-Worker bietet `inspectShape(shapeId)` für bereits gehaltene native B-Rep-Körper.
+- Die Prüfung liefert das exakte OCCT-Volumen in mm³ sowie eine aus der OCCT-Tessellierung berechnete Bounding Box (Minimum, Maximum, Ausdehnung und Mittelpunkt in mm).
+- Zusätzlich werden Vertex-, Dreiecks- und Indexanzahl des Darstellungsnetzes gemeldet. Diese Mesh-Kennzahlen beschreiben die Visualisierung und sind keine native OCCT-Topologiezählung von Kanten oder Flächen.
+- Der SILMO-OCCT-Client stellt die Methode mit positiver Ganzzahl-Handlevalidierung bereit. Worker- und Client-Unit-Tests prüfen Rückgabeform, Weiterleitung und ungültige Handles.
+- Browser-End-to-End- und OCCT-Kernel-CI müssen den neuen Stand noch bestätigen. Die Funktion ist zunächst eine technische Prüf-API; eine sichtbare Eigenschaften-Seitenleiste und native Kanten-/Flächenabfragen sind separate Folgeschritte.
+- PR #70 bleibt offen und Draft; kein Merge, Deployment oder Veröffentlichung.
