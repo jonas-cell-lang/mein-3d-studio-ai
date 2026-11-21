@@ -4302,6 +4302,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
 
   canvas.addEventListener('pointerdown', e => {
+    if (occtEdgePickMode) window.__silmoOcctLastEdgePickEvent = {
+      received: true, sketchMode, clickContourMode, target: e.target?.tagName,
+      x: e.clientX, y: e.clientY, sourceMatchesSelected: window.__silmoOcctEdgeOverlay?.sourceMesh === selected
+    };
     if (sketchMode && clickContourMode) {
       if (e.cancelable) e.preventDefault();
       e.stopPropagation();
@@ -4367,6 +4371,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         // empfindlich. Ergänzend prüfen wir den tatsächlichen Bildschirmabstand
         // zur projizierten nativen Kanten-Polylinie (max. 14 CSS-Pixel).
         const screenHit = edgeHits.length ? null : findOcctEdgeAtScreenPoint(e.clientX, e.clientY);
+        window.__silmoOcctLastEdgePickEvent = {
+          ...(window.__silmoOcctLastEdgePickEvent || {}),
+          edgeBranch: true, rayHits: edgeHits.length, screenHit,
+          edgeIndex: edgeHits.length ? edgeHits[0].object.userData.occtEdgeIndex : screenHit?.edgeIndex
+        };
         const edgeIndex = edgeHits.length
           ? edgeHits[0].object.userData.occtEdgeIndex
           : screenHit?.edgeIndex;
