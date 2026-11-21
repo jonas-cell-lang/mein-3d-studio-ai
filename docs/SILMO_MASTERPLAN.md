@@ -719,3 +719,10 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Parallel dazu ergab die Node-Baseline auf demselben Commit für 100 Objekte mit je 9'999 Vertices und fünf Snapshots: 13,422 ms Snapshot-Median, 28,277 ms Undo, 19,022 ms Redo; ArrayBuffers stiegen von 24'018'423 auf 144'006'423 Byte und fielen nach dispose() und GC auf 20'823 Byte.
 - Code-Checks auf Commit 13f354fd9a27a3d3f631f50814d95c33d34be361: 124/124 Unit-Tests, History-Benchmark, Syntax-, Manifest-/HTML-ID- und lokaler Pages-Paketcheck erfolgreich. Browser-Interaktion (Run 44875238587) und isolierter OCCT-WebWorker (Run 44875238589) ebenfalls erfolgreich.
 - Beide Benchmarks sind synthetische Vergleichswerte. Sie beweisen weder die Leistung sämtlicher realer CAD-Szenen noch die Reaktionszeit des vollständigen UI-Workflows. Die nächste Messstufe bleibt ein reproduzierbarer Browser-Test mit tatsächlichen App-Bearbeitungsaktionen, realistischen Modellgrössen und einer belastbareren Speicher-/Frame-Zeit-Erfassung.
+
+
+### 6.65 Image-Studio: absolute Mindest-Pixelzahl benannt (21.11.2026)
+- Die Mindestgrösse einer erkannten Bildkomponente verwendet jetzt `IMAGE_MIN_COMPONENT_PIXEL_COUNT = 4` zusätzlich zum bereits zentralisierten relativen Flächenanteil `IMAGE_MIN_COMPONENT_AREA_FRACTION`.
+- Die bisherige Mindest-Pixelzahl und das Verhalten bleiben unverändert. Die beiden Werte beschreiben unterschiedliche Regeln im Bildpixelraum und werden nicht mit Modell-/Kernel-Toleranzen vermischt.
+- Der Test sichert den Zahlenwert und den Laufzeit-Verwendungs-Audit; die Farb-/Kontrastparameter der Segmentierungsheuristik bleiben separat und werden nur nach eigener fachlicher Prüfung klassifiziert.
+- Code-, Browser- und OCCT-CI für diesen Schritt stehen noch aus.
