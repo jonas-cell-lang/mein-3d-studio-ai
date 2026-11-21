@@ -422,7 +422,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     <p class="note">Wähle mindestens zwei Objekte in der Objektliste. Mit Strg-Klick kannst du mehrere auswählen. Das erste ausgewählte Objekt ist die Grundform.</p>
     <button class="wide" id="booleanUnion">＋ Formen verbinden</button>
     <button class="wide" id="booleanSubtract">− Löcher / Form abziehen</button>
-    <p class="note">Beim Abziehen bleibt die erste Form erhalten; alle weiteren ausgewählten Formen schneiden sie aus.</p>
+    <button class="wide" id="booleanIntersect">∩ Schnittmenge behalten (OCCT)</button>
+    <p class="note">Beim Abziehen bleibt die erste Form erhalten. Die Schnittmenge benötigt zwei unveränderte OCCT-B-Rep-Körper.</p>
     <button class="wide" id="importModel">⬆ STL importieren</button>
     <button class="wide" id="exportModel">⬇ STL exportieren</button>
     <button class="wide" id="saveProjectButton">💾 Projekt speichern</button>
@@ -685,7 +686,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
 
   async function runOcctBooleanOperation(operation, targets, shapeIds) {
-    const buttonIds = ['booleanUnion', 'booleanSubtract'];
+    const buttonIds = ['booleanUnion', 'booleanSubtract', 'booleanIntersect'];
     buttonIds.forEach(id => { const button = $(id); if (button) button.disabled = true; });
     status.textContent = 'OCCT berechnet die echte B-Rep-Boolean-Operation …';
     let result = null;
@@ -696,9 +697,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         worldUnitsToMm(obj.position.y),
         worldUnitsToMm(obj.position.z)
       ]);
-      result = await window.__silmoOcctClient.booleanOperation(
-        operation === 'union' ? 'fuse' : 'cut', shapeIds, translationsMM
-      );
+      const occtOperation = ({ union: 'fuse', subtract: 'cut', intersect: 'common' })[operation];
+      if (!occtOperation) throw new Error('Unbekannte OCCT-Boolean-Operation.');
+      result = await window.__silmoOcctClient.booleanOperation(occtOperation, shapeIds, translationsMM);
       if (!result || !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0 ||
           !result.mesh?.positions?.length || !result.mesh?.indices?.length ||
           result.mesh.positions.length % 3 !== 0 || result.mesh.indices.length % 3 !== 0) {
@@ -739,14 +740,14 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       mesh.scale.set(1, 1, 1);
       mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
       mesh.userData.percent = { x: 100, y: 100, z: 100 };
-      mesh.userData.label = operation === 'union' ? 'OCCT-Verbund' : 'OCCT-Ausschnitt';
+      mesh.userData.label = ({ union: 'OCCT-Verbund', subtract: 'OCCT-Ausschnitt', intersect: 'OCCT-Schnittmenge' })[operation];
       mesh.userData.geometryKernel = 'occt-wasm';
       mesh.userData.occtShapeId = result.shapeId;
       mesh.userData.occtVolumeMM3 = result.volumeMM3;
       if (sourceOperands.every(Boolean)) {
         mesh.userData.occtSource = {
           kind: 'boolean',
-          operation: operation === 'union' ? 'fuse' : 'cut',
+          operation: occtOperation,
           operands: sourceOperands,
           translationsMM: sourceTranslations
         };
@@ -758,7 +759,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       window.__silmoOcctObjectHandles ||= new WeakMap();
       window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
       window.__silmoOcctLastBoolean = {
-        operation: operation === 'union' ? 'fuse' : 'cut',
+        operation: occtOperation,
         shapeId: result.shapeId,
         volumeMM3: result.volumeMM3,
         triangleCount: result.mesh.triangleCount
@@ -766,8 +767,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       updateObjects();
       showProperties();
       updateMoveGizmo();
-      status.textContent = (operation === 'union' ? 'OCCT: Formen echt vereinigt.' : 'OCCT: Ausschnitt echt berechnet.') +
-        ' Volumen: ' + result.volumeMM3.toFixed(2) + ' mm³.';
+      const operationLabel = ({ union: 'Formen echt vereinigt', subtract: 'Ausschnitt echt berechnet', intersect: 'Schnittmenge echt berechnet' })[operation];
+      status.textContent = 'OCCT: ' + operationLabel + '. Volumen: ' + result.volumeMM3.toFixed(2) + ' mm³.';
     } catch (error) {
       if (geometry) geometry.dispose();
       if (result?.shapeId && window.__silmoOcctClient) {
@@ -791,7 +792,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       return;
     }
     if (targets.some(obj => !objects.includes(obj))) return;
-    if (targets.length === 2 && ['union', 'subtract'].includes(operation) &&
+    if (operation === 'intersect' && targets.length !== 2) {
+      status.textContent = 'Die OCCT-Schnittmenge benötigt genau zwei ausgewählte B-Rep-Körper.';
+      return;
+    }
+    if (targets.length === 2 && ['union', 'subtract', 'intersect'].includes(operation) &&
         window.__silmoOcctObjectHandles && window.__silmoOcctClient) {
       const shapeIds = targets.map(obj => window.__silmoOcctObjectHandles.get(obj));
       const identityTransform = targets.every(obj =>
@@ -804,6 +809,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         runOcctBooleanOperation(operation, targets, shapeIds);
         return;
       }
+    }
+    if (operation === 'intersect') {
+      status.textContent = 'Die Schnittmenge ist derzeit nur für zwei unveränderte OCCT-B-Rep-Körper verfügbar.';
+      return;
     }
     let tempBase = null;
     let resultMaterial = null;
@@ -2210,6 +2219,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 
   $('booleanUnion').addEventListener('click', () => runBooleanOperation('union'));
   $('booleanSubtract').addEventListener('click', () => runBooleanOperation('subtract'));
+  $('booleanIntersect').addEventListener('click', () => runBooleanOperation('intersect'));
   $('booleanSeparate').addEventListener('click', splitBooleanUnion);
 
   $('delete').onclick = deleteSelectedObjects;
