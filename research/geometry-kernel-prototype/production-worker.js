@@ -124,18 +124,33 @@ async function execute(method, args) {
   }
 
   if (method === "booleanOperation") {
-    const { operation, shapeIds, translationsMM } = args;
+    const { operation, shapeIds, transformsMM, translationsMM } = args;
     if (!["fuse", "cut", "common"].includes(operation) ||
         !Array.isArray(shapeIds) || shapeIds.length !== 2 ||
         shapeIds.some(id => !Number.isInteger(id) || id <= 0) ||
         shapeIds[0] === shapeIds[1]) {
       throw new Error("OCCT-Boolean benötigt zwei verschiedene Körper und eine gültige Operation.");
     }
-    const offsets = translationsMM ?? [[0, 0, 0], [0, 0, 0]];
-    if (!Array.isArray(offsets) || offsets.length !== 2 ||
-        offsets.some(offset => !Array.isArray(offset) || offset.length !== 3 ||
-          !offset.every(value => Number.isFinite(value) && Math.abs(value) <= 200000))) {
-      throw new Error("OCCT-Boolean-Transformationen müssen zwei gültige XYZ-Verschiebungen in mm enthalten.");
+    const suppliedTransforms = transformsMM ?? (translationsMM ?? [[0, 0, 0], [0, 0, 0]]).map(offset =>
+      Array.isArray(offset) && offset.length === 3
+        ? [1, 0, 0, offset[0], 0, 1, 0, offset[1], 0, 0, 1, offset[2]]
+        : null
+    );
+    const validMatrix = matrix => {
+      if (!Array.isArray(matrix) || matrix.length !== 12 ||
+          !matrix.every(Number.isFinite) ||
+          matrix.some((value, index) => (index % 4 === 3
+            ? Math.abs(value) > 200000
+            : Math.abs(value) > 1000))) return false;
+      const determinant =
+        matrix[0] * (matrix[5] * matrix[10] - matrix[6] * matrix[9]) -
+        matrix[1] * (matrix[4] * matrix[10] - matrix[6] * matrix[8]) +
+        matrix[2] * (matrix[4] * matrix[9] - matrix[5] * matrix[8]);
+      return Number.isFinite(determinant) && Math.abs(determinant) > 1e-12;
+    };
+    if (!Array.isArray(suppliedTransforms) || suppliedTransforms.length !== 2 ||
+        !suppliedTransforms.every(validMatrix)) {
+      throw new Error("OCCT benötigt zwei gültige, nicht entartete 3×4-Transformationen.");
     }
     const originals = shapeIds.map(id => shapes.get(id));
     if (originals.some(shape => !shape)) {
@@ -145,11 +160,14 @@ async function execute(method, args) {
     let resultShape = null;
     try {
       const operands = originals.map((shape, index) => {
-        const [x, y, z] = offsets[index];
-        if (x === 0 && y === 0 && z === 0) return shape;
-        const moved = kernel.translate(shape, x, y, z);
-        temporaryShapes.push(moved);
-        return moved;
+        const matrix = suppliedTransforms[index];
+        const identity = matrix.every((value, i) =>
+          Math.abs(value - ([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0][i])) < 1e-12
+        );
+        if (identity) return shape;
+        const transformed = kernel.transform(shape, matrix);
+        temporaryShapes.push(transformed);
+        return transformed;
       });
       resultShape = kernel[operation](operands[0], operands[1]);
       const volumeMM3 = kernel.getVolume(resultShape);
