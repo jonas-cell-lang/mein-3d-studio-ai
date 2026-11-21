@@ -79,6 +79,117 @@ assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.resto
 assert.equal(await page.evaluate(() => typeof window.SILMOProjectIO?.createProjectIO), 'function', 'Projektdatei-I/O-Modul ist nicht verfügbar');
 assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), 'function', 'BSP-CSG-Modul ist nicht verfügbar');
 
+  // Browser-History-Benchmark mit echten Three.js-BufferGeometries und dem SILMO-History-Modul.
+  // Synthetischer CAD-ähnlicher Lastfall: 50 Meshes, 999 Vertices, 45 Aufzeichnungen bei Limit 40.
+  // Zeiten und Browser-Heap sind informativ; es gibt keine maschinenabhängigen Pass/Fail-Grenzwerte.
+  const browserHistoryBenchmark = await page.evaluate(async () => {
+    const THREE = window.THREE;
+    const objectCount = 50;
+    const verticesPerObject = 999;
+    const recordAttempts = 45;
+    const limit = 40;
+    const makeObject = index => {
+      const positions = new Float32Array(verticesPerObject * 3);
+      const indices = new Uint32Array(verticesPerObject);
+      for (let i = 0; i < verticesPerObject; i++) {
+        const angle = i / verticesPerObject * Math.PI * 2;
+        positions[i * 3] = Math.cos(angle) * (1 + index * 0.001);
+        positions[i * 3 + 1] = Math.sin(angle) * (1 + index * 0.001);
+        positions[i * 3 + 2] = (i % 31) * 0.002;
+        indices[i] = i;
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+      geometry.computeVertexNormals();
+      return {
+        geometry,
+        material: new THREE.MeshStandardMaterial({ color: 0x4b91ed }),
+        position: new THREE.Vector3(index * 0.01, 0, 0),
+        rotation: new THREE.Euler(),
+        scale: new THREE.Vector3(1, 1, 1),
+        userData: { label: 'Browser-History-' + index }
+      };
+    };
+    const cloneState = state => state.map(object => ({
+      geometry: object.geometry.clone(),
+      material: object.material.clone(),
+      position: object.position.clone(),
+      rotation: object.rotation.clone(),
+      scale: object.scale.clone(),
+      userData: structuredClone(object.userData)
+    }));
+    const disposeState = state => state.forEach(object => {
+      object.geometry.dispose();
+      object.material.dispose();
+    });
+    const arrayBufferBytes = state => state.reduce((total, object) => {
+      const attributes = Object.values(object.geometry.attributes)
+        .reduce((sum, attribute) => sum + attribute.array.byteLength, 0);
+      return total + attributes + (object.geometry.index?.array.byteLength || 0);
+    }, 0);
+    const heapBytes = () => performance.memory?.usedJSHeapSize ?? null;
+    let objects = Array.from({ length: objectCount }, (_, index) => makeObject(index));
+    const initialArrayBufferBytes = arrayBufferBytes(objects);
+    const history = window.SILMOHistory.createHistory({
+      limit,
+      captureState: () => cloneState(objects),
+      restoreState: state => {
+        const restored = cloneState(state);
+        disposeState(objects);
+        objects = restored;
+      },
+      disposeState
+    });
+    const heapBefore = heapBytes();
+    const recordTimesMs = [];
+    for (let step = 0; step < recordAttempts; step++) {
+      const start = performance.now();
+      history.record();
+      recordTimesMs.push(performance.now() - start);
+      objects.forEach(object => {
+        object.position.x += 0.01;
+        object.geometry.attributes.position.array[0] += 0.01;
+      });
+    }
+    const heapAfterSnapshots = heapBytes();
+    const statsAtLimit = history.getStats();
+    const undoStart = performance.now();
+    const undoSucceeded = history.undo();
+    const undoMs = performance.now() - undoStart;
+    const redoStart = performance.now();
+    const redoSucceeded = history.redo();
+    const redoMs = performance.now() - redoStart;
+    history.dispose();
+    const statsAfterDispose = history.getStats();
+    disposeState(objects);
+    objects = [];
+    const sorted = recordTimesMs.slice().sort((a, b) => a - b);
+    return {
+      objectCount,
+      verticesPerObject,
+      recordAttempts,
+      configuredLimit: limit,
+      retainedSnapshots: statsAtLimit.undoCount,
+      initialArrayBufferBytes,
+      estimatedSnapshotArrayBufferBytesAtLimit: initialArrayBufferBytes * limit,
+      recordMedianMs: Number((sorted[Math.floor(sorted.length / 2)] || 0).toFixed(3)),
+      undoMs: Number(undoMs.toFixed(3)),
+      redoMs: Number(redoMs.toFixed(3)),
+      browserHeapBeforeBytes: heapBefore,
+      browserHeapAfterSnapshotsBytes: heapAfterSnapshots,
+      undoSucceeded,
+      redoSucceeded,
+      statsAfterDispose
+    };
+  });
+  assert.equal(browserHistoryBenchmark.retainedSnapshots, 40, 'Browser-History hält nicht das konfigurierte Limit von 40 Snapshots ein');
+  assert.equal(browserHistoryBenchmark.undoSucceeded, true, 'Browser-History-Benchmark konnte Undo nicht ausführen');
+  assert.equal(browserHistoryBenchmark.redoSucceeded, true, 'Browser-History-Benchmark konnte Redo nicht ausführen');
+  assert.equal(browserHistoryBenchmark.statsAfterDispose.undoCount, 0, 'Browser-History hat Undo-Snapshots nach Dispose nicht freigegeben');
+  assert.equal(browserHistoryBenchmark.statsAfterDispose.redoCount, 0, 'Browser-History hat Redo-Snapshots nach Dispose nicht freigegeben');
+  console.log('SILMO_BROWSER_HISTORY_BENCHMARK ' + JSON.stringify(browserHistoryBenchmark));
+
   // Reale Browser-Runtime: grosses Mesh im Projektformat serialisieren und wiederherstellen.
   // Die Laufzeit wird protokolliert, aber nicht mit maschinenabhängigen Grenzwerten bewertet.
   const browserGeometryRoundtrip = await page.evaluate(() => {
