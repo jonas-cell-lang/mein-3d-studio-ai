@@ -52,6 +52,12 @@ class FakeWorker {
           shapeId: 7, volumeMM3: 8000,
           mesh: { positions: new Float32Array([0, 0, 0]), indices: new Uint32Array([0]), triangleCount: 1 }
         } } });
+      } else if (message.method === "inspectShape") {
+        this.onmessage({ data: { id: message.id, ok: true, result: {
+          shapeId: message.args.shapeId, shapeType: "solid", volumeMM3: 8000,
+          mesh: { vertexCount: 8, triangleCount: 12, indexCount: 36 },
+          boundingBoxMM: { min: [0, 0, 0], max: [20, 20, 20], size: [20, 20, 20], center: [10, 10, 10] }
+        } } });
       } else if (message.method === "getVolume") {
         this.onmessage({ data: { id: message.id, ok: true, result: { volumeMM3: 8000 } } });
       } else if (message.method === "createExtrusion") {
@@ -158,6 +164,25 @@ test("OCCT client creates analytic cylinders and rejects unsafe dimensions", asy
   await client.dispose();
 });
 
+test("OCCT client inspects a solid and validates the requested body handle", async () => {
+  let worker;
+  const client = createClient({
+    WorkerClass: class extends FakeWorker { constructor(url, options) { super(url, options); worker = this; } }
+  });
+  const result = await client.inspectShape(7);
+  assert.equal(result.shapeId, 7);
+  assert.equal(result.shapeType, "solid");
+  assert.equal(result.volumeMM3, 8000);
+  assert.deepEqual(result.mesh, { vertexCount: 8, triangleCount: 12, indexCount: 36 });
+  assert.deepEqual(result.boundingBoxMM, {
+    min: [0, 0, 0], max: [20, 20, 20], size: [20, 20, 20], center: [10, 10, 10]
+  });
+  assert.deepEqual(worker.messages.map(message => message.method), ["initialize", "inspectShape"]);
+  assert.equal(worker.messages[1].args.shapeId, 7);
+  await assert.rejects(client.inspectShape(0), /gültige OCCT-Körperkennung/);
+  await assert.rejects(client.inspectShape(-1), /gültige OCCT-Körperkennung/);
+  await client.dispose();
+});
 test("OCCT client initializes lazily and sends CAD commands through one module worker", async () => {
   let worker;
   const client = createClient({
