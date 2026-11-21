@@ -565,3 +565,31 @@ test('CSG-Differenz eines schmalen durchgehenden Schlitzes bleibt topologisch ge
     base.material.dispose(); tool.material.dispose();
   }
 });
+
+
+test('CSG verlangt genau drei Positionskomponenten pro Vertex', () => {
+  const base = box();
+  const tool = box();
+  try {
+    const position = tool.geometry.getAttribute('position');
+    tool.geometry.setAttribute('position', new THREE.BufferAttribute(position.array, 4));
+    assert.throws(() => combineMeshes(base, tool, 'union'), /genau drei Komponenten pro Punkt/);
+  } finally {
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
+
+test('CSG verlangt genau einen Index pro Indexeintrag', () => {
+  const base = box();
+  const tool = box();
+  try {
+    const indices = new Uint16Array(36);
+    for (let i = 0; i < indices.length; i++) indices[i] = i % 24;
+    tool.geometry.setIndex(new THREE.BufferAttribute(indices, 2));
+    assert.throws(() => combineMeshes(base, tool, 'union'), /genau einem Index pro Eintrag/);
+  } finally {
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
