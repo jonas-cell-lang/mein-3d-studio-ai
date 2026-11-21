@@ -322,6 +322,14 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     try {
       const topology = await client.listSubShapes(source.shapeId);
       const rounded = await client.filletEdges(source.shapeId, [0], 1);
+      let multiRounded = null;
+      try {
+        multiRounded = await client.filletEdges(source.shapeId, [0, 1], 1);
+      } catch (error) {
+        multiRounded = { error: String(error?.message || error) };
+      }
+      const invalidIndexRejected = await client.filletEdges(source.shapeId, [999], 1)
+        .then(() => false, () => true);
       const result = {
         faceCount: topology.face.length,
         edgeCount: topology.edge.length,
@@ -331,9 +339,14 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
         sourceVolume: source.volumeMM3,
         roundedVolume: rounded.volumeMM3,
         roundedWorkerVolume: await client.getVolume(rounded.shapeId),
-        roundedShapeId: rounded.shapeId
+        roundedShapeId: rounded.shapeId,
+        multiRoundedVolume: multiRounded?.volumeMM3 ?? null,
+        multiRoundedWorkerVolume: multiRounded?.shapeId ? await client.getVolume(multiRounded.shapeId) : null,
+        multiRoundedError: multiRounded?.error || null,
+        invalidIndexRejected
       };
       await client.releaseShape(rounded.shapeId);
+      if (multiRounded?.shapeId) await client.releaseShape(multiRounded.shapeId);
       return result;
     } finally {
       await client.releaseShape(source.shapeId);
@@ -350,6 +363,15 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'Native OCCT-Kantenrundung hat das Quader-Volumen nicht plausibel verändert');
   assert.ok(Math.abs(topologyAndFillet.roundedWorkerVolume - topologyAndFillet.roundedVolume) < 1e-7,
     'Gerundeter OCCT-Körper ist im Worker nicht dauerhaft abfragbar');
+  assert.equal(topologyAndFillet.invalidIndexRejected, true,
+    'OCCT muss Kantenindizes ausserhalb der nativen Topologie ablehnen');
+  assert.ok(Number.isFinite(topologyAndFillet.multiRoundedVolume) &&
+    topologyAndFillet.multiRoundedVolume > 0 &&
+    topologyAndFillet.multiRoundedVolume < topologyAndFillet.sourceVolume,
+    'Mehrfach-Kantenrundung mit zwei nativen Kanten lieferte keinen gültigen Solid: ' +
+      String(topologyAndFillet.multiRoundedError));
+  assert.ok(Math.abs(topologyAndFillet.multiRoundedWorkerVolume - topologyAndFillet.multiRoundedVolume) < 1e-7,
+    'Mehrfach gerundeter OCCT-Körper ist im Worker nicht dauerhaft abfragbar');
 
   const torusResult = await page.evaluate(async () => {
     const created = window.__silmoOcctLastCreated;
