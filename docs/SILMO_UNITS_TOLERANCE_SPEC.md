@@ -308,3 +308,10 @@ Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPS
 - Für die Seitenverhältnis-Berechnung wird die Höhe mit `HEART_OUTLINE_HEIGHT_DENOMINATOR_MIN_WORLD_UNITS = 1e-9` nach unten begrenzt, damit eine praktisch flache Projektion keinen instabilen Divisor erzeugt.
 - Beide Werte wirken im internen Welteinheitenraum. Die Seitenverhältnis-Akzeptanzgrenzen 0.35 und 2.5 bleiben eigenständige Formklassifikationsparameter und werden nicht als Längentoleranzen ausgegeben.
 - Die bisherigen Werte und das Verhalten bleiben unverändert; der Test prüft die Werte und den Laufzeit-Verwendungs-Audit.
+
+
+### 3.17 Loft-Kontur-Resampling: Mindestumfang (21.11.2026)
+- `LOFT_PROFILE_RESAMPLE_MIN_PERIMETER_WORLD_UNITS = 1e-8` begrenzt den minimalen Gesamtumfang einer geschlossenen 2D-Kontur vor dem gleichmässigen Resampling.
+- Dieser Wert ist bewusst getrennt von `PROFILE_MIN_PERIMETER_WORLD_UNITS = 1e-6`, das eine andere Profilvalidierung absichert.
+- Der bisherige Standardwert bleibt unverändert. Der optionale Funktionsparameter kann weiterhin explizit überschrieben werden; der benannte API-Wert ist der Standard, sofern die Toleranz-API geladen ist.
+- Positiver/negativer Grenzfall und explizites Unterschreiten per Funktionsparameter sind in `tests/sketch-geometry.test.cjs` abgedeckt.
