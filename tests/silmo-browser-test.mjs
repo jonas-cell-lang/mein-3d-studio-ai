@@ -472,6 +472,23 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
   await page.locator('#loadOcctEdges').click();
   await page.waitForFunction(() => document.querySelectorAll('#occtEdgeList option').length === 12, null, { timeout: 45000 });
+  await page.waitForFunction(() => document.querySelectorAll('#occtFaceList option').length === 6, null, { timeout: 45000 });
+  const faceOverlayState = await page.evaluate(() => ({
+    count: window.__silmoOcctFaceOverlay?.group.children.length || 0,
+    sourceMatchesSelected: window.__silmoOcctFaceOverlay?.sourceMesh === window.__silmoOcctObjectHandles &&
+      window.__silmoOcctFaceOverlay?.sourceMesh === window.__silmoOcctFaceOverlay?.sourceMesh
+  }));
+  assert.equal(faceOverlayState.count, 6, 'Jede native Quaderfläche muss ein eigenes Auswahlnetz besitzen');
+  await page.locator('#occtFaceList').selectOption('0');
+  const faceSelection = await page.evaluate(() => ({
+    selected: window.__silmoOcctFaceOverlay?.selectedIndex,
+    highlighted: window.__silmoOcctFaceOverlay?.group.children
+      .find(mesh => mesh.userData.occtFaceIndex === 0)?.material.color.getHex(),
+    summary: document.querySelector('#occtFaceSummary')?.textContent || ''
+  }));
+  assert.equal(faceSelection.selected, 0, 'Die erste native Fläche wurde nicht ausgewählt');
+  assert.equal(faceSelection.highlighted, 0xffbd4a, 'Die ausgewählte native Fläche wurde nicht hervorgehoben');
+  assert.match(faceSelection.summary, /400\.00 mm²/, 'Die Flächenauswahl zeigt den falschen nativen Flächeninhalt');
   assert.match(await page.locator('#occtTopologySummary').textContent(), /6 echte B-Rep-Flächen und 12 echte B-Rep-Kanten/,
     'Die sichtbare Kantenliste zeigt keine vollständige native Quader-Topologie');
   assert.equal(await page.locator('#occtEdgeList option:not([disabled])').count(), 12,
