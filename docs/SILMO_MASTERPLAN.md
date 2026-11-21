@@ -54,7 +54,7 @@ Die Anwendung wird schrittweise in klar getrennte Module aufgeteilt. Die genaue 
 - Geometrievalidierung und robuste Fehlerbehandlung
 - Präzise Einheiten- und Toleranzverwaltung
 
-**Wichtige Architekturentscheidung:** Three.js bleibt zunächst für Darstellung, Kamera und Interaktion zuständig. Es ist nicht automatisch der endgültige CAD-Geometriekern. In einer separaten technischen Erprobung werden geeignete B-Rep-/CAD-Kerne (insbesondere WebAssembly-basierte Optionen wie Open CASCADE) anhand von Lizenz, Browserleistung, Robustheit, Dateiformaten und Wartbarkeit verglichen. Erst nach bestandenen Prototyp-Tests wird entschieden, ob und wie ein solcher Kern integriert wird. Kein ungetesteter Komplettaustausch.
+**Wichtige Architekturentscheidung:** Three.js bleibt zunächst für Darstellung, Kamera und Interaktion zuständig. Es ist nicht automatisch der endgültige CAD-Geometriekern. In einer separaten technischen Erprobung werden geeignete B-Rep-/CAD-Kerne (insbesondere WebAssembly-basierte Optionen wie Open CASCADE) anhand von Lizenz, Browserleistung, Robustheit, Dateiformaten und Wartbarkeit verglichen. Der erste Produktionskandidat ist OCCT 8.0.1 über `occt-wasm` 5.17.2. Er wird schrittweise hinter einer SILMO-eigenen Worker-Schnittstelle integriert; Three.js bleibt Renderer und Interaktionsschicht. Die erste vertikale Integration ist noch keine Freigabe, alle Modellierungsfunktionen auf OCCT umzustellen. Kein ungetesteter Komplettaustausch.
 
 ### D. Interaktion und Auswahl
 - Auswahl von Objekt, Komponente, Fläche, Kante und Punkt
@@ -108,8 +108,9 @@ Die Anwendung wird schrittweise in klar getrennte Module aufgeteilt. Die genaue 
 **Abnahme:** Bestehende Kernabläufe funktionieren weiterhin; Projektdateien bleiben kompatibel; Offline-/Ladefehler werden kontrolliert behandelt.
 
 ### Phase 2 – Geometrie-Kern und Modellierungsqualität
-- CAD-Kern-Prototypen vergleichen und testen
+- OCCT-WASM hinter einer SILMO-eigenen Worker-/Client-Schnittstelle integrieren und den vertikalen CAD-Workflow ausbauen
 - Topologie- und Geometrie-Datenmodell definieren
+- OCCT mit den verbleibenden B-Rep-Kandidaten und dem festgelegten Testkorpus vergleichen
 - Boolesche Operationen und Flächenbearbeitung robust machen
 - Extrusion, Rotation, Sweep, Loft, Abrundung und Fase vereinheitlichen
 - Geometriefehler erkennen und verständlich melden
@@ -799,3 +800,12 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Originalobjekte bleiben bis zum erfolgreichen Szenen-Commit bestehen. Bereits erfolgreiche Zwischenschritte einer mehrstufigen Berechnung werden ebenfalls freigegeben, wenn ein späterer Schritt fehlschlägt.
 - Der Browser-Regressionstest erzwingt einen Fehler im zweiten CSG-Schritt, zählt die Freigaben und prüft, dass alle drei Originalobjekte in der Szene bleiben. Anschliessend räumt der Test seine Hilfsobjekte wieder auf.
 - Code-Checks und isolierter OCCT-WebWorker-Prototyp waren auf Commit `bf31436f6a64d81e06656021c6237ca8648b337e` erfolgreich (135/135 Unit-Tests; OCCT erfolgreich). Der erste Browserlauf bestätigte den simulierten Fehler und die Fehlerbehandlung, scheiterte aber beim Test-Cleanup, weil der Löschen-Button im falschen Hauptbereich gesucht wurde. Der zweite Lauf bestätigte ebenfalls den Fehlerpfad und die Ressourcenfreigabe; danach blieb der Test jedoch im Bearbeiten-Bereich, sodass der nächste Würfel-Button nicht sichtbar war. Der Test stellt nach dem Cleanup nun explizit sowohl den Erstellen-Hauptbereich als auch den Unterreiter für Grundkörper wieder her; die korrigierte Browserprüfung muss noch erfolgreich abgeschlossen werden.
+
+
+### 6.79 Erste produktive OCCT-Integrationsstufe: Worker, B-Rep-Quader und Three.js-Darstellung (21.11.2026)
+- Der bisher isolierte Kandidat `occt-wasm` 5.17.2 / OCCT 8.0.1 erhält einen Produktions-Worker-Build. Der Worker wird aus dem gepinnten Prototyp-Paket gebündelt; das WASM-Modul und der Worker werden als lokale SILMO-Runtime-Assets vorbereitet. Es gibt keine CDN-Laufzeitabhängigkeit.
+- `src/occt-kernel-client.js` kapselt die Worker-Kommunikation, Initialisierung, Fehlerantworten, Volumenabfrage, Freigabe und Beendigung. Die Produktionsoberfläche kennt nicht die fremde OCCT-API direkt.
+- Der neue Befehl „OCCT-B-Rep-Quader“ erzeugt im Worker einen echten OCCT-Quader (20 × 20 × 20 mm). OCCT bleibt Quelle des exakten B-Rep-Körpers; eine Tessellierung wird in Millimeter erstellt, an der SILMO-Einheitengrenze (10 mm je Three.js-Einheit) umgerechnet und als Three.js-Mesh angezeigt.
+- Der Browser-Regressionstest prüft das analytische Volumen von 8'000 mm³, die fortbestehende Abfrage des B-Rep-Körpers im Worker, die Tessellierung und das Entfernen des Testkörpers. Unit-Tests prüfen die Worker-Client-Kommunikation und den Lebenszyklus.
+- **Bewusste Grenze:** Noch keine Übernahme bestehender Three.js-Meshes in OCCT, keine OCCT-Booleschen Operationen im regulären Modellierablauf, keine persistente B-Rep-Speicherung im SILMO-Projektformat und noch keine vollständige Migration der vorhandenen Werkzeuge. Der bisherige BSP-CSG-Kern bleibt erhalten.
+- Die Runtime-Build-, Code-Check-, Browser- und OCCT-Prototyp-Workflows werden auf die neue Integrationsstufe erweitert. Der Stand ist erst nach erfolgreicher CI-Verifikation als bestanden zu betrachten.
