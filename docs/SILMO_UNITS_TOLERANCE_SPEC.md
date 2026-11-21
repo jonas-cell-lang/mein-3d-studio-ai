@@ -315,3 +315,9 @@ Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPS
 - Dieser Wert ist bewusst getrennt von `PROFILE_MIN_PERIMETER_WORLD_UNITS = 1e-6`, das eine andere Profilvalidierung absichert.
 - Der bisherige Standardwert bleibt unverändert. Der optionale Funktionsparameter kann weiterhin explizit überschrieben werden; der benannte API-Wert ist der Standard, sofern die Toleranz-API geladen ist.
 - Positiver/negativer Grenzfall und explizites Unterschreiten per Funktionsparameter sind in `tests/sketch-geometry.test.cjs` abgedeckt.
+
+
+### 3.18 Pfadlängenprüfung und Skizzen-Extrusionsskalierung (21.11.2026)
+- `PATH_LENGTH_MIN_CURRENT_MM = 0.001` mm ist die Mindestlänge des bestehenden Pfads in Millimetern, bevor eine neue Ziellänge durch Skalierung angewendet wird.
+- `SKETCH_EXTRUSION_SCALE_DENOMINATOR_MIN = 1e-12` ist eine dimensionslose Untergrenze für den Nenner bei der Rückrechnung einer gespeicherten Extrusionshöhe über den absoluten Z-Skalierungsfaktor.
+- Beide Werte sind unterschiedliche Schutzregeln: eine fachliche Pfadlängengrenze in mm und ein numerischer Divisor-Schutz für einen dimensionslosen Skalierungsfaktor. Die bisherigen Werte und das Verhalten bleiben unverändert.
