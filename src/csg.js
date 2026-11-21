@@ -108,8 +108,14 @@
     const geom = mesh.geometry;
     const pos = geom.getAttribute('position');
     const index = geom.index;
-    const elementCount = index ? index.count : pos?.count;
-    if (!pos || pos.itemSize < 3 || !Number.isInteger(elementCount) || elementCount < 3 || elementCount % 3 !== 0) {
+    if (!pos || pos.itemSize !== 3 || !pos.array || pos.array.length !== pos.count * 3) {
+      throw new TypeError('CSG benötigt ein Positionsattribut mit genau drei Komponenten pro Punkt.');
+    }
+    if (index && (index.itemSize !== 1 || !index.array || index.array.length !== index.count)) {
+      throw new TypeError('CSG benötigt ein Indexattribut mit genau einem Index pro Eintrag.');
+    }
+    const elementCount = index ? index.count : pos.count;
+    if (!Number.isInteger(elementCount) || elementCount < 3 || elementCount % 3 !== 0) {
       throw new TypeError('CSG benötigt vollständige Dreiecke und ein gültiges Positionsattribut.');
     }
     const triangleCount = elementCount / 3;
