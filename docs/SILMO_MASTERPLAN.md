@@ -887,3 +887,13 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Konstruktionsquelle `kind: sphere` wird schema-validiert und bei Undo/Redo sowie Projektwiederherstellung rekonstruiert.
 - Ergänzte Client-, Projektschema- und Browser-End-to-End-Tests; CI muss den aktuellen Commit noch bestätigen.
 - PR #70 bleibt Draft/offen; kein Merge, Deployment oder Release ohne ausdrückliche Freigabe.
+
+
+## 6.88 Native OCCT-Kegel (21.11.2026)
+
+- Ergänzt: analytische Vollkegelerzeugung im produktiven OCCT-Worker mit `makeCone(radiusMM, 0, heightMM)` aus `occt-wasm` 5.17.2.
+- Neue Oberfläche „OCCT-B-Rep-Kegel“ erzeugt einen echten B-Rep-Kegel mit Grundradius 10 mm und Höhe 30 mm.
+- Erwartetes analytisches Volumen: (1000\pi) mm³; Begrenzungen für Radius und Höhe jeweils 0,01–2000 mm.
+- Konstruktionsquelle `kind: cone` wird schema-validiert und bei Undo/Redo sowie Projektwiederherstellung rekonstruiert.
+- Client-, Schema- und Browser-End-to-End-Tests prüfen Volumen, Worker-Körper, Undo und Redo.
+- PR #70 bleibt Draft/offen; kein Merge, Deployment oder Release ohne ausdrückliche Freigabe.
