@@ -323,31 +323,45 @@ async function execute(method, args) {
   if (method === "inspectShape") {
     const shape = shapes.get(args.shapeId);
     if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
+
+    // Diese Kennzahlen stammen direkt aus der nativen B-Rep-Topologie.
+    // Anders als die Mesh-Daten unten werden sie nicht aus Dreiecken geschätzt.
+    const shapeType = kernel.getShapeType(shape);
+    const topology = Object.fromEntries(
+      ["solid", "shell", "face", "wire", "edge", "vertex"].map(type =>
+        [type, kernel.subShapeCount(shape, type)]
+      )
+    );
     const volumeMM3 = kernel.getVolume(shape);
+    const surfaceAreaMM2 = kernel.getSurfaceArea(shape);
+    const centerOfMass = kernel.getCenterOfMass(shape);
+    const nativeBounds = kernel.getBoundingBox(shape, { precise: true, useTriangulation: false });
+    const min = [nativeBounds.xmin, nativeBounds.ymin, nativeBounds.zmin];
+    const max = [nativeBounds.xmax, nativeBounds.ymax, nativeBounds.zmax];
+    const size = max.map((value, axis) => value - min[axis]);
+    const center = max.map((value, axis) => (value + min[axis]) / 2);
+    const centerOfMassMM = [centerOfMass.x, centerOfMass.y, centerOfMass.z];
+
     const mesh = serializeMesh(kernel.tessellate(shape));
     const positions = mesh.positions;
     if (positions.length < 9 || positions.length % 3 !== 0 ||
         !Array.from(positions).every(Number.isFinite)) {
       throw new Error("OCCT-Körper besitzt keine gültigen 3D-Darstellungskoordinaten.");
     }
-    const min = [Infinity, Infinity, Infinity];
-    const max = [-Infinity, -Infinity, -Infinity];
-    for (let i = 0; i < positions.length; i += 3) {
-      for (let axis = 0; axis < 3; axis++) {
-        const value = positions[i + axis];
-        if (value < min[axis]) min[axis] = value;
-        if (value > max[axis]) max[axis] = value;
-      }
-    }
-    const size = max.map((value, axis) => value - min[axis]);
-    const center = max.map((value, axis) => (value + min[axis]) / 2);
+    const topologyValues = Object.values(topology);
     if (!Number.isFinite(volumeMM3) || volumeMM3 <= 0 ||
-        ![...min, ...max, ...size, ...center].every(Number.isFinite)) {
-      throw new Error("OCCT-Körperprüfung lieferte ungültige Messwerte.");
+        !Number.isFinite(surfaceAreaMM2) || surfaceAreaMM2 <= 0 ||
+        ![...min, ...max, ...size, ...center, ...centerOfMassMM].every(Number.isFinite) ||
+        !topologyValues.every(value => Number.isInteger(value) && value >= 0) ||
+        topology.face < 1 || topology.edge < 1 || topology.vertex < 1) {
+      throw new Error("OCCT-Körperprüfung lieferte ungültige native Geometrie- oder Topologiedaten.");
     }
-    return { shapeId: args.shapeId, shapeType: "solid", volumeMM3,
+    return {
+      shapeId: args.shapeId, shapeType, volumeMM3, surfaceAreaMM2,
+      centerOfMassMM, topology,
       mesh: { vertexCount: positions.length / 3, triangleCount: mesh.triangleCount, indexCount: mesh.indices.length },
-      boundingBoxMM: { min, max, size, center } };
+      boundingBoxMM: { min, max, size, center, source: "native-brep" }
+    };
   }
 
   if (method === "getVolume") {
