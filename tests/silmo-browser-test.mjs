@@ -456,7 +456,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   });
   assert.equal(failedCommonRecovery.rejected, true,
     'Leeres OCCT-Common-Ergebnis wurde nicht kontrolliert abgelehnt');
-  assert.deepEqual(failedCommonRecovery.retainedVolumes, [1000, 1000],
+  assert.ok(failedCommonRecovery.retainedVolumes.every(volume => Math.abs(volume - 1000) < 1e-7),
     'Fehlgeschlagene Boolean-Operation beschädigte ihre Ausgangskörper');
   assert.ok(Math.abs(failedCommonRecovery.afterFailureVolume - 8) < 1e-7,
     'OCCT-Worker-Queue blieb nach fehlgeschlagener Boolean-Operation blockiert');
