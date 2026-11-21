@@ -455,6 +455,87 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'Paralleler OCCT-Projektimport löste Browserfehler aus: ' + occtParallelErrors.join(' ; '));
   await occtParallelPage.close();
 
+  // OCCT-Lifecycle-Stresstest in einem isolierten Worker:
+  // wiederholtes Erzeugen, Boolean-Cut, Freigeben und Prüfen ungültiger Handles.
+  const occtLifecyclePage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const occtLifecycleErrors = [];
+  occtLifecyclePage.on('pageerror', error => occtLifecycleErrors.push(error.message));
+  occtLifecyclePage.on('console', message => {
+    if (message.type() === 'error') occtLifecycleErrors.push('console: ' + message.text());
+  });
+  await occtLifecyclePage.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
+  await occtLifecyclePage.waitForSelector('#viewport canvas', { timeout: 20000 });
+  const occtLifecycle = await occtLifecyclePage.evaluate(async () => {
+    const client = window.SILMOOCCTClient.createClient();
+    await client.initialize();
+    const cycles = [];
+    const releasedHandlesRejected = [];
+    for (let index = 0; index < 12; index++) {
+      const left = await client.createBox(20, 20, 20);
+      const right = await client.createBox(20, 20, 20);
+      const cut = await client.booleanOperation('cut',
+        [left.shapeId, right.shapeId], [[0, 0, 0], [10, 0, 0]]);
+      const measuredVolume = await client.getVolume(cut.shapeId);
+      cycles.push({ volume: cut.volumeMM3, measuredVolume });
+      for (const shapeId of [cut.shapeId, left.shapeId, right.shapeId]) {
+        await client.releaseShape(shapeId);
+        try {
+          await client.getVolume(shapeId);
+          releasedHandlesRejected.push(false);
+        } catch {
+          releasedHandlesRejected.push(true);
+        }
+      }
+    }
+    const concurrent = await Promise.all(Array.from({ length: 8 }, () =>
+      client.createBox(10, 10, 10)));
+    const concurrentVolumes = await Promise.all(concurrent.map(item => client.getVolume(item.shapeId)));
+    await client.releaseAll();
+    let releaseAllRejected = false;
+    try {
+      await client.getVolume(concurrent[0].shapeId);
+    } catch {
+      releaseAllRejected = true;
+    }
+    const afterReleaseAll = await client.createBox(5, 5, 5);
+    const afterReleaseAllVolume = await client.getVolume(afterReleaseAll.shapeId);
+    await client.dispose();
+    let disposedRejected = false;
+    try {
+      await client.createBox(5, 5, 5);
+    } catch {
+      disposedRejected = true;
+    }
+    return {
+      cycles,
+      releasedHandlesRejected,
+      concurrentVolumes,
+      releaseAllRejected,
+      afterReleaseAllVolume,
+      disposedRejected
+    };
+  });
+  assert.equal(occtLifecycle.cycles.length, 12,
+    'OCCT-Lifecycle-Test hat nicht alle zwölf Erstellungs-/Löschzyklen ausgeführt');
+  assert.ok(occtLifecycle.cycles.every(item =>
+    Math.abs(item.volume - 4000) < 1e-7 && Math.abs(item.measuredVolume - 4000) < 1e-7),
+  'OCCT-Boolean-Cut lieferte während wiederholter Lifecycle-Zyklen ein falsches Volumen');
+  assert.equal(occtLifecycle.releasedHandlesRejected.length, 36,
+    'Nicht alle 36 freigegebenen OCCT-Handles wurden geprüft');
+  assert.ok(occtLifecycle.releasedHandlesRejected.every(Boolean),
+    'Ein freigegebener OCCT-Körper blieb über seine Handle-ID erreichbar');
+  assert.ok(occtLifecycle.concurrentVolumes.every(volume => Math.abs(volume - 1000) < 1e-7),
+    'Gleichzeitige OCCT-Anfragen lieferten falsche Körpervolumen');
+  assert.equal(occtLifecycle.releaseAllRejected, true,
+    'releaseAll hat nicht alle Worker-Handles unzugänglich gemacht');
+  assert.ok(Math.abs(occtLifecycle.afterReleaseAllVolume - 125) < 1e-7,
+    'OCCT-Worker konnte nach releaseAll keinen neuen Körper mehr erstellen');
+  assert.equal(occtLifecycle.disposedRejected, true,
+    'Ein geschlossener OCCT-Client akzeptierte weiterhin neue Aufträge');
+  assert.deepEqual(occtLifecycleErrors, [],
+    'OCCT-Lifecycle-Stresstest löste Browserfehler aus: ' + occtLifecycleErrors.join(' ; '));
+  await occtLifecyclePage.close();
+
   await page.locator('#delete').evaluate(button => {
     if (button.disabled) throw new Error('Löschen-Schaltfläche ist deaktiviert.');
     button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
