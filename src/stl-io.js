@@ -259,7 +259,13 @@
         return;
       }
 
-      const reader = new FileReader();
+      let reader;
+      try {
+        reader = new FileReader();
+      } catch (error) {
+        deps.setStatus('STL-Datei konnte nicht gelesen werden.');
+        return;
+      }
       reader.onload = () => {
         let geometry = null;
         let material = null;
