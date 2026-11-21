@@ -487,8 +487,12 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     assert.ok(Math.abs(rejected.volumeMM3 - 4000) < 1e-7,
       'Aktiver OCCT-B-Rep wurde nach Ablehnung von ' + variant.name + ' beschädigt');
   }
-  assert.deepEqual(occtRoundTripErrors, [],
-    'Ungültige OCCT-Rezepte lösten unerwartete Browserfehler aus: ' + occtRoundTripErrors.join(' ; '));
+  assert.equal(occtRoundTripErrors.length, 3,
+    'Jedes der drei ungültigen OCCT-Rezepte muss genau einen Validierungsfehler melden: ' + occtRoundTripErrors.join(' ; '));
+  assert.ok(occtRoundTripErrors.every(message =>
+    message.startsWith('console: Error: Ungültige OCCT-Boolean-Konstruktionsdaten.')),
+  'Ungültige OCCT-Rezepte lösten andere als die erwarteten Validierungsfehler aus: ' +
+    occtRoundTripErrors.join(' ; '));
 
   await occtRoundTripPage.close();
 
