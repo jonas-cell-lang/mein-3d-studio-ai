@@ -67,3 +67,8 @@ SILMO kann zusätzlich zum Quader einen analytischen Zylinder als echten OCCT-B-
 ## Native OCCT-Kugel (21.11.2026)
 
 SILMO kann zusätzlich zu Quader und Zylinder eine analytische Kugel als echten OCCT-B-Rep-Körper erzeugen. Der produktive Worker verwendet `makeSphere(radius)` aus `occt-wasm` 5.17.2. Der Radius ist auf 0,01 bis 2000 mm begrenzt. Volumen und Tessellierung werden validiert; das Konstruktionsrezept (`kind: sphere`) bleibt für Undo/Redo und Projektwiederherstellung erhalten.
+
+
+## Native OCCT-Kegel (21.11.2026)
+
+SILMO erzeugt einen analytischen Vollkegel als echten OCCT-B-Rep-Körper über `makeCone(baseRadius, 0, height)`. Radius und Höhe sind jeweils auf 0,01 bis 2000 mm begrenzt. Volumen und Tessellierung werden geprüft. Das Konstruktionsrezept (`kind: cone`) wird schema-validiert und bei Undo/Redo sowie Projektwiederherstellung rekonstruiert.
