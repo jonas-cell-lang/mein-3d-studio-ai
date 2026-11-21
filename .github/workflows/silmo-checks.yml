@@ -35,6 +35,10 @@ jobs:
           python-version: "3.x"
       - name: Install locked runtime dependencies
         run: npm ci
+      - name: Install pinned OCCT worker dependencies
+        run: npm install --prefix research/geometry-kernel-prototype --no-audit --no-fund
+      - name: Bundle production OCCT worker
+        run: npm run build:worker --prefix research/geometry-kernel-prototype
 
       - name: Prepare local Three.js runtime
         run: npm run prepare:runtime
@@ -115,7 +119,7 @@ jobs:
           if duplicates:
               raise SystemExit("Doppelte HTML-IDs: " + ", ".join(duplicates))
           for asset in ("silmo-icon.svg", "icon-512.png", "manifest.webmanifest", "src/units.js",
-              "src/history.js", "src/stl-io.js", "src/tolerances.js", "src/csg.js", "src/project-schema.js", "src/project-geometry.js", "src/project-io.js", "src/tutorial.js", "src/developer-diagnostics.js", "src/image-studio.js", "src/tool-navigation.js", "src/primitive-geometry.js", "src/sketch-geometry.js", "vendor/three/three.min.js", "vendor/three/STLLoader.js", "vendor/three/STLExporter.js", "vendor/three/LICENSE"):
+              "src/history.js", "src/stl-io.js", "src/tolerances.js", "src/csg.js", "src/project-schema.js", "src/project-geometry.js", "src/project-io.js", "src/tutorial.js", "src/developer-diagnostics.js", "src/image-studio.js", "src/tool-navigation.js", "src/primitive-geometry.js", "src/sketch-geometry.js", "vendor/three/three.min.js", "vendor/three/STLLoader.js", "vendor/three/STLExporter.js", "vendor/three/LICENSE", "vendor/occt/silmo-occt-worker.js", "vendor/occt/occt-wasm.wasm"):
               if not Path(asset).is_file():
                   raise SystemExit(f"Fehlende App-Datei: {asset}")
           required_group_move = [
@@ -258,7 +262,7 @@ jobs:
               if source.read_bytes() != packaged.read_bytes():
                   raise SystemExit(f"Packaged file differs from generated source: {relative}")
           html = (root / "index.html").read_text(encoding="utf-8")
-          for relative in ("./src/units.js", "./src/history.js", "./src/stl-io.js", "./src/tolerances.js", "./src/csg.js", "./src/project-schema.js", "./src/project-geometry.js", "./src/project-io.js", "./src/tutorial.js", "./src/developer-diagnostics.js", "./src/image-studio.js", "./src/tool-navigation.js", "./src/primitive-geometry.js", "./src/sketch-geometry.js", "./vendor/three/three.min.js", "./vendor/three/STLLoader.js", "./vendor/three/STLExporter.js"):
+          for relative in ("./src/units.js", "./src/history.js", "./src/stl-io.js", "./src/tolerances.js", "./src/csg.js", "./src/project-schema.js", "./src/project-geometry.js", "./src/project-io.js", "./src/occt-kernel-client.js", "./src/tutorial.js", "./src/developer-diagnostics.js", "./src/image-studio.js", "./src/tool-navigation.js", "./src/primitive-geometry.js", "./src/sketch-geometry.js", "./vendor/three/three.min.js", "./vendor/three/STLLoader.js", "./vendor/three/STLExporter.js"):
               if relative not in html:
                   raise SystemExit(f"HTML does not reference expected local module: {relative}")
           print("Local Pages package contains every referenced SILMO module; no deployment performed.")
