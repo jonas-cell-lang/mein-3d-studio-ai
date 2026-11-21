@@ -2220,7 +2220,18 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   $('booleanUnion').addEventListener('click', () => runBooleanOperation('union'));
   $('booleanSubtract').addEventListener('click', () => runBooleanOperation('subtract'));
   $('booleanIntersect').addEventListener('click', () => runBooleanOperation('intersect'));
-  $('booleanSeparate').addEventListener('click', splitBooleanUnion);
+  // Die Navigationsleiste erzeugt diese Schaltfläche dynamisch. Ein Fallback verhindert,
+  // dass ein fehlendes Navigationselement die restliche App-Initialisierung abbricht.
+  let booleanSeparateButton = $('booleanSeparate');
+  if (!booleanSeparateButton) {
+    booleanSeparateButton = document.createElement('button');
+    booleanSeparateButton.type = 'button';
+    booleanSeparateButton.id = 'booleanSeparate';
+    booleanSeparateButton.className = 'wide';
+    booleanSeparateButton.textContent = '↗ Verbindung lösen';
+    (document.querySelector('#pane-create-left') || document.querySelector('.left-panel'))?.appendChild(booleanSeparateButton);
+  }
+  booleanSeparateButton?.addEventListener('click', splitBooleanUnion);
 
   $('delete').onclick = deleteSelectedObjects;
 
