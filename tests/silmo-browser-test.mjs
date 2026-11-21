@@ -331,8 +331,17 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const torusInspection = await page.evaluate(() => window.__silmoOcctLastInspection);
   assert.ok(Math.abs(torusInspection.volumeMM3 - expectedTorusVolume) < 1e-5,
     'Körperprüfung meldet ein falsches natives OCCT-Volumen');
-  assert.ok(torusInspection.boundingBoxMM.size.every((value, axis) => Math.abs(value - [50, 50, 10][axis]) < 1),
-    'Körperprüfung meldet falsche Torus-Abmessungen');
+  assert.ok(torusInspection.boundingBoxMM.size.every((value, axis) => Math.abs(value - [50, 50, 10][axis]) < 1e-5),
+    'Native OCCT-B-Rep-Bounding-Box meldet falsche Torus-Abmessungen');
+  assert.equal(torusInspection.boundingBoxMM.source, 'native-brep',
+    'Bounding Box stammt nicht aus der nativen OCCT-B-Rep-Abfrage');
+  assert.ok(Math.abs(torusInspection.surfaceAreaMM2 - 400 * Math.PI ** 2) < 1e-4,
+    'OCCT-Körperprüfung meldet eine falsche analytische Torus-Oberfläche');
+  assert.ok(torusInspection.topology.face > 0 && torusInspection.topology.edge > 0 &&
+    torusInspection.topology.vertex > 0 && torusInspection.topology.solid > 0,
+    'Native OCCT-Topologiezählung ist unvollständig');
+  assert.ok(torusInspection.centerOfMassMM.every(value => Math.abs(value) < 1e-6),
+    'Torus-Schwerpunkt liegt nicht am Ursprung');
   assert.ok(torusInspection.mesh.vertexCount > 0 && torusInspection.mesh.triangleCount > 0 &&
     torusInspection.mesh.indexCount === torusInspection.mesh.triangleCount * 3,
     'Körperprüfung meldet ungültige Tessellierungskennzahlen');
