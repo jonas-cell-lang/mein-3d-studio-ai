@@ -544,6 +544,48 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await page.locator('#objects .object-row').count(), filletSceneStart,
     'Der Testkörper für die sichtbare Kantenrundung konnte nicht entfernt werden');
 
+  // Sichtbarer Chamfer-Workflow: echte B-Rep-Fase mit Projekt-/Undo-Rezept.
+  const chamferSceneStart = await page.locator('#objects .object-row').count();
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  await page.locator('#loadOcctEdges').click();
+  await page.waitForFunction(() => document.querySelectorAll('#occtEdgeList option').length === 12, null, { timeout: 45000 });
+  await page.locator('#occtEdgeList').selectOption('1');
+  await page.locator('#occtChamferDistance').fill('1');
+  await page.locator('#applyOcctChamfer').click();
+  await page.waitForFunction(() => /^Echte OCCT-Kantenfase erfolgreich/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  const visibleChamfer = await page.evaluate(async () => ({
+    ...window.__silmoOcctLastChamfer,
+    workerVolumeMM3: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastChamfer.shapeId),
+    sourceKind: document.querySelector('#objects .object-row')?.textContent
+  }));
+  assert.ok(visibleChamfer.volumeMM3 > 0 && visibleChamfer.volumeMM3 < 8000 &&
+    Math.abs(visibleChamfer.workerVolumeMM3 - visibleChamfer.volumeMM3) < 1e-7,
+    'Sichtbare Kantenfase hat keinen gültigen nativen OCCT-Solid erzeugt');
+  assert.deepEqual(visibleChamfer.edgeIndices, [1]);
+  assert.equal(visibleChamfer.distanceMM, 1);
+  const chamferUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+z');
+  await waitForOcctRestore(chamferUndoGeneration);
+  const restoredBeforeChamfer = await page.evaluate(async () =>
+    window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
+  assert.ok(Math.abs(restoredBeforeChamfer - 8000) < 1e-7,
+    'Undo hat den ursprünglichen Quader vor der Kantenfase nicht rekonstruiert');
+  const chamferRedoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+y');
+  await waitForOcctRestore(chamferRedoGeneration);
+  const restoredAfterChamfer = await page.evaluate(async () =>
+    window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
+  assert.ok(Math.abs(restoredAfterChamfer - visibleChamfer.volumeMM3) < 1e-7,
+    'Redo hat den gefasten OCCT-Körper nicht aus seiner Konstruktionsquelle rekonstruiert');
+  const finalChamferUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+z');
+  await waitForOcctRestore(finalChamferUndoGeneration);
+  await page.locator('#delete').evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  assert.equal(await page.locator('#objects .object-row').count(), chamferSceneStart,
+    'Der Testkörper für die sichtbare Kantenfase konnte nicht entfernt werden');
+
   // STEP-Export und anschliessender Import über die echte SILMO-Dateiauswahl.
   await page.locator('#objects .object-select').filter({ hasText: 'OCCT-B-Rep-Quader' }).last().evaluate(button =>
     button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
