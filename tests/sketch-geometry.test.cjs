@@ -109,6 +109,17 @@ test('parametrische Profile lehnen ungültige Abmessungen kontrolliert ab', () =
   assert.throws(() => sketchGeometry.createParametricProfile('rectangle', { width: 0, depth: 2 }), /positive Abmessungen/);
 });
 
+test('Loft-Kontur-Resampling behält die Mindest-Umfangsgrenze bei', () => {
+  assert.throws(
+    () => sketchGeometry.resampleClosedOutline([[0, 0], [1e-9, 0], [0, 1e-9]], 3),
+    /Profilkontur ist ungültig/
+  );
+  const accepted = sketchGeometry.resampleClosedOutline(
+    [[0, 0], [1e-9, 0], [0, 1e-9]], 3, 1e-10
+  );
+  assert.equal(accepted.length, 3);
+});
+
 test('Loft-Geometrie verbindet zwei geschlossene Ringe mit Sollabmessungen und Volumen', () => {
   const lower = [
     new THREE.Vector3(-1, -1, 0), new THREE.Vector3(1, -1, 0),
