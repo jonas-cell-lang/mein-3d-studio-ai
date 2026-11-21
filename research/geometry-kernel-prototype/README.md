@@ -36,7 +36,7 @@ npm test
 
 ## Grenzen dieses ersten Prototyps
 
-- Chromium-Web-Worker-Test prüft Quader 10 × 20 × 30 mm und 12-Bohrungs-Boolean mit Volumen, Solid-Anzahl und Tessellierung
+- Chromium-Web-Worker-Test prüft Quader 10 × 20 × 30 mm, 12- und 40-Bohrungs-Boolean, eine 1,2-mm-Dünnwandplatte sowie Freigabe/Wiederverwendung des Kerns; Volumen, Solid-Anzahl und Tessellierung werden geprüft
 - Noch kein Safari-/WebKit-Test
 - Noch kein Vergleichslauf mit Replicad, moket-io/occt-wasm oder OpenGeometry
 - Noch keine Last-/Langzeitmessung
