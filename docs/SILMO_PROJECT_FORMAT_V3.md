@@ -58,3 +58,19 @@ Eine Änderung dieser Semantik erfordert eine neue Projektformatversion und eine
 - Weitere reale Fixtures aus bestehenden Benutzerprojekten ergänzen; die repräsentativen Metadatenfälle sind nun durch das erweiterte synthetische Fixture abgedeckt. Das Fixture ist kein Ersatz für eine breite Sammlung echter Benutzerprojekte.
 - Explizite Migrationsregeln erst dann ergänzen, wenn ein konkretes älteres Format samt Testfixture vorliegt.
 - Vertikalen Referenzablauf Erstellen → Bearbeiten → Speichern → Öffnen → STL-Export über echte Projekte absichern.
+
+
+## OCCT-Konstruktionsrezepte in Version 3
+
+Version 3 kann bei Modellobjekten optional ein Feld `occtSource` enthalten. Es beschreibt die reproduzierbare Konstruktion eines unterstützten OCCT-Körpers, nicht dessen internen nativen Speicherzustand.
+
+Unterstützte Rezeptfamilien:
+- Quader mit Abmessungen in Millimetern;
+- unterstützte Skizzenextrusionen mit Aussen- und Innenkonturen sowie Extrusionshöhe;
+- Boolesche Ergebnisse mit Operation, zwei Ausgangsrezepten und zwei Verschiebungsvektoren in Millimetern.
+
+Die Schema-Prüfung validiert Rezepttyp, Abmessungen, Konturen, Boolean-Operation, Operandenzahl, Verschiebungswerte und Rekursionstiefe vor dem Aufbau der Szene. Bestehende v3-Dateien ohne `occtSource` bleiben gültig. Die Versionsnummer bleibt 3, weil das Feld optional und rückwärtskompatibel ist.
+
+Beim Öffnen baut SILMO die unterstützten OCCT-Formen im Worker aus den Rezepten neu auf. Die gespeicherte triangulierte Geometrie dient weiterhin der Darstellung. Die Projektdatei enthält keine rohe OCCT-B-Rep-Datei.
+
+**Grenzen:** Nicht alle Geometrietypen besitzen bereits ein OCCT-Rezept. Verschachtelte Boolean-Ketten, beliebige Transformationskombinationen und die vollständige Migration aller Werkzeuge sind noch nicht abgedeckt. Für nicht unterstützte Fälle bleibt der bisherige Mesh-/BSP-Pfad relevant.
