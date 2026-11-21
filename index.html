@@ -956,12 +956,16 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
 
   let occtEdgePickMode = false;
+  let occtFacePickMode = false;
 
   function clearOcctFaceOverlay() {
     const overlay = window.__silmoOcctFaceOverlay;
     if (overlay?.group?.parent) overlay.group.parent.remove(overlay.group);
     if (overlay?.group) overlay.group.children.forEach(mesh => { mesh.geometry?.dispose(); mesh.material?.dispose(); });
     window.__silmoOcctFaceOverlay = null;
+    occtFacePickMode = false;
+    const toggle = $('toggleOcctFacePick');
+    if (toggle) { toggle.disabled = true; toggle.textContent = '⌖ 3D-Flächenauswahl einschalten'; }
     if ($('occtFaceList')) { $('occtFaceList').replaceChildren(); $('occtFaceList').disabled = true; }
   }
   function updateOcctFaceHighlight() {
@@ -995,7 +999,6 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const mesh = new THREE.Mesh(geometry, material);
       mesh.userData.occtFaceIndex = entry.index;
       mesh.frustumCulled = false;
-      mesh.raycast = () => {};
       group.add(mesh);
     }
     sourceMesh.add(group);
@@ -1009,6 +1012,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       list.appendChild(option);
     });
     list.disabled = false;
+    $('toggleOcctFacePick').disabled = group.children.length === 0;
     updateOcctFaceHighlight();
   }
   function selectOcctFaceFromList() {
@@ -1017,6 +1021,17 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const value = $('occtFaceList').value;
     overlay.selectedIndex = value === '' ? null : Number(value);
     updateOcctFaceHighlight();
+  }
+  function toggleOcctFacePickMode() {
+    if (!window.__silmoOcctFaceOverlay) return;
+    occtFacePickMode = !occtFacePickMode;
+    $('toggleOcctFacePick').textContent = occtFacePickMode
+      ? '✓ 3D-Flächenauswahl aktiv'
+      : '⌖ 3D-Flächenauswahl einschalten';
+    canvas.style.cursor = occtFacePickMode ? 'crosshair' : 'default';
+    status.textContent = occtFacePickMode
+      ? 'Klicke direkt auf eine Fläche des 3D-Körpers. Die getroffene native Fläche wird orange markiert.'
+      : '3D-Flächenauswahl ausgeschaltet.';
   }
 
   function clearOcctEdgeOverlay() {
@@ -2977,6 +2992,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     <div class="panel-rule"></div>
     <h2>OCCT-Flächenauswahl</h2>
     <p class="note">Wähle eine native B-Rep-Fläche aus der Liste. Die Fläche wird direkt am 3D-Körper hervorgehoben; die Kennzahl stammt aus OCCT.</p>
+    <button class="wide" id="toggleOcctFacePick" type="button" disabled>⌖ 3D-Flächenauswahl einschalten</button>
     <div class="field"><label for="occtFaceList">Native Flächen</label><select id="occtFaceList" size="5" disabled style="width:100%;min-height:96px;padding:7px;background:#0b1422;color:#edf4ff;border:1px solid #2b405a;border-radius:8px"></select></div>
     <p class="note" id="occtFaceSummary">Lade zuerst die Topologie eines OCCT-Körpers.</p>
     <div class="panel-rule"></div>
@@ -2995,6 +3011,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   occtTorusButton.insertAdjacentElement('afterend', occtFilletPanel);
   $('loadOcctEdges').onclick = loadSelectedOcctEdges;
   $('occtFaceList').onchange = selectOcctFaceFromList;
+  $('toggleOcctFacePick').onclick = toggleOcctFacePickMode;
   $('toggleOcctEdgePick').onclick = toggleOcctEdgePickMode;
   $('occtEdgeList').onchange = syncOcctEdgeSelectionFromList;
   $('applyOcctFillet').onclick = applySelectedOcctFillet;
@@ -4537,6 +4554,25 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const rotationHit = rotationHits.find(hit => hit.object.userData.rotationAxis);
       const gizmoHits = moveGizmo ? raycaster.intersectObjects(moveGizmo.children, true) : [];
       const axisHit = gizmoHits.find(hit => hit.object.userData.axis || (hit.object.parent && hit.object.parent.userData.axis));
+      if (occtFacePickMode && window.__silmoOcctFaceOverlay?.sourceMesh === selected) {
+        const faceHits = raycaster.intersectObjects(window.__silmoOcctFaceOverlay.group.children, false);
+        const faceIndex = faceHits[0]?.object.userData.occtFaceIndex;
+        if (Number.isInteger(faceIndex)) {
+          window.__silmoOcctFaceOverlay.selectedIndex = faceIndex;
+          updateOcctFaceHighlight();
+          status.textContent = 'Native Fläche ' + (faceIndex + 1) + ' ausgewählt.';
+        } else {
+          status.textContent = 'Keine Fläche getroffen. Klicke auf die sichtbare Oberfläche des Körpers.';
+        }
+        dragging = false;
+        draggingObject = false;
+        rotatingView = false;
+        activeAxis = null;
+        pointerId = null;
+        canvas.style.cursor = 'crosshair';
+        e.preventDefault();
+        return;
+      }
       if (occtEdgePickMode && window.__silmoOcctEdgeOverlay?.sourceMesh === selected) {
         const previousThreshold = raycaster.params.Line.threshold;
         raycaster.params.Line.threshold = window.SILMOUnits.mmToWorldUnits(1.8);
