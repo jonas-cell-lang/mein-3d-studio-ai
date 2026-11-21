@@ -72,3 +72,8 @@ SILMO kann zusätzlich zu Quader und Zylinder eine analytische Kugel als echten 
 ## Native OCCT-Kegel (21.11.2026)
 
 SILMO erzeugt einen analytischen Vollkegel als echten OCCT-B-Rep-Körper über `makeCone(baseRadius, 0, height)`. Radius und Höhe sind jeweils auf 0,01 bis 2000 mm begrenzt. Volumen und Tessellierung werden geprüft. Das Konstruktionsrezept (`kind: cone`) wird schema-validiert und bei Undo/Redo sowie Projektwiederherstellung rekonstruiert.
+
+
+## Native OCCT-Torus (21.11.2026)
+
+SILMO erzeugt einen analytischen Volltorus als echten OCCT-B-Rep-Körper über `makeTorus(majorRadius, minorRadius)`. Der grosse Radius muss grösser als der kleine Radius sein; beide liegen zwischen 0,01 und 2000 mm. Volumen und Tessellierung werden validiert. Das Konstruktionsrezept (`kind: torus`) wird schema-validiert und bei Undo/Redo sowie Projektwiederherstellung rekonstruiert.
