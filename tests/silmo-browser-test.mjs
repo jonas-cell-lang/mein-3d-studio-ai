@@ -44,6 +44,13 @@ async function showDrawRightSubtab(index) {
 async function waitForSelectedSketchOcct() {
   await page.waitForFunction(() => window.__silmoSketchSnapshot()?.geometryKernel === 'occt-wasm', null, { timeout: 45000 });
 }
+async function waitForOcctRestore(previousGeneration) {
+  await page.waitForFunction(previous => Number.isInteger(window.__silmoOcctRestoreGeneration) &&
+    window.__silmoOcctRestoreGeneration > previous, previousGeneration, { timeout: 20000 });
+  await page.evaluate(async () => {
+    if (window.__silmoOcctRestorePromise) await window.__silmoOcctRestorePromise;
+  });
+}
 page.on('pageerror', error => pageErrors.push(error.message));
 page.on('console', message => {
   if (message.type() === 'error' && !allowExpectedConsoleError) pageErrors.push('console: ' + message.text());
@@ -164,8 +171,9 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     try { await window.__silmoOcctClient.getVolume(shapeId); return false; }
     catch { return true; }
   }, occtResult.shapeId, { timeout: 10000 });
+  const boxUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
   await page.keyboard.press('Control+z');
-  await page.waitForFunction(() => Number.isFinite(window.__silmoOcctLastRestored?.shapeId), null, { timeout: 15000 });
+  await waitForOcctRestore(boxUndoGeneration);
   const restoredOcctVolume = await page.evaluate(async () =>
     window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
   assert.ok(Math.abs(restoredOcctVolume - 8000) < 1e-7,
@@ -203,16 +211,14 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await page.locator('#objects .object-row').count(), booleanSceneStart + 1,
     'OCCT-Fuse hat die zwei Ausgangsobjekte nicht durch ein Ergebnisobjekt ersetzt');
 
-  const previousRestoredBooleanId = await page.evaluate(() => window.__silmoOcctLastRestored?.shapeId || 0);
+  const booleanUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
   await page.keyboard.press('Control+z');
-  await page.waitForFunction(previous => Number.isFinite(window.__silmoOcctLastRestored?.shapeId) &&
-    window.__silmoOcctLastRestored.shapeId > previous, previousRestoredBooleanId, { timeout: 20000 });
+  await waitForOcctRestore(booleanUndoGeneration);
   assert.equal(await page.locator('#objects .object-row').count(), booleanSceneStart + 2,
     'Undo hat die beiden OCCT-Ausgangskörper nicht wiederhergestellt');
-  const previousRedoBooleanId = await page.evaluate(() => window.__silmoOcctLastRestored?.shapeId || 0);
+  const booleanRedoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
   await page.keyboard.press('Control+y');
-  await page.waitForFunction(previous => Number.isFinite(window.__silmoOcctLastRestored?.shapeId) &&
-    window.__silmoOcctLastRestored.shapeId > previous, previousRedoBooleanId, { timeout: 20000 });
+  await waitForOcctRestore(booleanRedoGeneration);
   const redoneBooleanVolume = await page.evaluate(async () =>
     window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
   assert.ok(Math.abs(redoneBooleanVolume - 8000) < 1e-7,
@@ -260,16 +266,14 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await page.locator('#objects .object-row').count(), cutSceneStart + 1,
     'OCCT-Cut hat die Ausgangskörper nicht durch einen Ausschnitt ersetzt');
 
-  const previousCutUndoId = await page.evaluate(() => window.__silmoOcctLastRestored?.shapeId || 0);
+  const cutUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
   await page.keyboard.press('Control+z');
-  await page.waitForFunction(previous => Number.isFinite(window.__silmoOcctLastRestored?.shapeId) &&
-    window.__silmoOcctLastRestored.shapeId > previous, previousCutUndoId, { timeout: 20000 });
+  await waitForOcctRestore(cutUndoGeneration);
   assert.equal(await page.locator('#objects .object-row').count(), cutSceneStart + 2,
     'Undo stellte die beiden OCCT-Cut-Ausgangskörper nicht wieder her');
-  const previousCutRedoId = await page.evaluate(() => window.__silmoOcctLastRestored?.shapeId || 0);
+  const cutRedoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
   await page.keyboard.press('Control+y');
-  await page.waitForFunction(previous => Number.isFinite(window.__silmoOcctLastRestored?.shapeId) &&
-    window.__silmoOcctLastRestored.shapeId > previous, previousCutRedoId, { timeout: 20000 });
+  await waitForOcctRestore(cutRedoGeneration);
   const redoneCutVolume = await page.evaluate(async () =>
     window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
   assert.ok(Math.abs(redoneCutVolume - 4000) < 1e-7,
