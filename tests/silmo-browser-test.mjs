@@ -1069,6 +1069,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await page.locator('#objects .object-row').count(), csgFailureStartCount,
     'Die drei CSG-Fehlerfall-Testobjekte wurden nicht sauber entfernt');
   await page.locator('[data-tab="create"]').click();
+  await showCreateSubtab(0);
 
   // Boolesche Verbindung muss sich wieder in die ursprünglichen Formen zerlegen lassen.
   const unionStartCount=await page.locator('#objects .object-row').count();
