@@ -34,10 +34,25 @@
         if (message.ok) entry.resolve(message.result);
         else entry.reject(new Error(message.error || "OCCT-Worker-Aufruf fehlgeschlagen."));
       };
-      worker.onerror = event => {
-        const error = new Error(event.message || "OCCT-Worker ist ausgefallen.");
+      const handleWorkerFailure = (event, message) => {
+        const failedWorker = worker;
+        const error = new Error(event?.message || message);
+        // Ein abgestürzter Worker darf nicht als initialisiert weiterverwendet
+        // werden: Folgeaufrufe erhalten sonst nie eine Antwort.
+        if (failedWorker) {
+          worker = null;
+          failedWorker.onmessage = null;
+          failedWorker.onerror = null;
+          failedWorker.onmessageerror = null;
+          try { failedWorker.terminate(); } catch { /* Worker ist bereits beendet. */ }
+        }
+        initialized = false;
+        initializing = null;
         rejectPending(error);
+        if (typeof event?.preventDefault === "function") event.preventDefault();
       };
+      worker.onerror = event => handleWorkerFailure(event, "OCCT-Worker ist ausgefallen.");
+      worker.onmessageerror = event => handleWorkerFailure(event, "OCCT-Worker lieferte eine unlesbare Nachricht.");
       return worker;
     }
 
