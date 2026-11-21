@@ -3,7 +3,7 @@
 **Stand:** 15.11.2026  
 **Ausgangsstand:** v90 – Focused CAD Subtabs  
 **Ablage:** `main` (Dokumentations-Commit; keine Änderung an der App)  
-**Status:** Kandidatenvergleich und isolierte Tests abgeschlossen; erste produktive OCCT-Worker-Integration (B-Rep-Quader als vertikaler Schnitt) wird gerade aufgebaut und muss die CI-Abnahme bestehen.
+**Status:** Erste produktive OCCT-Worker-Integration (B-Rep-Quader als vertikaler Schnitt) wurde am 21.11.2026 implementiert und durch Unit-, Browser- und OCCT-Worker-CI erfolgreich geprüft. Die vollständige Migration der CAD-Werkzeuge ist ausdrücklich noch offen.
 
 ## 1. Ziel und Entscheidungsregel
 
