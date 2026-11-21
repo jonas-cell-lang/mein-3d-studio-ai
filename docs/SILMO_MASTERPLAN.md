@@ -750,3 +750,8 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Standard-Mindestabmessung des erzeugten Hohlrahmens (`1e-9` Welteinheiten) ist zentral definiert und wird vom Geometrie-API-Standardparameter verwendet.
 - Ein expliziter Aufrufer-Override bleibt möglich; die Hauptanwendung übergibt weiterhin ihre strengere CSG-Grenze. Bestehendes Verhalten bleibt erhalten.
 - Neue Grenzfalltests prüfen Standardgrenze und Override. CI steht noch aus.
+
+### 6.70 Parametrische Skizzenprofile: Mindest-Eckenradius benannt (21.11.2026)
+- Die bisherige Untergrenze `0.01` für den Eckenradius abgerundeter Rechteckprofile ist als `SKETCH_PROFILE_MIN_CORNER_RADIUS_WORLD_UNITS` zentral benannt.
+- Der Wert und das bisherige Verhalten bleiben unverändert. Ein gezielter Geometrietest prüft den tatsächlich erzeugten Profilstartpunkt bei einem Radius-Eingabewert von `0`.
+- Die zentrale Toleranzwertprüfung und der Laufzeit-Verwendungs-Audit sichern die Konstante. CI für diesen Schritt steht noch aus.
