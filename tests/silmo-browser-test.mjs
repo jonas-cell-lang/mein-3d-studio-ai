@@ -328,6 +328,74 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
   assert.ok(Math.abs(redoneCutVolume - 4000) < 1e-7,
     'Redo stellte das OCCT-Cut-Ergebnis nicht als echten B-Rep-Körper wieder her');
+
+  // OCCT-Projekt-Roundtrip: echten Cut-Körper speichern und in einem frischen Browserkontext rekonstruieren.
+  await page.locator('[data-tab="print"]').click();
+  await page.locator('#saveProjectButton').waitFor({ state: 'visible', timeout: 5000 });
+  const occtProjectDownloadPromise = page.waitForEvent('download', { timeout: 10000 });
+  await page.locator('#saveProjectButton').click();
+  const occtProjectDownload = await occtProjectDownloadPromise;
+  const occtProjectPath = await occtProjectDownload.path();
+  assert.ok(occtProjectPath && statSync(occtProjectPath).size > 1000,
+    'OCCT-Projektdatei wurde nicht vollständig heruntergeladen');
+  const occtSavedProject = JSON.parse(readFileSync(occtProjectPath, 'utf8'));
+  assert.equal(occtSavedProject.objects.length, cutSceneStart + 1,
+    'Gespeichertes OCCT-Projekt enthält nicht die erwartete Objektanzahl');
+  const savedOcctSource = occtSavedProject.objects.at(-1).occtSource;
+  assert.equal(savedOcctSource?.kind, 'boolean',
+    'OCCT-Boolean-Konstruktionsrezept wurde nicht in die Projektdatei geschrieben');
+  assert.equal(savedOcctSource.operation, 'cut',
+    'OCCT-Cut-Operation ging beim Speichern verloren');
+  assert.deepEqual(savedOcctSource.translationsMM, [[0,0,0],[10,0,0]],
+    'OCCT-Boolean-Transformationen gingen beim Speichern verloren');
+
+  const occtRoundTripPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const occtRoundTripErrors = [];
+  occtRoundTripPage.on('pageerror', error => occtRoundTripErrors.push(error.message));
+  occtRoundTripPage.on('console', message => {
+    if (message.type() === 'error') occtRoundTripErrors.push('console: ' + message.text());
+  });
+  await occtRoundTripPage.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
+  await occtRoundTripPage.waitForSelector('#viewport canvas', { timeout: 20000 });
+  await occtRoundTripPage.locator('#projectFileInput').setInputFiles({
+    name: 'occt-roundtrip.silmo.json',
+    mimeType: 'application/json',
+    buffer: readFileSync(occtProjectPath)
+  });
+  await occtRoundTripPage.waitForFunction(() =>
+    /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 10000 });
+  await occtRoundTripPage.waitForFunction(() =>
+    Number.isInteger(window.__silmoOcctProjectRestoreGeneration) &&
+    window.__silmoOcctProjectRestoreGeneration > 0, null, { timeout: 10000 });
+  await occtRoundTripPage.evaluate(async () => {
+    if (window.__silmoOcctProjectRestorePromise) await window.__silmoOcctProjectRestorePromise;
+  });
+  const reopenedOcctProject = await occtRoundTripPage.evaluate(async () => {
+    const object = window.__silmoTestGetObjects?.().at(-1) ||
+      window.__silmoOcctObjectHandles && [...document.querySelectorAll('#objects .object-select')].length;
+    const mesh = window.__silmoTestGetObjects?.().at(-1);
+    const shapeId = mesh && window.__silmoOcctObjectHandles?.get(mesh);
+    return {
+      objectCount: document.querySelectorAll('#objects .object-row').length,
+      kernel: mesh?.userData?.geometryKernel,
+      source: mesh?.userData?.occtSource,
+      shapeId,
+      volumeMM3: shapeId ? await window.__silmoOcctClient.getVolume(shapeId) : null
+    };
+  });
+  assert.equal(reopenedOcctProject.objectCount, cutSceneStart + 1,
+    'OCCT-Projekt wurde nach erneutem Öffnen nicht vollständig geladen');
+  assert.equal(reopenedOcctProject.kernel, 'occt-wasm',
+    'Gespeicherter OCCT-Körper wurde nach erneutem Öffnen nicht als echter B-Rep rekonstruiert');
+  assert.equal(reopenedOcctProject.source?.operation, 'cut',
+    'OCCT-Cut-Rezept ging beim erneuten Öffnen verloren');
+  assert.ok(Number.isInteger(reopenedOcctProject.shapeId) &&
+    Math.abs(reopenedOcctProject.volumeMM3 - 4000) < 1e-7,
+  'Wiedergeöffneter OCCT-B-Rep-Körper besitzt nicht mehr das korrekte Worker-Volumen von 4000 mm³');
+  assert.deepEqual(occtRoundTripErrors, [],
+    'OCCT-Projekt-Roundtrip löste Browserfehler aus: ' + occtRoundTripErrors.join(' ; '));
+  await occtRoundTripPage.close();
+
   await page.locator('#delete').evaluate(button => {
     if (button.disabled) throw new Error('Löschen-Schaltfläche ist deaktiviert.');
     button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
