@@ -330,3 +330,55 @@ test('Geometrie in beiden v3-Fixtures hat endliche Positionswerte und gültige I
     assert.ok(geometryCount > 0, name + ': keine Geometrie geprüft');
   }
 });
+
+
+test('Objekttransformationen werden bereits vor dem Geometrieaufbau geprüft', () => {
+  const valid = validProject();
+  valid.objects.push({
+    position: [10000, -10000, 0],
+    rotation: [Math.PI * 2, 0, -Math.PI * 2],
+    scale: [0.001, 1, 1000]
+  });
+  assert.equal(schema.validateProjectEnvelope(valid), valid);
+
+  const invalidCases = [
+    { position: [0, 0] },
+    { position: [0, Infinity, 0] },
+    { position: [10000.01, 0, 0] },
+    { rotation: [0, NaN, 0] },
+    { rotation: [0, 0, -10000.01] },
+    { scale: [1, 0, 1] },
+    { scale: [1, 1, 1000.01] }
+  ];
+  for (const metadata of invalidCases) {
+    const project = validProject();
+    project.objects.push(metadata);
+    assert.throws(
+      () => schema.validateProjectEnvelope(project),
+      /Ungültige Objektposition, Drehung oder Skalierung/
+    );
+  }
+
+  // Fehlende Metadaten bleiben für ältere/partielle v3-Dateien kompatibel.
+  const legacy = validProject();
+  legacy.objects.push({});
+  assert.equal(schema.validateProjectEnvelope(legacy), legacy);
+});
+
+test('normalisierte Geometrieattribute akzeptieren nur boolesche Flags', () => {
+  const valid = {
+    attributes: {
+      position: { arrayType: 'Float32Array', array: [0,0,0, 1,0,0, 0,1,0], itemSize: 3, normalized: false }
+    },
+    index: null
+  };
+  assert.equal(schema.validateSerializedGeometry(valid), valid);
+  for (const normalized of ['true', 1, {}, []]) {
+    const invalid = structuredClone(valid);
+    invalid.attributes.position.normalized = normalized;
+    assert.throws(() => schema.validateSerializedGeometry(invalid), /Ungültiges Geometrieattribut/);
+  }
+  const legacy = structuredClone(valid);
+  delete legacy.attributes.position.normalized;
+  assert.equal(schema.validateSerializedGeometry(legacy), legacy);
+});
