@@ -252,6 +252,9 @@
     let totalValues = 0;
     function visit(object) {
       if (!object || typeof object !== 'object' || Array.isArray(object)) return;
+      // Ursprüngliche CSG-Formteile werden separat wiederhergestellt und
+      // benötigen dieselbe frühe Transformationsprüfung wie Hauptobjekte.
+      validateObjectTransformMetadata(object);
       if (object.geometry != null) {
         const geometry = validateSerializedGeometry(object.geometry);
         for (const attribute of Object.values(geometry.attributes)) totalValues += attribute.array.length;
