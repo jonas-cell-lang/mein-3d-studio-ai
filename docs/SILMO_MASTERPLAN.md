@@ -908,11 +908,11 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Client-, Schema- und Browser-End-to-End-Tests prüfen Volumen, Worker-Körper, Undo und Redo.
 - PR #70 bleibt Draft/offen; kein Merge, Deployment oder Release ohne ausdrückliche Freigabe.
 
-### 6.90 OCCT-Körperprüfung: Volumen, Bounding Box und Tessellierungsdaten (21.11.2026)
-- Der produktive OCCT-Worker bietet `inspectShape(shapeId)` für bereits gehaltene native B-Rep-Körper.
-- Die Prüfung liefert das exakte OCCT-Volumen in mm³ sowie eine aus der OCCT-Tessellierung berechnete Bounding Box (Minimum, Maximum, Ausdehnung und Mittelpunkt in mm).
-- Zusätzlich werden Vertex-, Dreiecks- und Indexanzahl des Darstellungsnetzes gemeldet. Diese Mesh-Kennzahlen beschreiben die Visualisierung und sind keine native OCCT-Topologiezählung von Kanten oder Flächen.
-- Der SILMO-OCCT-Client stellt die Methode mit positiver Ganzzahl-Handlevalidierung bereit. Worker- und Client-Unit-Tests prüfen Rückgabeform, Weiterleitung und ungültige Handles.
-- In der Oberfläche gibt es die Aktion „OCCT-Körper prüfen“. Sie prüft das aktuell ausgewählte Objekt nur dann, wenn dafür ein aktiver nativer OCCT-Handle existiert, und zeigt Volumen, Abmessungen und Dreiecksanzahl im Statusbereich.
-- Der Browser-End-to-End-Test führt die Prüfung an einem echten OCCT-Torus aus und kontrolliert Volumen, Bounding-Box-Abmessungen sowie konsistente Mesh-Kennzahlen. Native Kanten-/Flächenabfragen bleiben ein separater Folgeschritt.
+### 6.91 Native OCCT-Topologieanalyse und exakte B-Rep-Messwerte (21.11.2026)
+- `inspectShape(shapeId)` fragt jetzt die native OCCT-Topologie mit `getShapeType` und `subShapeCount` ab: Solids, Shells, Faces, Wires, Edges und Vertices.
+- Zusätzlich liefert die Analyse die exakte OCCT-Oberfläche in mm², den nativen Schwerpunkt und eine präzise B-Rep-Bounding-Box. Die Bounding Box wird explizit ohne Triangulation ermittelt und als Quelle `native-brep` gekennzeichnet.
+- Mesh-Vertex-, Dreiecks- und Indexzahlen bleiben separat als reine Darstellungsdaten ausgewiesen; sie werden nicht mit nativen Topologiezahlen verwechselt.
+- Die Oberfläche zeigt Volumen, Oberfläche, Abmessungen und native Flächen-/Kanten-/Eckpunktzahlen für den ausgewählten OCCT-Körper.
+- Client-Unit-Tests prüfen die erweiterte Rückgabe. Der echte Browser-End-to-End-Test kontrolliert beim Torus analytisches Volumen und Oberfläche, exakte 50×50×10-mm-Bounds, Schwerpunkt und vorhandene native Topologie.
+- Grundlage ist die tatsächlich gepinnte `occt-wasm 5.17.2` API: `getShapeType`, `subShapeCount`, `getSurfaceArea`, `getCenterOfMass` und `getBoundingBox`.
 - PR #70 bleibt offen und Draft; kein Merge, Deployment oder Veröffentlichung.
