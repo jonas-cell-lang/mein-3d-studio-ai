@@ -118,7 +118,7 @@
 
 
 
-  function createContourFrameGeometry(outline, thickness, height, tolerances, minimumDimension = 1e-9) {
+  function createContourFrameGeometry(outline, thickness, height, tolerances, minimumDimension = tolerances.CONTOUR_FRAME_MIN_RESULT_DIMENSION_WORLD_UNITS) {
     if (!Array.isArray(outline) || outline.length < 3 || outline.length > 240 ||
         !outline.every(point => Array.isArray(point) && point.length >= 2 && Number.isFinite(point[0]) && Number.isFinite(point[1])) ||
         !Number.isFinite(thickness) || thickness <= 0 || !Number.isFinite(height) || height <= 0 ||
