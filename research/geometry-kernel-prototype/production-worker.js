@@ -402,6 +402,26 @@ async function execute(method, args) {
     return result;
   }
 
+  if (method === "getFaceMeshes") {
+    const shape = shapes.get(args.shapeId);
+    if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
+    const faces = kernel.getSubShapes(shape, "face");
+    try {
+      if (!Array.isArray(faces) || faces.length < 1 || faces.length > 10000) {
+        throw new Error("OCCT lieferte eine ungültige Anzahl nativer Flächen.");
+      }
+      const result = faces.map((face, index) => {
+        const mesh = serializeMesh(kernel.tessellate(face));
+        return { index, mesh };
+      });
+      return { faces: result };
+    } finally {
+      for (const face of faces) {
+        try { kernel.release(face); } catch { /* best effort cleanup */ }
+      }
+    }
+  }
+
   if (method === "getWireframe") {
     const shape = shapes.get(args.shapeId);
     if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
