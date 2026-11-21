@@ -415,14 +415,6 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   <button class="wide" id="addOcctSphere" title="Erzeugt eine analytische OCCT-B-Rep-Kugel">＋ OCCT-B-Rep-Kugel</button>
   <button class="wide" id="addOcctCone" title="Erzeugt einen analytischen OCCT-B-Rep-Kegel">＋ OCCT-B-Rep-Kegel</button>
   <button class="wide" id="addOcctTorus" title="Erzeugt einen analytischen OCCT-B-Rep-Torus">＋ OCCT-B-Rep-Torus</button>
-    <div class="panel-rule"></div>
-    <h2>OCCT-Kantenbearbeitung</h2>
-    <p class="note">Wähle einen nativen OCCT-Körper aus. Lade seine echten B-Rep-Kanten und markiere eine oder mehrere Kanten für eine präzise Rundung.</p>
-    <button class="wide" id="loadOcctEdges">↻ Kanten des Körpers laden</button>
-    <div class="field"><label for="occtEdgeList">Native Kanten (Mehrfachauswahl)</label><select id="occtEdgeList" multiple size="6" disabled style="width:100%;min-height:112px;padding:7px;background:#0b1422;color:#edf4ff;border:1px solid #2b405a;border-radius:8px"></select></div>
-    <div class="field"><label for="occtFilletRadius">Rundungsradius (mm)</label><input id="occtFilletRadius" type="number" min="0.01" max="2000" step="0.1" value="1"></div>
-    <button class="wide primary" id="applyOcctFillet" disabled>◒ Ausgewählte Kanten abrunden</button>
-    <p class="note" id="occtTopologySummary">Noch keine Kanten geladen.</p>
     <button class="wide" id="addSphere">＋ Kugel</button>
     <button class="wide" id="addCylinder">＋ Zylinder</button>
      <button class="wide" id="addCone">＋ Kegel</button>
@@ -2637,6 +2629,23 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   $('addOcctCone').onclick = createOcctCone;
   $('addOcctTorus').onclick = createOcctTorus;
   $('inspectOcctShape').onclick = inspectSelectedOcctShape;
+  // Das Topologie-Werkzeug wird direkt in die bestehende Objektleiste eingesetzt.
+  // Dynamisches Einfügen stellt sicher, dass die Steuerelemente vor dem Binden
+  // der Events im aktiven DOM vorhanden sind.
+  const occtFilletPanel = document.createElement('div');
+  occtFilletPanel.id = 'occtFilletPanel';
+  occtFilletPanel.innerHTML = `
+    <div class="panel-rule"></div>
+    <h2>OCCT-Kantenbearbeitung</h2>
+    <p class="note">Wähle einen nativen OCCT-Körper aus. Lade seine echten B-Rep-Kanten und markiere eine oder mehrere Kanten für eine präzise Rundung.</p>
+    <button class="wide" id="loadOcctEdges" type="button">↻ Kanten des Körpers laden</button>
+    <div class="field"><label for="occtEdgeList">Native Kanten (Mehrfachauswahl)</label><select id="occtEdgeList" multiple size="6" disabled style="width:100%;min-height:112px;padding:7px;background:#0b1422;color:#edf4ff;border:1px solid #2b405a;border-radius:8px"></select></div>
+    <div class="field"><label for="occtFilletRadius">Rundungsradius (mm)</label><input id="occtFilletRadius" type="number" min="0.01" max="2000" step="0.1" value="1"></div>
+    <button class="wide primary" id="applyOcctFillet" type="button" disabled>◒ Ausgewählte Kanten abrunden</button>
+    <p class="note" id="occtTopologySummary">Noch keine Kanten geladen.</p>`;
+  const occtTorusButton = $('addOcctTorus');
+  if (!occtTorusButton) throw new Error('OCCT-Werkzeugleiste konnte nicht gefunden werden.');
+  occtTorusButton.insertAdjacentElement('afterend', occtFilletPanel);
   $('loadOcctEdges').onclick = loadSelectedOcctEdges;
   $('applyOcctFillet').onclick = applySelectedOcctFillet;
   $('addSphere').onclick = () => createObject('Kugel');
