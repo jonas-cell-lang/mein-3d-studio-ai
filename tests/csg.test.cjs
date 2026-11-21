@@ -593,3 +593,23 @@ test('CSG verlangt genau einen Index pro Indexeintrag', () => {
     base.material.dispose(); tool.material.dispose();
   }
 });
+
+
+test('CSG weist normalisierte Positions- und Indexattribute zurück', () => {
+  const base = box();
+  const tool = box();
+  try {
+    const position = tool.geometry.getAttribute('position');
+    tool.geometry.setAttribute('position', new THREE.BufferAttribute(position.array, 3, true));
+    assert.throws(() => combineMeshes(base, tool, 'union'), /genau drei Komponenten pro Punkt/);
+
+    tool.geometry.setAttribute('position', new THREE.BufferAttribute(position.array, 3, false));
+    const indices = new Uint16Array(36);
+    for (let i = 0; i < indices.length; i++) indices[i] = i % 24;
+    tool.geometry.setIndex(new THREE.BufferAttribute(indices, 1, true));
+    assert.throws(() => combineMeshes(base, tool, 'union'), /genau einem Index pro Eintrag/);
+  } finally {
+    base.geometry.dispose(); tool.geometry.dispose();
+    base.material.dispose(); tool.material.dispose();
+  }
+});
