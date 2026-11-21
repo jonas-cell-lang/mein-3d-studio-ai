@@ -190,6 +190,24 @@
         await initialize();
         return send("inspectShape", { shapeId });
       },
+      async listSubShapes(shapeId) {
+        if (!Number.isInteger(shapeId) || shapeId <= 0) {
+          throw new Error("Für die Topologieauswahl ist eine gültige OCCT-Körperkennung erforderlich.");
+        }
+        await initialize();
+        return send("listSubShapes", { shapeId });
+      },
+      async filletEdges(shapeId, edgeIndices, radiusMM) {
+        if (!Number.isInteger(shapeId) || shapeId <= 0 ||
+            !Array.isArray(edgeIndices) || edgeIndices.length < 1 || edgeIndices.length > 12 ||
+            !edgeIndices.every(index => Number.isInteger(index) && index >= 0) ||
+            new Set(edgeIndices).size !== edgeIndices.length ||
+            !Number.isFinite(radiusMM) || radiusMM < 0.01 || radiusMM > 2000) {
+          throw new Error("Kantenrundung benötigt gültige, eindeutige Kantenindizes und einen Radius von 0,01 bis 2000 mm.");
+        }
+        await initialize();
+        return send("filletEdges", { shapeId, edgeIndices, radiusMM });
+      },
       async getVolume(shapeId) {
         await initialize();
         const result = await send("getVolume", { shapeId });
