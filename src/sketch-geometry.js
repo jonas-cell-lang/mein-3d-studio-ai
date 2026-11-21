@@ -9,7 +9,8 @@
 
   function addRoundedRectPath(path, width, height, radius, offsetX = 0, offsetY = 0, reverse = false) {
     const halfWidth = width / 2, halfHeight = height / 2;
-    const corner = Math.min(Math.max(0.01, radius), halfWidth, halfHeight);
+    const minimumCornerRadius = TOLERANCES.SKETCH_PROFILE_MIN_CORNER_RADIUS_WORLD_UNITS || 0.01;
+    const corner = Math.min(Math.max(minimumCornerRadius, radius), halfWidth, halfHeight);
     if (!reverse) {
       path.moveTo(offsetX - halfWidth + corner, offsetY - halfHeight);
       path.lineTo(offsetX + halfWidth - corner, offsetY - halfHeight);
