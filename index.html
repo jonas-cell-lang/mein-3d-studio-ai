@@ -1145,7 +1145,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       list.disabled = result.edge.length === 0;
       apply.disabled = true;
       $('toggleOcctEdgePick').disabled = visibleIndices.size === 0;
-      $('occtTopologySummary').textContent = result.face.length + ' echte B-Rep-Flächen und ' + result.edge.length + ' echte B-Rep-Kanten; ' + visibleIndices.size + ' davon direkt auswählbar.';
+      const totalFaceAreaMM2 = result.face.reduce((sum, face) => sum + face.areaMM2, 0);
+      $('occtTopologySummary').textContent = result.face.length + ' echte B-Rep-Flächen und ' + result.edge.length +
+        ' echte B-Rep-Kanten; ' + visibleIndices.size + ' davon direkt auswählbar. Gesamtfläche: ' +
+        totalFaceAreaMM2.toFixed(2) + ' mm².';
       window.__silmoOcctLastSubShapes = result;
       window.__silmoOcctLastWireframe = wireframe;
       status.textContent = 'Topologie geladen. Aktiviere die 3D-Kantenauswahl und klicke direkt auf eine Kante – alternativ kannst du die Liste verwenden.';
