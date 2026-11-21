@@ -1268,7 +1268,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       result = await window.__silmoOcctClient.chamferEdges(shapeId, edgeIndices, distanceMM);
       if (!result?.mesh?.positions?.length || !result.mesh.indices?.length ||
           !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0) {
-        throw new Error('OCCT lieferte kein gültiges gefastens Volumen mit Darstellungsnetz.');
+        throw new Error('OCCT lieferte kein gültiges gefastes Volumen mit Darstellungsnetz.');
       }
       if (!objects.includes(sourceMesh) || selected !== sourceMesh ||
           window.__silmoOcctObjectHandles?.get(sourceMesh) !== shapeId) {
