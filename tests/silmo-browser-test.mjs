@@ -283,10 +283,12 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   }
   // Körper mit der normalen SILMO-Tastaturbedienung auf 0, 30 und 60 mm verteilen.
   for (const [index, steps] of [[1, 3], [2, 6]]) {
-    await page.locator('#objects .object-select').nth(multiBodyStart + index).click();
+    await page.locator('#objects .object-select').nth(multiBodyStart + index).evaluate(button =>
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     for (let step = 0; step < steps; step++) await page.keyboard.press('Shift+ArrowRight');
   }
-  await page.locator('#objects .object-select').nth(multiBodyStart).click();
+  await page.locator('#objects .object-select').nth(multiBodyStart).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
   await page.locator('#objects .object-select').nth(multiBodyStart + 1).evaluate(button =>
     button.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true })));
   await page.locator('#objects .object-select').nth(multiBodyStart + 2).evaluate(button =>
