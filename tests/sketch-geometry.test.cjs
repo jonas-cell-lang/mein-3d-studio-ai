@@ -334,6 +334,20 @@ test('Hohlrahmen-Geometrie erhält Aussenmasse, Wandstärke und Sollvolumen', ()
   }
 });
 
+test('Hohlrahmen-Geometrie verwendet die benannte Mindestabmessung als Standard', () => {
+  const outline = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+  assert.throws(
+    () => sketchGeometry.createContourFrameGeometry(outline, 0.1, 1e-10, tolerances),
+    /ungültige Abmessungen/
+  );
+  const geometry = sketchGeometry.createContourFrameGeometry(outline, 0.1, 1e-10, tolerances, 1e-12);
+  try {
+    assert.ok(geometry.boundingBox.getSize(new THREE.Vector3()).z > 0);
+  } finally {
+    geometry.dispose();
+  }
+});
+
 test('Hohlrahmen-Geometrie unterstützt beide Konturrichtungen', () => {
   const ccw = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
   const cw = ccw.slice().reverse();
