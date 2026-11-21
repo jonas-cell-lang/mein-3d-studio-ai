@@ -518,7 +518,7 @@
   const endPointer = () => {
     if(drawing&&drawMode){
       drawing=false;
-      if(currentContour.length>=3&&polygonArea(currentContour)>0.5){state.contours.push(currentContour.slice(0,5000));status('Kontur gespeichert ('+currentContour.length+' Punkte).');}
+      if(currentContour.length>=3&&polygonArea(currentContour)>tolerances.IMAGE_MIN_DRAWN_CONTOUR_AREA_PIXELS2){state.contours.push(currentContour.slice(0,5000));status('Kontur gespeichert ('+currentContour.length+' Punkte).');}
       else status('Die Kontur braucht mindestens drei Punkte und eine Fläche.');
       currentContour=[];
     }
