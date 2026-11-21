@@ -1063,6 +1063,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'Ein fehlgeschlagener CSG-Vorgang hat Originalobjekte entfernt');
   assert.match(await page.locator('#status').innerText(), /simulierter zweiter CSG-Schrittfehler/,
     'Der simulierte CSG-Fehler wurde nicht kontrolliert gemeldet');
+  await page.locator('[data-tab="edit"]').click();
   await page.locator('#delete').click();
   await page.locator('#multiSelectToggle').click();
   assert.equal(await page.locator('#objects .object-row').count(), csgFailureStartCount,
