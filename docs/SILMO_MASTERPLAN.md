@@ -708,7 +708,7 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Schwelle wirkt ausschliesslich im Bildpixelraum vor der Abbildung auf reale CAD-Millimeter. Sie darf nicht als Modelliertoleranz oder Kernel-Epsilon interpretiert werden.
 - Der bisherige Wert und das Konturverhalten bleiben unverändert; die zentrale Toleranzwertprüfung und der Laufzeit-Verwendungs-Audit sichern die Zuordnung.
 - Die Änderung ist ein gezielter weiterer Schritt des offenen Toleranz-Audits. Andere Pixel-, Farb- und Bildklassifikationsparameter werden erst nach separater fachlicher Einordnung migriert.
-- Code-, Browser- und OCCT-CI für den neuen Commit stehen noch aus.
+- Code-Checks, Browser-Interaktion und isolierter OCCT-WebWorker wurden auf Commit 13f354fd9a27a3d3f631f50814d95c33d34be361 erfolgreich abgeschlossen; Details und History-Browsermessung stehen in Abschnitt 6.64.
 
 
 ### 6.64 Browser-History-Baseline für 40 Snapshots (21.11.2026)
