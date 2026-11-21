@@ -197,6 +197,30 @@
         await initialize();
         return send("listSubShapes", { shapeId });
       },
+      async getWireframe(shapeId) {
+        if (!Number.isInteger(shapeId) || shapeId <= 0) {
+          throw new Error("Für die 3D-Kantenauswahl ist eine gültige OCCT-Körperkennung erforderlich.");
+        }
+        await initialize();
+        const result = await send("getWireframe", { shapeId });
+        if (!result || !(result.points instanceof Float32Array) ||
+            !(result.edgeGroups instanceof Int32Array) ||
+            result.points.length % 3 !== 0 || result.edgeGroups.length % 3 !== 0 ||
+            result.edgeCount !== result.edgeGroups.length / 3 ||
+            !Array.from(result.points).every(Number.isFinite)) {
+          throw new Error("OCCT lieferte ungültige Kantendarstellungsdaten.");
+        }
+        for (let i = 0; i < result.edgeGroups.length; i += 3) {
+          const start = result.edgeGroups[i], count = result.edgeGroups[i + 1], edgeIndex = result.edgeGroups[i + 2];
+          if (!Number.isInteger(start) || start < 0 || start % 3 !== 0 ||
+              !Number.isInteger(count) || count < 6 || count % 3 !== 0 ||
+              start + count > result.points.length ||
+              !Number.isInteger(edgeIndex) || edgeIndex < 0) {
+            throw new Error("OCCT lieferte eine ungültige native Kanten-Polyline.");
+          }
+        }
+        return result;
+      },
       async filletEdges(shapeId, edgeIndices, radiusMM) {
         if (!Number.isInteger(shapeId) || shapeId <= 0 ||
             !Array.isArray(edgeIndices) || edgeIndices.length < 1 || edgeIndices.length > 12 ||
