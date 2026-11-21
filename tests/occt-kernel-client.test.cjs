@@ -24,6 +24,12 @@ class FakeWorker {
         this.onmessage({ data: { id: message.id, ok: true, result: {
           stepText: "ISO-10303-21;\\nHEADER;\\nENDSEC;\\nDATA;\\nENDSEC;\\nEND-ISO-10303-21;"
         } } });
+      } else if (message.method === "createCone") {
+        this.onmessage({ data: { id: message.id, ok: true, result: {
+          shapeId: 13, volumeMM3: (Math.PI * message.args.radiusMM ** 2 * message.args.heightMM) / 3,
+          shapeType: "solid",
+          mesh: { positions: new Float32Array([0, 0, 0]), indices: new Uint32Array([0]), triangleCount: 1 }
+        } } });
       } else if (message.method === "createSphere") {
         this.onmessage({ data: { id: message.id, ok: true, result: {
           shapeId: 12, volumeMM3: (4 / 3) * Math.PI * message.args.radiusMM ** 3, shapeType: "solid",
@@ -84,6 +90,20 @@ test("OCCT client imports and exports STEP text through the worker", async () =>
   assert.equal(worker.messages[1].args.stepText, stepText);
   await assert.rejects(client.importStep("not a STEP file"), /STEP-Datei ist ungültig/);
   await assert.rejects(client.exportStep(0), /gültige OCCT-Körperkennung/);
+  await client.dispose();
+});
+
+test("OCCT client creates analytic cones and rejects unsafe dimensions", async () => {
+  let worker;
+  const client = createClient({ WorkerClass: class extends FakeWorker { constructor(url, options) { super(url, options); worker = this; } } });
+  const result = await client.createCone(5, 20);
+  assert.equal(result.shapeId, 13);
+  assert.ok(Math.abs(result.volumeMM3 - (500 * Math.PI / 3)) < 1e-10);
+  assert.equal(result.shapeType, "solid");
+  assert.deepEqual(worker.messages.map(message => message.method), ["initialize", "createCone"]);
+  assert.deepEqual(worker.messages[1].args, { radiusMM: 5, heightMM: 20 });
+  await assert.rejects(client.createCone(0, 20), /Kegelradius/);
+  await assert.rejects(client.createCone(5, 2001), /Kegelradius/);
   await client.dispose();
 });
 
