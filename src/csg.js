@@ -108,10 +108,10 @@
     const geom = mesh.geometry;
     const pos = geom.getAttribute('position');
     const index = geom.index;
-    if (!pos || pos.itemSize !== 3 || !pos.array || pos.array.length !== pos.count * 3) {
+    if (!pos || pos.itemSize !== 3 || pos.normalized === true || !pos.array || pos.array.length !== pos.count * 3) {
       throw new TypeError('CSG benötigt ein Positionsattribut mit genau drei Komponenten pro Punkt.');
     }
-    if (index && (index.itemSize !== 1 || !index.array || index.array.length !== index.count)) {
+    if (index && (index.itemSize !== 1 || index.normalized === true || !index.array || index.array.length !== index.count)) {
       throw new TypeError('CSG benötigt ein Indexattribut mit genau einem Index pro Eintrag.');
     }
     const elementCount = index ? index.count : pos.count;
