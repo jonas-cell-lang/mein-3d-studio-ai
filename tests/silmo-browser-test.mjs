@@ -167,6 +167,49 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
   assert.ok(Math.abs(restoredOcctVolume - 8000) < 1e-7,
     'Undo stellte den OCCT-B-Rep-Quader nicht mit seinem korrekten Volumen wieder her');
+
+  // End-to-end: two scene objects selected in the normal object list are fused by OCCT.
+  const booleanSceneStart = await page.locator('#objects .object-row').count();
+  await showCreateSubtab(0);
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  assert.equal(await page.locator('#objects .object-row').count(), booleanSceneStart + 2,
+    'Zwei OCCT-Testkörper wurden nicht in die Szene übernommen');
+  await page.locator('#objects .object-select').nth(booleanSceneStart).click({ modifiers: ['Control'] });
+  const previousBooleanShapeId = await page.evaluate(() => window.__silmoOcctLastBoolean?.shapeId || 0);
+  await page.locator('#booleanUnion').click();
+  await page.waitForFunction(previous => Number.isFinite(window.__silmoOcctLastBoolean?.shapeId) &&
+    window.__silmoOcctLastBoolean.shapeId > previous, previousBooleanShapeId, { timeout: 20000 });
+  const sceneBoolean = await page.evaluate(async () => ({
+    ...window.__silmoOcctLastBoolean,
+    workerVolumeMM3: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastBoolean.shapeId)
+  }));
+  assert.equal(sceneBoolean.operation, 'fuse', 'SILMO-Schaltfläche hat keine OCCT-Fuse-Operation ausgelöst');
+  assert.ok(Math.abs(sceneBoolean.volumeMM3 - 8000) < 1e-7 &&
+    Math.abs(sceneBoolean.workerVolumeMM3 - 8000) < 1e-7,
+  'SILMO-OCCT-Fuse lieferte für zwei identische Körper nicht das erwartete Volumen');
+  assert.equal(await page.locator('#objects .object-row').count(), booleanSceneStart + 1,
+    'OCCT-Fuse hat die zwei Ausgangsobjekte nicht durch ein Ergebnisobjekt ersetzt');
+
+  const previousRestoredBooleanId = await page.evaluate(() => window.__silmoOcctLastRestored?.shapeId || 0);
+  await page.keyboard.press('Control+z');
+  await page.waitForFunction(previous => Number.isFinite(window.__silmoOcctLastRestored?.shapeId) &&
+    window.__silmoOcctLastRestored.shapeId > previous, previousRestoredBooleanId, { timeout: 20000 });
+  assert.equal(await page.locator('#objects .object-row').count(), booleanSceneStart + 2,
+    'Undo hat die beiden OCCT-Ausgangskörper nicht wiederhergestellt');
+  const previousRedoBooleanId = await page.evaluate(() => window.__silmoOcctLastRestored?.shapeId || 0);
+  await page.keyboard.press('Control+y');
+  await page.waitForFunction(previous => Number.isFinite(window.__silmoOcctLastRestored?.shapeId) &&
+    window.__silmoOcctLastRestored.shapeId > previous, previousRedoBooleanId, { timeout: 20000 });
+  const redoneBooleanVolume = await page.evaluate(async () =>
+    window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
+  assert.ok(Math.abs(redoneBooleanVolume - 8000) < 1e-7,
+    'Redo stellte das OCCT-Boolean-Ergebnis nicht als echten B-Rep-Körper wieder her');
+  await page.locator('#delete').click();
+  assert.equal(await page.locator('#objects .object-row').count(), booleanSceneStart,
+    'OCCT-Boolean-Ergebnis konnte nach Redo nicht aus der Szene entfernt werden');
   await showCreateSubtab(0);
 
 
