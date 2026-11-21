@@ -190,14 +190,21 @@ test('Fehler beim Aufbau eines späteren Projektobjekts lassen den Commit aus un
       app: 'SILMO 3D Studio AI', version: 3,
       objects: [
         makeProjectItem('first-object'),
-        makeProjectItem('invalid-transform', [NaN, 0, 0])
+        makeProjectItem('second-object')
       ]
     };
     let disposeCalls = 0;
+    let attributeCalls = 0;
     const originalDispose = THREE.BufferGeometry.prototype.dispose;
+    const originalSetAttribute = THREE.BufferGeometry.prototype.setAttribute;
     THREE.BufferGeometry.prototype.dispose = function () {
       disposeCalls += 1;
       return originalDispose.call(this);
+    };
+    THREE.BufferGeometry.prototype.setAttribute = function (name, attribute) {
+      attributeCalls += 1;
+      if (attributeCalls === 4) throw new Error('simulierter Geometrieaufbaufehler');
+      return originalSetAttribute.call(this, name, attribute);
     };
     try {
       projectIO.createProjectIO(deps).openProjectFile({
@@ -206,10 +213,11 @@ test('Fehler beim Aufbau eines späteren Projektobjekts lassen den Commit aus un
       });
     } finally {
       THREE.BufferGeometry.prototype.dispose = originalDispose;
+      THREE.BufferGeometry.prototype.setAttribute = originalSetAttribute;
     }
     assert.equal(state.committed, null);
     assert.ok(disposeCalls >= 2, 'bereits aufgebaute und fehlerhafte Geometrien wurden nicht freigegeben');
-    assert.match(state.status, /Ungültige Objektposition/);
+    assert.match(state.status, /simulierter Geometrieaufbaufehler/);
   });
 });
 
