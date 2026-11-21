@@ -380,7 +380,13 @@ async function execute(method, args) {
           if (typeof geometryType !== "string" || geometryType.length === 0) {
             throw new Error("OCCT lieferte einen ungültigen nativen Geometrietyp.");
           }
-          if (type === "face") return { index, geometryType };
+          if (type === "face") {
+            const areaMM2 = kernel.getSurfaceArea(handle);
+            if (!Number.isFinite(areaMM2) || areaMM2 <= 0) {
+              throw new Error("OCCT lieferte eine ungültige native Flächenfläche.");
+            }
+            return { index, geometryType, areaMM2 };
+          }
           const lengthMM = kernel.curveLength(handle);
           if (!Number.isFinite(lengthMM) || lengthMM <= 0) {
             throw new Error("OCCT lieferte eine ungültige native Kantenlänge.");
