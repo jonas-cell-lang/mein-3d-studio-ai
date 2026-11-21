@@ -690,7 +690,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       let base = targets[0];
       const unionParts = operation === 'union' ? targets.flatMap(obj => Array.isArray(obj.userData.unionParts) ? obj.userData.unionParts.map(part => JSON.parse(JSON.stringify(part))) : [serializeObjectForUnion(obj)]) : null;
       if (unionParts && (unionParts.length < 2 || unionParts.length > 100)) throw new Error('Zu viele ursprüngliche Formteile für eine trennbare Verbindung.');
-      const resultGeometry = base.geometry.clone();
+      let resultGeometry = base.geometry.clone();
       tempBase = new THREE.Mesh(resultGeometry, base.material);
       tempBase.position.copy(base.position); tempBase.rotation.copy(base.rotation); tempBase.scale.copy(base.scale);
       tempBase.updateMatrixWorld(true);
