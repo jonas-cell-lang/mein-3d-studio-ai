@@ -2244,7 +2244,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const size = tool === 'circle' ? Math.min(width, depth) : null;
       const actualWidth = tool === 'circle' ? size : width;
       const actualDepth = tool === 'circle' ? size : depth;
-      if (actualWidth >= 0.01 && actualDepth >= 0.01) {
+      if (actualWidth >= window.SILMOTolerances.SKETCH_DRAW_MIN_DIMENSION_WORLD_UNITS && actualDepth >= window.SILMOTolerances.SKETCH_DRAW_MIN_DIMENSION_WORLD_UNITS) {
         sketchDraft = {
           centerX: (sketchStart.x + sketchPoint.x) / 2,
           centerY: (sketchStart.y + sketchPoint.y) / 2,
