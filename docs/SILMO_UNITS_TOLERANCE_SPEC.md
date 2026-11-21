@@ -342,3 +342,8 @@ Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPS
 - `SKETCH_DRAW_MIN_DIMENSION_WORLD_UNITS = 0.01` ist die bisherige Mindestbreite und -tiefe, ab der ein per Ziehen erzeugtes Rechteck-/Kreis-Skizzenprofil akzeptiert wird.
 - Der Wert liegt im internen Weltkoordinatenraum (bei der bestehenden Einheitenumrechnung entspricht `0.1 mm`) und ist eine Eingabe-/Geometrie-Mindestgrösse, keine universelle Kernel-Toleranz.
 - Die bisherige Grenze bleibt unverändert. Der Zeichenvorgang verwendet die zentrale Konstante; der Zahlenwert und der Laufzeit-Verwendungs-Audit werden getestet.
+
+### 3.23 Druckvorprüfung: minimale Modellabmessung
+- `PRINT_MIN_MODEL_DIMENSION_MM = 0.01` ist die bisherige Untergrenze für jede gemessene Modell-Bounding-Box-Abmessung, unterhalb der die Druckvorprüfung eine Grössenwarnung ausgibt.
+- Der Wert wird nach Umrechnung der Bounding-Box-Abmessungen in Millimeter geprüft. Er ist eine diagnostische Mindestgrösse und weder eine STL-Weld-Toleranz noch eine Garantie für Druckbarkeit.
+- Die Warnschwelle und der Wortlaut bleiben unverändert; der Zahlenwert und die Laufzeitverwendung werden durch den Toleranztest und den Audit geprüft.
