@@ -230,12 +230,16 @@
         return result;
       },
       async filletEdges(shapeId, edgeIndices, radiusMM) {
+        const validRadius = value => Number.isFinite(value) && value >= 0.01 && value <= 2000;
+        const validRadii = typeof radiusMM === "number"
+          ? validRadius(radiusMM)
+          : Array.isArray(radiusMM) && radiusMM.length === edgeIndices?.length &&
+            radiusMM.every(value => value && validRadius(value.start) && validRadius(value.end));
         if (!Number.isInteger(shapeId) || shapeId <= 0 ||
             !Array.isArray(edgeIndices) || edgeIndices.length < 1 || edgeIndices.length > 12 ||
             !edgeIndices.every(index => Number.isInteger(index) && index >= 0) ||
-            new Set(edgeIndices).size !== edgeIndices.length ||
-            !Number.isFinite(radiusMM) || radiusMM < 0.01 || radiusMM > 2000) {
-          throw new Error("Kantenrundung benötigt gültige, eindeutige Kantenindizes und einen Radius von 0,01 bis 2000 mm.");
+            new Set(edgeIndices).size !== edgeIndices.length || !validRadii) {
+          throw new Error("Kantenrundung benötigt gültige Kantenindizes und Radien von 0,01 bis 2000 mm je Kante.");
         }
         await initialize();
         const result = await send("filletEdges", { shapeId, edgeIndices, radiusMM });
@@ -250,6 +254,30 @@
             !Array.from(mesh.indices).every(index => index < mesh.positions.length / 3) ||
             mesh.triangleCount !== mesh.indices.length / 3) {
           throw new Error("OCCT lieferte ein ungültiges Ergebnis der Kantenrundung.");
+        }
+        return result;
+      },
+      async chamferEdges(shapeId, edgeIndices, distanceMM) {
+        if (!Number.isInteger(shapeId) || shapeId <= 0 ||
+            !Array.isArray(edgeIndices) || edgeIndices.length < 1 || edgeIndices.length > 12 ||
+            !edgeIndices.every(index => Number.isInteger(index) && index >= 0) ||
+            new Set(edgeIndices).size !== edgeIndices.length ||
+            !Number.isFinite(distanceMM) || distanceMM < 0.01 || distanceMM > 2000) {
+          throw new Error("Kantenfase benötigt gültige, eindeutige Kantenindizes und einen Abstand von 0,01 bis 2000 mm.");
+        }
+        await initialize();
+        const result = await send("chamferEdges", { shapeId, edgeIndices, distanceMM });
+        const mesh = result?.mesh;
+        if (!Number.isInteger(result?.shapeId) || result.shapeId <= 0 ||
+            !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0 ||
+            !mesh || !(mesh.positions instanceof Float32Array) ||
+            !(mesh.indices instanceof Uint32Array) ||
+            mesh.positions.length < 9 || mesh.positions.length % 3 !== 0 ||
+            mesh.indices.length < 3 || mesh.indices.length % 3 !== 0 ||
+            !Array.from(mesh.positions).every(Number.isFinite) ||
+            !Array.from(mesh.indices).every(index => index < mesh.positions.length / 3) ||
+            mesh.triangleCount !== mesh.indices.length / 3) {
+          throw new Error("OCCT lieferte ein ungültiges Ergebnis der Kantenfase.");
         }
         return result;
       },
