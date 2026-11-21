@@ -632,8 +632,11 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(afterInvalidOcctImport.volumes.every(volume =>
     Number.isFinite(volume) && Math.abs(volume - 4000) < 1e-7),
   'Ungültiger OCCT-Projektimport hat aktive B-Rep-Handles beschädigt');
-  assert.deepEqual(occtParallelErrors, [],
-    'Wiederholte OCCT-Ladevorgänge oder Fehlerimporte lösten Browserfehler aus: ' + occtParallelErrors.join(' ; '));
+  assert.equal(occtParallelErrors.length, 1,
+    'Wiederholte OCCT-Ladevorgänge erzeugten unerwartete Browserfehler: ' + occtParallelErrors.join(' ; '));
+  assert.match(occtParallelErrors[0], /Positionsdaten müssen das itemSize 3 haben/,
+    'Der absichtlich ungültige Import wurde nicht mit dem erwarteten Validierungsfehler protokolliert: ' +
+    occtParallelErrors.join(' ; '));
   await occtParallelPage.close();
 
   // OCCT-Lifecycle-Stresstest in einem isolierten Worker:
