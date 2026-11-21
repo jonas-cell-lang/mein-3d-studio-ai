@@ -410,7 +410,15 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const edgeScreenPoint = await page.evaluate(() => window.__silmoOcctEdgePickPoint(0));
   assert.ok(edgeScreenPoint && Number.isFinite(edgeScreenPoint.x) && Number.isFinite(edgeScreenPoint.y),
     'Für Kante 1 wurde kein sichtbarer 3D-Auswahlpunkt berechnet');
-  await page.mouse.click(edgeScreenPoint.x, edgeScreenPoint.y);
+  const edgePickTolerance = await page.evaluate(point => ({
+    near: window.__silmoOcctFindEdgeAtScreenPoint(point.x + 8, point.y + 6),
+    far: window.__silmoOcctFindEdgeAtScreenPoint(point.x + 40, point.y + 40)
+  }), edgeScreenPoint);
+  assert.equal(edgePickTolerance.near?.edgeIndex, 0,
+    'Die bildschirmbasierte Kantenerkennung verfehlt einen Klick innerhalb der 14-Pixel-Toleranz');
+  assert.equal(edgePickTolerance.far, null,
+    'Die bildschirmbasierte Kantenerkennung akzeptiert einen Klick ausserhalb der Toleranz');
+  await page.mouse.click(edgeScreenPoint.x + 8, edgeScreenPoint.y + 6);
   await page.waitForFunction(() => document.querySelector('#occtEdgeList option[value="0"]')?.selected === true,
     null, { timeout: 10000 });
   const viewportEdgePick = await page.evaluate(() => ({
