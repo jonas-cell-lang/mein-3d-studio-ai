@@ -223,6 +223,63 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   });
   assert.equal(await page.locator('#objects .object-row').count(), booleanSceneStart,
     'OCCT-Boolean-Ergebnis konnte nach Redo nicht aus der Szene entfernt werden');
+
+  // End-to-end: Cut über die SILMO-Oberfläche mit zwei um 10 mm überlappenden OCCT-Quadern.
+  const cutSceneStart = await page.locator('#objects .object-row').count();
+  await showCreateSubtab(0);
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  assert.equal(await page.locator('#objects .object-row').count(), cutSceneStart + 2,
+    'Zwei OCCT-Körper für den Cut-Test wurden nicht erstellt');
+  // Den zweiten Quader über die normale SILMO-Tastaturbedienung um 10 mm verschieben.
+  await page.locator('#objects .object-select').nth(cutSceneStart + 1).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  await page.keyboard.press('Shift+ArrowRight');
+  // Ersten Quader als Grundform wählen, danach den verschobenen Quader hinzufügen.
+  await page.locator('#objects .object-select').nth(cutSceneStart).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  await page.locator('#objects .object-select').nth(cutSceneStart + 1).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true })));
+  const previousCutShapeId = await page.evaluate(() => window.__silmoOcctLastBoolean?.shapeId || 0);
+  await page.locator('#booleanSubtract').evaluate(button => {
+    if (button.disabled) throw new Error('OCCT-Cut-Schaltfläche ist deaktiviert.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  await page.waitForFunction(previous => window.__silmoOcctLastBoolean?.operation === 'cut' &&
+    Number.isFinite(window.__silmoOcctLastBoolean?.shapeId) &&
+    window.__silmoOcctLastBoolean.shapeId > previous, previousCutShapeId, { timeout: 20000 });
+  const sceneCut = await page.evaluate(async () => ({
+    ...window.__silmoOcctLastBoolean,
+    workerVolumeMM3: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastBoolean.shapeId)
+  }));
+  assert.ok(Math.abs(sceneCut.volumeMM3 - 4000) < 1e-7 &&
+    Math.abs(sceneCut.workerVolumeMM3 - 4000) < 1e-7,
+  'SILMO-OCCT-Cut lieferte für 10 mm Überlappung nicht das erwartete Volumen von 4000 mm³');
+  assert.equal(await page.locator('#objects .object-row').count(), cutSceneStart + 1,
+    'OCCT-Cut hat die Ausgangskörper nicht durch einen Ausschnitt ersetzt');
+
+  const previousCutUndoId = await page.evaluate(() => window.__silmoOcctLastRestored?.shapeId || 0);
+  await page.keyboard.press('Control+z');
+  await page.waitForFunction(previous => Number.isFinite(window.__silmoOcctLastRestored?.shapeId) &&
+    window.__silmoOcctLastRestored.shapeId > previous, previousCutUndoId, { timeout: 20000 });
+  assert.equal(await page.locator('#objects .object-row').count(), cutSceneStart + 2,
+    'Undo stellte die beiden OCCT-Cut-Ausgangskörper nicht wieder her');
+  const previousCutRedoId = await page.evaluate(() => window.__silmoOcctLastRestored?.shapeId || 0);
+  await page.keyboard.press('Control+y');
+  await page.waitForFunction(previous => Number.isFinite(window.__silmoOcctLastRestored?.shapeId) &&
+    window.__silmoOcctLastRestored.shapeId > previous, previousCutRedoId, { timeout: 20000 });
+  const redoneCutVolume = await page.evaluate(async () =>
+    window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
+  assert.ok(Math.abs(redoneCutVolume - 4000) < 1e-7,
+    'Redo stellte das OCCT-Cut-Ergebnis nicht als echten B-Rep-Körper wieder her');
+  await page.locator('#delete').evaluate(button => {
+    if (button.disabled) throw new Error('Löschen-Schaltfläche ist deaktiviert.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  assert.equal(await page.locator('#objects .object-row').count(), cutSceneStart,
+    'OCCT-Cut-Ergebnis konnte nach Redo nicht aus der Szene entfernt werden');
   await showCreateSubtab(0);
 
 
