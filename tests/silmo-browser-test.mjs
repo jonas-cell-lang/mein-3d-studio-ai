@@ -393,6 +393,68 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'OCCT-Projekt-Roundtrip löste Browserfehler aus: ' + occtRoundTripErrors.join(' ; '));
   await occtRoundTripPage.close();
 
+  // Parallel-Roundtrip: acht identische OCCT-Cut-Konstruktionsrezepte in einem neuen Dokument.
+  // Das prüft konkurrierenden Worker-Aufbau, eindeutige Handles und vollständige Wiederherstellung.
+  const stressSourceObject = occtSavedProject.objects.at(-1);
+  const occtParallelProject = {
+    ...occtSavedProject,
+    objects: Array.from({ length: 8 }, (_, index) => ({
+      ...structuredClone(stressSourceObject),
+      objectId: 'occt-parallel-roundtrip-' + index,
+      label: 'OCCT-Cut-Roundtrip-' + index,
+      position: [index * 3, 0, 0]
+    }))
+  };
+  const occtParallelPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const occtParallelErrors = [];
+  occtParallelPage.on('pageerror', error => occtParallelErrors.push(error.message));
+  occtParallelPage.on('console', message => {
+    if (message.type() === 'error') occtParallelErrors.push('console: ' + message.text());
+  });
+  await occtParallelPage.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
+  await occtParallelPage.waitForSelector('#viewport canvas', { timeout: 20000 });
+  await occtParallelPage.locator('#projectFileInput').setInputFiles({
+    name: 'occt-parallel-roundtrip.silmo.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(occtParallelProject))
+  });
+  await occtParallelPage.waitForFunction(() =>
+    /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 10000 });
+  await occtParallelPage.waitForFunction(() =>
+    Number.isInteger(window.__silmoOcctProjectRestoreGeneration) &&
+    window.__silmoOcctProjectRestoreGeneration > 0, null, { timeout: 10000 });
+  await occtParallelPage.evaluate(async () => {
+    if (window.__silmoOcctProjectRestorePromise) await window.__silmoOcctProjectRestorePromise;
+  });
+  const parallelOcctRestore = await occtParallelPage.evaluate(async () => {
+    const restored = window.__silmoOcctProjectRestoreSummary || [];
+    const volumes = await Promise.all(restored.map(item =>
+      item.shapeId ? window.__silmoOcctClient.getVolume(item.shapeId) : Promise.resolve(null)
+    ));
+    return {
+      objectCount: document.querySelectorAll('#objects .object-row').length,
+      restoredCount: restored.length,
+      kernels: restored.map(item => item.geometryKernel),
+      shapeIds: restored.map(item => item.shapeId),
+      volumes
+    };
+  });
+  assert.equal(parallelOcctRestore.objectCount, 8,
+    'Paralleler OCCT-Projektimport hat nicht alle acht Körper geladen');
+  assert.equal(parallelOcctRestore.restoredCount, 8,
+    'Nicht alle acht OCCT-Körper wurden in der Wiederherstellungsübersicht erfasst');
+  assert.ok(parallelOcctRestore.kernels.every(kernel => kernel === 'occt-wasm'),
+    'Mindestens ein parallel importierter Körper blieb ein Three.js-Fallback');
+  assert.ok(parallelOcctRestore.shapeIds.every(Number.isInteger) &&
+    new Set(parallelOcctRestore.shapeIds).size === 8,
+  'Paralleler OCCT-Projektimport erzeugte fehlende oder doppelte Worker-Handles');
+  assert.ok(parallelOcctRestore.volumes.every(volume =>
+    Number.isFinite(volume) && Math.abs(volume - 4000) < 1e-7),
+  'Mindestens ein parallel rekonstruierter OCCT-Cut-Körper besitzt nicht 4000 mm³');
+  assert.deepEqual(occtParallelErrors, [],
+    'Paralleler OCCT-Projektimport löste Browserfehler aus: ' + occtParallelErrors.join(' ; '));
+  await occtParallelPage.close();
+
   await page.locator('#delete').evaluate(button => {
     if (button.disabled) throw new Error('Löschen-Schaltfläche ist deaktiviert.');
     button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
