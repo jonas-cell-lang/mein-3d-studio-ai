@@ -301,3 +301,10 @@ Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPS
 - Die beiden Grenzen sind bewusst getrennt: eine absolute Mindestanzahl von Bildpixeln und ein Anteil an der gesamten Bildfläche. Beide wirken ausschliesslich vor der Abbildung in CAD-Millimeter.
 - Der bisherige Mindestwert von vier Pixeln und das bestehende Verhalten bleiben unverändert. Der Wert wird zentral benannt und durch `tests/tolerances.test.cjs` sowie den Laufzeit-Verwendungs-Audit geprüft.
 - Farb-/Kontrastschwellen der Segmentierungsheuristik bleiben algorithmische Bildklassifikationsparameter und werden nicht als CAD-Toleranzen umgedeutet.
+
+
+### 3.16 Herz-Umriss-Erkennung: Mindestabmessung und Nenner-Schutz (21.11.2026)
+- Die Erkennung prüft die projizierte Breite und Höhe gegen `HEART_OUTLINE_MIN_SPAN_WORLD_UNITS = 1e-5`.
+- Für die Seitenverhältnis-Berechnung wird die Höhe mit `HEART_OUTLINE_HEIGHT_DENOMINATOR_MIN_WORLD_UNITS = 1e-9` nach unten begrenzt, damit eine praktisch flache Projektion keinen instabilen Divisor erzeugt.
+- Beide Werte wirken im internen Welteinheitenraum. Die Seitenverhältnis-Akzeptanzgrenzen 0.35 und 2.5 bleiben eigenständige Formklassifikationsparameter und werden nicht als Längentoleranzen ausgegeben.
+- Die bisherigen Werte und das Verhalten bleiben unverändert; der Test prüft die Werte und den Laufzeit-Verwendungs-Audit.
