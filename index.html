@@ -2356,6 +2356,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   });
 
   $('exportModel').onclick = stlIO.exportSTL;
+  $('importStepModel').onclick = () => $('stepFileInput').click();
+  $('stepFileInput').addEventListener('change', event => {
+    Array.from(event.target.files || []).forEach(importSTEPFile);
+    event.target.value = '';
+  });
+  $('exportStepModel').onclick = exportSelectedSTEP;
 
   $('dropToBed').onclick = () => {
     const requested = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
