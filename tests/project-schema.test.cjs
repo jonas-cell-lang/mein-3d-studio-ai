@@ -446,3 +446,22 @@ test('Verschachtelte CSG-Quellteile prüfen Transformationen vor Geometrievalidi
     /Ungültige Objektposition, Drehung oder Skalierung/
   );
 });
+
+test('STEP-Konstruktionsquellen werden validiert und bleiben projektfähig', () => {
+  const stepText = 'ISO-10303-21;\\nHEADER;\\nENDSEC;\\nDATA;\\nENDSEC;\\nEND-ISO-10303-21;';
+  const project = validProject();
+  project.objects.push({ occtSource: { kind: 'step', stepText } });
+  assert.equal(schema.validateProjectEnvelope(project), project);
+
+  const invalidHeader = validProject();
+  invalidHeader.objects.push({ occtSource: { kind: 'step', stepText: 'not a STEP file' } });
+  assert.throws(() => schema.validateProjectEnvelope(invalidHeader), /STEP-Konstruktionsquelle/);
+
+  const invalidFooter = validProject();
+  invalidFooter.objects.push({ occtSource: { kind: 'step', stepText: 'ISO-10303-21;\\nDATA;' } });
+  assert.throws(() => schema.validateProjectEnvelope(invalidFooter), /STEP-Konstruktionsquelle/);
+
+  const oversized = validProject();
+  oversized.objects.push({ occtSource: { kind: 'step', stepText: 'ISO-10303-21;\\n' + 'x'.repeat(10 * 1024 * 1024) } });
+  assert.throws(() => schema.validateProjectEnvelope(oversized), /STEP-Konstruktionsquelle/);
+});
