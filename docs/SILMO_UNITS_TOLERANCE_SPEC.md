@@ -327,3 +327,8 @@ Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPS
 - `CONTOUR_FRAME_MIN_RESULT_DIMENSION_WORLD_UNITS = 1e-9` ist die Standard-Untergrenze für jede erzeugte Hohlrahmen-Abmessung (X, Y und Z).
 - Der Erzeuger kann weiterhin eine explizite `minimumDimension` übergeben; die Hauptanwendung verwendet dafür bewusst die strengere CSG-Geometriegrenze. Der benannte Wert gilt für direkte API-Aufrufe ohne Override.
 - Der bisherige Standardwert bleibt unverändert. Tests prüfen die Standardablehnung unterhalb der Grenze sowie einen erfolgreichen expliziten kleineren Override.
+
+### 3.20 Parametrische Skizzenprofile: Mindest-Eckenradius
+- `SKETCH_PROFILE_MIN_CORNER_RADIUS_WORLD_UNITS = 0.01` ist die bisherige Untergrenze für den Eckenradius eines abgerundeten parametrischen Rechteckprofils.
+- Der Wert wirkt in internen Welteinheiten und verhindert, dass ein als abgerundet gewähltes Rechteck durch Radius `0` oder einen negativen Radius zu einem scharfkantigen Profil wird.
+- Der bisherige Wert bleibt unverändert. Ein Test prüft den tatsächlich erzeugten Startpunkt bei Radius `0`; der zentrale Toleranztest sichert den Zahlenwert und den Laufzeit-Verwendungs-Audit.
