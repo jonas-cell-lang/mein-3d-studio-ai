@@ -29,7 +29,7 @@
     for (const [name, item] of Object.entries(data.attributes)) {
       if (!/^[a-zA-Z][a-zA-Z0-9_]{0,31}$/.test(name) ||
           !item || typeof item !== 'object' || !Array.isArray(item.array) ||
-          (item.normalized != null && typeof item.normalized !== 'boolean')) {
+          (Object.prototype.hasOwnProperty.call(item, 'normalized') && typeof item.normalized !== 'boolean')) {
         throw new Error('Ungültiges Geometrieattribut.');
       }
       const valueRange = attributeTypeRanges[item.arrayType];
