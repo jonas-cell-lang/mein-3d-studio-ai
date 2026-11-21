@@ -207,6 +207,25 @@
         }
         return result;
       },
+      async getFaceMeshes(shapeId) {
+        if (!Number.isInteger(shapeId) || shapeId <= 0) {
+          throw new Error("Für die Flächenauswahl ist eine gültige OCCT-Körperkennung erforderlich.");
+        }
+        await initialize();
+        const result = await send("getFaceMeshes", { shapeId });
+        if (!result || !Array.isArray(result.faces) || result.faces.length < 1 || result.faces.length > 10000 ||
+            !result.faces.every((face, index) => face && face.index === index &&
+              face.mesh && face.mesh.positions instanceof Float32Array &&
+              face.mesh.indices instanceof Uint32Array &&
+              face.mesh.positions.length >= 9 && face.mesh.positions.length % 3 === 0 &&
+              face.mesh.indices.length >= 3 && face.mesh.indices.length % 3 === 0 &&
+              face.mesh.triangleCount === face.mesh.indices.length / 3 &&
+              Array.from(face.mesh.positions).every(Number.isFinite) &&
+              Array.from(face.mesh.indices).every(value => value < face.mesh.positions.length / 3))) {
+          throw new Error("OCCT lieferte ungültige native Flächen-Netze.");
+        }
+        return result;
+      },
       async getWireframe(shapeId) {
         if (!Number.isInteger(shapeId) || shapeId <= 0) {
           throw new Error("Für die 3D-Kantenauswahl ist eine gültige OCCT-Körperkennung erforderlich.");
