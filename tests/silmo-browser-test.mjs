@@ -94,6 +94,30 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(Math.abs(occtResult.workerVolumeMM3 - 8000) < 1e-7, 'B-Rep-Körper blieb im Worker nicht mit korrektem Volumen abfragbar');
   assert.equal(occtResult.triangleCount > 0, true, 'OCCT-B-Rep wurde nicht in ein Three.js-Darstellungsnetz tesselliert');
   assert.deepEqual(occtResult.dimensionsMM, [20, 20, 20], 'OCCT-Testkörper hat falsche Sollabmessungen');
+  const occtExtrusion = await page.evaluate(async () => {
+    const loops = [
+      [[0, 0], [40, 0], [40, 30], [0, 30]],
+      [[10, 10], [10, 20], [20, 20], [20, 10]]
+    ];
+    const result = await window.__silmoOcctClient.createExtrusion(loops, 5);
+    return {
+      ...result,
+      workerVolumeMM3: await window.__silmoOcctClient.getVolume(result.shapeId),
+      meshValues: result.mesh.positions.length,
+      indexValues: result.mesh.indices.length
+    };
+  });
+  assert.equal(occtExtrusion.shapeType, 'solid', 'Skizzenextrusion erzeugte keinen OCCT-Solid');
+  assert.ok(Math.abs(occtExtrusion.volumeMM3 - 5500) < 1e-6, 'OCCT-Skizzenextrusion hat falsches Volumen mit Innenloch');
+  assert.ok(Math.abs(occtExtrusion.workerVolumeMM3 - 5500) < 1e-6, 'OCCT-B-Rep-Extrusion blieb nicht im Worker abfragbar');
+  assert.ok(occtExtrusion.mesh.triangleCount > 0 && occtExtrusion.meshValues > 0 && occtExtrusion.indexValues > 0,
+    'OCCT-Skizzenextrusion lieferte kein Darstellungsnetz');
+  assert.equal(await page.evaluate(shapeId => window.__silmoOcctClient.releaseShape(shapeId), occtExtrusion.shapeId), true,
+    'Einzelner OCCT-Skizzenkörper konnte nicht freigegeben werden');
+  assert.equal(await page.evaluate(async shapeId => {
+    try { await window.__silmoOcctClient.getVolume(shapeId); return false; }
+    catch { return true; }
+  }, occtExtrusion.shapeId), true, 'Freigegebener OCCT-Körper blieb weiterhin abfragbar');
   await page.evaluate(() => window.__silmoOcctClient.releaseAll());
   await page.locator('[data-tab="edit"]').click();
   await page.locator('#delete').click();
