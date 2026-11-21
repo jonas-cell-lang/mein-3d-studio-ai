@@ -123,6 +123,38 @@ async function execute(method, args) {
     }
   }
 
+  if (method === "booleanOperation") {
+    const { operation, shapeIds } = args;
+    if (!["fuse", "cut", "common"].includes(operation) ||
+        !Array.isArray(shapeIds) || shapeIds.length !== 2 ||
+        shapeIds.some(id => !Number.isInteger(id) || id <= 0) ||
+        shapeIds[0] === shapeIds[1]) {
+      throw new Error("OCCT-Boolean benötigt zwei verschiedene Körper und eine gültige Operation.");
+    }
+    const first = shapes.get(shapeIds[0]);
+    const second = shapes.get(shapeIds[1]);
+    if (!first || !second) {
+      throw new Error("Mindestens eine OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
+    }
+    let resultShape = null;
+    try {
+      resultShape = kernel[operation](first, second);
+      const volumeMM3 = kernel.getVolume(resultShape);
+      const mesh = serializeMesh(kernel.tessellate(resultShape));
+      if (!Number.isFinite(volumeMM3) || volumeMM3 <= 0) {
+        throw new Error("OCCT-Boolean-Ergebnis besitzt kein gültiges positives Volumen.");
+      }
+      const shapeId = nextShapeId++;
+      shapes.set(shapeId, resultShape);
+      resultShape = null;
+      return { shapeId, volumeMM3, mesh, operation };
+    } finally {
+      if (resultShape !== null) {
+        try { kernel.release(resultShape); } catch { /* Fehlerpfad: best effort cleanup. */ }
+      }
+    }
+  }
+
   if (method === "releaseShape") {
     const shape = shapes.get(args.shapeId);
     if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
