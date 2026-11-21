@@ -410,6 +410,17 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const edgeScreenPoint = await page.evaluate(() => window.__silmoOcctEdgePickPoint(0));
   assert.ok(edgeScreenPoint && Number.isFinite(edgeScreenPoint.x) && Number.isFinite(edgeScreenPoint.y),
     'Für Kante 1 wurde kein sichtbarer 3D-Auswahlpunkt berechnet');
+  const edgePickState = await page.evaluate(point => ({
+    ...window.__silmoOcctEdgePickReady(),
+    point,
+    pointInsideCanvas: point.x >= window.__silmoOcctEdgePickReady().canvas.left &&
+      point.x <= window.__silmoOcctEdgePickReady().canvas.right &&
+      point.y >= window.__silmoOcctEdgePickReady().canvas.top &&
+      point.y <= window.__silmoOcctEdgePickReady().canvas.bottom
+  }), edgeScreenPoint);
+  assert.ok(edgePickState.enabled && edgePickState.overlayExists && edgePickState.sourceMatchesSelected &&
+    edgePickState.pointInsideCanvas,
+    '3D-Kantenauswahl ist vor dem Klick nicht aktiv oder der Auswahlpunkt liegt ausserhalb des Viewports: ' + JSON.stringify(edgePickState));
   const edgePickTolerance = await page.evaluate(point => ({
     near: window.__silmoOcctFindEdgeAtScreenPoint(point.x + 8, point.y + 6),
     far: window.__silmoOcctFindEdgeAtScreenPoint(point.x + 40, point.y + 40)
