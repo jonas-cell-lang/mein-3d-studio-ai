@@ -1,46 +1,56 @@
-# SILMO – isolierter OCCT-WASM-Prototyp
+# SILMO – OCCT-WASM-Kern und Prototyp-Tests
 
-Dieser Ordner enthält weiterhin die isolierten Kandidatentests und zusätzlich den reproduzierbaren Build für den ersten produktiven OCCT-Worker. Der Worker-Build wird in die SILMO-Runtime kopiert; die Testprogramme und Smoke-Seiten selbst werden nicht von der App geladen.
+Dieser Ordner enthält zwei getrennte Dinge:
+1. isolierte Kandidatentests für OCCT-WASM;
+2. den reproduzierbaren Build des OCCT-Produktions-Workers, den SILMO lokal lädt.
 
-## Gepinnter Kandidat
+Die Testprogramme und Smoke-Seiten selbst werden nicht von der App geladen.
 
-- npm: occt-wasm 5.17.2
-- Kernelbasis laut Projekt: Open CASCADE 8.0.1
-- Laufzeit: Node.js 24 in CI
-- Geometrieeinheiten im Test: Millimeter (OCCT API)
-- Testtoleranz für analytische Volumenvergleiche: 1e-6 relativ (Testvergleich, keine SILMO-Kerneltoleranz)
+## Gepinnte Laufzeit
 
-## Worker-Build für SILMO\n\nNach `npm install` erzeugt `npm run build:worker` den Produktions-Worker unter `dist-production/silmo-occt-worker.js`. Das Root-Skript `npm run prepare:runtime` kopiert anschliessend den Worker und `occt-wasm.wasm` nach `vendor/occt/`.\n\nDie App lädt den Worker erst beim ersten Klick auf „OCCT-B-Rep-Quader“.\n\n## Lokaler Test
+- npm-Paket: `occt-wasm 5.17.2`
+- Kernelbasis: Open CASCADE 8.0.1
+- Geometrieeinheit der OCCT-API: Millimeter
+- Testtoleranz für analytische Volumenvergleiche: (1e-6) relativ; dies ist eine Testvergleichstoleranz, keine globale SILMO-Kerneltoleranz.
 
-Im Ordner research/geometry-kernel-prototype:
+## Produktions-Worker bauen
+
+Im Ordner `research/geometry-kernel-prototype`:
 
 ```sh
 npm install
+npm run build:worker
+```
+
+Das Root-Skript `npm run prepare:runtime` kopiert anschliessend den gebündelten Worker und die WASM-Datei nach `vendor/occt/`. Diese generierten Dateien sind Build-Artefakte und werden nicht als Quellcode eingecheckt.
+
+SILMO startet den Worker bei Bedarf. Der Client unter `src/occt-kernel-client.js` kapselt Worker-Kommunikation und Lebenszyklus. Es gibt keine CDN-Abhängigkeit für die OCCT-Laufzeit.
+
+## Produktiv integrierter Funktionsumfang
+
+- Echte OCCT-B-Rep-Quader werden im Worker erzeugt und für die Three.js-Anzeige tesselliert.
+- Unterstützte Skizzenextrusionen werden als OCCT-B-Rep-Körper erstellt.
+- Fuse, Cut und Common sind für zwei geeignete OCCT-Körper verfügbar.
+- Undo/Redo kann unterstützte B-Rep-Körper und Boolean-Ergebnisse aus Konstruktionsrezepten rekonstruieren.
+- Projektformat v3 speichert optionale `occtSource`-Rezepte; beim Öffnen werden die B-Rep-Körper im Worker neu aufgebaut.
+- Löschen, Projektwechsel und Worker-Lebenszyklus geben verwaltete Handles frei.
+
+## Isolierte Kerneltests
+
+Im Ordner `research/geometry-kernel-prototype`:
+
+```sh
 npm test
 ```
 
-## Testumfang
+Der Testkorpus umfasst analytische Quader, Boolesche Durchbrüche, Platten mit 4, 12 und 40 Bohrungen, dünne Platten, Compound-/Solid-Auswertung, Fillet, Topologieabfragen, Tessellierung, STEP-Export/-Import, Fehlerbehandlung und Handle-Freigabe.
 
-- Analytischer Quader und Bounding Box
-- Boolescher Durchbruch mit bekanntem Volumen
-- Platte mit vier Durchgangslöchern
-- Zwölf nacheinander ausgeführte Durchgangsbohrungen mit analytischem Volumenvergleich und anschliessender Tessellierung
-- Grössere Musterplatte 80 × 50 × 4 mm mit 40 Bohrungen; analytischer Volumenvergleich, Ein-Körper-Prüfung und Tessellierung
-- Dünne 1,2-mm-Platte mit Durchgangsloch und analytischem Volumenvergleich
-- Boolesche Ergebnisse mit Compound-Wurzel: enthaltene Solid-Körper werden gezählt, statt den Wurzeltyp fälschlich mit einem einzelnen Solid gleichzusetzen
-- Fillet und Topologieabfragen
-- Tessellierung
-- STEP-Export und -Import mit Volumenvergleich
-- Fehlerfall und anschliessende Weiterverwendung des Kerns
-- Freigabe aller Handles und erneute Verwendung
+## Bewusste Grenzen
 
-## Grenzen dieses ersten Prototyps
+- Der Produktions-Worker ist noch kein Ersatz für sämtliche bestehenden Three.js-/BSP-Werkzeuge.
+- Die UI-Booleschen Operationen unterstützen derzeit genau zwei passende OCCT-B-Rep-Körper mit Identitätsrotation und Einheitsskalierung; Translationen werden berücksichtigt.
+- Gewöhnliche Meshes, beliebige Rotation/Skalierung, mehr als zwei Operanden und allgemeine verschachtelte Feature-Ketten sind nicht vollständig auf OCCT migriert.
+- Projektdateien speichern Konstruktionsrezepte und Darstellungsgeometrie, keine rohe native OCCT-B-Rep-Datei.
+- Ein Safari-/WebKit-Test, plattformübergreifende Leistungsmessungen und Langzeitmessungen stehen noch aus.
 
-- Chromium-Web-Worker-Test prüft Quader 10 × 20 × 30 mm, 12- und 40-Bohrungs-Boolean, eine 1,2-mm-Dünnwandplatte sowie Freigabe/Wiederverwendung des Kerns; Volumen, Solid-Anzahl und Tessellierung werden geprüft
-- Noch kein Safari-/WebKit-Test
-- Noch kein Vergleichslauf mit Replicad, moket-io/occt-wasm oder OpenGeometry
-- Noch keine Last-/Langzeitmessung
-- Kein Nachweis der Kompatibilität mit SILMO-Projektdateien
-- Erste vertikale Integration: OCCT erzeugt einen Quader im Worker; Three.js zeigt dessen Tessellierung. Bestehende CAD-Werkzeuge und BSP-CSG verwenden OCCT noch nicht. B-Rep-Projektspeicherung und Migration bleiben offen.
-
-Ein erfolgreicher Lauf ist nur ein Kandidaten-Smoke-Test und keine Freigabe für die spätere Produktionsintegration.
+Ein erfolgreicher isolierter Kerneltest beweist nicht automatisch die vollständige Integration sämtlicher CAD-Funktionen. Produktionsintegration, Browserregression und isolierte Kerneltests werden getrennt bewertet.
