@@ -327,7 +327,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'OCCT-Torus ist im Worker nicht als echter B-Rep-Körper abfragbar');
   assert.deepEqual(torusResult.dimensionsMM, [50, 50, 10]);
   await page.locator('#inspectOcctShape').click();
-  await page.waitForFunction(() => /^OCCT-Prüfung:/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  await page.waitForFunction(() => /^OCCT-Analyse:/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
   const torusInspection = await page.evaluate(() => window.__silmoOcctLastInspection);
   assert.ok(Math.abs(torusInspection.volumeMM3 - expectedTorusVolume) < 1e-5,
     'Körperprüfung meldet ein falsches natives OCCT-Volumen');
