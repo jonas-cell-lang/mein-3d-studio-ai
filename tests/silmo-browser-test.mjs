@@ -90,8 +90,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     const created = window.__silmoOcctLastCreated;
     return { ...created, workerVolumeMM3: await window.__silmoOcctClient.getVolume(created.shapeId) };
   });
-  assert.equal(occtResult.volumeMM3, 8000, 'OCCT-Quader besitzt nicht das analytische Volumen von 8000 mm³');
-  assert.equal(occtResult.workerVolumeMM3, 8000, 'B-Rep-Körper blieb im Worker nicht abfragbar');
+  assert.ok(Math.abs(occtResult.volumeMM3 - 8000) < 1e-7, 'OCCT-Quader besitzt nicht das analytische Volumen von 8000 mm³');
+  assert.ok(Math.abs(occtResult.workerVolumeMM3 - 8000) < 1e-7, 'B-Rep-Körper blieb im Worker nicht mit korrektem Volumen abfragbar');
   assert.equal(occtResult.triangleCount > 0, true, 'OCCT-B-Rep wurde nicht in ein Three.js-Darstellungsnetz tesselliert');
   assert.deepEqual(occtResult.dimensionsMM, [20, 20, 20], 'OCCT-Testkörper hat falsche Sollabmessungen');
   await page.evaluate(() => window.__silmoOcctClient.releaseAll());
