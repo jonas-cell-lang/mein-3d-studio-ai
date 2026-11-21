@@ -283,6 +283,35 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   });
   assert.ok(Math.abs(restoredSphere - expectedSphereVolume) < 1e-6, 'Redo hat die OCCT-Kugel nicht als echten B-Rep-Körper rekonstruiert');
 
+  // Echter OCCT-B-Rep-Kegel über die Oberfläche inklusive Undo/Redo.
+  const coneSceneStart = await page.locator('#objects .object-row').count();
+  await page.locator('#addOcctCone').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Kegel erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  const coneResult = await page.evaluate(async () => {
+    const created = window.__silmoOcctLastCreated;
+    return { ...created, workerVolumeMM3: await window.__silmoOcctClient.getVolume(created.shapeId) };
+  });
+  const expectedConeVolume = (Math.PI * 10 ** 2 * 30) / 3;
+  assert.ok(Math.abs(coneResult.volumeMM3 - expectedConeVolume) < 1e-6,
+    'OCCT-Kegel besitzt nicht das analytische Volumen 1000π mm³');
+  assert.ok(Math.abs(coneResult.workerVolumeMM3 - expectedConeVolume) < 1e-6,
+    'OCCT-Kegel ist im Worker nicht als echter B-Rep-Körper abfragbar');
+  assert.deepEqual(coneResult.dimensionsMM, [20, 20, 30]);
+  const coneUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+z');
+  await waitForOcctRestore(coneUndoGeneration);
+  assert.equal(await page.locator('#objects .object-row').count(), coneSceneStart,
+    'Undo hat den OCCT-Kegel nicht entfernt');
+  const coneRedoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+y');
+  await waitForOcctRestore(coneRedoGeneration);
+  const restoredCone = await page.evaluate(async () => {
+    const created = window.__silmoOcctLastRestored;
+    return created ? await window.__silmoOcctClient.getVolume(created.shapeId) : null;
+  });
+  assert.ok(Math.abs(restoredCone - expectedConeVolume) < 1e-6,
+    'Redo hat den OCCT-Kegel nicht als echten B-Rep-Körper rekonstruiert');
+
   // STEP-Export und anschliessender Import über die echte SILMO-Dateiauswahl.
   await page.locator('#objects .object-select').filter({ hasText: 'OCCT-B-Rep-Quader' }).last().evaluate(button =>
     button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
