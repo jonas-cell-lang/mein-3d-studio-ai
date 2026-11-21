@@ -41,6 +41,9 @@ async function showCreateSubtab(index) {
 async function showDrawRightSubtab(index) {
   await page.locator('#pane-draw-right > .inner-tab-nav button').nth(index).click();
 }
+async function waitForSelectedSketchOcct() {
+  await page.waitForFunction(() => window.__silmoSketchSnapshot()?.geometryKernel === 'occt-wasm', null, { timeout: 45000 });
+}
 page.on('pageerror', error => pageErrors.push(error.message));
 page.on('console', message => {
   if (message.type() === 'error' && !allowExpectedConsoleError) pageErrors.push('console: ' + message.text());
@@ -853,6 +856,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#clickContourFinish').click();
   assert.equal(await page.locator('#createSketchSolid').isEnabled(),true,'Abgeschlossene Punktkontur ist nicht als 3D-Körper bereit');
   await page.locator('#createSketchSolid').click();
+  await waitForSelectedSketchOcct();
 
   // 2D-Skizze: Rechteck auf der XY-Ebene zeichnen und mit exakten Massen extrudieren.
   await page.locator('[data-tab="draw"]').click();
@@ -870,11 +874,13 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#sketchDepthMM').fill('15');
   await page.locator('#sketchHeightMM').fill('5');
   await page.locator('#createSketchSolid').click();
+  await waitForSelectedSketchOcct();
   const sketchSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
   assert.equal(sketchSnapshot.type, 'rectangle', 'Rechteck-Skizze wurde nicht als Rechteck erkannt');
   assert.ok(Math.abs(sketchSnapshot.actualWidthMM - 25) < 0.01, 'Exakte Rechteckbreite wurde nicht übernommen');
   assert.ok(Math.abs(sketchSnapshot.actualDepthMM - 15) < 0.01, 'Exakte Rechtecktiefe wurde nicht übernommen');
   assert.ok(Math.abs(sketchSnapshot.actualHeightMM - 5) < 0.01, 'Extrusionshöhe wurde nicht übernommen');
+  assert.ok(Math.abs(sketchSnapshot.occtVolumeMM3 - 1875) < 1e-6, 'OCCT-Rechteck besitzt nicht das exakte Volumen von 1875 mm³');
   assert.equal(await page.locator('#createSketchSolid').isDisabled(), true, 'Erstellte Skizze bleibt fälschlich zur erneuten Extrusion bereit');
   await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('circle');
@@ -893,6 +899,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.mouse.move(ellipseEnd.x, ellipseEnd.y, { steps: 8 }); await page.mouse.up();
   await page.locator('#sketchWidthMM').fill('30'); await page.locator('#sketchDepthMM').fill('12'); await page.locator('#sketchHeightMM').fill('4');
   await page.locator('#createSketchSolid').click();
+  await waitForSelectedSketchOcct();
   const ellipseSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
   assert.equal(ellipseSnapshot.type, 'ellipse', 'Ellipse wurde nicht als Ellipse gespeichert');
   assert.ok(Math.abs(ellipseSnapshot.actualWidthMM - 30) < 0.01, 'Ellipsenbreite stimmt nicht');
@@ -910,6 +917,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.mouse.move(triangleEnd.x, triangleEnd.y, { steps: 8 }); await page.mouse.up();
   await page.locator('#sketchWidthMM').fill('24'); await page.locator('#sketchDepthMM').fill('18'); await page.locator('#sketchHeightMM').fill('6');
   await page.locator('#createSketchSolid').click();
+  await waitForSelectedSketchOcct();
   const triangleSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
   assert.equal(triangleSnapshot.type, 'triangle', 'Dreieck wurde nicht als Dreieck gespeichert');
   assert.ok(Math.abs(triangleSnapshot.actualWidthMM - 24) < 0.01, 'Dreiecksbreite stimmt nicht');
@@ -946,6 +954,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.mouse.move(snapEnd.x, snapEnd.y, { steps: 10 });
   await page.mouse.up();
   await page.locator('#createSketchSolid').click();
+  await waitForSelectedSketchOcct();
   const snappedSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
   assert.equal(snappedSnapshot.type, 'rectangle', 'Rasterfang-Test hat kein Rechteck erstellt');
   assert.ok(Math.abs(snappedSnapshot.widthMM / 5 - Math.round(snappedSnapshot.widthMM / 5)) < 0.001, 'Rechteckbreite liegt nicht auf dem 5-mm-Raster');
@@ -979,6 +988,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(freeformBeforeCreate.tool, 'freeform2d', 'Skizzenwerkzeug wechselte vor der Freiform-Extrusion: ' + JSON.stringify(freeformBeforeCreate));
   assert.equal(freeformBeforeCreate.draft?.type, 'freeform2d', 'Freiform-Zeichenpunkte gingen vor der Extrusion verloren: ' + JSON.stringify(freeformBeforeCreate));
   await page.locator('#createSketchSolid').click();
+  await waitForSelectedSketchOcct();
   const freeformAfterCreate = await page.evaluate(() => ({
     snapshot: window.__silmoSketchSnapshot(),
     status: document.getElementById('status')?.textContent,
