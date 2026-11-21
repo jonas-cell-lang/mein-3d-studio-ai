@@ -811,6 +811,82 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
   }
 
+  async function upgradeSketchMeshToOcct(mesh, sketchMetadata) {
+    const outline = sketchMetadata?.outlinePoints;
+    if (!Array.isArray(outline) || outline.length < 3 ||
+        !Number.isFinite(sketchMetadata.extrusionMM) || sketchMetadata.extrusionMM < 0.1) return;
+    const sourceRings = [outline, ...(Array.isArray(sketchMetadata.holes) ? sketchMetadata.holes : [])];
+    const loops = sourceRings.map(ring => ring.map(point => [
+      worldUnitsToMm(point[0]), worldUnitsToMm(point[1])
+    ]));
+    let result = null;
+    try {
+      if (!window.__silmoOcctClient) {
+        window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+      }
+      result = await window.__silmoOcctClient.createExtrusion(loops, sketchMetadata.extrusionMM);
+      if (!objects.includes(mesh) || mesh.userData.sketch !== sketchMetadata) {
+        await window.__silmoOcctClient.releaseShape(result.shapeId);
+        return;
+      }
+      if (result.shapeType !== 'solid' || !Number.isFinite(result.volumeMM3) ||
+          !result.mesh?.positions?.length || !result.mesh?.indices?.length ||
+          result.mesh.positions.length % 3 !== 0 || result.mesh.indices.length % 3 !== 0) {
+        throw new Error('OCCT lieferte keinen vollständigen Solid mit Darstellungsnetz.');
+      }
+      const positions = new Float32Array(result.mesh.positions.length);
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      for (let i = 0; i < positions.length; i++) {
+        const value = result.mesh.positions[i] * mmToWorld;
+        if (!Number.isFinite(value)) throw new Error('OCCT-Mesh enthält ungültige Koordinaten.');
+        positions[i] = value;
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      const nextSize = geometry.boundingBox.getSize(new THREE.Vector3());
+      mesh.geometry.computeBoundingBox();
+      const previousSize = mesh.geometry.boundingBox.getSize(new THREE.Vector3());
+      const sizeDifferenceMM = Math.max(
+        Math.abs(worldUnitsToMm(nextSize.x - previousSize.x)),
+        Math.abs(worldUnitsToMm(nextSize.y - previousSize.y)),
+        Math.abs(worldUnitsToMm(nextSize.z - previousSize.z))
+      );
+      if (![nextSize.x, nextSize.y, nextSize.z].every(value => Number.isFinite(value) && value > 0) ||
+          sizeDifferenceMM > 0.02) {
+        geometry.dispose();
+        throw new Error('OCCT-Darstellung stimmt nicht mit den Abmessungen der bisherigen Skizze überein.');
+      }
+      const previousGeometry = mesh.geometry;
+      mesh.geometry = geometry;
+      previousGeometry.dispose();
+      mesh.userData.baseDimensions = { x: nextSize.x, y: nextSize.y, z: nextSize.z };
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtShapeId = result.shapeId;
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      if (selected === mesh || selectedObjects.includes(mesh)) {
+        updateObjects();
+        showProperties();
+      }
+      status.textContent = 'Skizzenkörper als exakter OCCT-B-Rep erstellt. Volumen: ' +
+        result.volumeMM3.toFixed(2) + ' mm³.';
+    } catch (error) {
+      if (result?.shapeId) {
+        try { await window.__silmoOcctClient?.releaseShape(result.shapeId); } catch { /* best effort cleanup */ }
+      }
+      if (objects.includes(mesh)) {
+        mesh.userData.geometryKernel = 'three-mesh-fallback';
+        status.textContent = 'OCCT-Extrusion nicht verfügbar; die bisherige Skizzengeometrie bleibt erhalten. ' +
+          (error.message || 'Unbekannter Kernel-Fehler');
+      }
+    }
+  }
+
   // Tastenkürzel, Auswahl mehrerer Objekte und einfacher Änderungsverlauf
   let selectedObjects = [];
   let multiSelectMode = false;
@@ -2989,6 +3065,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       scene.add(mesh);
       objects.push(mesh);
       selectObject(mesh);
+      if (Array.isArray(sketchMetadata?.outlinePoints) && sketchMetadata.outlinePoints.length >= 3) {
+        mesh.userData.geometryKernel = 'three-mesh-pending-occt';
+        void upgradeSketchMeshToOcct(mesh, sketchMetadata);
+      }
       clearSketchPreview();
       sketchDraft = null;
       document.getElementById('createSketchSolid').disabled = true;
@@ -3177,7 +3257,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       ...obj.userData.sketch,
       actualWidthMM: worldUnitsToMm(size.x),
       actualDepthMM: worldUnitsToMm(size.y),
-      actualHeightMM: worldUnitsToMm(size.z)
+      actualHeightMM: worldUnitsToMm(size.z),
+      geometryKernel: obj.userData.geometryKernel || 'three-mesh',
+      occtVolumeMM3: obj.userData.occtVolumeMM3 ?? null
     };
   };
 
