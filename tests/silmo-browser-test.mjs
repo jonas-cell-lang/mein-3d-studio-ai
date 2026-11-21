@@ -780,6 +780,14 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     const concurrent = await Promise.all(Array.from({ length: 8 }, () =>
       client.createBox(10, 10, 10)));
     const concurrentVolumes = await Promise.all(concurrent.map(item => client.getVolume(item.shapeId)));
+    // Gemischte parallele Befehle: Jede Boolean-Operation muss genau ihre
+    // beiden Ausgangskörper sehen und ein korrektes Ergebnis behalten.
+    const concurrentCuts = await Promise.all(Array.from({ length: 4 }, (_, index) =>
+      client.booleanOperation('cut',
+        [concurrent[index * 2].shapeId, concurrent[index * 2 + 1].shapeId],
+        [[0, 0, 0], [5, 0, 0]])));
+    const concurrentCutVolumes = await Promise.all(concurrentCuts.map(item =>
+      client.getVolume(item.shapeId)));
     await client.releaseAll();
     let releaseAllRejected = false;
     try {
@@ -800,6 +808,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
       cycles,
       releasedHandlesRejected,
       concurrentVolumes,
+      concurrentCutVolumes,
       releaseAllRejected,
       afterReleaseAllVolume,
       disposedRejected
@@ -816,6 +825,10 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'Ein freigegebener OCCT-Körper blieb über seine Handle-ID erreichbar');
   assert.ok(occtLifecycle.concurrentVolumes.every(volume => Math.abs(volume - 1000) < 1e-7),
     'Gleichzeitige OCCT-Anfragen lieferten falsche Körpervolumen');
+  assert.equal(occtLifecycle.concurrentCutVolumes.length, 4,
+    'Nicht alle vier parallelen OCCT-Boolean-Operationen wurden abgeschlossen');
+  assert.ok(occtLifecycle.concurrentCutVolumes.every(volume => Math.abs(volume - 500) < 1e-7),
+    'Parallele OCCT-Boolean-Operationen lieferten falsche Volumen oder vermischte Operanden');
   assert.equal(occtLifecycle.releaseAllRejected, true,
     'releaseAll hat nicht alle Worker-Handles unzugänglich gemacht');
   assert.ok(Math.abs(occtLifecycle.afterReleaseAllVolume - 125) < 1e-7,
