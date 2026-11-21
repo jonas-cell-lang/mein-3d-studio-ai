@@ -430,6 +430,36 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(Number.isInteger(nestedRestored.shapeId) &&
     Math.abs(nestedRestored.volumeMM3 - 8000) < 1e-7,
   'Verschachtelte OCCT-Fuse lieferte nicht das erwartete B-Rep-Volumen von 8000 mm³');
+
+  // Fehlerpfad im produktiven Worker: eine leere Common-Operation darf die Queue nicht blockieren.
+  const failedCommonRecovery = await occtRoundTripPage.evaluate(async () => {
+    const client = window.__silmoOcctClient;
+    const first = await client.createBox(10, 10, 10);
+    const second = await client.createBox(10, 10, 10);
+    let rejected = false;
+    try {
+      await client.booleanOperation('common', [first.shapeId, second.shapeId],
+        [[0, 0, 0], [1000, 1000, 1000]]);
+    } catch {
+      rejected = true;
+    }
+    const retainedVolumes = [
+      await client.getVolume(first.shapeId),
+      await client.getVolume(second.shapeId)
+    ];
+    const afterFailure = await client.createBox(2, 2, 2);
+    const afterFailureVolume = await client.getVolume(afterFailure.shapeId);
+    await Promise.all([first.shapeId, second.shapeId, afterFailure.shapeId].map(id =>
+      client.releaseShape(id)
+    ));
+    return { rejected, retainedVolumes, afterFailureVolume };
+  });
+  assert.equal(failedCommonRecovery.rejected, true,
+    'Leeres OCCT-Common-Ergebnis wurde nicht kontrolliert abgelehnt');
+  assert.deepEqual(failedCommonRecovery.retainedVolumes, [1000, 1000],
+    'Fehlgeschlagene Boolean-Operation beschädigte ihre Ausgangskörper');
+  assert.ok(Math.abs(failedCommonRecovery.afterFailureVolume - 8) < 1e-7,
+    'OCCT-Worker-Queue blieb nach fehlgeschlagener Boolean-Operation blockiert');
   assert.deepEqual(occtRoundTripErrors, [],
     'OCCT-Projekt-Roundtrip löste Browserfehler aus: ' + occtRoundTripErrors.join(' ; '));
 
