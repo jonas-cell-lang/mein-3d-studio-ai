@@ -183,6 +183,13 @@
         const result = await send("releaseShape", { shapeId });
         return result.released === true;
       },
+      async inspectShape(shapeId) {
+        if (!Number.isInteger(shapeId) || shapeId <= 0) {
+          throw new Error("Für die Körperprüfung ist eine gültige OCCT-Körperkennung erforderlich.");
+        }
+        await initialize();
+        return send("inspectShape", { shapeId });
+      },
       async getVolume(shapeId) {
         await initialize();
         const result = await send("getVolume", { shapeId });
