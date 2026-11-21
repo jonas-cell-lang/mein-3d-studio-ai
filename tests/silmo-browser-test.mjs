@@ -121,6 +121,38 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     try { await window.__silmoOcctClient.getVolume(shapeId); return false; }
     catch { return true; }
   }, occtExtrusion.shapeId), true, 'Freigegebener OCCT-Körper blieb weiterhin abfragbar');
+  const booleanResults = await page.evaluate(async () => {
+    const first = await window.__silmoOcctClient.createBox(20, 20, 20);
+    const second = await window.__silmoOcctClient.createBox(10, 20, 20);
+    const results = {};
+    try {
+      for (const operation of ['fuse', 'cut', 'common']) {
+        const result = await window.__silmoOcctClient.booleanOperation(operation, [first.shapeId, second.shapeId]);
+        results[operation] = {
+          volumeMM3: result.volumeMM3,
+          triangleCount: result.mesh.triangleCount,
+          meshValues: result.mesh.positions.length,
+          indexValues: result.mesh.indices.length
+        };
+        await window.__silmoOcctClient.releaseShape(result.shapeId);
+      }
+    } finally {
+      await window.__silmoOcctClient.releaseShape(first.shapeId);
+      await window.__silmoOcctClient.releaseShape(second.shapeId);
+    }
+    return results;
+  });
+  assert.ok(Math.abs(booleanResults.fuse.volumeMM3 - 8000) < 1e-7,
+    'OCCT-Fuse lieferte falsches Volumen');
+  assert.ok(Math.abs(booleanResults.cut.volumeMM3 - 4000) < 1e-7,
+    'OCCT-Cut lieferte falsches Volumen');
+  assert.ok(Math.abs(booleanResults.common.volumeMM3 - 4000) < 1e-7,
+    'OCCT-Common lieferte falsches Volumen');
+  for (const operation of ['fuse', 'cut', 'common']) {
+    assert.ok(booleanResults[operation].triangleCount > 0 &&
+      booleanResults[operation].meshValues > 0 && booleanResults[operation].indexValues > 0,
+    'OCCT-' + operation + ' lieferte kein verwendbares Darstellungsnetz');
+  }
   await page.locator('[data-tab="edit"]').click();
   await page.locator('#delete').click();
   assert.equal(await page.locator('#objects .object-row').count(), occtStartCount,
