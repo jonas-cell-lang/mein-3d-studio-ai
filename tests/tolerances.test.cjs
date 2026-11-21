@@ -26,6 +26,8 @@ test('Toleranzwerte behalten die im Audit belegten Werte', () => {
   assert.equal(tolerances.CAD_PATH_MIN_DIRECTION_WORLD_UNITS, 1e-6);
   assert.equal(tolerances.PROFILE_MIN_PERIMETER_WORLD_UNITS, 1e-6);
   assert.equal(tolerances.LOFT_PROFILE_RESAMPLE_MIN_PERIMETER_WORLD_UNITS, 1e-8);
+  assert.equal(tolerances.PATH_LENGTH_MIN_CURRENT_MM, 0.001);
+  assert.equal(tolerances.SKETCH_EXTRUSION_SCALE_DENOMINATOR_MIN, 1e-12);
   assert.equal(tolerances.LOFT_PROFILE_PLANARITY_WORLD_UNITS, 1e-6);
   assert.equal(tolerances.LOFT_PROFILE_MIN_NORMAL_WORLD_UNITS, 1e-9);
   assert.equal(tolerances.GRID_BOUNDARY_EPSILON_WORLD_UNITS, 1e-8);
