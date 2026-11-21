@@ -732,3 +732,9 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Mindestbreite/-höhe und der Schutz des Höhen-Divisors bei der Herz-Umriss-Erkennung sind als getrennte, dimensionsbezogene Konstanten zentralisiert.
 - Die bisherigen Werte `1e-5` und `1e-9` bleiben unverändert. Die Seitenverhältnis-Grenzen sind Formklassifikationsparameter und bleiben bewusst ausserhalb der CAD-Längentoleranzen.
 - Der Test sichert die Werte und den Laufzeit-Verwendungs-Audit. CI für diesen Schritt steht noch aus.
+
+
+### 6.67 Loft-Kontur-Resampling: Mindestumfang zentral benannt (21.11.2026)
+- Der Standard-Mindestumfang für das Resampling geschlossener Loft-Konturen ist als `LOFT_PROFILE_RESAMPLE_MIN_PERIMETER_WORLD_UNITS = 1e-8` benannt.
+- Der Wert bleibt getrennt vom bestehenden Profil-Mindestumfang `PROFILE_MIN_PERIMETER_WORLD_UNITS = 1e-6`, weil beide unterschiedliche Verarbeitungsschritte absichern.
+- Der Standardwert wurde nicht verändert; Grenzfalltests sichern Ablehnung, Annahme mit explizitem Override und den Konstantenwert. CI steht noch aus.
