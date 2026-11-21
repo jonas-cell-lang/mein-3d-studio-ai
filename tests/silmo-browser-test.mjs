@@ -121,11 +121,15 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     try { await window.__silmoOcctClient.getVolume(shapeId); return false; }
     catch { return true; }
   }, occtExtrusion.shapeId), true, 'Freigegebener OCCT-Körper blieb weiterhin abfragbar');
-  await page.evaluate(() => window.__silmoOcctClient.releaseAll());
   await page.locator('[data-tab="edit"]').click();
   await page.locator('#delete').click();
   assert.equal(await page.locator('#objects .object-row').count(), occtStartCount,
     'OCCT-Testkörper konnte nicht wieder aus der Szene entfernt werden');
+  assert.equal(await page.waitForFunction(async shapeId => {
+    try { await window.__silmoOcctClient.getVolume(shapeId); return false; }
+    catch { return true; }
+  }, occtResult.shapeId, { timeout: 10000 }).then(() => true), true,
+  'Beim Löschen des Szenenobjekts wurde sein OCCT-B-Rep nicht freigegeben');
   await showCreateSubtab(0);
 
 
