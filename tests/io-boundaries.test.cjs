@@ -183,6 +183,41 @@ test('Projektdatei-Import baut alle Meshes auf, bevor das bestehende Projekt ers
   });
 });
 
+test('Ungültige Transformationen werden vor jeder Geometrieallokation abgewiesen', () => {
+  withBrowserGlobals(() => {
+    const { state, deps } = makeProjectDependencies();
+    const project = {
+      app: 'SILMO 3D Studio AI', version: 3,
+      objects: [makeProjectItem('invalid-transform', [NaN, 0, 0])]
+    };
+    let attributeCalls = 0;
+    let disposeCalls = 0;
+    const originalSetAttribute = THREE.BufferGeometry.prototype.setAttribute;
+    const originalDispose = THREE.BufferGeometry.prototype.dispose;
+    THREE.BufferGeometry.prototype.setAttribute = function (name, attribute) {
+      attributeCalls += 1;
+      return originalSetAttribute.call(this, name, attribute);
+    };
+    THREE.BufferGeometry.prototype.dispose = function () {
+      disposeCalls += 1;
+      return originalDispose.call(this);
+    };
+    try {
+      projectIO.createProjectIO(deps).openProjectFile({
+        size: Buffer.byteLength(JSON.stringify(project)),
+        text: JSON.stringify(project)
+      });
+    } finally {
+      THREE.BufferGeometry.prototype.setAttribute = originalSetAttribute;
+      THREE.BufferGeometry.prototype.dispose = originalDispose;
+    }
+    assert.equal(state.committed, null);
+    assert.equal(attributeCalls, 0, 'Geometrieattribute wurden trotz ungültiger Transformation aufgebaut');
+    assert.equal(disposeCalls, 0, 'Vor der Validierung wurden Geometrieobjekte angelegt');
+    assert.match(state.status, /Ungültige Objektposition/);
+  });
+});
+
 test('Fehler beim Aufbau eines späteren Projektobjekts lassen den Commit aus und geben frühere Meshes frei', () => {
   withBrowserGlobals(() => {
     const { state, deps } = makeProjectDependencies();
