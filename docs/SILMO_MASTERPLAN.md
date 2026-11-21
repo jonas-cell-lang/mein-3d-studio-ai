@@ -897,3 +897,13 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Konstruktionsquelle `kind: cone` wird schema-validiert und bei Undo/Redo sowie Projektwiederherstellung rekonstruiert.
 - Client-, Schema- und Browser-End-to-End-Tests prüfen Volumen, Worker-Körper, Undo und Redo.
 - PR #70 bleibt Draft/offen; kein Merge, Deployment oder Release ohne ausdrückliche Freigabe.
+
+
+## 6.89 Native OCCT-Torus (21.11.2026)
+
+- Ergänzt: analytische Volltorus-Erzeugung über `makeTorus(majorRadiusMM, minorRadiusMM)` aus `occt-wasm` 5.17.2.
+- Neue Oberfläche „OCCT-B-Rep-Torus“ erzeugt einen echten B-Rep-Torus mit grossem Radius 20 mm und kleinem Radius 5 mm.
+- Erwartetes analytisches Volumen: (1000\pi^2) mm³; der grosse Radius muss strikt grösser als der kleine Radius sein.
+- Konstruktionsquelle `kind: torus` wird schema-validiert und bei Undo/Redo sowie Projektwiederherstellung rekonstruiert.
+- Client-, Schema- und Browser-End-to-End-Tests prüfen Volumen, Worker-Körper, Undo und Redo.
+- PR #70 bleibt Draft/offen; kein Merge, Deployment oder Release ohne ausdrückliche Freigabe.
