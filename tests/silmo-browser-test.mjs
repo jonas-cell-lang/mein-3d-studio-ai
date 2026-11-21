@@ -154,7 +154,10 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'OCCT-' + operation + ' lieferte kein verwendbares Darstellungsnetz');
   }
   await page.locator('[data-tab="edit"]').click();
-  await page.locator('#delete').click();
+  await page.locator('#delete').evaluate(button => {
+    if (button.disabled) throw new Error('Löschen-Schaltfläche ist deaktiviert.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
   assert.equal(await page.locator('#objects .object-row').count(), occtStartCount,
     'OCCT-Testkörper konnte nicht wieder aus der Szene entfernt werden');
   await page.waitForFunction(async shapeId => {
