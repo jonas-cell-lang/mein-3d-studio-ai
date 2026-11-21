@@ -1020,6 +1020,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
 
   function clearOcctEdgeOverlay() {
+    clearOcctFaceOverlay();
     const overlay = window.__silmoOcctEdgeOverlay;
     if (overlay?.group?.parent) overlay.group.parent.remove(overlay.group);
     if (overlay?.group) {
