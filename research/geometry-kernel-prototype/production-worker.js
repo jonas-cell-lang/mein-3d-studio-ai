@@ -410,11 +410,16 @@ async function execute(method, args) {
       if (!Array.isArray(faces) || faces.length < 1 || faces.length > 10000) {
         throw new Error("OCCT lieferte eine ungültige Anzahl nativer Flächen.");
       }
+      let totalTriangles = 0;
       const result = faces.map((face, index) => {
         const mesh = serializeMesh(kernel.tessellate(face));
+        totalTriangles += mesh.triangleCount;
+        if (totalTriangles > 250000) {
+          throw new Error("Die Flächenauflösung überschreitet das sichere Auswahl-Limit von 250'000 Dreiecken.");
+        }
         return { index, mesh };
       });
-      return { faces: result };
+      return { faces: result, triangleCount: totalTriangles };
     } finally {
       for (const face of faces) {
         try { kernel.release(face); } catch { /* best effort cleanup */ }
