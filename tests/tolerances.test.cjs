@@ -34,6 +34,7 @@ test('Toleranzwerte behalten die im Audit belegten Werte', () => {
   assert.equal(tolerances.GRID_BOUNDARY_EPSILON_WORLD_UNITS, 1e-8);
   assert.equal(tolerances.GROUP_ROTATION_MIN_RADIANS, 1e-12);
   assert.equal(tolerances.PROFILE_MIN_SOURCE_DIMENSION_WORLD_UNITS, 1e-6);
+  assert.equal(tolerances.SKETCH_PROFILE_MIN_CORNER_RADIUS_WORLD_UNITS, 0.01);
   assert.equal(tolerances.SKETCH_PROFILE_CLOSURE_WORLD_UNITS, 1e-7);
   assert.equal(tolerances.SKETCH_RAY_PARALLEL_DENOMINATOR_MIN, 1e-6);
   assert.equal(tolerances.IMAGE_POLYGON_RAY_DENOMINATOR_FALLBACK_MM, 1e-12);
