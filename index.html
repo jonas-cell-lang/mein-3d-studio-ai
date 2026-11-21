@@ -1068,8 +1068,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const list = $('occtEdgeList');
     const apply = $('applyOcctFillet');
     if (button.disabled) return;
-    if (!selected) { status.textContent = 'Bitte zuerst einen OCCT-Körper auswählen.'; return; }
-    const shapeId = window.__silmoOcctObjectHandles?.get(selected);
+    const sourceMesh = selected;
+    if (!sourceMesh) { status.textContent = 'Bitte zuerst einen OCCT-Körper auswählen.'; return; }
+    const shapeId = window.__silmoOcctObjectHandles?.get(sourceMesh);
     if (!Number.isInteger(shapeId) || shapeId <= 0 || !window.__silmoOcctClient) {
       status.textContent = 'Bitte einen nativen OCCT-B-Rep-Körper auswählen. Normale STL-/Mesh-Objekte haben keine editierbaren B-Rep-Kanten.';
       return;
