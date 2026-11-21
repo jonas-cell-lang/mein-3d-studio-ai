@@ -461,6 +461,56 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   });
   assert.equal(await page.locator('#objects .object-row').count(), cutSceneStart,
     'OCCT-Cut-Ergebnis konnte nach Redo nicht aus der Szene entfernt werden');
+
+  // End-to-end: Common/Schnittmenge über die SILMO-Oberfläche inklusive Undo/Redo.
+  const commonSceneStart = await page.locator('#objects .object-row').count();
+  await showCreateSubtab(0);
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  await page.locator('#objects .object-select').nth(commonSceneStart + 1).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.locator('#objects .object-select').nth(commonSceneStart).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  await page.locator('#objects .object-select').nth(commonSceneStart + 1).evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true })));
+  const previousCommonShapeId = await page.evaluate(() => window.__silmoOcctLastBoolean?.shapeId || 0);
+  await page.locator('#booleanIntersect').evaluate(button => {
+    if (button.disabled) throw new Error('OCCT-Common-Schaltfläche ist deaktiviert.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  await page.waitForFunction(previous => window.__silmoOcctLastBoolean?.operation === 'common' &&
+    Number.isFinite(window.__silmoOcctLastBoolean?.shapeId) &&
+    window.__silmoOcctLastBoolean.shapeId > previous, previousCommonShapeId, { timeout: 20000 });
+  const sceneCommon = await page.evaluate(async () => ({
+    ...window.__silmoOcctLastBoolean,
+    workerVolumeMM3: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastBoolean.shapeId)
+  }));
+  assert.ok(Math.abs(sceneCommon.volumeMM3 - 4000) < 1e-7 &&
+    Math.abs(sceneCommon.workerVolumeMM3 - 4000) < 1e-7,
+  'SILMO-OCCT-Common lieferte für zwei um 10 mm überlappende Quader nicht 4000 mm³');
+  assert.equal(await page.locator('#objects .object-row').count(), commonSceneStart + 1,
+    'OCCT-Common hat die Ausgangskörper nicht durch die Schnittmenge ersetzt');
+  const commonUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+z');
+  await waitForOcctRestore(commonUndoGeneration);
+  assert.equal(await page.locator('#objects .object-row').count(), commonSceneStart + 2,
+    'Undo stellte die beiden OCCT-Common-Ausgangskörper nicht wieder her');
+  const commonRedoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+y');
+  await waitForOcctRestore(commonRedoGeneration);
+  const redoneCommonVolume = await page.evaluate(async () =>
+    window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
+  assert.ok(Math.abs(redoneCommonVolume - 4000) < 1e-7,
+    'Redo stellte die OCCT-Schnittmenge nicht als echten B-Rep-Körper wieder her');
+  await page.locator('#delete').evaluate(button => {
+    if (button.disabled) throw new Error('Löschen-Schaltfläche ist deaktiviert.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  assert.equal(await page.locator('#objects .object-row').count(), commonSceneStart,
+    'OCCT-Common-Ergebnis konnte nach Redo nicht aus der Szene entfernt werden');
   await showCreateSubtab(0);
 
 
