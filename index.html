@@ -692,14 +692,24 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     let result = null;
     let geometry = null;
     try {
-      const translationsMM = targets.map(obj => [
-        worldUnitsToMm(obj.position.x),
-        worldUnitsToMm(obj.position.y),
-        worldUnitsToMm(obj.position.z)
-      ]);
+      const transformsMM = targets.map(obj => {
+        const positionMM = new THREE.Vector3(
+          worldUnitsToMm(obj.position.x),
+          worldUnitsToMm(obj.position.y),
+          worldUnitsToMm(obj.position.z)
+        );
+        const matrix = new THREE.Matrix4().compose(positionMM, obj.quaternion, obj.scale);
+        const e = matrix.elements;
+        // OCCT erwartet eine 3×4-Matrix in zeilenweiser Reihenfolge.
+        return [
+          e[0], e[4], e[8], e[12],
+          e[1], e[5], e[9], e[13],
+          e[2], e[6], e[10], e[14]
+        ];
+      });
       const occtOperation = ({ union: 'fuse', subtract: 'cut', intersect: 'common' })[operation];
       if (!occtOperation) throw new Error('Unbekannte OCCT-Boolean-Operation.');
-      result = await window.__silmoOcctClient.booleanOperation(occtOperation, shapeIds, translationsMM);
+      result = await window.__silmoOcctClient.booleanOperation(occtOperation, shapeIds, transformsMM);
       if (!result || !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0 ||
           !result.mesh?.positions?.length || !result.mesh?.indices?.length ||
           result.mesh.positions.length % 3 !== 0 || result.mesh.indices.length % 3 !== 0) {
@@ -725,7 +735,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 
       const base = targets[0];
       const sourceOperands = targets.map(getOcctSourceDescriptor);
-      const sourceTranslations = translationsMM.map(offset => offset.slice());
+      const sourceTranslations = transformsMM.map(matrix => [matrix[3], matrix[7], matrix[11]]);
       recordHistory();
       targets.forEach(obj => {
         releaseOcctObjectHandle(obj);
@@ -749,7 +759,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           kind: 'boolean',
           operation: occtOperation,
           operands: sourceOperands,
-          translationsMM: sourceTranslations
+          translationsMM: sourceTranslations,
+          transformsMM: transformsMM.map(matrix => matrix.slice())
         };
       }
       scene.add(mesh);
@@ -799,13 +810,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     if (targets.length === 2 && ['union', 'subtract', 'intersect'].includes(operation) &&
         window.__silmoOcctObjectHandles && window.__silmoOcctClient) {
       const shapeIds = targets.map(obj => window.__silmoOcctObjectHandles.get(obj));
-      const identityTransform = targets.every(obj =>
-        Math.abs(obj.quaternion.x) < 1e-9 && Math.abs(obj.quaternion.y) < 1e-9 &&
-        Math.abs(obj.quaternion.z) < 1e-9 && Math.abs(Math.abs(obj.quaternion.w) - 1) < 1e-9 &&
-        Math.abs(obj.scale.x - 1) < 1e-9 && Math.abs(obj.scale.y - 1) < 1e-9 &&
-        Math.abs(obj.scale.z - 1) < 1e-9
-      );
-      if (shapeIds.every(id => Number.isInteger(id) && id > 0) && identityTransform) {
+        if (shapeIds.every(id => Number.isInteger(id) && id > 0)) {
         runOcctBooleanOperation(operation, targets, shapeIds);
         return;
       }
