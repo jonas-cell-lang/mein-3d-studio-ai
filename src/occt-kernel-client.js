@@ -47,7 +47,8 @@
           try { failedWorker.terminate(); } catch { /* Worker ist bereits beendet. */ }
         }
         initialized = false;
-        initializing = null;
+        // initialize() räumt sein eigenes Promise in finally() auf. Hier nicht
+        // vorzeitig nullen, damit ein sofortiger Retry nicht überholt wird.
         rejectPending(error);
         if (typeof event?.preventDefault === "function") event.preventDefault();
       };
