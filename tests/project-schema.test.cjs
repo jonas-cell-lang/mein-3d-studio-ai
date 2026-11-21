@@ -216,7 +216,7 @@ test('falsche App-Kennung und ungültige Objektlisten werden abgelehnt', () => {
 test('OCCT-Konstruktionsrezepte für Quader, Skizzen und Boolesche Körper werden validiert', () => {
   const project = validProject();
   project.objects.push(
-    { occtSource: { kind: 'box', widthMM: 20, depthMM: 30, heightMM: 40 } },
+    { occtSource: { kind: 'box', widthMM: 20, depthMM: 30, heightMM: 40 } },\n    { occtSource: { kind: 'cylinder', radiusMM: 5, heightMM: 20 } },
     { occtSource: { kind: 'sketch', sketch: {
       type: 'freeform2d', outlinePoints: [[0,0],[40,0],[40,30],[0,30]],
       holes: [[[10,10],[10,20],[20,20],[20,10]]], extrusionMM: 5
@@ -231,6 +231,10 @@ test('OCCT-Konstruktionsrezepte für Quader, Skizzen und Boolesche Körper werde
     } }
   );
   assert.equal(schema.validateProjectEnvelope(project), project);
+
+  const invalidCylinder = structuredClone(project);
+  invalidCylinder.objects[1].occtSource.radiusMM = 0;
+  assert.throws(() => schema.validateProjectEnvelope(invalidCylinder), /OCCT-Zylinderabmessungen/);
 
   const invalidBox = structuredClone(project);
   invalidBox.objects[0].occtSource.widthMM = Infinity;
