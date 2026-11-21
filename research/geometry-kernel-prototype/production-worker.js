@@ -81,6 +81,24 @@ async function execute(method, args) {
     return { stepText };
   }
 
+  if (method === "createSphere") {
+    const { radiusMM } = args;
+    if (!Number.isFinite(radiusMM) || radiusMM < 0.01 || radiusMM > 2000) throw new Error("Kugelradius muss zwischen 0.01 und 2000 mm liegen.");
+    let shape = null;
+    try {
+      shape = kernel.makeSphere(radiusMM);
+      const volumeMM3 = kernel.getVolume(shape);
+      const mesh = serializeMesh(kernel.tessellate(shape));
+      if (!Number.isFinite(volumeMM3) || volumeMM3 <= 0) throw new Error("OCCT-Kugel besitzt kein gültiges positives Volumen.");
+      const shapeId = nextShapeId++;
+      shapes.set(shapeId, shape);
+      shape = null;
+      return { shapeId, volumeMM3, mesh, shapeType: "solid" };
+    } finally {
+      if (shape !== null) { try { kernel.release(shape); } catch { /* best effort cleanup */ } }
+    }
+  }
+
   if (method === "createCylinder") {
     const { radiusMM, heightMM } = args;
     if (!Number.isFinite(radiusMM) || radiusMM < 0.01 || radiusMM > 2000 ||
