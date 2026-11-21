@@ -326,6 +326,16 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(Math.abs(torusResult.workerVolumeMM3 - expectedTorusVolume) < 1e-5,
     'OCCT-Torus ist im Worker nicht als echter B-Rep-Körper abfragbar');
   assert.deepEqual(torusResult.dimensionsMM, [50, 50, 10]);
+  await page.locator('#inspectOcctShape').click();
+  await page.waitForFunction(() => /^OCCT-Prüfung:/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  const torusInspection = await page.evaluate(() => window.__silmoOcctLastInspection);
+  assert.ok(Math.abs(torusInspection.volumeMM3 - expectedTorusVolume) < 1e-5,
+    'Körperprüfung meldet ein falsches natives OCCT-Volumen');
+  assert.ok(torusInspection.boundingBoxMM.size.every((value, axis) => Math.abs(value - [50, 50, 10][axis]) < 1),
+    'Körperprüfung meldet falsche Torus-Abmessungen');
+  assert.ok(torusInspection.mesh.vertexCount > 0 && torusInspection.mesh.triangleCount > 0 &&
+    torusInspection.mesh.indexCount === torusInspection.mesh.triangleCount * 3,
+    'Körperprüfung meldet ungültige Tessellierungskennzahlen');
   const torusUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
   await page.keyboard.press('Control+z');
   await waitForOcctRestore(torusUndoGeneration);
