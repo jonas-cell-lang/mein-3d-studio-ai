@@ -373,7 +373,7 @@ test('normalisierte Geometrieattribute akzeptieren nur boolesche Flags', () => {
     index: null
   };
   assert.equal(schema.validateSerializedGeometry(valid), valid);
-  for (const normalized of ['true', 1, {}, []]) {
+  for (const normalized of ['true', 1, {}, [], null]) {
     const invalid = structuredClone(valid);
     invalid.attributes.position.normalized = normalized;
     assert.throws(() => schema.validateSerializedGeometry(invalid), /Ungültiges Geometrieattribut/);
