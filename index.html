@@ -426,9 +426,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     <p class="note">Beim Abziehen bleibt die erste Form erhalten. Fuse, Cut und Common unterstützen zwei oder mehr unveränderte OCCT-B-Rep-Körper.</p>
     <button class="wide" id="importModel">⬆ STL importieren</button>
     <button class="wide" id="exportModel">⬇ STL exportieren</button>
+    <button class="wide" id="importStepModel">⬆ STEP importieren (OCCT)</button>
+    <button class="wide" id="exportStepModel">⬇ STEP exportieren (OCCT)</button>
     <button class="wide" id="saveProjectButton">💾 Projekt speichern</button>
     <button class="wide" id="openProjectButton">📂 Projekt öffnen</button>
     <input id="fileInput" type="file" accept=".stl,model/stl" hidden>
+    <input id="stepFileInput" type="file" accept=".step,.stp,application/step" hidden>
     <input id="projectFileInput" type="file" accept=".json,application/json" hidden>
     <button class="wide" id="delete">🗑 Löschen</button>
     <button class="wide" id="dropToBed">⬇ Auf Arbeitsplatte stellen</button>
