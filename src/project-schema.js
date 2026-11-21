@@ -228,6 +228,42 @@
     }
   }
 
+  function validateOcctSource(source, depth = 0) {
+    if (source == null) return;
+    if (!source || typeof source !== 'object' || Array.isArray(source) || depth > 4) {
+      throw new Error('Ungültige OCCT-Konstruktionsdaten.');
+    }
+    if (source.kind === 'box') {
+      if (![source.widthMM, source.depthMM, source.heightMM].every(value =>
+        Number.isFinite(value) && value > 0 && value <= 200000)) {
+        throw new Error('Ungültige OCCT-Quaderabmessungen.');
+      }
+      return;
+    }
+    if (source.kind === 'sketch') {
+      const sketch = source.sketch;
+      if (!sketch || typeof sketch !== 'object' || Array.isArray(sketch) ||
+          !Array.isArray(sketch.outlinePoints) || sketch.outlinePoints.length < 3 ||
+          !Number.isFinite(sketch.extrusionMM) || sketch.extrusionMM < 0.1 || sketch.extrusionMM > 200000) {
+        throw new Error('Ungültige OCCT-Skizzenquelle.');
+      }
+      validateSketchMetadata({ sketchOutline: sketch.outlinePoints, sketch });
+      return;
+    }
+    if (source.kind === 'boolean') {
+      if (!['fuse', 'cut', 'common'].includes(source.operation) ||
+          !Array.isArray(source.operands) || source.operands.length !== 2 ||
+          !Array.isArray(source.translationsMM) || source.translationsMM.length !== 2 ||
+          source.translationsMM.some(offset => !Array.isArray(offset) || offset.length !== 3 ||
+            !offset.every(value => Number.isFinite(value) && Math.abs(value) <= 200000))) {
+        throw new Error('Ungültige OCCT-Boolean-Konstruktionsdaten.');
+      }
+      source.operands.forEach(operand => validateOcctSource(operand, depth + 1));
+      return;
+    }
+    throw new Error('Unbekannte OCCT-Konstruktionsart.');
+  }
+
   function validateLoftMetadata(object) {
     if (!object || typeof object !== 'object' || Array.isArray(object) || object.loft == null) return;
     const loft = object.loft;
@@ -285,7 +321,7 @@
       throw new Error('Die Projektdatei enthält eine ungültige Objektliste (maximal 100 Objekte).');
     }
     validateProjectObjectIdentities(project.objects);
-    project.objects.forEach(object => { validateObjectTransformMetadata(object); validateContourFrameMetadata(object); validateSketchMetadata(object); validateLoftMetadata(object); });
+    project.objects.forEach(object => { validateObjectTransformMetadata(object); validateContourFrameMetadata(object); validateSketchMetadata(object); validateLoftMetadata(object); validateOcctSource(object.occtSource); });
     validateProjectGeometryBudget(project.objects);
     return project;
   }
