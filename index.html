@@ -700,16 +700,55 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         );
         const matrix = new THREE.Matrix4().compose(positionMM, obj.quaternion, obj.scale);
         const e = matrix.elements;
-        // OCCT erwartet eine 3×4-Matrix in zeilenweiser Reihenfolge.
         return [
           e[0], e[4], e[8], e[12],
           e[1], e[5], e[9], e[13],
           e[2], e[6], e[10], e[14]
         ];
       });
+      const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
       const occtOperation = ({ union: 'fuse', subtract: 'cut', intersect: 'common' })[operation];
       if (!occtOperation) throw new Error('Unbekannte OCCT-Boolean-Operation.');
-      result = await window.__silmoOcctClient.booleanOperation(occtOperation, shapeIds, transformsMM);
+
+      const sourceOperands = targets.map(getOcctSourceDescriptor);
+      let sourceRecipe = null;
+      result = await window.__silmoOcctClient.booleanOperation(
+        occtOperation, shapeIds.slice(0, 2), transformsMM.slice(0, 2)
+      );
+      if (sourceOperands[0] && sourceOperands[1]) {
+        sourceRecipe = {
+          kind: 'boolean',
+          operation: occtOperation,
+          operands: sourceOperands.slice(0, 2),
+          translationsMM: transformsMM.slice(0, 2).map(matrix => [matrix[3], matrix[7], matrix[11]]),
+          transformsMM: transformsMM.slice(0, 2).map(matrix => matrix.slice())
+        };
+      }
+
+      // Weitere Körper werden nacheinander mit dem bisherigen echten B-Rep-Ergebnis
+      // verrechnet. Das Zwischenresultat liegt bereits im Weltkoordinatensystem.
+      for (let index = 2; index < targets.length; index++) {
+        const previousResult = result;
+        const nextResult = await window.__silmoOcctClient.booleanOperation(
+          occtOperation,
+          [previousResult.shapeId, shapeIds[index]],
+          [identity, transformsMM[index]]
+        );
+        result = nextResult;
+        await window.__silmoOcctClient.releaseShape(previousResult.shapeId);
+        if (sourceRecipe && sourceOperands[index]) {
+          sourceRecipe = {
+            kind: 'boolean',
+            operation: occtOperation,
+            operands: [sourceRecipe, sourceOperands[index]],
+            translationsMM: [[0, 0, 0], [transformsMM[index][3], transformsMM[index][7], transformsMM[index][11]]],
+            transformsMM: [identity.slice(), transformsMM[index].slice()]
+          };
+        } else {
+          sourceRecipe = null;
+        }
+      }
+
       if (!result || !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0 ||
           !result.mesh?.positions?.length || !result.mesh?.indices?.length ||
           result.mesh.positions.length % 3 !== 0 || result.mesh.indices.length % 3 !== 0) {
@@ -734,8 +773,6 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       }
 
       const base = targets[0];
-      const sourceOperands = targets.map(getOcctSourceDescriptor);
-      const sourceTranslations = transformsMM.map(matrix => [matrix[3], matrix[7], matrix[11]]);
       recordHistory();
       targets.forEach(obj => {
         releaseOcctObjectHandle(obj);
@@ -754,15 +791,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       mesh.userData.geometryKernel = 'occt-wasm';
       mesh.userData.occtShapeId = result.shapeId;
       mesh.userData.occtVolumeMM3 = result.volumeMM3;
-      if (sourceOperands.every(Boolean)) {
-        mesh.userData.occtSource = {
-          kind: 'boolean',
-          operation: occtOperation,
-          operands: sourceOperands,
-          translationsMM: sourceTranslations,
-          transformsMM: transformsMM.map(matrix => matrix.slice())
-        };
-      }
+      if (sourceRecipe) mesh.userData.occtSource = sourceRecipe;
       scene.add(mesh);
       objects.push(mesh);
       selected = mesh;
@@ -773,13 +802,14 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         operation: occtOperation,
         shapeId: result.shapeId,
         volumeMM3: result.volumeMM3,
-        triangleCount: result.mesh.triangleCount
+        triangleCount: result.mesh.triangleCount,
+        operandCount: targets.length
       };
       updateObjects();
       showProperties();
       updateMoveGizmo();
       const operationLabel = ({ union: 'Formen echt vereinigt', subtract: 'Ausschnitt echt berechnet', intersect: 'Schnittmenge echt berechnet' })[operation];
-      status.textContent = 'OCCT: ' + operationLabel + '. Volumen: ' + result.volumeMM3.toFixed(2) + ' mm³.';
+      status.textContent = 'OCCT: ' + operationLabel + ' (' + targets.length + ' Körper). Volumen: ' + result.volumeMM3.toFixed(2) + ' mm³.';
     } catch (error) {
       if (geometry) geometry.dispose();
       if (result?.shapeId && window.__silmoOcctClient) {
@@ -803,20 +833,16 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       return;
     }
     if (targets.some(obj => !objects.includes(obj))) return;
-    if (operation === 'intersect' && targets.length !== 2) {
-      status.textContent = 'Die OCCT-Schnittmenge benötigt genau zwei ausgewählte B-Rep-Körper.';
-      return;
-    }
-    if (targets.length === 2 && ['union', 'subtract', 'intersect'].includes(operation) &&
+    if (['union', 'subtract', 'intersect'].includes(operation) &&
         window.__silmoOcctObjectHandles && window.__silmoOcctClient) {
       const shapeIds = targets.map(obj => window.__silmoOcctObjectHandles.get(obj));
-        if (shapeIds.every(id => Number.isInteger(id) && id > 0)) {
+      if (shapeIds.every(id => Number.isInteger(id) && id > 0)) {
         runOcctBooleanOperation(operation, targets, shapeIds);
         return;
       }
     }
     if (operation === 'intersect') {
-      status.textContent = 'Die Schnittmenge ist derzeit nur für zwei unveränderte OCCT-B-Rep-Körper verfügbar.';
+      status.textContent = 'Die Schnittmenge benötigt mindestens zwei unveränderte OCCT-B-Rep-Körper.';
       return;
     }
     let tempBase = null;
