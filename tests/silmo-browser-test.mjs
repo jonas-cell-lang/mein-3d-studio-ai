@@ -549,6 +549,91 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   'Mindestens ein Körper hat nach wiederholtem Projektwechsel sein B-Rep-Volumen verloren');
   assert.deepEqual(occtParallelErrors, [],
     'Wiederholter OCCT-Projektwechsel löste Browserfehler aus: ' + occtParallelErrors.join(' ; '));
+
+  // Wiederholtes Laden desselben OCCT-Projekts im selben Dokument.
+  // Jeder Durchlauf muss frische Handles erhalten und alle vorherigen Handles freigeben.
+  let previousCycleHandles = switchedBack.shapeIds;
+  const repeatedLoadSummaries = [];
+  for (let cycle = 0; cycle < 5; cycle++) {
+    const generationBefore = await occtParallelPage.evaluate(() =>
+      window.__silmoOcctProjectRestoreGeneration || 0);
+    await occtParallelPage.locator('#projectFileInput').setInputFiles({
+      name: 'occt-repeated-load-' + cycle + '.silmo.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(occtParallelProject))
+    });
+    await occtParallelPage.waitForFunction(() =>
+      /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 10000 });
+    await occtParallelPage.waitForFunction(previous =>
+      Number.isInteger(window.__silmoOcctProjectRestoreGeneration) &&
+      window.__silmoOcctProjectRestoreGeneration > previous,
+      generationBefore, { timeout: 10000 });
+    await occtParallelPage.evaluate(async () => {
+      if (window.__silmoOcctProjectRestorePromise) await window.__silmoOcctProjectRestorePromise;
+    });
+    const repeatedState = await occtParallelPage.evaluate(async () => {
+      const restored = window.__silmoOcctProjectRestoreSummary || [];
+      const volumes = await Promise.all(restored.map(item =>
+        item.shapeId ? window.__silmoOcctClient.getVolume(item.shapeId) : Promise.resolve(null)
+      ));
+      return {
+        objectCount: document.querySelectorAll('#objects .object-row').length,
+        shapeIds: restored.map(item => item.shapeId),
+        volumes
+      };
+    });
+    assert.equal(repeatedState.objectCount, 8,
+      'Wiederholtes Laden Zyklus ' + (cycle + 1) + ' hat nicht acht Objekte geladen');
+    assert.ok(repeatedState.shapeIds.length === 8 &&
+      repeatedState.shapeIds.every(Number.isInteger) &&
+      new Set(repeatedState.shapeIds).size === 8,
+    'Wiederholtes Laden Zyklus ' + (cycle + 1) + ' erzeugte ungültige oder doppelte Handles');
+    assert.ok(repeatedState.volumes.every(volume =>
+      Number.isFinite(volume) && Math.abs(volume - 4000) < 1e-7),
+    'Wiederholtes Laden Zyklus ' + (cycle + 1) + ' hat falsche OCCT-Volumen geliefert');
+    const priorHandlesReleased = await occtParallelPage.evaluate(async ids => Promise.all(ids.map(async shapeId => {
+      try { await window.__silmoOcctClient.getVolume(shapeId); return false; }
+      catch { return true; }
+    })), previousCycleHandles);
+    assert.ok(priorHandlesReleased.every(Boolean),
+      'Wiederholtes Laden Zyklus ' + (cycle + 1) + ' hat alte OCCT-Handles nicht freigegeben');
+    repeatedLoadSummaries.push({ cycle: cycle + 1, shapeIds: repeatedState.shapeIds });
+    previousCycleHandles = repeatedState.shapeIds;
+  }
+
+  // Fehlerhafte Importdateien dürfen das aktive OCCT-Projekt weder ersetzen
+  // noch seine gültigen Worker-Handles freigeben.
+  const invalidOcctProject = structuredClone(occtParallelProject);
+  invalidOcctProject.objects[0].geometry.attributes.position.itemSize = 2;
+  await occtParallelPage.locator('#projectFileInput').setInputFiles({
+    name: 'invalid-occt-project-geometry.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(invalidOcctProject))
+  });
+  await occtParallelPage.waitForFunction(() =>
+    /Projekt konnte nicht geöffnet werden/.test(document.querySelector('#status')?.textContent || ''),
+    null, { timeout: 10000 });
+  const afterInvalidOcctImport = await occtParallelPage.evaluate(async ids => {
+    const restored = window.__silmoOcctProjectRestoreSummary || [];
+    const volumes = await Promise.all(ids.map(async shapeId => {
+      try { return await window.__silmoOcctClient.getVolume(shapeId); }
+      catch { return null; }
+    }));
+    return {
+      objectCount: document.querySelectorAll('#objects .object-row').length,
+      restoredCount: restored.length,
+      volumes
+    };
+  }, previousCycleHandles);
+  assert.equal(afterInvalidOcctImport.objectCount, 8,
+    'Ungültiger OCCT-Projektimport hat das aktive Projekt verändert');
+  assert.equal(afterInvalidOcctImport.restoredCount, 8,
+    'Ungültiger OCCT-Projektimport hat die aktive Wiederherstellungsübersicht verändert');
+  assert.ok(afterInvalidOcctImport.volumes.every(volume =>
+    Number.isFinite(volume) && Math.abs(volume - 4000) < 1e-7),
+  'Ungültiger OCCT-Projektimport hat aktive B-Rep-Handles beschädigt');
+  assert.deepEqual(occtParallelErrors, [],
+    'Wiederholte OCCT-Ladevorgänge oder Fehlerimporte lösten Browserfehler aus: ' + occtParallelErrors.join(' ; '));
   await occtParallelPage.close();
 
   // OCCT-Lifecycle-Stresstest in einem isolierten Worker:
