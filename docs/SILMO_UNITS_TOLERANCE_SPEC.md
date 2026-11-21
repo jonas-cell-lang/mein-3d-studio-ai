@@ -347,3 +347,8 @@ Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPS
 - `PRINT_MIN_MODEL_DIMENSION_MM = 0.01` ist die bisherige Untergrenze für jede gemessene Modell-Bounding-Box-Abmessung, unterhalb der die Druckvorprüfung eine Grössenwarnung ausgibt.
 - Der Wert wird nach Umrechnung der Bounding-Box-Abmessungen in Millimeter geprüft. Er ist eine diagnostische Mindestgrösse und weder eine STL-Weld-Toleranz noch eine Garantie für Druckbarkeit.
 - Die Warnschwelle und der Wortlaut bleiben unverändert; der Zahlenwert und die Laufzeitverwendung werden durch den Toleranztest und den Audit geprüft.
+
+### 3.24 Manuell gezeichnete Bildkonturen: Mindestfläche
+- `IMAGE_MIN_DRAWN_CONTOUR_AREA_PIXELS2 = 0.5` ist die bisherige Mindestfläche, ab der eine manuell im Image-Studio gezeichnete Kontur gespeichert wird.
+- Der Wert gilt im Bildpixel-Koordinatenraum (Pixel²) und ist von der späteren Mindestfläche in CAD-mm² (`IMAGE_MIN_PRINT_CONTOUR_AREA_MM2`) getrennt.
+- Die Mindestpunktzahl von drei Punkten und die Flächenbedingung bleiben unverändert. Der zentrale Zahlenwerttest und Laufzeit-Verwendungs-Audit sichern die Konstante.
