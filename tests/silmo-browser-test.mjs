@@ -242,11 +242,11 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(Math.abs(cylinderResult.workerVolumeMM3 - 3000 * Math.PI) < 1e-6,
     'OCCT-Zylinder ist im Worker nicht als echter B-Rep-Körper abfragbar');
   assert.deepEqual(cylinderResult.dimensionsMM, [20, 20, 30]);
-  await page.locator('#undo').click();
+  await page.keyboard.press('Control+z');
   await page.waitForFunction(() => window.__silmoOcctRestorePromise && window.__silmoOcctRestorePromise.then(() => true), null, { timeout: 45000 });
   assert.equal(await page.locator('#objects .object-row').count(), cylinderSceneStart,
     'Undo hat den OCCT-Zylinder nicht entfernt');
-  await page.locator('#redo').click();
+  await page.keyboard.press('Control+y');
   await page.waitForFunction(() => window.__silmoOcctRestorePromise && window.__silmoOcctRestorePromise.then(() => true), null, { timeout: 45000 });
   const restoredCylinder = await page.evaluate(async () => {
     const created = window.__silmoOcctLastRestored;
