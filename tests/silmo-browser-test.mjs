@@ -183,7 +183,10 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     button.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
   }, booleanSceneStart);
   const previousBooleanShapeId = await page.evaluate(() => window.__silmoOcctLastBoolean?.shapeId || 0);
-  await page.locator('#booleanUnion').click();
+  await page.locator('#booleanUnion').evaluate(button => {
+    if (button.disabled) throw new Error('OCCT-Fuse-Schaltfläche ist deaktiviert.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
   await page.waitForFunction(previous => Number.isFinite(window.__silmoOcctLastBoolean?.shapeId) &&
     window.__silmoOcctLastBoolean.shapeId > previous, previousBooleanShapeId, { timeout: 20000 });
   const sceneBoolean = await page.evaluate(async () => ({
