@@ -1912,7 +1912,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     point.y = previous.y + Math.sin(fixedAngle) * distance;
     return clampSketchPoint(point, sketchDrawingMarginMM());
   }
-  function simplifySketchPolyline(points, toleranceMM = 0.5) {
+  function simplifySketchPolyline(points, toleranceMM = window.SILMOTolerances.SKETCH_POLYLINE_SIMPLIFICATION_TOLERANCE_MM) {
     if (!Array.isArray(points) || points.length < 3) return (points || []).map(point => point.clone());
     const tolerance = Math.max(mmToWorldUnits(window.SILMOTolerances.SKETCH_SIMPLIFICATION_MIN_MM), mmToWorldUnits(toleranceMM));
     const toleranceSq = tolerance * tolerance;
@@ -2222,7 +2222,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const distinct = points.filter((point, index) => index === 0 || point.distanceTo(points[index - 1]) > window.SILMOTolerances.SKETCH_FREEFORM_MIN_POINT_SPACING_WORLD_UNITS);
         if (distinct.length >= 3) {
           const cleaned = document.getElementById('sketchSmoothEnabled')?.checked
-            ? simplifySketchPolyline(distinct, 0.5)
+            ? simplifySketchPolyline(distinct, window.SILMOTolerances.SKETCH_POLYLINE_SIMPLIFICATION_TOLERANCE_MM)
             : distinct.map(point => point.clone());
           const finalPoints = cleaned.length >= 3 ? cleaned : distinct.map(point => point.clone());
           sketchDraft = { type: 'freeform2d', points: finalPoints, holes: [] };
@@ -3757,7 +3757,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   };
   // Testzugang: nutzt denselben Freiform- und Extrusionsweg wie die normale Zeichenfunktion.
   window.__silmoTestRecognizeHeart=points=>classifyHeartOutline(points);
-  window.__silmoTestSimplifySketchPolyline=points=>simplifySketchPolyline(points.map(point=>new THREE.Vector3(Number(point[0]),Number(point[1]),0)),0.5).map(point=>[point.x,point.y]);
+  window.__silmoTestSimplifySketchPolyline=points=>simplifySketchPolyline(points.map(point=>new THREE.Vector3(Number(point[0]),Number(point[1]),0)),window.SILMOTolerances.SKETCH_POLYLINE_SIMPLIFICATION_TOLERANCE_MM).map(point=>[point.x,point.y]);
   window.__silmoTestCreateHeartSketch=points=>{
     document.getElementById('sketchTool').value='freeform2d';
     sketchDraft={type:'freeform2d',points:points.map(p=>new THREE.Vector3(Number(p[0]),Number(p[1]),0))};
