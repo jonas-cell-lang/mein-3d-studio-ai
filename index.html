@@ -978,7 +978,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 
   async function importSTEPFile(file) {
     if (!file) return;
-    if (!/\\.(?:step|stp)$/i.test(file.name || '') || file.size > 10 * 1024 * 1024) {
+    if (!/\.(?:step|stp)$/i.test(file.name || '') || file.size > 10 * 1024 * 1024) {
       status.textContent = 'STEP-Import benötigt eine .step/.stp-Datei mit höchstens 10 MB.';
       return;
     }
@@ -1019,7 +1019,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       geometry = null;
       mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
       mesh.userData.percent = { x: 100, y: 100, z: 100 };
-      mesh.userData.label = (file.name || 'STEP-Modell').replace(/\\.(?:step|stp)$/i, '');
+      mesh.userData.label = (file.name || 'STEP-Modell').replace(/\.(?:step|stp)$/i, '');
       mesh.userData.geometryKernel = 'occt-wasm';
       mesh.userData.occtSource = { kind: 'step', stepText };
       mesh.userData.occtVolumeMM3 = result.volumeMM3;
