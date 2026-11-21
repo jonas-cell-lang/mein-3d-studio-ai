@@ -1043,6 +1043,45 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     return visibleIndices;
   }
 
+  function findOcctEdgeAtScreenPoint(clientX, clientY) {
+    const overlay = window.__silmoOcctEdgeOverlay;
+    if (!overlay?.group || !Number.isFinite(clientX) || !Number.isFinite(clientY)) return null;
+    overlay.group.updateMatrixWorld(true);
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    const project = point => {
+      const projected = point.clone().applyMatrix4(overlay.group.matrixWorld).project(camera);
+      return {
+        x: rect.left + (projected.x + 1) * rect.width / 2,
+        y: rect.top + (1 - projected.y) * rect.height / 2,
+        z: projected.z
+      };
+    };
+    let nearest = null;
+    for (const line of overlay.group.children) {
+      const attribute = line.geometry.getAttribute('position');
+      if (!attribute || attribute.count < 2) continue;
+      line.updateMatrixWorld(true);
+      let bestDistance = Infinity;
+      for (let i = 0; i < attribute.count - 1; i++) {
+        const a = project(new THREE.Vector3().fromBufferAttribute(attribute, i).applyMatrix4(line.matrixWorld));
+        const b = project(new THREE.Vector3().fromBufferAttribute(attribute, i + 1).applyMatrix4(line.matrixWorld));
+        if (a.z < -1 || a.z > 1 || b.z < -1 || b.z > 1) continue;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const lengthSquared = dx * dx + dy * dy;
+        const t = lengthSquared > 1e-9
+          ? Math.max(0, Math.min(1, ((clientX - a.x) * dx + (clientY - a.y) * dy) / lengthSquared))
+          : 0;
+        const distance = Math.hypot(clientX - (a.x + t * dx), clientY - (a.y + t * dy));
+        if (distance < bestDistance) bestDistance = distance;
+      }
+      if (bestDistance <= 14 && (!nearest || bestDistance < nearest.distance)) {
+        nearest = { edgeIndex: line.userData.occtEdgeIndex, distance: bestDistance };
+      }
+    }
+    return nearest;
+  }
+
   function syncOcctEdgeSelectionFromList() {
     const overlay = window.__silmoOcctEdgeOverlay;
     if (!overlay) return;
@@ -4317,8 +4356,14 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         raycaster.params.Line.threshold = window.SILMOUnits.mmToWorldUnits(1.8);
         const edgeHits = raycaster.intersectObjects(window.__silmoOcctEdgeOverlay.group.children, false);
         raycaster.params.Line.threshold = previousThreshold;
-        if (edgeHits.length) {
-          const edgeIndex = edgeHits[0].object.userData.occtEdgeIndex;
+        // Der Three.js-Line-Raycaster ist je nach Zoomstufe und Gerätedichte
+        // empfindlich. Ergänzend prüfen wir den tatsächlichen Bildschirmabstand
+        // zur projizierten nativen Kanten-Polylinie (max. 14 CSS-Pixel).
+        const screenHit = edgeHits.length ? null : findOcctEdgeAtScreenPoint(e.clientX, e.clientY);
+        const edgeIndex = edgeHits.length
+          ? edgeHits[0].object.userData.occtEdgeIndex
+          : screenHit?.edgeIndex;
+        if (Number.isInteger(edgeIndex)) {
           const picked = window.__silmoOcctEdgeOverlay.selectedIndices;
           if (picked.has(edgeIndex)) picked.delete(edgeIndex); else picked.add(edgeIndex);
           updateOcctEdgeHighlight();
