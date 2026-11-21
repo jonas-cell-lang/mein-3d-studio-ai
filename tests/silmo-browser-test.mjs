@@ -229,6 +229,32 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(Math.abs(restoredOcctVolume - 8000) < 1e-7,
     'Undo stellte den OCCT-B-Rep-Quader nicht mit seinem korrekten Volumen wieder her');
 
+  // Echter OCCT-Zylinder über die SILMO-Oberfläche inklusive Undo/Redo-Rekonstruktion.
+  const cylinderSceneStart = await page.locator('#objects .object-row').count();
+  await page.locator('#addOcctCylinder').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Zylinder erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  const cylinderResult = await page.evaluate(async () => {
+    const created = window.__silmoOcctLastCreated;
+    return { ...created, workerVolumeMM3: await window.__silmoOcctClient.getVolume(created.shapeId) };
+  });
+  assert.ok(Math.abs(cylinderResult.volumeMM3 - 3000 * Math.PI) < 1e-6,
+    'OCCT-Zylinder besitzt nicht das analytische Volumen 3000π mm³');
+  assert.ok(Math.abs(cylinderResult.workerVolumeMM3 - 3000 * Math.PI) < 1e-6,
+    'OCCT-Zylinder ist im Worker nicht als echter B-Rep-Körper abfragbar');
+  assert.deepEqual(cylinderResult.dimensionsMM, [20, 20, 30]);
+  await page.locator('#undo').click();
+  await page.waitForFunction(() => window.__silmoOcctRestorePromise && window.__silmoOcctRestorePromise.then(() => true), null, { timeout: 45000 });
+  assert.equal(await page.locator('#objects .object-row').count(), cylinderSceneStart,
+    'Undo hat den OCCT-Zylinder nicht entfernt');
+  await page.locator('#redo').click();
+  await page.waitForFunction(() => window.__silmoOcctRestorePromise && window.__silmoOcctRestorePromise.then(() => true), null, { timeout: 45000 });
+  const restoredCylinder = await page.evaluate(async () => {
+    const created = window.__silmoOcctLastRestored;
+    return created ? await window.__silmoOcctClient.getVolume(created.shapeId) : null;
+  });
+  assert.ok(Math.abs(restoredCylinder - 3000 * Math.PI) < 1e-6,
+    'Redo hat den OCCT-Zylinder nicht als echten B-Rep-Körper rekonstruiert');
+
   // STEP-Export und anschliessender Import über die echte SILMO-Dateiauswahl.
   await page.locator('#objects .object-select').last().evaluate(button =>
     button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
