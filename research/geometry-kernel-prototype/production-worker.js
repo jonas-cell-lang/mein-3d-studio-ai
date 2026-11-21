@@ -372,15 +372,20 @@ async function execute(method, args) {
     for (const type of requestedTypes) {
       const handles = kernel.getSubShapes(shape, type);
       try {
+        if (!Array.isArray(handles) || handles.length < 1 || handles.length > 100000) {
+          throw new Error("OCCT lieferte eine ungültige Anzahl nativer " + (type === "face" ? "Flächen." : "Kanten."));
+        }
         result[type] = handles.map((handle, index) => {
-          if (type === "face") {
-            return { index, geometryType: kernel.surfaceType(handle) };
+          const geometryType = type === "face" ? kernel.surfaceType(handle) : kernel.curveType(handle);
+          if (typeof geometryType !== "string" || geometryType.length === 0) {
+            throw new Error("OCCT lieferte einen ungültigen nativen Geometrietyp.");
           }
-          return {
-            index,
-            geometryType: kernel.curveType(handle),
-            lengthMM: kernel.curveLength(handle)
-          };
+          if (type === "face") return { index, geometryType };
+          const lengthMM = kernel.curveLength(handle);
+          if (!Number.isFinite(lengthMM) || lengthMM <= 0) {
+            throw new Error("OCCT lieferte eine ungültige native Kantenlänge.");
+          }
+          return { index, geometryType, lengthMM };
         });
       } finally {
         for (const handle of handles) {
@@ -449,9 +454,16 @@ async function execute(method, args) {
       resultShape = kernel.fillet(shape, selectedEdges, radiusMM);
       const volumeMM3 = kernel.getVolume(resultShape);
       const mesh = serializeMesh(kernel.tessellate(resultShape));
+      const positions = mesh.positions;
+      const indices = mesh.indices;
       if (!Number.isFinite(volumeMM3) || volumeMM3 <= 0 ||
-          !kernel.isValid(resultShape)) {
-        throw new Error("OCCT-Kantenrundung lieferte keinen gültigen Solid mit positivem Volumen.");
+          !kernel.isValid(resultShape) ||
+          positions.length < 9 || positions.length % 3 !== 0 ||
+          !Array.from(positions).every(Number.isFinite) ||
+          indices.length < 3 || indices.length % 3 !== 0 ||
+          !Array.from(indices).every(index => Number.isInteger(index) && index >= 0 && index < positions.length / 3) ||
+          mesh.triangleCount !== indices.length / 3) {
+        throw new Error("OCCT-Kantenrundung lieferte keinen gültigen Solid mit positivem Volumen und gültigem Dreiecksnetz.");
       }
       const resultId = nextShapeId++;
       shapes.set(resultId, resultShape);
