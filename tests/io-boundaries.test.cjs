@@ -660,3 +660,28 @@ test('STL-Topologie berechnet das orientierte Volumen auch weit ausserhalb des U
     'Das umgekehrt orientierte Volumen muss -1000 mm³ bleiben');
   reversedGeometry.dispose();
 });
+
+
+test('STL-Import fängt einen Fehler beim Erzeugen des FileReaders ab', () => {
+  const previousReader = globalThis.FileReader;
+  const previousLoader = THREE.STLLoader;
+  let status = '';
+  globalThis.FileReader = class {
+    constructor() { throw new Error('simulierter FileReader-Konstruktorfehler'); }
+  };
+  THREE.STLLoader = class {};
+  try {
+    const io = stlIO.createSTLIO({
+      getObjects: () => [],
+      addObject: () => {},
+      selectObject: () => {},
+      setStatus: value => { status = value; }
+    });
+    assert.doesNotThrow(() => io.importSTLFile({ name: 'broken.stl', type: '', size: 12 }));
+    assert.match(status, /STL-Datei konnte nicht gelesen werden/);
+  } finally {
+    globalThis.FileReader = previousReader;
+    if (previousLoader === undefined) delete THREE.STLLoader;
+    else THREE.STLLoader = previousLoader;
+  }
+});
