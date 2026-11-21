@@ -16,6 +16,7 @@ test('Toleranzwerte behalten die im Audit belegten Werte', () => {
   assert.equal(tolerances.SKETCH_BED_BOUNDS_WORLD_UNITS, 1e-5);
   assert.equal(tolerances.PRINT_BED_BOUNDS_WORLD_UNITS, 1e-4);
   assert.equal(tolerances.PRINT_TRIANGLE_AREA2_WORLD_UNITS2, 1e-8);
+  assert.equal(tolerances.PRINT_MIN_MODEL_DIMENSION_MM, 0.01);
   assert.equal(tolerances.CONTOUR_FRAME_MIN_EDGE_WORLD_UNITS, 1e-5);
   assert.equal(tolerances.CONTOUR_FRAME_PARALLEL_CROSS_MIN, 1e-5);
   assert.equal(tolerances.CONTOUR_FRAME_MIN_NORMAL_WORLD_UNITS, 1e-5);
