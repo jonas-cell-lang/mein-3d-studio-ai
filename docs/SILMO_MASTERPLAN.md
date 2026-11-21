@@ -837,3 +837,12 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die Dokumentation des Projektformats v3 beschreibt nun das optionale Feld `occtSource`, unterstützte Rezeptfamilien, Schema-Prüfungen und die Rekonstruktion im Worker.
 - Es wird ausdrücklich festgehalten, dass v3 keine rohe native OCCT-B-Rep-Datei speichert und dass nicht alle Geometrietypen bereits OCCT-Rezepte besitzen.
 - Diese Änderung ist Dokumentation; sie ändert weder Laufzeitcode noch Projektdateien. Die zugehörigen CI-Prüfungen werden auf dem neuen Commit separat ausgewertet.
+
+
+### 6.83 OCCT-Affintransformationen für Boolesche Operationen (21.11.2026)
+- Die OCCT-UI-Integration übergibt nun vollständige 3×4-Affinmatrizen statt nur Objektpositionen.
+- Rotation, Skalierung und Verschiebung werden vor Fuse, Cut und Common im OCCT-Worker auf echte B-Rep-Kopien angewendet. Die ursprünglichen Worker-Körper bleiben unverändert.
+- Der Client und der Worker begrenzen Matrixwerte und lehnen entartete Transformationen mit singulärer linearer Komponente ab.
+- Neue Projekt-Rezepte speichern `transformsMM`; ältere v3-Rezepte mit `translationsMM` bleiben lesbar. Schema-Prüfung und Undo/Redo-Rekonstruktion berücksichtigen beide Formen.
+- Browserregression ergänzt einen echten OCCT-Fuse mit Rotation und ungleichmässiger Skalierung sowie Prüfungen für unveränderte Quellkörper und ungültige Matrizen.
+- Die Validierung wird auf dem aktuellen Branch-Commit separat ausgewertet. PR #70 bleibt Draft; kein Merge, Deployment oder Veröffentlichung.
