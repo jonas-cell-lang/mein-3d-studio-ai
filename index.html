@@ -793,6 +793,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       mesh.userData.percent = { x: 100, y: 100, z: 100 };
       mesh.userData.label = 'OCCT-B-Rep-Quader';
       mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtSource = { kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20 };
       recordHistory();
       scene.add(mesh);
       objects.push(mesh);
@@ -808,6 +809,34 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       status.textContent = 'OCCT-Kern konnte keinen Körper erstellen: ' + (error.message || 'Unbekannter Fehler');
     } finally {
       button.disabled = false;
+    }
+  }
+
+  async function rebuildOcctObjectHandle(mesh) {
+    if (!objects.includes(mesh)) return;
+    if (mesh.userData.sketch?.outlinePoints) {
+      await upgradeSketchMeshToOcct(mesh, mesh.userData.sketch);
+      return;
+    }
+    const source = mesh.userData.occtSource;
+    if (source?.kind !== 'box') return;
+    let result = null;
+    try {
+      if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+      result = await window.__silmoOcctClient.createBox(source.widthMM, source.depthMM, source.heightMM);
+      if (!objects.includes(mesh)) {
+        await window.__silmoOcctClient.releaseShape(result.shapeId);
+        return;
+      }
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtShapeId = result.shapeId;
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+    } catch (error) {
+      mesh.userData.geometryKernel = 'three-mesh-fallback';
+      status.textContent = 'OCCT-Körper konnte nach Undo/Redo nicht wiederhergestellt werden: ' +
+        (error.message || 'Unbekannter Kernel-Fehler');
     }
   }
 
@@ -964,8 +993,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       updateMoveGizmo();
       // Skizzenkörper können aus ihren gespeicherten Parametern erneut als B-Rep aufgebaut werden.
       restoredObjects.forEach(obj => {
-        if (obj.userData.sketch && obj.userData.sketch.outlinePoints) {
-          upgradeSketchMeshToOcct(obj, obj.userData.sketch);
+        if (obj.userData.sketch?.outlinePoints || obj.userData.occtSource?.kind === 'box') {
+          rebuildOcctObjectHandle(obj);
         }
       });
     } catch (error) {
@@ -1009,6 +1038,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     // Ein Three.js-Klon ist noch kein zweiter OCCT-B-Rep-Körper.
     delete copy.userData.occtShapeId;
     delete copy.userData.occtVolumeMM3;
+    delete copy.userData.occtSource;
     if (copy.userData.geometryKernel === 'occt-wasm') copy.userData.geometryKernel = 'three-mesh-fallback';
     copy.userData.label = source.userData.label || 'Objekt';
     scene.add(copy); objects.push(copy);
