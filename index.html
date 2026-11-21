@@ -676,7 +676,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   const CSG_EPSILON = window.SILMOTolerances.CSG_GEOMETRY_WORLD_UNITS;
 
   function getOcctSourceDescriptor(obj) {
-    if (obj.userData.occtSource?.kind === 'box') {
+    if (['box', 'boolean'].includes(obj.userData.occtSource?.kind)) {
       return JSON.parse(JSON.stringify(obj.userData.occtSource));
     }
     if (obj.userData.sketch?.outlinePoints) {
@@ -942,6 +942,43 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
   }
 
+  async function createOcctShapeFromSource(source, ownedHandles) {
+    if (!source || typeof source !== 'object') {
+      throw new Error('Ungültige gespeicherte OCCT-Konstruktionsquelle.');
+    }
+    if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+    if (source.kind === 'box') {
+      const result = await window.__silmoOcctClient.createBox(
+        source.widthMM, source.depthMM, source.heightMM
+      );
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
+    if (source.kind === 'sketch' && source.sketch?.outlinePoints) {
+      const rings = [source.sketch.outlinePoints,
+        ...(Array.isArray(source.sketch.holes) ? source.sketch.holes : [])];
+      const loops = rings.map(ring => ring.map(point => [
+        worldUnitsToMm(point[0]), worldUnitsToMm(point[1])
+      ]));
+      const result = await window.__silmoOcctClient.createExtrusion(loops, source.sketch.extrusionMM);
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
+    if (source.kind === 'boolean' && ['fuse', 'cut', 'common'].includes(source.operation) &&
+        Array.isArray(source.operands) && source.operands.length === 2) {
+      const operands = [];
+      for (const operand of source.operands) {
+        operands.push(await createOcctShapeFromSource(operand, ownedHandles));
+      }
+      const result = await window.__silmoOcctClient.booleanOperation(
+        source.operation, operands.map(item => item.shapeId), source.translationsMM
+      );
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
+    throw new Error('Gespeicherte OCCT-Konstruktionsquelle kann nicht rekonstruiert werden.');
+  }
+
   async function rebuildOcctObjectHandle(mesh) {
     if (!objects.includes(mesh)) return;
     if (mesh.userData.sketch?.outlinePoints) {
@@ -954,30 +991,15 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       let booleanResult = null;
       try {
         if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
-        const operandIds = [];
+        const operands = [];
         for (const operand of source.operands || []) {
-          let created;
-          if (operand?.kind === 'box') {
-            created = await window.__silmoOcctClient.createBox(
-              operand.widthMM, operand.depthMM, operand.heightMM
-            );
-          } else if (operand?.kind === 'sketch' && operand.sketch?.outlinePoints) {
-            const rings = [operand.sketch.outlinePoints,
-              ...(Array.isArray(operand.sketch.holes) ? operand.sketch.holes : [])];
-            const loops = rings.map(ring => ring.map(point => [
-              worldUnitsToMm(point[0]), worldUnitsToMm(point[1])
-            ]));
-            created = await window.__silmoOcctClient.createExtrusion(loops, operand.sketch.extrusionMM);
-          } else {
-            throw new Error('Gespeicherte OCCT-Boolean-Quelle kann nicht rekonstruiert werden.');
-          }
-          createdHandles.push(created.shapeId);
-          operandIds.push(created.shapeId);
+          operands.push(await createOcctShapeFromSource(operand, createdHandles));
         }
-        if (operandIds.length !== 2) throw new Error('OCCT-Undo benötigt genau zwei rekonstruierbare Ausgangskörper.');
+        if (operands.length !== 2) throw new Error('OCCT-Undo benötigt genau zwei rekonstruierbare Ausgangskörper.');
         booleanResult = await window.__silmoOcctClient.booleanOperation(
-          source.operation, operandIds, source.translationsMM
+          source.operation, operands.map(item => item.shapeId), source.translationsMM
         );
+        createdHandles.push(booleanResult.shapeId);
         await Promise.all(createdHandles.map(shapeId =>
           window.__silmoOcctClient.releaseShape(shapeId)
         ));
