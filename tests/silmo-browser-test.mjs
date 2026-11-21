@@ -371,16 +371,13 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     if (window.__silmoOcctProjectRestorePromise) await window.__silmoOcctProjectRestorePromise;
   });
   const reopenedOcctProject = await occtRoundTripPage.evaluate(async () => {
-    const object = window.__silmoTestGetObjects?.().at(-1) ||
-      window.__silmoOcctObjectHandles && [...document.querySelectorAll('#objects .object-select')].length;
-    const mesh = window.__silmoTestGetObjects?.().at(-1);
-    const shapeId = mesh && window.__silmoOcctObjectHandles?.get(mesh);
+    const restored = window.__silmoOcctProjectRestoreSummary?.at(-1);
     return {
       objectCount: document.querySelectorAll('#objects .object-row').length,
-      kernel: mesh?.userData?.geometryKernel,
-      source: mesh?.userData?.occtSource,
-      shapeId,
-      volumeMM3: shapeId ? await window.__silmoOcctClient.getVolume(shapeId) : null
+      kernel: restored?.geometryKernel,
+      source: restored?.occtSource,
+      shapeId: restored?.shapeId,
+      volumeMM3: restored?.shapeId ? await window.__silmoOcctClient.getVolume(restored.shapeId) : null
     };
   });
   assert.equal(reopenedOcctProject.objectCount, cutSceneStart + 1,
