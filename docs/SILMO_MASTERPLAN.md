@@ -856,3 +856,14 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Browser-End-to-End-Test: drei räumlich getrennte 20-mm-Quader werden über die SILMO-Oberfläche ausgewählt und vereinigt. Erwartetes und im Worker erneut abgefragtes Volumen: 24'000 mm³. Undo stellt drei Quellkörper wieder her; Redo rekonstruiert den Verbund.
 - Code-Checks und Browser-Interaktionstests auf Commit `f86507506655fa881012dd11b0bd5805261b1f54` erfolgreich. Der produktive Worker und der isolierte Kerneltest blieben unverändert gegenüber dem zuvor erfolgreich getesteten Worker-Stand.
 - PR #70 bleibt Draft und ungemergt; kein Deployment oder Veröffentlichung.
+
+
+### 6.85 STEP-Import und -Export im OCCT-Produktionspfad (21.11.2026)
+- Der produktive OCCT-Worker unterstützt jetzt `.step`- und `.stp`-Import über die in `occt-wasm 5.17.2` vorhandene `kernel.importStep`-API.
+- Importierte STEP-Körper werden direkt im Worker als B-Rep gehalten, tesselliert und mit Volumenwert in die SILMO-Szene übernommen.
+- Ausgewählte OCCT-B-Rep-Körper können als STEP AP242 in Millimetern exportiert werden.
+- Importierte STEP-Quellen werden als begrenztes Konstruktionsrezept (maximal 10 MB pro Quelle) in Projektdateien gespeichert. Undo/Redo und Projektwiederherstellung können den echten B-Rep-Körper aus der STEP-Quelle erneut aufbauen.
+- Der Browser-End-to-End-Test exportiert einen 20×20×20-mm-OCCT-Quader, importiert die STEP-Datei über die normale Dateiauswahl und prüft das erhaltene Volumen von 8'000 mm³. Undo, Redo und Löschen des importierten Körpers werden ebenfalls geprüft.
+- Client-Unit-Tests prüfen STEP-Import/Export-Befehle und Eingabevalidierung; Projekt-Schema-Tests prüfen gültige, fehlerhafte und zu grosse STEP-Quellen.
+- Code-Checks, isolierte OCCT-Kernprüfungen und Browser-Interaktionstests auf Commit `1fd058181eb6a850339adec3cea94aa4dd5f9659` erfolgreich.
+- PR #70 bleibt Draft und ungemergt. Kein Merge, Deployment oder Veröffentlichung.
