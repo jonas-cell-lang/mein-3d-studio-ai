@@ -389,6 +389,47 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(Number.isInteger(reopenedOcctProject.shapeId) &&
     Math.abs(reopenedOcctProject.volumeMM3 - 4000) < 1e-7,
   'Wiedergeöffneter OCCT-B-Rep-Körper besitzt nicht mehr das korrekte Worker-Volumen von 4000 mm³');
+  // Verschachtelter Konstruktionsbaum: ein gespeicherter Cut wird Operand einer zweiten Fuse-Operation.
+  const nestedOcctProject = structuredClone(occtSavedProject);
+  nestedOcctProject.objects.at(-1).occtSource = {
+    kind: 'boolean',
+    operation: 'fuse',
+    operands: [structuredClone(savedOcctSource), {
+      kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20
+    }],
+    translationsMM: [[0, 0, 0], [0, 0, 0]]
+  };
+  const nestedGeneration = await occtRoundTripPage.evaluate(() =>
+    window.__silmoOcctProjectRestoreGeneration || 0);
+  await occtRoundTripPage.locator('#projectFileInput').setInputFiles({
+    name: 'occt-nested-roundtrip.silmo.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(nestedOcctProject))
+  });
+  await occtRoundTripPage.waitForFunction(() =>
+    /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 10000 });
+  await occtRoundTripPage.waitForFunction(previous =>
+    window.__silmoOcctProjectRestoreGeneration > previous,
+    nestedGeneration, { timeout: 10000 });
+  await occtRoundTripPage.evaluate(async () => {
+    if (window.__silmoOcctProjectRestorePromise) await window.__silmoOcctProjectRestorePromise;
+  });
+  const nestedRestored = await occtRoundTripPage.evaluate(async () => {
+    const restored = window.__silmoOcctProjectRestoreSummary?.at(-1);
+    return {
+      kernel: restored?.geometryKernel,
+      source: restored?.occtSource,
+      shapeId: restored?.shapeId,
+      volumeMM3: restored?.shapeId ? await window.__silmoOcctClient.getVolume(restored.shapeId) : null
+    };
+  });
+  assert.equal(nestedRestored.kernel, 'occt-wasm',
+    'Verschachtelter OCCT-Boolean-Baum wurde nicht als echter B-Rep rekonstruiert');
+  assert.equal(nestedRestored.source?.operands?.[0]?.kind, 'boolean',
+    'Verschachtelte Boolean-Quelle ging beim Wiederherstellen verloren');
+  assert.ok(Number.isInteger(nestedRestored.shapeId) &&
+    Math.abs(nestedRestored.volumeMM3 - 8000) < 1e-7,
+  'Verschachtelte OCCT-Fuse lieferte nicht das erwartete B-Rep-Volumen von 8000 mm³');
   assert.deepEqual(occtRoundTripErrors, [],
     'OCCT-Projekt-Roundtrip löste Browserfehler aus: ' + occtRoundTripErrors.join(' ; '));
 
