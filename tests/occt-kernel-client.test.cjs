@@ -54,9 +54,11 @@ class FakeWorker {
         } } });
       } else if (message.method === "inspectShape") {
         this.onmessage({ data: { id: message.id, ok: true, result: {
-          shapeId: message.args.shapeId, shapeType: "solid", volumeMM3: 8000,
+          shapeId: message.args.shapeId, shapeType: "solid", volumeMM3: 8000, surfaceAreaMM2: 2400,
+          centerOfMassMM: [10, 10, 10],
+          topology: { solid: 1, shell: 1, face: 6, wire: 6, edge: 12, vertex: 8 },
           mesh: { vertexCount: 8, triangleCount: 12, indexCount: 36 },
-          boundingBoxMM: { min: [0, 0, 0], max: [20, 20, 20], size: [20, 20, 20], center: [10, 10, 10] }
+          boundingBoxMM: { min: [0, 0, 0], max: [20, 20, 20], size: [20, 20, 20], center: [10, 10, 10], source: "native-brep" }
         } } });
       } else if (message.method === "getVolume") {
         this.onmessage({ data: { id: message.id, ok: true, result: { volumeMM3: 8000 } } });
@@ -174,8 +176,11 @@ test("OCCT client inspects a solid and validates the requested body handle", asy
   assert.equal(result.shapeType, "solid");
   assert.equal(result.volumeMM3, 8000);
   assert.deepEqual(result.mesh, { vertexCount: 8, triangleCount: 12, indexCount: 36 });
+  assert.equal(result.surfaceAreaMM2, 2400);
+  assert.deepEqual(result.centerOfMassMM, [10, 10, 10]);
+  assert.deepEqual(result.topology, { solid: 1, shell: 1, face: 6, wire: 6, edge: 12, vertex: 8 });
   assert.deepEqual(result.boundingBoxMM, {
-    min: [0, 0, 0], max: [20, 20, 20], size: [20, 20, 20], center: [10, 10, 10]
+    min: [0, 0, 0], max: [20, 20, 20], size: [20, 20, 20], center: [10, 10, 10], source: "native-brep"
   });
   assert.deepEqual(worker.messages.map(message => message.method), ["initialize", "inspectShape"]);
   assert.equal(worker.messages[1].args.shapeId, 7);
