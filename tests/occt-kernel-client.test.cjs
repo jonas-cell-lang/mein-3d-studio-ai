@@ -230,6 +230,8 @@ test("OCCT client rejects invalid fillet parameters before contacting the worker
   const client = createClient({
     WorkerClass: class extends FakeWorker { constructor(url, options) { super(url, options); worker = this; } }
   });
+  await client.createBox(20, 20, 20);
+  worker.messages.length = 0;
   await assert.rejects(client.filletEdges(7, [], 1), /Kantenrundung benötigt/);
   await assert.rejects(client.filletEdges(7, [0, 0], 1), /Kantenrundung benötigt/);
   await assert.rejects(client.filletEdges(7, [0], 0.001), /Kantenrundung benötigt/);
