@@ -932,6 +932,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         restoredObjects.push(mesh);
       });
 
+      // Wiederhergestellte Three.js-Snapshots besitzen zunächst keine Worker-Handles.
+      restoredObjects.forEach(obj => {
+        delete obj.userData.occtShapeId;
+        delete obj.userData.occtVolumeMM3;
+        if (obj.userData.geometryKernel === 'occt-wasm') obj.userData.geometryKernel = 'three-mesh-fallback';
+      });
       const previousObjects = objects.slice();
       previousObjects.forEach(obj => scene.remove(obj));
       objects.length = 0;
@@ -945,6 +951,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       }
       committed = true;
       previousObjects.forEach(obj => {
+        releaseOcctObjectHandle(obj);
         obj.geometry.dispose();
         (Array.isArray(obj.material) ? obj.material : [obj.material]).forEach(material => material.dispose());
       });
@@ -955,6 +962,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       updateObjects();
       showProperties();
       updateMoveGizmo();
+      // Skizzenkörper können aus ihren gespeicherten Parametern erneut als B-Rep aufgebaut werden.
+      restoredObjects.forEach(obj => {
+        if (obj.userData.sketch && obj.userData.sketch.outlinePoints) {
+          upgradeSketchMeshToOcct(obj, obj.userData.sketch);
+        }
+      });
     } catch (error) {
       if (!committed) {
         restoredObjects.forEach(obj => {
@@ -993,6 +1006,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     copy.scale.copy(source.scale);
     copy.userData = JSON.parse(JSON.stringify(source.userData));
     delete copy.userData.groupId;
+    // Ein Three.js-Klon ist noch kein zweiter OCCT-B-Rep-Körper.
+    delete copy.userData.occtShapeId;
+    delete copy.userData.occtVolumeMM3;
+    if (copy.userData.geometryKernel === 'occt-wasm') copy.userData.geometryKernel = 'three-mesh-fallback';
     copy.userData.label = source.userData.label || 'Objekt';
     scene.add(copy); objects.push(copy);
     return copy;
@@ -1034,6 +1051,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     commitProject: (project, newObjects) => {
       recordHistory();
       objects.slice().forEach(obj => {
+        releaseOcctObjectHandle(obj);
         scene.remove(obj);
         obj.geometry.dispose();
         if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
@@ -3671,6 +3689,17 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   function isTypingTarget(target) {
     return target && (target.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(target.tagName));
   }
+  function releaseOcctObjectHandle(obj) {
+    const handles = window.__silmoOcctObjectHandles;
+    const shapeId = handles?.get(obj);
+    if (handles) handles.delete(obj);
+    if (shapeId !== undefined && shapeId !== null && window.__silmoOcctClient) {
+      window.__silmoOcctClient.releaseShape(shapeId).catch(error => {
+        console.warn('OCCT-Körper konnte nicht sofort freigegeben werden:', error);
+      });
+    }
+  }
+
   function deleteSelectedObjects() {
     const requested = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
     const targets = requested.filter(obj => obj.userData.locked !== true);
@@ -3680,6 +3709,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
     recordHistory();
     targets.forEach(obj => {
+      releaseOcctObjectHandle(obj);
       const idx = objects.indexOf(obj);
       if (idx >= 0) objects.splice(idx, 1);
       scene.remove(obj);
