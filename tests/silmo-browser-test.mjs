@@ -493,6 +493,9 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     message.startsWith('console: Error: Ungültige OCCT-Boolean-Konstruktionsdaten.')),
   'Ungültige OCCT-Rezepte lösten andere als die erwarteten Validierungsfehler aus: ' +
     occtRoundTripErrors.join(' ; '));
+  // Die drei erwarteten Validierungsfehler sind geprüft; spätere Roundtrip-Tests
+  // beginnen mit einem sauberen Fehlerprotokoll.
+  occtRoundTripErrors.length = 0;
 
   await occtRoundTripPage.close();
 
