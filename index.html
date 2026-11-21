@@ -2519,7 +2519,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const target=Number(document.getElementById('editPathLengthMM').value);
     if(!Number.isFinite(target)||target<0.1||target>20000)throw new Error('Pfadlänge muss zwischen 0,1 und 20000 mm liegen.');
     const curve=cadPathCurve(obj),current=worldUnitsToMm(curve.getLength());
-    if(current<0.001)throw new Error('Pfad ist zu kurz.');
+    if(current<window.SILMOTolerances.PATH_LENGTH_MIN_CURRENT_MM)throw new Error('Pfad ist zu kurz.');
     const factor=target/current,scaled=data.pathPoints.map(p=>p.map(v=>v*factor));
     const diameter=Number(data.diameterMM||1.2);
     const pathResult=window.SILMOSketchGeometry.createPathTubeGeometry(scaled,data.type,mmToWorldUnits(diameter)/2,data.type==='line2d'?24:Math.max(24,Math.min(300,scaled.length*12)),8);
@@ -2613,7 +2613,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
     const shape=new THREE.Shape();shape.moveTo(vectors[0][0].x,vectors[0][0].y);vectors[0].slice(1).forEach(point=>shape.lineTo(point.x,point.y));shape.closePath();
     vectors.slice(1).forEach(ring=>{const path=new THREE.Path();path.moveTo(ring[0].x,ring[0].y);ring.slice(1).forEach(point=>path.lineTo(point.x,point.y));path.closePath();shape.holes.push(path);});
-    const localExtrusionMM=meta.extrusionMM/Math.max(Math.abs(obj.scale.z),1e-12);
+    const localExtrusionMM=meta.extrusionMM/Math.max(Math.abs(obj.scale.z),window.SILMOTolerances.SKETCH_EXTRUSION_SCALE_DENOMINATOR_MIN);
     const geometry=window.SILMOSketchGeometry.createExtrusionGeometry(shape,{depth:mmToWorldUnits(localExtrusionMM),bevelEnabled:false,curveSegments:32});
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
