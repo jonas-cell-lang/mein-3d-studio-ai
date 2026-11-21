@@ -316,6 +316,41 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const torusSceneStart = await page.locator('#objects .object-row').count();
   await page.locator('#addOcctTorus').click();
   await page.waitForFunction(() => /^OCCT-B-Rep-Torus erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  const topologyAndFillet = await page.evaluate(async () => {
+    const client = window.__silmoOcctClient;
+    const source = await client.createBox(20, 20, 20);
+    try {
+      const topology = await client.listSubShapes(source.shapeId);
+      const rounded = await client.filletEdges(source.shapeId, [0], 1);
+      const result = {
+        faceCount: topology.face.length,
+        edgeCount: topology.edge.length,
+        faceTypes: topology.face.map(face => face.geometryType),
+        edgeTypes: topology.edge.map(edge => edge.geometryType),
+        edgeLengthsFinite: topology.edge.every(edge => Number.isFinite(edge.lengthMM) && edge.lengthMM > 0),
+        sourceVolume: source.volumeMM3,
+        roundedVolume: rounded.volumeMM3,
+        roundedWorkerVolume: await client.getVolume(rounded.shapeId),
+        roundedShapeId: rounded.shapeId
+      };
+      await client.releaseShape(rounded.shapeId);
+      return result;
+    } finally {
+      await client.releaseShape(source.shapeId);
+    }
+  });
+  assert.equal(topologyAndFillet.faceCount, 6, 'OCCT-Topologie liefert für den Quader nicht sechs Flächen');
+  assert.equal(topologyAndFillet.edgeCount, 12, 'OCCT-Topologie liefert für den Quader nicht zwölf Kanten');
+  assert.ok(topologyAndFillet.faceTypes.every(type => typeof type === 'string' && type.length > 0),
+    'OCCT-Flächentypen fehlen');
+  assert.ok(topologyAndFillet.edgeTypes.every(type => typeof type === 'string' && type.length > 0) &&
+    topologyAndFillet.edgeLengthsFinite, 'OCCT-Kantentypen oder Kantenlängen sind ungültig');
+  assert.ok(topologyAndFillet.roundedVolume > 0 &&
+    topologyAndFillet.roundedVolume < topologyAndFillet.sourceVolume,
+    'Native OCCT-Kantenrundung hat das Quader-Volumen nicht plausibel verändert');
+  assert.ok(Math.abs(topologyAndFillet.roundedWorkerVolume - topologyAndFillet.roundedVolume) < 1e-7,
+    'Gerundeter OCCT-Körper ist im Worker nicht dauerhaft abfragbar');
+
   const torusResult = await page.evaluate(async () => {
     const created = window.__silmoOcctLastCreated;
     return { ...created, workerVolumeMM3: await window.__silmoOcctClient.getVolume(created.shapeId) };
