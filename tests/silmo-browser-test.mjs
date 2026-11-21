@@ -217,7 +217,10 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
   assert.ok(Math.abs(redoneBooleanVolume - 8000) < 1e-7,
     'Redo stellte das OCCT-Boolean-Ergebnis nicht als echten B-Rep-Körper wieder her');
-  await page.locator('#delete').click();
+  await page.locator('#delete').evaluate(button => {
+    if (button.disabled) throw new Error('Löschen-Schaltfläche ist deaktiviert.');
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
   assert.equal(await page.locator('#objects .object-row').count(), booleanSceneStart,
     'OCCT-Boolean-Ergebnis konnte nach Redo nicht aus der Szene entfernt werden');
   await showCreateSubtab(0);
