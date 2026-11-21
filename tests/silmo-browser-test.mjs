@@ -160,6 +160,56 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
       booleanResults[operation].meshValues > 0 && booleanResults[operation].indexValues > 0,
     'OCCT-' + operation + ' lieferte kein verwendbares Darstellungsnetz');
   }
+
+  // OCCT-Worker-Belastung: sechs Zyklen mit je Fuse, Cut und Common.
+  // Jeder Durchlauf prüft Volumen, Tessellierung und anschliessende Freigabe aller Handles.
+  const occtStress = await page.evaluate(async () => {
+    const expected = { fuse: 12000, cut: 4000, common: 4000 };
+    const translationsMM = [[0, 0, 0], [10, 0, 0]];
+    const completed = [];
+    const released = [];
+    for (let cycle = 0; cycle < 6; cycle++) {
+      const first = await window.__silmoOcctClient.createBox(20, 20, 20);
+      const second = await window.__silmoOcctClient.createBox(20, 20, 20);
+      try {
+        for (const operation of ['fuse', 'cut', 'common']) {
+          const result = await window.__silmoOcctClient.booleanOperation(
+            operation, [first.shapeId, second.shapeId], translationsMM
+          );
+          const workerVolumeMM3 = await window.__silmoOcctClient.getVolume(result.shapeId);
+          if (Math.abs(result.volumeMM3 - expected[operation]) > 1e-7 ||
+              Math.abs(workerVolumeMM3 - expected[operation]) > 1e-7 ||
+              !(result.mesh?.triangleCount > 0) ||
+              !(result.mesh?.positions?.length > 0) ||
+              !(result.mesh?.indices?.length > 0)) {
+            throw new Error('OCCT-Stresstest Zyklus ' + cycle + ', ' + operation +
+              ': Volumen oder Tessellierung ungültig.');
+          }
+          await window.__silmoOcctClient.releaseShape(result.shapeId);
+          let resultReleased = false;
+          try { await window.__silmoOcctClient.getVolume(result.shapeId); }
+          catch { resultReleased = true; }
+          if (!resultReleased) throw new Error('OCCT-Ergebnis-Handle blieb nach Freigabe aktiv.');
+          released.push(result.shapeId);
+          completed.push({ cycle, operation, volumeMM3: result.volumeMM3 });
+        }
+      } finally {
+        await window.__silmoOcctClient.releaseShape(first.shapeId);
+        await window.__silmoOcctClient.releaseShape(second.shapeId);
+      }
+      for (const shapeId of [first.shapeId, second.shapeId]) {
+        let sourceReleased = false;
+        try { await window.__silmoOcctClient.getVolume(shapeId); }
+        catch { sourceReleased = true; }
+        if (!sourceReleased) throw new Error('OCCT-Quellkörper-Handle blieb nach Freigabe aktiv.');
+        released.push(shapeId);
+      }
+    }
+    return { cycles: 6, operations: completed.length, releasedHandles: released.length, completed };
+  });
+  assert.equal(occtStress.operations, 18, 'OCCT-Stresstest hat nicht alle 18 Boolean-Operationen ausgeführt');
+  assert.equal(occtStress.releasedHandles, 30, 'OCCT-Stresstest hat nicht alle 30 Worker-Handles freigegeben');
+
   await page.locator('[data-tab="edit"]').click();
   await page.locator('#delete').evaluate(button => {
     if (button.disabled) throw new Error('Löschen-Schaltfläche ist deaktiviert.');
