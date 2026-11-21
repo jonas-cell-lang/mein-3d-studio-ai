@@ -39,6 +39,10 @@ jobs:
           node-version: 22
       - name: Install locked runtime dependencies
         run: npm ci
+      - name: Install pinned OCCT worker dependencies
+        run: npm install --prefix research/geometry-kernel-prototype --no-audit --no-fund
+      - name: Bundle production OCCT worker
+        run: npm run build:worker --prefix research/geometry-kernel-prototype
 
       - name: Prepare local Three.js runtime
         run: npm run prepare:runtime
@@ -119,6 +123,7 @@ jobs:
               "src/units.js",
               "src/history.js",
               "src/stl-io.js",
+              "src/occt-kernel-client.js",
               "src/tolerances.js",
               "src/csg.js",
               "src/project-schema.js",
@@ -134,6 +139,8 @@ jobs:
               "vendor/three/STLLoader.js",
               "vendor/three/STLExporter.js",
               "vendor/three/LICENSE",
+              "vendor/occt/silmo-occt-worker.js",
+              "vendor/occt/occt-wasm.wasm",
           )
           for relative in required:
               source = Path(relative)
