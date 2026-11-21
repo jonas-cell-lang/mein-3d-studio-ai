@@ -78,6 +78,17 @@
         await initialize();
         return send("createExtrusion", { loops, heightMM });
       },
+      async booleanOperation(operation, shapeIds) {
+        if (!["fuse", "cut", "common"].includes(operation)) {
+          throw new Error("Unbekannte OCCT-Boolean-Operation.");
+        }
+        if (!Array.isArray(shapeIds) || shapeIds.length !== 2 ||
+            shapeIds.some(id => !Number.isInteger(id) || id <= 0) || shapeIds[0] === shapeIds[1]) {
+          throw new Error("Eine OCCT-Boolean-Operation benötigt zwei verschiedene Körperkennungen.");
+        }
+        await initialize();
+        return send("booleanOperation", { operation, shapeIds });
+      },
       async releaseShape(shapeId) {
         await initialize();
         const result = await send("releaseShape", { shapeId });
