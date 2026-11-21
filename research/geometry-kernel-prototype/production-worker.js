@@ -194,20 +194,30 @@ async function execute(method, args) {
   throw new Error("Unbekannter OCCT-Befehl: " + method);
 }
 
-self.addEventListener("message", async event => {
+// OCCT/WASM-Kernel-Aufrufe werden bewusst serialisiert. Web-Worker-Message-
+ // Events können sich während await überlappen; parallele Mutationen am selben
+ // Kernel würden sonst Erzeugung, Boolean-Operationen und Freigaben vermischen.
+let executionQueue = Promise.resolve();
+
+self.addEventListener("message", event => {
   const message = event.data;
   if (message?.type !== "request" || !Number.isInteger(message.id)) return;
-  try {
-    const result = await execute(message.method, message.args || {});
-    const transfer = [];
-    if (result?.mesh?.positions?.buffer) transfer.push(result.mesh.positions.buffer);
-    if (result?.mesh?.indices?.buffer) transfer.push(result.mesh.indices.buffer);
-    self.postMessage({ id: message.id, ok: true, result }, transfer);
-  } catch (error) {
-    self.postMessage({
-      id: message.id,
-      ok: false,
-      error: error instanceof Error ? error.message : String(error)
-    });
-  }
+
+  const executeRequest = async () => {
+    try {
+      const result = await execute(message.method, message.args || {});
+      const transfer = [];
+      if (result?.mesh?.positions?.buffer) transfer.push(result.mesh.positions.buffer);
+      if (result?.mesh?.indices?.buffer) transfer.push(result.mesh.indices.buffer);
+      self.postMessage({ id: message.id, ok: true, result }, transfer);
+    } catch (error) {
+      self.postMessage({
+        id: message.id,
+        ok: false,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  };
+
+  executionQueue = executionQueue.then(executeRequest, executeRequest);
 });
