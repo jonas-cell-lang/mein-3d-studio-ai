@@ -404,7 +404,24 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.waitForFunction(() => document.querySelectorAll('#occtEdgeList option').length === 12, null, { timeout: 45000 });
   assert.match(await page.locator('#occtTopologySummary').textContent(), /6 echte B-Rep-Flächen und 12 echte B-Rep-Kanten/,
     'Die sichtbare Kantenliste zeigt keine vollständige native Quader-Topologie');
-  await page.locator('#occtEdgeList').selectOption('0');
+  assert.equal(await page.locator('#occtEdgeList option:not([disabled])').count(), 12,
+    'Nicht alle zwölf Quaderkanten sind für die 3D-Auswahl verfügbar');
+  await page.locator('#toggleOcctEdgePick').click();
+  const edgeScreenPoint = await page.evaluate(() => window.__silmoOcctEdgePickPoint(0));
+  assert.ok(edgeScreenPoint && Number.isFinite(edgeScreenPoint.x) && Number.isFinite(edgeScreenPoint.y),
+    'Für Kante 1 wurde kein sichtbarer 3D-Auswahlpunkt berechnet');
+  await page.mouse.click(edgeScreenPoint.x, edgeScreenPoint.y);
+  await page.waitForFunction(() => document.querySelector('#occtEdgeList option[value="0"]')?.selected === true,
+    null, { timeout: 10000 });
+  const viewportEdgePick = await page.evaluate(() => ({
+    selected: Array.from(window.__silmoOcctEdgeOverlay?.selectedIndices || []),
+    highlighted: window.__silmoOcctEdgeOverlay?.group.children
+      .find(line => line.userData.occtEdgeIndex === 0)?.material.color.getHex()
+  }));
+  assert.deepEqual(viewportEdgePick.selected, [0],
+    'Ein Klick auf die 3D-Kante hat die native Kante nicht ausgewählt');
+  assert.equal(viewportEdgePick.highlighted, 0xffbd4a,
+    'Die ausgewählte 3D-Kante wurde nicht hervorgehoben');
   await page.locator('#occtFilletRadius').fill('1');
   await page.locator('#applyOcctFillet').click();
   await page.waitForFunction(() => /^Echte OCCT-Kantenrundung erfolgreich/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
