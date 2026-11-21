@@ -411,6 +411,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     <h2>Objekte</h2>
     <button class="wide" id="addCube">＋ Würfel</button>
   <button class="wide" id="addOcctBox" title="Erzeugt einen exakten OCCT-B-Rep-Körper im Hintergrundkern">＋ OCCT-B-Rep-Quader</button>
+  <button class="wide" id="addOcctCylinder" title="Erzeugt einen analytischen OCCT-B-Rep-Zylinder">＋ OCCT-B-Rep-Zylinder</button>
     <button class="wide" id="addSphere">＋ Kugel</button>
     <button class="wide" id="addCylinder">＋ Zylinder</button>
      <button class="wide" id="addCone">＋ Kegel</button>
@@ -679,7 +680,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   const CSG_EPSILON = window.SILMOTolerances.CSG_GEOMETRY_WORLD_UNITS;
 
   function getOcctSourceDescriptor(obj) {
-    if (['box', 'boolean', 'step'].includes(obj.userData.occtSource?.kind)) {
+    if (['box', 'cylinder', 'boolean', 'step'].includes(obj.userData.occtSource?.kind)) {
       return JSON.parse(JSON.stringify(obj.userData.occtSource));
     }
     if (obj.userData.sketch?.outlinePoints) {
@@ -976,6 +977,52 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
   }
 
+  async function createOcctCylinder() {
+    const button = $('addOcctCylinder');
+    if (button.disabled) return;
+    button.disabled = true;
+    let result = null;
+    try {
+      if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+      result = await window.__silmoOcctClient.createCylinder(10, 30);
+      if (!result || !Number.isFinite(result.volumeMM3) || !result.mesh?.positions?.length || !result.mesh?.indices?.length) {
+        throw new Error('OCCT lieferte keinen vollständigen Zylinder und kein Darstellungsnetz.');
+      }
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      const positions = new Float32Array(result.mesh.positions.length);
+      for (let i = 0; i < positions.length; i++) positions[i] = result.mesh.positions[i] * mmToWorld;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+      const size = new THREE.Vector3(); geometry.boundingBox.getSize(size);
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
+        color: '#50b8c9', roughness: 0.42, metalness: 0.12
+      }));
+      mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
+      mesh.userData.percent = { x: 100, y: 100, z: 100 };
+      mesh.userData.label = 'OCCT-B-Rep-Zylinder';
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtSource = { kind: 'cylinder', radiusMM: 10, heightMM: 30 };
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      recordHistory(); scene.add(mesh); objects.push(mesh); selectObject(mesh);
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      window.__silmoOcctLastCreated = {
+        shapeId: result.shapeId, volumeMM3: result.volumeMM3,
+        triangleCount: result.mesh.triangleCount, dimensionsMM: [20, 20, 30]
+      };
+      status.textContent = 'OCCT-B-Rep-Zylinder erstellt: Ø 20 × 30 mm; Volumen ' + result.volumeMM3.toFixed(2) + ' mm³.';
+    } catch (error) {
+      if (result?.shapeId && window.__silmoOcctClient) {
+        await window.__silmoOcctClient.releaseShape(result.shapeId).catch(() => {});
+      }
+      status.textContent = 'OCCT-Zylinder konnte nicht erstellt werden: ' + (error.message || 'Unbekannter Fehler');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   async function importSTEPFile(file) {
     if (!file) return;
     if (!/\.(?:step|stp)$/i.test(file.name || '') || file.size > 10 * 1024 * 1024) {
@@ -1081,6 +1128,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       throw new Error('Ungültige gespeicherte OCCT-Konstruktionsquelle.');
     }
     if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+    if (source.kind === 'cylinder') {
+      const result = await window.__silmoOcctClient.createCylinder(source.radiusMM, source.heightMM);
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
     if (source.kind === 'box') {
       const result = await window.__silmoOcctClient.createBox(
         source.widthMM, source.depthMM, source.heightMM
@@ -1167,13 +1219,15 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       }
       return;
     }
-    if (!['box', 'step'].includes(source?.kind)) return;
+    if (!['box', 'cylinder', 'step'].includes(source?.kind)) return;
     let result = null;
     try {
       if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
       result = source.kind === 'step'
         ? await window.__silmoOcctClient.importStep(source.stepText)
-        : await window.__silmoOcctClient.createBox(source.widthMM, source.depthMM, source.heightMM);
+        : source.kind === 'cylinder'
+          ? await window.__silmoOcctClient.createCylinder(source.radiusMM, source.heightMM)
+          : await window.__silmoOcctClient.createBox(source.widthMM, source.depthMM, source.heightMM);
       if (!objects.includes(mesh)) {
         await window.__silmoOcctClient.releaseShape(result.shapeId);
         return;
@@ -2265,6 +2319,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 
   $('addCube').onclick = () => createObject('Würfel');
   $('addOcctBox').onclick = createOcctBox;
+  $('addOcctCylinder').onclick = createOcctCylinder;
   $('addSphere').onclick = () => createObject('Kugel');
   $('addCylinder').onclick = () => createObject('Zylinder');
   $('addCone').onclick = () => createObject('Kegel');
