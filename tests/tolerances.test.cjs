@@ -48,6 +48,7 @@ test('Toleranzwerte behalten die im Audit belegten Werte', () => {
   assert.equal(tolerances.SKETCH_POLYLINE_SAMPLE_MIN_DISTANCE_WORLD_UNITS, 0.015);
   assert.equal(tolerances.SKETCH_POLYLINE_MIN_LENGTH_WORLD_UNITS, 0.02);
   assert.equal(tolerances.SKETCH_DRAW_POINT_MIN_DISTANCE_WORLD_UNITS, 0.02);
+  assert.equal(tolerances.SKETCH_DRAW_MIN_DIMENSION_WORLD_UNITS, 0.01);
   assert.equal(tolerances.SKETCH_FREEFORM_MIN_POINT_SPACING_WORLD_UNITS, 0.005);
   assert.equal(tolerances.SKETCH_FREEFORM_BOUNDS_EPSILON_WORLD_UNITS, 1e-9);
   assert.equal(tolerances.SKETCH_FREEFORM_ORIENTATION_EPSILON_WORLD_UNITS2, 1e-9);
