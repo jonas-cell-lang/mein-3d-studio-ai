@@ -189,7 +189,7 @@
       }
       components.push(component);
     }
-    const minComponentPixels=Math.max(4,Math.floor(w*h*tolerances.IMAGE_MIN_COMPONENT_AREA_FRACTION));
+    const minComponentPixels=Math.max(tolerances.IMAGE_MIN_COMPONENT_PIXEL_COUNT,Math.floor(w*h*tolerances.IMAGE_MIN_COMPONENT_AREA_FRACTION));
     const backgroundIds=new Set(components.filter(c=>c.touchesBorder).map(c=>c.id));
     for(const component of components){
       if(component.touchesBorder)continue;
