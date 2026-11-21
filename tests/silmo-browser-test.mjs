@@ -259,7 +259,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'Redo hat den OCCT-Zylinder nicht als echten B-Rep-Körper rekonstruiert');
 
   // STEP-Export und anschliessender Import über die echte SILMO-Dateiauswahl.
-  await page.locator('#objects .object-select').last().evaluate(button =>
+  await page.locator('#objects .object-select').filter({ hasText: 'OCCT-B-Rep-Quader' }).last().evaluate(button =>
     button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
   const [stepDownload] = await Promise.all([
     page.waitForEvent('download'),
@@ -288,7 +288,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   }));
   assert.ok(Math.abs(importedStep.volumeMM3 - 8000) < 1e-7 &&
     Math.abs(importedStep.workerVolumeMM3 - 8000) < 1e-7,
-  'STEP-Roundtrip hat das ursprüngliche OCCT-Volumen nicht erhalten');
+  'STEP-Roundtrip hat das ursprüngliche OCCT-Volumen nicht erhalten: ' + JSON.stringify({ imported: importedStep.volumeMM3, worker: importedStep.workerVolumeMM3 }));
   const stepUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
   await page.keyboard.press('Control+z');
   await waitForOcctRestore(stepUndoGeneration);
