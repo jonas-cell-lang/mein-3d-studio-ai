@@ -2357,12 +2357,14 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   });
   const importSTLFile = stlIO.importSTLFile;
   $('importModel').onclick=()=> $('fileInput').click();
-  $('stlChooseFile').onclick=()=> $('fileInput').click();
+  const stlChooseFile = $('stlChooseFile');
+  if (stlChooseFile) stlChooseFile.onclick=()=> $('fileInput').click();
   $('fileInput').addEventListener('change',event=>{
     Array.from(event.target.files||[]).forEach(importSTLFile);
     event.target.value='';
   });
   const stlDropZone=$('stlDropZone');
+  if (stlDropZone) {
   ['dragenter','dragover'].forEach(type=>stlDropZone.addEventListener(type,event=>{
     event.preventDefault();event.stopPropagation();
     if(event.dataTransfer)event.dataTransfer.dropEffect='copy';
@@ -2402,6 +2404,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     if(url){importDroppedWebLink(url);return;}
     status.textContent='Kein Dateiinhalt oder Web-Link erkannt. Ziehe den Download-Link hierher oder nutze „Datei auswählen“.';
   });
+  }
   // Verhindert, dass eine ausserhalb der Ablage fallengelassene Datei den Browser ersetzt.
   window.addEventListener('dragover',event=>{
     if(Array.from(event.dataTransfer?.items||[]).some(item=>item.kind==='file'))event.preventDefault();
