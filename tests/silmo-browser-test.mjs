@@ -1017,6 +1017,54 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await page.locator('#gizmoModeToggle').isDisabled(), false, 'Drehfunktion wurde nach dem Beenden nicht freigegeben');
   await showCreateSubtab(0);
 
+  // Ein Fehler im zweiten CSG-Schritt muss alle temporären Geometrien freigeben
+  // und darf keines der drei Originalobjekte aus der Szene entfernen.
+  const csgFailureStartCount = await page.locator('#objects .object-row').count();
+  await showCreateSubtab(0);
+  await page.locator('#addCube').click();
+  await page.locator('#addCube').click();
+  await page.locator('#addCube').click();
+  await page.locator('[data-tab="edit"]').click();
+  await page.locator('#multiSelectToggle').click();
+  await showCreateSubtab(2);
+  await page.locator('#objects .object-select').nth(csgFailureStartCount).click();
+  await page.locator('#objects .object-select').nth(csgFailureStartCount + 1).click();
+  assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 3,
+    'CSG-Fehlerfall konnte nicht alle drei Originalobjekte auswählen');
+  await showCreateSubtab(1);
+  await page.evaluate(() => {
+    const originalCombine = window.SILMOCSG.combineMeshes;
+    const originalDispose = THREE.BufferGeometry.prototype.dispose;
+    window.__silmoCSGFailureProbe = { calls: 0, disposeCalls: 0, originalCombine, originalDispose };
+    window.SILMOCSG.combineMeshes = function (...args) {
+      window.__silmoCSGFailureProbe.calls += 1;
+      if (window.__silmoCSGFailureProbe.calls === 2) throw new Error('simulierter zweiter CSG-Schrittfehler');
+      return originalCombine(...args);
+    };
+    THREE.BufferGeometry.prototype.dispose = function () {
+      window.__silmoCSGFailureProbe.disposeCalls += 1;
+      return originalDispose.call(this);
+    };
+  });
+  await page.locator('#booleanUnion').click();
+  const csgFailureProbe = await page.evaluate(() => {
+    const probe = window.__silmoCSGFailureProbe;
+    window.SILMOCSG.combineMeshes = probe.originalCombine;
+    THREE.BufferGeometry.prototype.dispose = probe.originalDispose;
+    delete window.__silmoCSGFailureProbe;
+    return { calls: probe.calls, disposeCalls: probe.disposeCalls };
+  });
+  assert.equal(csgFailureProbe.calls, 2, 'Der erzwungene Fehler trat nicht im zweiten CSG-Schritt auf');
+  assert.equal(csgFailureProbe.disposeCalls, 2, 'Temporäre CSG-Geometrien wurden nicht vollständig freigegeben');
+  assert.equal(await page.locator('#objects .object-row').count(), csgFailureStartCount + 3,
+    'Ein fehlgeschlagener CSG-Vorgang hat Originalobjekte entfernt');
+  assert.match(await page.locator('#status').innerText(), /simulierter zweiter CSG-Schrittfehler/,
+    'Der simulierte CSG-Fehler wurde nicht kontrolliert gemeldet');
+  await page.locator('#delete').click();
+  await page.locator('#multiSelectToggle').click();
+  assert.equal(await page.locator('#objects .object-row').count(), csgFailureStartCount,
+    'Die drei CSG-Fehlerfall-Testobjekte wurden nicht sauber entfernt');
+
   // Boolesche Verbindung muss sich wieder in die ursprünglichen Formen zerlegen lassen.
   const unionStartCount=await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click(); await page.locator('#addSphere').click();
