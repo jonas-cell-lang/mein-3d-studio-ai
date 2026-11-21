@@ -312,6 +312,35 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(Math.abs(restoredCone - expectedConeVolume) < 1e-6,
     'Redo hat den OCCT-Kegel nicht als echten B-Rep-Körper rekonstruiert');
 
+  // Echter OCCT-B-Rep-Torus über die Oberfläche inklusive Undo/Redo.
+  const torusSceneStart = await page.locator('#objects .object-row').count();
+  await page.locator('#addOcctTorus').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Torus erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  const torusResult = await page.evaluate(async () => {
+    const created = window.__silmoOcctLastCreated;
+    return { ...created, workerVolumeMM3: await window.__silmoOcctClient.getVolume(created.shapeId) };
+  });
+  const expectedTorusVolume = 2 * Math.PI ** 2 * 20 * 5 ** 2;
+  assert.ok(Math.abs(torusResult.volumeMM3 - expectedTorusVolume) < 1e-5,
+    'OCCT-Torus besitzt nicht das analytische Volumen 1000π² mm³');
+  assert.ok(Math.abs(torusResult.workerVolumeMM3 - expectedTorusVolume) < 1e-5,
+    'OCCT-Torus ist im Worker nicht als echter B-Rep-Körper abfragbar');
+  assert.deepEqual(torusResult.dimensionsMM, [50, 50, 10]);
+  const torusUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+z');
+  await waitForOcctRestore(torusUndoGeneration);
+  assert.equal(await page.locator('#objects .object-row').count(), torusSceneStart,
+    'Undo hat den OCCT-Torus nicht entfernt');
+  const torusRedoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+y');
+  await waitForOcctRestore(torusRedoGeneration);
+  const restoredTorus = await page.evaluate(async () => {
+    const created = window.__silmoOcctLastRestored;
+    return created ? await window.__silmoOcctClient.getVolume(created.shapeId) : null;
+  });
+  assert.ok(Math.abs(restoredTorus - expectedTorusVolume) < 1e-5,
+    'Redo hat den OCCT-Torus nicht als echten B-Rep-Körper rekonstruiert');
+
   // STEP-Export und anschliessender Import über die echte SILMO-Dateiauswahl.
   await page.locator('#objects .object-select').filter({ hasText: 'OCCT-B-Rep-Quader' }).last().evaluate(button =>
     button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
