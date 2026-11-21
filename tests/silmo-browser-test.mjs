@@ -443,6 +443,53 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'Wiederholte OCCT-Roundtrips lösten Browserfehler aus: ' + occtRoundTripErrors.join(' ; '));
   console.log('OCCT-Roundtrip-Stresstest bestanden: ' + repeatedRoundTrips.length + ' zusätzliche Ladezyklen.');
 
+  // Beschädigte OCCT-Rezepte müssen bereits vor dem Projektwechsel abgewiesen werden.
+  // Das aktive Projekt und sein echter Worker-Handle müssen dabei vollständig erhalten bleiben.
+  const malformedOcctVariants = [
+    { name: 'operation', mutate: source => { source.operation = 'explode'; } },
+    { name: 'operand-count', mutate: source => { source.operands.pop(); } },
+    { name: 'translation', mutate: source => { source.translationsMM[1][0] = 200001; } }
+  ];
+  for (const variant of malformedOcctVariants) {
+    const activeBefore = await occtRoundTripPage.evaluate(async () => {
+      const restored = window.__silmoOcctProjectRestoreSummary?.at(-1);
+      return {
+        count: document.querySelectorAll('#objects .object-row').length,
+        shapeId: restored?.shapeId ?? null,
+        volumeMM3: restored?.shapeId ? await window.__silmoOcctClient.getVolume(restored.shapeId) : null
+      };
+    });
+    assert.ok(Number.isInteger(activeBefore.shapeId) &&
+      Math.abs(activeBefore.volumeMM3 - 4000) < 1e-7,
+    'Aktiver OCCT-Körper fehlt vor ungültigem Rezept ' + variant.name);
+    const malformedProject = structuredClone(occtSavedProject);
+    variant.mutate(malformedProject.objects.at(-1).occtSource);
+    await occtRoundTripPage.locator('#projectFileInput').setInputFiles({
+      name: 'invalid-occt-' + variant.name + '.silmo.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(malformedProject))
+    });
+    await occtRoundTripPage.waitForFunction(() =>
+      /Projekt konnte nicht geöffnet werden/.test(document.querySelector('#status')?.textContent || ''),
+      null, { timeout: 10000 });
+    const rejected = await occtRoundTripPage.evaluate(async () => {
+      const restored = window.__silmoOcctProjectRestoreSummary?.at(-1);
+      return {
+        count: document.querySelectorAll('#objects .object-row').length,
+        shapeId: restored?.shapeId ?? null,
+        volumeMM3: restored?.shapeId ? await window.__silmoOcctClient.getVolume(restored.shapeId) : null
+      };
+    });
+    assert.equal(rejected.count, activeBefore.count,
+      'Ungültiges OCCT-Rezept ' + variant.name + ' hat die aktive Szene verändert');
+    assert.equal(rejected.shapeId, activeBefore.shapeId,
+      'Ungültiges OCCT-Rezept ' + variant.name + ' hat den aktiven Worker-Handle ersetzt');
+    assert.ok(Math.abs(rejected.volumeMM3 - 4000) < 1e-7,
+      'Aktiver OCCT-B-Rep wurde nach Ablehnung von ' + variant.name + ' beschädigt');
+  }
+  assert.deepEqual(occtRoundTripErrors, [],
+    'Ungültige OCCT-Rezepte lösten unerwartete Browserfehler aus: ' + occtRoundTripErrors.join(' ; '));
+
   await occtRoundTripPage.close();
 
   // Parallel-Roundtrip: acht identische OCCT-Cut-Konstruktionsrezepte in einem neuen Dokument.
