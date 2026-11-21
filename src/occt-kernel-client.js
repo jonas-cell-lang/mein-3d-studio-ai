@@ -195,7 +195,15 @@
           throw new Error("Für die Topologieauswahl ist eine gültige OCCT-Körperkennung erforderlich.");
         }
         await initialize();
-        return send("listSubShapes", { shapeId });
+        const result = await send("listSubShapes", { shapeId });
+        const validEntries = (entries, type) => Array.isArray(entries) && entries.length > 0 &&
+          entries.every((entry, index) => entry && entry.index === index &&
+            typeof entry.geometryType === "string" && entry.geometryType.length > 0 &&
+            (type === "face" || (Number.isFinite(entry.lengthMM) && entry.lengthMM > 0)));
+        if (!result || !validEntries(result.face, "face") || !validEntries(result.edge, "edge")) {
+          throw new Error("OCCT lieferte ungültige native Flächen- oder Kantendaten.");
+        }
+        return result;
       },
       async getWireframe(shapeId) {
         if (!Number.isInteger(shapeId) || shapeId <= 0) {
@@ -230,7 +238,20 @@
           throw new Error("Kantenrundung benötigt gültige, eindeutige Kantenindizes und einen Radius von 0,01 bis 2000 mm.");
         }
         await initialize();
-        return send("filletEdges", { shapeId, edgeIndices, radiusMM });
+        const result = await send("filletEdges", { shapeId, edgeIndices, radiusMM });
+        const mesh = result?.mesh;
+        if (!Number.isInteger(result?.shapeId) || result.shapeId <= 0 ||
+            !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0 ||
+            !mesh || !(mesh.positions instanceof Float32Array) ||
+            !(mesh.indices instanceof Uint32Array) ||
+            mesh.positions.length < 9 || mesh.positions.length % 3 !== 0 ||
+            mesh.indices.length < 3 || mesh.indices.length % 3 !== 0 ||
+            !Array.from(mesh.positions).every(Number.isFinite) ||
+            !Array.from(mesh.indices).every(index => index < mesh.positions.length / 3) ||
+            mesh.triangleCount !== mesh.indices.length / 3) {
+          throw new Error("OCCT lieferte ein ungültiges Ergebnis der Kantenrundung.");
+        }
+        return result;
       },
       async getVolume(shapeId) {
         await initialize();
