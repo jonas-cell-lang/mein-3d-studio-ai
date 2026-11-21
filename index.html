@@ -1033,6 +1033,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   function toggleOcctFacePickMode() {
     if (!window.__silmoOcctFaceOverlay) return;
     occtFacePickMode = !occtFacePickMode;
+    if (occtFacePickMode) {
+      occtEdgePickMode = false;
+      $('toggleOcctEdgePick').textContent = '⌖ 3D-Kantenauswahl einschalten';
+    }
     $('toggleOcctFacePick').textContent = occtFacePickMode
       ? '✓ 3D-Flächenauswahl aktiv'
       : '⌖ 3D-Flächenauswahl einschalten';
@@ -1188,6 +1192,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const overlay = window.__silmoOcctEdgeOverlay;
     if (!overlay) return;
     occtEdgePickMode = !occtEdgePickMode;
+    if (occtEdgePickMode) {
+      occtFacePickMode = false;
+      $('toggleOcctFacePick').textContent = '⌖ 3D-Flächenauswahl einschalten';
+    }
     $('toggleOcctEdgePick').textContent = occtEdgePickMode
       ? '✓ 3D-Kantenauswahl aktiv'
       : '⌖ 3D-Kantenauswahl einschalten';
