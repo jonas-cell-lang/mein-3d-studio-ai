@@ -236,13 +236,13 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     page.waitForEvent('download'),
     page.locator('#exportStepModel').click()
   ]);
-  assert.match(stepDownload.suggestedFilename(), /\\.step$/i,
+  assert.match(stepDownload.suggestedFilename(), /\.step$/i,
     'STEP-Export erzeugt keine .step-Datei');
   const stepDownloadPath = await stepDownload.path();
   assert.ok(stepDownloadPath, 'STEP-Export hat keinen Downloadpfad geliefert');
   const exportedStepText = readFileSync(stepDownloadPath, 'utf8');
   assert.match(exportedStepText, /^ISO-10303-21/i, 'STEP-Export enthält keinen ISO-10303-21-Header');
-  assert.match(exportedStepText, /END-ISO-10303-21;\\s*$/i, 'STEP-Export besitzt keinen gültigen Abschluss');
+  assert.match(exportedStepText, /END-ISO-10303-21;\s*$/i, 'STEP-Export besitzt keinen gültigen Abschluss');
   const beforeStepImportCount = await page.locator('#objects .object-row').count();
   await page.locator('#stepFileInput').setInputFiles({
     name: 'silmo-roundtrip.step',
