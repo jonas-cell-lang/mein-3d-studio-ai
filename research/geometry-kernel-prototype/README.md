@@ -30,6 +30,7 @@ SILMO startet den Worker bei Bedarf. Der Client unter `src/occt-kernel-client.js
 
 - Echte OCCT-B-Rep-Quader werden im Worker erzeugt und für die Three.js-Anzeige tesselliert.
 - Unterstützte Skizzenextrusionen werden als OCCT-B-Rep-Körper erstellt.
+- STEP-Dateien (`.step`/`.stp`) werden im Produktions-Worker als OCCT-B-Rep importiert und aus ausgewählten OCCT-Körpern als AP242 in Millimetern exportiert. Importierte STEP-Quellen bleiben in Projektdateien erhalten und werden bei Undo/Redo bzw. Projektwiederherstellung erneut in OCCT geladen (maximal 10 MB je STEP-Quelle).
 - Fuse, Cut und Common sind für zwei oder mehr geeignete OCCT-Körper verfügbar; Mehrkörper-Aufträge werden als geordnete B-Rep-Kette ausgeführt.
 - Undo/Redo kann unterstützte B-Rep-Körper und Boolean-Ergebnisse aus Konstruktionsrezepten rekonstruieren.
 - Projektformat v3 speichert optionale `occtSource`-Rezepte; beim Öffnen werden die B-Rep-Körper im Worker neu aufgebaut.
@@ -52,7 +53,7 @@ Der Testkorpus umfasst analytische Quader, Boolesche Durchbrüche, Platten mit 4
 - Rotation, Skalierung und Verschiebung werden als vollständige 3×4-Affintransformationen im OCCT-Worker angewendet. Nachfolgende Operationen verwenden das vorherige Ergebnis im Weltkoordinatensystem.
 - Die Mehrkörper-Kette bleibt bei Fehlern transaktional: Die Szene wird erst nach einem gültigen Endergebnis ersetzt; temporäre B-Rep-Handles werden anschliessend freigegeben. Verschachtelte Konstruktionsrezepte ermöglichen Undo/Redo und Projektwiederherstellung.
 - Gewöhnliche Meshes ohne OCCT-Konstruktionsrezept bleiben ausserhalb dieses OCCT-Pfads und verwenden weiterhin den bisherigen Mesh-/BSP-Pfad.
-- Projektdateien speichern Konstruktionsrezepte und Darstellungsgeometrie, keine rohe native OCCT-B-Rep-Datei.
+- Projektdateien speichern Konstruktionsrezepte und Darstellungsgeometrie, keine rohe native OCCT-B-Rep-Datei. Bei importierten STEP-Körpern wird die begrenzte STEP-Quelldatei im Konstruktionsrezept mitgeführt.
 - Ein Safari-/WebKit-Test, plattformübergreifende Leistungsmessungen und Langzeitmessungen stehen noch aus.
 
 Ein erfolgreicher isolierter Kerneltest beweist nicht automatisch die vollständige Integration sämtlicher CAD-Funktionen. Produktionsintegration, Browserregression und isolierte Kerneltests werden getrennt bewertet.
