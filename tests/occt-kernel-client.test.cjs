@@ -197,7 +197,7 @@ test("OCCT client validates native topology and fillet result payloads", async (
         if (message.method === "listSubShapes") {
           this.messages.push(message);
           queueMicrotask(() => this.onmessage({ data: { id: message.id, ok: true, result: {
-            face: [{ index: 0, geometryType: "plane" }],
+            face: [{ index: 0, geometryType: "plane", areaMM2: 400 }],
             edge: [{ index: 0, geometryType: "line", lengthMM: 20 }]
           } } }));
           return;
@@ -224,6 +224,7 @@ test("OCCT client validates native topology and fillet result payloads", async (
   });
   const topology = await client.listSubShapes(7);
   assert.equal(topology.face[0].geometryType, "plane");
+  assert.equal(topology.face[0].areaMM2, 400);
   assert.equal(topology.edge[0].lengthMM, 20);
   const rounded = await client.filletEdges(7, [0, 2], 1.5);
   assert.equal(rounded.shapeId, 22);
