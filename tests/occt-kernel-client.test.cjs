@@ -22,6 +22,13 @@ class FakeWorker {
         } } });
       } else if (message.method === "getVolume") {
         this.onmessage({ data: { id: message.id, ok: true, result: { volumeMM3: 8000 } } });
+      } else if (message.method === "createExtrusion") {
+        this.onmessage({ data: { id: message.id, ok: true, result: {
+          shapeId: 8, volumeMM3: 5500, shapeType: "solid",
+          mesh: { positions: new Float32Array([0, 0, 0]), indices: new Uint32Array([0]), triangleCount: 1 }
+        } } });
+      } else if (message.method === "releaseShape") {
+        this.onmessage({ data: { id: message.id, ok: true, result: { released: true } } });
       } else if (message.method === "releaseAll") {
         this.onmessage({ data: { id: message.id, ok: true, result: { released: true } } });
       } else if (message.method === "dispose") {
@@ -73,4 +80,25 @@ test("OCCT client rejects use after disposal", async () => {
   const client = createClient({ WorkerClass: FakeWorker });
   await client.dispose();
   await assert.rejects(client.createBox(1, 1, 1), /geschlossen/);
+});
+
+
+test("OCCT client forwards sketch loops and extrusion height and releases individual B-Rep bodies", async () => {
+  let worker;
+  const client = createClient({
+    WorkerClass: class extends FakeWorker { constructor(url, options) { super(url, options); worker = this; } }
+  });
+  const loops = [
+    [[0, 0], [40, 0], [40, 30], [0, 30]],
+    [[10, 10], [10, 20], [20, 20], [20, 10]]
+  ];
+  const result = await client.createExtrusion(loops, 5);
+  assert.equal(result.shapeId, 8);
+  assert.equal(result.volumeMM3, 5500);
+  assert.equal(result.shapeType, "solid");
+  assert.equal(worker.messages.find(message => message.method === "createExtrusion").args.heightMM, 5);
+  assert.deepEqual(worker.messages.find(message => message.method === "createExtrusion").args.loops, loops);
+  assert.equal(await client.releaseShape(8), true);
+  assert.deepEqual(worker.messages.map(message => message.method), ["initialize", "createExtrusion", "releaseShape"]);
+  await client.dispose();
 });
