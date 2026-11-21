@@ -673,6 +673,113 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
 
   const CSG_EPSILON = window.SILMOTolerances.CSG_GEOMETRY_WORLD_UNITS;
+
+  function getOcctSourceDescriptor(obj) {
+    if (obj.userData.occtSource?.kind === 'box') {
+      return JSON.parse(JSON.stringify(obj.userData.occtSource));
+    }
+    if (obj.userData.sketch?.outlinePoints) {
+      return { kind: 'sketch', sketch: JSON.parse(JSON.stringify(obj.userData.sketch)) };
+    }
+    return null;
+  }
+
+  async function runOcctBooleanOperation(operation, targets, shapeIds) {
+    const buttonIds = ['booleanUnion', 'booleanSubtract'];
+    buttonIds.forEach(id => { const button = $(id); if (button) button.disabled = true; });
+    status.textContent = 'OCCT berechnet die echte B-Rep-Boolean-Operation …';
+    let result = null;
+    let geometry = null;
+    try {
+      const translationsMM = targets.map(obj => [
+        worldUnitsToMm(obj.position.x),
+        worldUnitsToMm(obj.position.y),
+        worldUnitsToMm(obj.position.z)
+      ]);
+      result = await window.__silmoOcctClient.booleanOperation(
+        operation === 'union' ? 'fuse' : 'cut', shapeIds, translationsMM
+      );
+      if (!result || !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0 ||
+          !result.mesh?.positions?.length || !result.mesh?.indices?.length ||
+          result.mesh.positions.length % 3 !== 0 || result.mesh.indices.length % 3 !== 0) {
+        throw new Error('OCCT lieferte keinen gültigen B-Rep-Körper mit Darstellungsnetz.');
+      }
+      const positions = new Float32Array(result.mesh.positions.length);
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      for (let i = 0; i < positions.length; i++) {
+        const value = result.mesh.positions[i] * mmToWorld;
+        if (!Number.isFinite(value)) throw new Error('OCCT-Mesh enthält ungültige Koordinaten.');
+        positions[i] = value;
+      }
+      geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      const size = geometry.boundingBox.getSize(new THREE.Vector3());
+      if (![size.x, size.y, size.z].every(value => Number.isFinite(value) && value > CSG_EPSILON)) {
+        throw new Error('OCCT-Boolean-Ergebnis hat ungültige oder leere Abmessungen.');
+      }
+
+      const base = targets[0];
+      const sourceOperands = targets.map(getOcctSourceDescriptor);
+      const sourceTranslations = translationsMM.map(offset => offset.slice());
+      recordHistory();
+      targets.forEach(obj => {
+        releaseOcctObjectHandle(obj);
+        scene.remove(obj);
+        const index = objects.indexOf(obj);
+        if (index >= 0) objects.splice(index, 1);
+      });
+      const mesh = new THREE.Mesh(geometry, base.material.clone());
+      geometry = null;
+      mesh.position.set(0, 0, 0);
+      mesh.rotation.set(0, 0, 0);
+      mesh.scale.set(1, 1, 1);
+      mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
+      mesh.userData.percent = { x: 100, y: 100, z: 100 };
+      mesh.userData.label = operation === 'union' ? 'OCCT-Verbund' : 'OCCT-Ausschnitt';
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtShapeId = result.shapeId;
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      if (sourceOperands.every(Boolean)) {
+        mesh.userData.occtSource = {
+          kind: 'boolean',
+          operation: operation === 'union' ? 'fuse' : 'cut',
+          operands: sourceOperands,
+          translationsMM: sourceTranslations
+        };
+      }
+      scene.add(mesh);
+      objects.push(mesh);
+      selected = mesh;
+      selectedObjects = [mesh];
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      window.__silmoOcctLastBoolean = {
+        operation: operation === 'union' ? 'fuse' : 'cut',
+        shapeId: result.shapeId,
+        volumeMM3: result.volumeMM3,
+        triangleCount: result.mesh.triangleCount
+      };
+      updateObjects();
+      showProperties();
+      updateMoveGizmo();
+      status.textContent = (operation === 'union' ? 'OCCT: Formen echt vereinigt.' : 'OCCT: Ausschnitt echt berechnet.') +
+        ' Volumen: ' + result.volumeMM3.toFixed(2) + ' mm³.';
+    } catch (error) {
+      if (geometry) geometry.dispose();
+      if (result?.shapeId && window.__silmoOcctClient) {
+        window.__silmoOcctClient.releaseShape(result.shapeId).catch(() => {});
+      }
+      console.error('OCCT-Boolean-Operation fehlgeschlagen:', error);
+      status.textContent = 'OCCT-Boolean fehlgeschlagen: ' + (error.message || 'Geometrie prüfen.');
+    } finally {
+      buttonIds.forEach(id => { const button = $(id); if (button) button.disabled = false; });
+    }
+  }
+
   function runBooleanOperation(operation) {
     const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
     if (targets.some(obj => obj.userData.locked === true)) {
@@ -684,6 +791,20 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       return;
     }
     if (targets.some(obj => !objects.includes(obj))) return;
+    if (targets.length === 2 && ['union', 'subtract'].includes(operation) &&
+        window.__silmoOcctObjectHandles && window.__silmoOcctClient) {
+      const shapeIds = targets.map(obj => window.__silmoOcctObjectHandles.get(obj));
+      const identityTransform = targets.every(obj =>
+        Math.abs(obj.quaternion.x) < 1e-9 && Math.abs(obj.quaternion.y) < 1e-9 &&
+        Math.abs(obj.quaternion.z) < 1e-9 && Math.abs(Math.abs(obj.quaternion.w) - 1) < 1e-9 &&
+        Math.abs(obj.scale.x - 1) < 1e-9 && Math.abs(obj.scale.y - 1) < 1e-9 &&
+        Math.abs(obj.scale.z - 1) < 1e-9
+      );
+      if (shapeIds.every(id => Number.isInteger(id) && id > 0) && identityTransform) {
+        runOcctBooleanOperation(operation, targets, shapeIds);
+        return;
+      }
+    }
     let tempBase = null;
     let resultMaterial = null;
     let committed = false;
