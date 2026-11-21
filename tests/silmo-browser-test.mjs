@@ -229,6 +229,55 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(Math.abs(restoredOcctVolume - 8000) < 1e-7,
     'Undo stellte den OCCT-B-Rep-Quader nicht mit seinem korrekten Volumen wieder her');
 
+  // STEP-Export und anschliessender Import über die echte SILMO-Dateiauswahl.
+  await page.locator('#objects .object-select').last().evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  const [stepDownload] = await Promise.all([
+    page.waitForEvent('download'),
+    page.locator('#exportStepModel').click()
+  ]);
+  assert.match(stepDownload.suggestedFilename(), /\\.step$/i,
+    'STEP-Export erzeugt keine .step-Datei');
+  const stepDownloadPath = await stepDownload.path();
+  assert.ok(stepDownloadPath, 'STEP-Export hat keinen Downloadpfad geliefert');
+  const exportedStepText = readFileSync(stepDownloadPath, 'utf8');
+  assert.match(exportedStepText, /^ISO-10303-21/i, 'STEP-Export enthält keinen ISO-10303-21-Header');
+  assert.match(exportedStepText, /END-ISO-10303-21;\\s*$/i, 'STEP-Export besitzt keinen gültigen Abschluss');
+  const beforeStepImportCount = await page.locator('#objects .object-row').count();
+  await page.locator('#stepFileInput').setInputFiles({
+    name: 'silmo-roundtrip.step',
+    mimeType: 'application/step',
+    buffer: Buffer.from(exportedStepText)
+  });
+  await page.waitForFunction(() => /^STEP-Modell importiert/.test(document.querySelector('#status')?.textContent || ''),
+    null, { timeout: 45000 });
+  assert.equal(await page.locator('#objects .object-row').count(), beforeStepImportCount + 1,
+    'STEP-Import hat kein neues Szenenobjekt erzeugt');
+  const importedStep = await page.evaluate(async () => ({
+    ...window.__silmoOcctLastCreated,
+    workerVolumeMM3: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastCreated.shapeId)
+  }));
+  assert.ok(Math.abs(importedStep.volumeMM3 - 8000) < 1e-7 &&
+    Math.abs(importedStep.workerVolumeMM3 - 8000) < 1e-7,
+  'STEP-Roundtrip hat das ursprüngliche OCCT-Volumen nicht erhalten');
+  const stepUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+z');
+  await waitForOcctRestore(stepUndoGeneration);
+  assert.equal(await page.locator('#objects .object-row').count(), beforeStepImportCount,
+    'Undo hat den importierten STEP-Körper nicht entfernt');
+  const stepRedoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+y');
+  await waitForOcctRestore(stepRedoGeneration);
+  const restoredStepVolume = await page.evaluate(async () =>
+    window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
+  assert.ok(Math.abs(restoredStepVolume - 8000) < 1e-7,
+    'Redo hat den importierten STEP-Körper nicht als echten B-Rep rekonstruiert');
+  await page.locator('#objects .object-select').last().evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  await page.locator('#delete').evaluate(button => button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  assert.equal(await page.locator('#objects .object-row').count(), beforeStepImportCount,
+    'Importierter STEP-Körper konnte nach dem Roundtrip nicht gelöscht werden');
+
   // End-to-end: two scene objects selected in the normal object list are fused by OCCT.
   const booleanSceneStart = await page.locator('#objects .object-row').count();
   await showCreateSubtab(0);
