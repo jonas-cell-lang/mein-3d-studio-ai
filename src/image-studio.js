@@ -258,7 +258,7 @@
           const left=simplify(pts.slice(0,index+1),epsilon),right=simplify(pts.slice(index),epsilon);
           return left.slice(0,-1).concat(right);
         };
-        let reduced=simplify(open,1.1).slice(0,-1);
+        let reduced=simplify(open,tolerances.IMAGE_CONTOUR_SIMPLIFICATION_TOLERANCE_PIXELS).slice(0,-1);
         if(reduced.length>240){const step=Math.ceil(reduced.length/240);reduced=reduced.filter((p,i)=>i%step===0);}
         if(reduced.length>=3)result.push({area,points:reduced.map(([x,y])=>[x/scale,y/scale])});
       }
