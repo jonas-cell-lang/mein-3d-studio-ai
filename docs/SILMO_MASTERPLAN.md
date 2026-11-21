@@ -738,3 +738,9 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Der Standard-Mindestumfang für das Resampling geschlossener Loft-Konturen ist als `LOFT_PROFILE_RESAMPLE_MIN_PERIMETER_WORLD_UNITS = 1e-8` benannt.
 - Der Wert bleibt getrennt vom bestehenden Profil-Mindestumfang `PROFILE_MIN_PERIMETER_WORLD_UNITS = 1e-6`, weil beide unterschiedliche Verarbeitungsschritte absichern.
 - Der Standardwert wurde nicht verändert; Grenzfalltests sichern Ablehnung, Annahme mit explizitem Override und den Konstantenwert. CI steht noch aus.
+
+
+### 6.68 Pfadlängen- und Extrusions-Skalierungsgrenzen benannt (21.11.2026)
+- Die Mindestlänge des bestehenden CAD-Pfads vor einer Längenänderung (`0.001 mm`) und der dimensionslose Divisor-Schutz bei der Wiederherstellung der Skizzen-Extrusionshöhe (`1e-12`) sind zentral benannt.
+- Die Zahlenwerte bleiben unverändert. Die Spezifikation unterscheidet ausdrücklich Millimeter von einem dimensionslosen Skalierungsfaktor.
+- Code-, Browser- und OCCT-CI für diese Änderung stehen noch aus.
