@@ -332,3 +332,8 @@ Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPS
 - `SKETCH_PROFILE_MIN_CORNER_RADIUS_WORLD_UNITS = 0.01` ist die bisherige Untergrenze für den Eckenradius eines abgerundeten parametrischen Rechteckprofils.
 - Der Wert wirkt in internen Welteinheiten und verhindert, dass ein als abgerundet gewähltes Rechteck durch Radius `0` oder einen negativen Radius zu einem scharfkantigen Profil wird.
 - Der bisherige Wert bleibt unverändert. Ein Test prüft den tatsächlich erzeugten Startpunkt bei Radius `0`; der zentrale Toleranztest sichert den Zahlenwert und den Laufzeit-Verwendungs-Audit.
+
+### 3.21 Skizzen-Polylinien: Vereinfachungsabstand
+- `SKETCH_POLYLINE_SIMPLIFICATION_TOLERANCE_MM = 0.5` ist der bisherige Standardabstand des Douglas-Peucker-ähnlichen Vereinfachungsschritts für gezeichnete Skizzen-Polylinien.
+- Der Wert ist in Millimetern definiert. Die Laufzeit wandelt ihn vor dem geometrischen Vergleich über die Einheiten-API in Welteinheiten um; die separate Mindestschwelle `SKETCH_SIMPLIFICATION_MIN_MM = 0.01` bleibt eine Untergrenze.
+- Funktionsstandard, Produktionsaufruf und Browser-Testzugang verwenden denselben benannten Wert. Zahlenwert und bisheriges Verhalten bleiben unverändert.
