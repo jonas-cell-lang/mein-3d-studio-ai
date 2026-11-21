@@ -957,6 +957,68 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 
   let occtEdgePickMode = false;
 
+  function clearOcctFaceOverlay() {
+    const overlay = window.__silmoOcctFaceOverlay;
+    if (overlay?.group?.parent) overlay.group.parent.remove(overlay.group);
+    if (overlay?.group) overlay.group.children.forEach(mesh => { mesh.geometry?.dispose(); mesh.material?.dispose(); });
+    window.__silmoOcctFaceOverlay = null;
+    if ($('occtFaceList')) { $('occtFaceList').replaceChildren(); $('occtFaceList').disabled = true; }
+  }
+  function updateOcctFaceHighlight() {
+    const overlay = window.__silmoOcctFaceOverlay;
+    if (!overlay) return;
+    for (const mesh of overlay.group.children) {
+      const active = mesh.userData.occtFaceIndex === overlay.selectedIndex;
+      mesh.material.color.set(active ? 0xffbd4a : 0x48a9e8);
+      mesh.material.opacity = active ? 0.58 : 0.16;
+    }
+    $('occtFaceList').value = overlay.selectedIndex === null ? '' : String(overlay.selectedIndex);
+    const face = overlay.faces[overlay.selectedIndex];
+    $('occtFaceSummary').textContent = face
+      ? 'Fläche ' + (face.index + 1) + ' ausgewählt · ' + face.geometryType + ' · ' + face.areaMM2.toFixed(2) + ' mm².'
+      : overlay.faces.length + ' native B-Rep-Flächen geladen. Wähle eine Fläche, um sie im 3D-Modell hervorzuheben.';
+  }
+  function buildOcctFaceOverlay(sourceMesh, faceMeshes, faceInfo) {
+    clearOcctFaceOverlay();
+    if (faceMeshes.faces.length !== faceInfo.length) throw new Error('Flächen-Netze stimmen nicht mit der nativen B-Rep-Topologie überein.');
+    const group = new THREE.Group();
+    group.name = 'SILMO OCCT native face overlay';
+    for (const entry of faceMeshes.faces) {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(entry.mesh.positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(entry.mesh.indices, 1));
+      geometry.computeVertexNormals();
+      const material = new THREE.MeshBasicMaterial({
+        color: 0x48a9e8, transparent: true, opacity: 0.16, depthTest: true, depthWrite: false,
+        side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.userData.occtFaceIndex = entry.index;
+      mesh.frustumCulled = false;
+      mesh.raycast = () => {};
+      group.add(mesh);
+    }
+    sourceMesh.add(group);
+    window.__silmoOcctFaceOverlay = { sourceMesh, group, faces: faceInfo.map(face => ({...face})), selectedIndex: null };
+    const list = $('occtFaceList');
+    list.replaceChildren();
+    faceInfo.forEach(face => {
+      const option = document.createElement('option');
+      option.value = String(face.index);
+      option.textContent = 'Fläche ' + (face.index + 1) + ' · ' + face.geometryType + ' · ' + face.areaMM2.toFixed(2) + ' mm²';
+      list.appendChild(option);
+    });
+    list.disabled = false;
+    updateOcctFaceHighlight();
+  }
+  function selectOcctFaceFromList() {
+    const overlay = window.__silmoOcctFaceOverlay;
+    if (!overlay) return;
+    const value = $('occtFaceList').value;
+    overlay.selectedIndex = value === '' ? null : Number(value);
+    updateOcctFaceHighlight();
+  }
+
   function clearOcctEdgeOverlay() {
     const overlay = window.__silmoOcctEdgeOverlay;
     if (overlay?.group?.parent) overlay.group.parent.remove(overlay.group);
@@ -1149,7 +1211,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       $('occtTopologySummary').textContent = result.face.length + ' echte B-Rep-Flächen und ' + result.edge.length +
         ' echte B-Rep-Kanten; ' + visibleIndices.size + ' davon direkt auswählbar. Gesamtfläche: ' +
         totalFaceAreaMM2.toFixed(2) + ' mm².';
-      window.__silmoOcctLastSubShapes = result;
+      const faceMeshes = await window.__silmoOcctClient.getFaceMeshes(shapeId);
+       if (selected !== sourceMesh || window.__silmoOcctObjectHandles?.get(sourceMesh) !== shapeId) {
+         throw new Error('Der ausgewählte Körper hat sich während des Flächenladens geändert.');
+       }
+       buildOcctFaceOverlay(sourceMesh, faceMeshes, result.face);
+       window.__silmoOcctLastSubShapes = result;
       window.__silmoOcctLastWireframe = wireframe;
       status.textContent = 'Topologie geladen. Aktiviere die 3D-Kantenauswahl und klicke direkt auf eine Kante – alternativ kannst du die Liste verwenden.';
     } catch (error) {
@@ -2907,6 +2974,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   occtFilletPanel.id = 'occtFilletPanel';
   occtFilletPanel.innerHTML = `
     <div class="panel-rule"></div>
+    <h2>OCCT-Flächenauswahl</h2>
+    <p class="note">Wähle eine native B-Rep-Fläche aus der Liste. Die Fläche wird direkt am 3D-Körper hervorgehoben; die Kennzahl stammt aus OCCT.</p>
+    <div class="field"><label for="occtFaceList">Native Flächen</label><select id="occtFaceList" size="5" disabled style="width:100%;min-height:96px;padding:7px;background:#0b1422;color:#edf4ff;border:1px solid #2b405a;border-radius:8px"></select></div>
+    <p class="note" id="occtFaceSummary">Lade zuerst die Topologie eines OCCT-Körpers.</p>
+    <div class="panel-rule"></div>
     <h2>OCCT-Kantenbearbeitung</h2>
     <p class="note">Wähle einen nativen OCCT-Körper aus. Lade seine echten B-Rep-Kanten und markiere eine oder mehrere Kanten für Rundungen oder Fasen.</p>
     <button class="wide" id="loadOcctEdges" type="button">↻ Kanten des Körpers laden</button>
@@ -2921,6 +2993,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   if (!occtTorusButton) throw new Error('OCCT-Werkzeugleiste konnte nicht gefunden werden.');
   occtTorusButton.insertAdjacentElement('afterend', occtFilletPanel);
   $('loadOcctEdges').onclick = loadSelectedOcctEdges;
+  $('occtFaceList').onchange = selectOcctFaceFromList;
   $('toggleOcctEdgePick').onclick = toggleOcctEdgePickMode;
   $('occtEdgeList').onchange = syncOcctEdgeSelectionFromList;
   $('applyOcctFillet').onclick = applySelectedOcctFillet;
