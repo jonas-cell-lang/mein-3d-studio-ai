@@ -124,21 +124,34 @@ async function execute(method, args) {
   }
 
   if (method === "booleanOperation") {
-    const { operation, shapeIds } = args;
+    const { operation, shapeIds, translationsMM } = args;
     if (!["fuse", "cut", "common"].includes(operation) ||
         !Array.isArray(shapeIds) || shapeIds.length !== 2 ||
         shapeIds.some(id => !Number.isInteger(id) || id <= 0) ||
         shapeIds[0] === shapeIds[1]) {
       throw new Error("OCCT-Boolean benötigt zwei verschiedene Körper und eine gültige Operation.");
     }
-    const first = shapes.get(shapeIds[0]);
-    const second = shapes.get(shapeIds[1]);
-    if (!first || !second) {
+    const offsets = translationsMM ?? [[0, 0, 0], [0, 0, 0]];
+    if (!Array.isArray(offsets) || offsets.length !== 2 ||
+        offsets.some(offset => !Array.isArray(offset) || offset.length !== 3 ||
+          !offset.every(value => Number.isFinite(value) && Math.abs(value) <= 200000))) {
+      throw new Error("OCCT-Boolean-Transformationen müssen zwei gültige XYZ-Verschiebungen in mm enthalten.");
+    }
+    const originals = shapeIds.map(id => shapes.get(id));
+    if (originals.some(shape => !shape)) {
       throw new Error("Mindestens eine OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
     }
+    const temporaryShapes = [];
     let resultShape = null;
     try {
-      resultShape = kernel[operation](first, second);
+      const operands = originals.map((shape, index) => {
+        const [x, y, z] = offsets[index];
+        if (x === 0 && y === 0 && z === 0) return shape;
+        const moved = kernel.translate(shape, x, y, z);
+        temporaryShapes.push(moved);
+        return moved;
+      });
+      resultShape = kernel[operation](operands[0], operands[1]);
       const volumeMM3 = kernel.getVolume(resultShape);
       const mesh = serializeMesh(kernel.tessellate(resultShape));
       if (!Number.isFinite(volumeMM3) || volumeMM3 <= 0) {
@@ -152,6 +165,9 @@ async function execute(method, args) {
       if (resultShape !== null) {
         try { kernel.release(resultShape); } catch { /* Fehlerpfad: best effort cleanup. */ }
       }
+      temporaryShapes.forEach(shape => {
+        try { kernel.release(shape); } catch { /* Temporäre Transformationskörper freigeben. */ }
+      });
     }
   }
 
