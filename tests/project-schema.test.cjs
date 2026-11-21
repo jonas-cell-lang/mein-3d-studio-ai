@@ -245,7 +245,7 @@ test('OCCT-Konstruktionsrezepte für Quader, Skizzen und Boolesche Körper werde
   assert.throws(() => schema.validateProjectEnvelope(invalidBox), /OCCT-Quaderabmessungen/);
 
   const invalidTorus = structuredClone(project);
-  invalidTorus.objects[7].occtSource.minorRadiusMM = 20;
+  invalidTorus.objects[6].occtSource.minorRadiusMM = 20;
   assert.throws(() => schema.validateProjectEnvelope(invalidTorus), /OCCT-Torusabmessungen/);
 
   const invalidCone = structuredClone(project);
