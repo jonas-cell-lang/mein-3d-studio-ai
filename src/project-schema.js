@@ -240,6 +240,15 @@
       }
       return;
     }
+    if (source.kind === 'step') {
+      if (typeof source.stepText !== 'string' || source.stepText.length < 20 ||
+          source.stepText.length > 10 * 1024 * 1024 ||
+          !/^ISO-10303-21\\s*;/i.test(source.stepText.trimStart()) ||
+          !/END-ISO-10303-21\\s*;\\s*$/i.test(source.stepText.trim())) {
+        throw new Error('Ungültige oder zu grosse STEP-Konstruktionsquelle.');
+      }
+      return;
+    }
     if (source.kind === 'sketch') {
       const sketch = source.sketch;
       if (!sketch || typeof sketch !== 'object' || Array.isArray(sketch) ||
