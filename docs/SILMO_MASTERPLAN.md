@@ -786,3 +786,10 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Isolierter OCCT-Prototyp (Run 44877541285) erfolgreich: analytischer Geometrietest und Browser-WebWorker-Smoke-Test bestanden. Der dokumentierte Stressfall erzeugte 12 Bohrungen; das Volumen lag bei 5811.504440784614 gegenüber erwarteten 5811.504440784613, mit einem zusammenhängenden Solid und 1308 Dreiecken.
 - Diese Ergebnisse bestätigen die geprüften Regressionen und den isolierten Worker-Prototyp. Sie bedeuten noch nicht, dass OCCT bereits in den produktiven SILMO-Modellierkern integriert ist oder dass alle CAD-Funktionen OCCT verwenden.
 - PR #70 bleibt offen und Draft. Es erfolgten kein Merge, kein Deployment, keine Veröffentlichung und keine kostenpflichtigen Schritte.
+
+### 6.75 Projektimport: Objekttransformationen vor Geometrieaufbau prüfen (21.11.2026)
+- Die v3-Projektvalidierung prüft vorhandene Positions-, Drehungs- und Skalierungsarrays nun bereits vor dem Aufbau der Three.js-Geometrien. Damit werden nicht endliche, zu grosse, zu kurze oder nullskalierte Transformationsdaten früher abgewiesen.
+- Die Grenzwerte entsprechen exakt dem bisherigen Laufzeit-Loader: Position und Drehung maximal 10'000 interne Einheiten; Skalierung maximal 1'000 und jede Skalierungskomponente ungleich null. Fehlende/nicht-arrayförmige Alt-Metadaten behalten die bisherigen Defaults.
+- Das optionale `normalized`-Flag serialisierter Geometrieattribute muss boolesch sein, wenn es vorhanden ist. Fehlende Flags bleiben für v3-Kompatibilität erlaubt.
+- Neue Schema-Tests decken gültige Grenzwerte, ungültige Transformationsfälle, partielle Alt-Metadaten und ungültige Normalisierungsflags ab. Die Projektformat-Version bleibt 3; keine gespeicherten Werte oder gültigen Projektabläufe werden geändert.
+- Code-, Browser- und OCCT-CI für den neuen Stand müssen noch abgeschlossen werden.
