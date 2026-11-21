@@ -382,3 +382,27 @@ test('normalisierte Geometrieattribute akzeptieren nur boolesche Flags', () => {
   delete legacy.attributes.position.normalized;
   assert.equal(schema.validateSerializedGeometry(legacy), legacy);
 });
+
+
+test('Verschachtelte CSG-Quellteile prüfen Transformationen vor Geometrievalidierung', () => {
+  const geometry = {
+    attributes: {
+      position: { arrayType: 'Float32Array', array: [0,0,0, 1,0,0, 0,1,0], itemSize: 3, normalized: false }
+    },
+    index: null
+  };
+  const project = validProject();
+  project.objects.push({
+    geometry,
+    unionParts: [{
+      geometry,
+      position: [0, Infinity, 0],
+      rotation: [0, 0, 0],
+      scale: [1, 1, 1]
+    }]
+  });
+  assert.throws(
+    () => schema.validateProjectEnvelope(project),
+    /Ungültige Objektposition, Drehung oder Skalierung/
+  );
+});
