@@ -286,6 +286,18 @@
       validateSketchMetadata({ sketchOutline: sketch.outlinePoints, sketch });
       return;
     }
+    if (source.kind === 'fillet') {
+      if (!Array.isArray(source.edgeIndices) || source.edgeIndices.length < 1 ||
+          source.edgeIndices.length > 12 ||
+          !source.edgeIndices.every(index => Number.isInteger(index) && index >= 0 && index <= 100000) ||
+          new Set(source.edgeIndices).size !== source.edgeIndices.length ||
+          !Number.isFinite(source.radiusMM) || source.radiusMM < 0.01 || source.radiusMM > 2000 ||
+          !source.base || typeof source.base !== 'object' || Array.isArray(source.base)) {
+        throw new Error('Ungültige OCCT-Kantenrundungsdaten.');
+      }
+      validateOcctSource(source.base, depth + 1);
+      return;
+    }
     if (source.kind === 'boolean') {
       const validMatrix = matrix => {
         if (!Array.isArray(matrix) || matrix.length !== 12 ||
