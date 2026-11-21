@@ -846,3 +846,13 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Neue Projekt-Rezepte speichern `transformsMM`; ältere v3-Rezepte mit `translationsMM` bleiben lesbar. Schema-Prüfung und Undo/Redo-Rekonstruktion berücksichtigen beide Formen.
 - Browserregression ergänzt einen echten OCCT-Fuse mit Rotation und ungleichmässiger Skalierung sowie Prüfungen für unveränderte Quellkörper und ungültige Matrizen.
 - Die Validierung wird auf dem aktuellen Branch-Commit separat ausgewertet. PR #70 bleibt Draft; kein Merge, Deployment oder Veröffentlichung.
+
+
+### 6.84 Mehrkörper-Boolean-Operationen im OCCT-Produktionspfad (21.11.2026)
+- Fuse, Cut und Common akzeptieren jetzt zwei oder mehr ausgewählte OCCT-B-Rep-Körper.
+- Bei mehreren Operanden wird die Operation geordnet verkettet. Das vorherige B-Rep-Ergebnis wird jeweils als erster Operand verwendet; weitere Körper werden mit ihrer vollständigen Affintransformation aus dem Szenenkoordinatensystem angewendet.
+- Temporäre Zwischenergebnisse werden nach erfolgreichem Folgeschritt freigegeben. Die Ausgangsobjekte in der Szene bleiben bis zum gültigen Endergebnis unangetastet.
+- Das Ergebnis speichert eine verschachtelte, rückwärtskompatible OCCT-Konstruktionshistorie. Undo/Redo baut die Kette rekursiv wieder auf.
+- Browser-End-to-End-Test: drei räumlich getrennte 20-mm-Quader werden über die SILMO-Oberfläche ausgewählt und vereinigt. Erwartetes und im Worker erneut abgefragtes Volumen: 24'000 mm³. Undo stellt drei Quellkörper wieder her; Redo rekonstruiert den Verbund.
+- Code-Checks und Browser-Interaktionstests auf Commit `f86507506655fa881012dd11b0bd5805261b1f54` erfolgreich. Der produktive Worker und der isolierte Kerneltest blieben unverändert gegenüber dem zuvor erfolgreich getesteten Worker-Stand.
+- PR #70 bleibt Draft und ungemergt; kein Deployment oder Veröffentlichung.
