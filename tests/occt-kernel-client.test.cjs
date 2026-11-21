@@ -126,10 +126,16 @@ test("OCCT client validates and forwards fuse, cut and common operations", async
   }
   assert.deepEqual(worker.messages.filter(message => message.method === "booleanOperation")
     .map(message => message.args.operation), ["fuse", "cut", "common"]);
-  assert.deepEqual(worker.messages.filter(message => message.method === "booleanOperation")[0].args.translationsMM,
-    [[5, 0, 0], [0, 0, 0]]);
+  assert.deepEqual(worker.messages.filter(message => message.method === "booleanOperation")[0].args.transformsMM,
+    [
+      [1, 0, 0, 5, 0, 1, 0, 0, 0, 0, 1, 0],
+      [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0]
+    ]);
   await assert.rejects(client.booleanOperation("cut", [11, 12], [[Infinity, 0, 0], [0, 0, 0]]),
-    /gültige XYZ-Verschiebungen/);
+    /gültige, nicht entartete 3×4-Matrizen/);
+  await assert.rejects(client.booleanOperation("cut", [11, 12], [
+    Array(12).fill(0), Array(12).fill(0)
+  ]), /gültige, nicht entartete 3×4-Matrizen/);
   await client.dispose();
 });
 
