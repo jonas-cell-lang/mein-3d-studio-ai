@@ -760,3 +760,8 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Der bisherige Standardabstand von `0.5 mm` bei der Vereinfachung gezeichneter Skizzen-Polylinien ist als `SKETCH_POLYLINE_SIMPLIFICATION_TOLERANCE_MM` zentral benannt.
 - Funktionsstandard, Produktionsaufruf und Browser-Testzugang teilen die Konstante. Die vorhandene Mindestschwelle von `0.01 mm` bleibt separat; Werte und Geometrieverhalten ändern sich nicht.
 - Der zentrale Zahlenwerttest und Laufzeit-Verwendungs-Audit wurden erweitert. CI für diesen Schritt steht noch aus.
+
+### 6.72 Gezeichnete Skizzen: Mindestabmessung benannt (21.11.2026)
+- Die bisherige Mindestbreite und -tiefe von `0.01` Welteinheiten für per Ziehen erzeugte Rechteck-/Kreis-Skizzenprofile ist als `SKETCH_DRAW_MIN_DIMENSION_WORLD_UNITS` zentral benannt.
+- Der Wert und das bisherige Verhalten bleiben gleich. Die Spezifikation ordnet ihn als Geometrie-Mindestgrösse im Weltkoordinatenraum ein, nicht als allgemeines Kernel-Epsilon.
+- Der zentrale Toleranztest und Laufzeit-Verwendungs-Audit wurden erweitert. CI für diesen Schritt steht noch aus.
