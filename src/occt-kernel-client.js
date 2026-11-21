@@ -104,6 +104,15 @@
         const result = await send("exportStep", { shapeId });
         return result.stepText;
       },
+      async createTorus(majorRadiusMM, minorRadiusMM) {
+        if (![majorRadiusMM, minorRadiusMM].every(value =>
+          Number.isFinite(value) && value >= 0.01 && value <= 2000) ||
+          majorRadiusMM <= minorRadiusMM) {
+          throw new Error("Der grosse Torusradius muss grösser als der kleine Radius sein; beide müssen zwischen 0.01 und 2000 mm liegen.");
+        }
+        await initialize();
+        return send("createTorus", { majorRadiusMM, minorRadiusMM });
+      },
       async createCone(radiusMM, heightMM) {
         if (![radiusMM, heightMM].every(value =>
           Number.isFinite(value) && value >= 0.01 && value <= 2000)) {
