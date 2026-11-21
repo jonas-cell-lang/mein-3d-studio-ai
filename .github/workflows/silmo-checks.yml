@@ -119,7 +119,7 @@ jobs:
           if duplicates:
               raise SystemExit("Doppelte HTML-IDs: " + ", ".join(duplicates))
           for asset in ("silmo-icon.svg", "icon-512.png", "manifest.webmanifest", "src/units.js",
-              "src/history.js", "src/stl-io.js", "src/tolerances.js", "src/csg.js", "src/project-schema.js", "src/project-geometry.js", "src/project-io.js", "src/tutorial.js", "src/developer-diagnostics.js", "src/image-studio.js", "src/tool-navigation.js", "src/primitive-geometry.js", "src/sketch-geometry.js", "vendor/three/three.min.js", "vendor/three/STLLoader.js", "vendor/three/STLExporter.js", "vendor/three/LICENSE", "vendor/occt/silmo-occt-worker.js", "vendor/occt/occt-wasm.wasm"):
+              "src/history.js", "src/stl-io.js", "src/occt-kernel-client.js", "src/tolerances.js", "src/csg.js", "src/project-schema.js", "src/project-geometry.js", "src/project-io.js", "src/tutorial.js", "src/developer-diagnostics.js", "src/image-studio.js", "src/tool-navigation.js", "src/primitive-geometry.js", "src/sketch-geometry.js", "vendor/three/three.min.js", "vendor/three/STLLoader.js", "vendor/three/STLExporter.js", "vendor/three/LICENSE", "vendor/occt/silmo-occt-worker.js", "vendor/occt/occt-wasm.wasm"):
               if not Path(asset).is_file():
                   raise SystemExit(f"Fehlende App-Datei: {asset}")
           required_group_move = [
@@ -253,6 +253,8 @@ jobs:
               "vendor/three/STLLoader.js",
               "vendor/three/STLExporter.js",
               "vendor/three/LICENSE",
+              "vendor/occt/silmo-occt-worker.js",
+              "vendor/occt/occt-wasm.wasm",
           )
           for relative in packaged_files:
               source = Path(relative)
