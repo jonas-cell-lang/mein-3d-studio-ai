@@ -48,8 +48,8 @@ Der Testkorpus umfasst analytische Quader, Boolesche Durchbrüche, Platten mit 4
 ## Bewusste Grenzen
 
 - Der Produktions-Worker ist noch kein Ersatz für sämtliche bestehenden Three.js-/BSP-Werkzeuge.
-- Die UI-Booleschen Operationen unterstützen derzeit genau zwei passende OCCT-B-Rep-Körper mit Identitätsrotation und Einheitsskalierung; Translationen werden berücksichtigt.
-- Gewöhnliche Meshes, beliebige Rotation/Skalierung, mehr als zwei Operanden und allgemeine verschachtelte Feature-Ketten sind nicht vollständig auf OCCT migriert.
+- Die UI-Booleschen Operationen unterstützen derzeit genau zwei passende OCCT-B-Rep-Körper. Rotation, Skalierung und Verschiebung werden als vollständige 3×4-Affintransformationen im OCCT-Worker angewendet.
+- Gewöhnliche Meshes und mehr als zwei Operanden in einer einzelnen UI-Operation sind noch nicht vollständig auf OCCT migriert.
 - Projektdateien speichern Konstruktionsrezepte und Darstellungsgeometrie, keine rohe native OCCT-B-Rep-Datei.
 - Ein Safari-/WebKit-Test, plattformübergreifende Leistungsmessungen und Langzeitmessungen stehen noch aus.
 
