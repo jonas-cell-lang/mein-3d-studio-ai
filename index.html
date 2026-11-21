@@ -3684,8 +3684,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const pairs=[[0,1],[0,2],[1,2]].sort((a,b)=>spans[b[0]]*spans[b[1]]-spans[a[0]]*spans[a[1]]);
     const axes=pairs[0],xs=clean.map(p=>p[axes[0]]),ys=clean.map(p=>p[axes[1]]);
     const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
-    const width=maxX-minX,height=maxY-minY,ratio=width/Math.max(height,1e-9);
-    if(width<1e-5||height<1e-5||ratio<0.35||ratio>2.5)return {recognized:false,score:0,pointCount:clean.length,aspectRatio:ratio,reason:'Die Form braucht eine erkennbare Breite und Höhe.'};
+    const width=maxX-minX,height=maxY-minY,ratio=width/Math.max(height,window.SILMOTolerances.HEART_OUTLINE_HEIGHT_DENOMINATOR_MIN_WORLD_UNITS);
+    if(width<window.SILMOTolerances.HEART_OUTLINE_MIN_SPAN_WORLD_UNITS||height<window.SILMOTolerances.HEART_OUTLINE_MIN_SPAN_WORLD_UNITS||ratio<0.35||ratio>2.5)return {recognized:false,score:0,pointCount:clean.length,aspectRatio:ratio,reason:'Die Form braucht eine erkennbare Breite und Höhe.'};
     const polygon=clean.map(p=>[(p[axes[0]]-minX)/width,(p[axes[1]]-minY)/height]);
     const inside=(x,y,poly)=>{
       let hit=false;
