@@ -51,7 +51,7 @@ async function waitForOcctRestore(previousGeneration) {
     if (window.__silmoOcctRestorePromise) await window.__silmoOcctRestorePromise;
   });
 }
-page.on('pageerror', error => pageErrors.push(error.message));
+page.on('pageerror', error => pageErrors.push(error.stack || error.message));
 page.on('console', message => {
   if (message.type() === 'error' && !allowExpectedConsoleError) pageErrors.push('console: ' + message.text());
 });
