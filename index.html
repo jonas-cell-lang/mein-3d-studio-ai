@@ -1300,7 +1300,14 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           return rebuildOcctObjectHandle(obj);
         }
         return null;
-      }));
+      })).then(() => {
+        window.__silmoOcctProjectRestoreSummary = objects.map(obj => ({
+          label: obj.userData.label || 'Objekt',
+          geometryKernel: obj.userData.geometryKernel || 'three-mesh-fallback',
+          occtSource: obj.userData.occtSource || null,
+          shapeId: window.__silmoOcctObjectHandles?.get(obj) || null
+        }));
+      });
     }
   });
   const { saveProject, openProjectFile } = projectIO;
