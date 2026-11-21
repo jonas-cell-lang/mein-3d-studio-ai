@@ -62,3 +62,8 @@ Ein erfolgreicher isolierter Kerneltest beweist nicht automatisch die vollständ
 ## Native OCCT-Zylinder (21.11.2026)
 
 SILMO kann zusätzlich zum Quader einen analytischen Zylinder als echten OCCT-B-Rep-Körper erzeugen. Die produktive Worker-API verwendet die in `occt-wasm` 5.17.2 vorhandene `makeCylinder(radius, height)`-Funktion. Radius und Höhe sind in Millimetern angegeben und jeweils auf 0,01 bis 2000 mm begrenzt. Das Ergebnis wird auf endliches positives Volumen und ein gültiges Darstellungsnetz geprüft. Das Konstruktionsrezept (`kind: cylinder`) wird in Projektdateien gespeichert und für Undo/Redo sowie Projektwiederherstellung erneut als OCCT-Körper aufgebaut.
+
+
+## Native OCCT-Kugel (21.11.2026)
+
+SILMO kann zusätzlich zu Quader und Zylinder eine analytische Kugel als echten OCCT-B-Rep-Körper erzeugen. Der produktive Worker verwendet `makeSphere(radius)` aus `occt-wasm` 5.17.2. Der Radius ist auf 0,01 bis 2000 mm begrenzt. Volumen und Tessellierung werden validiert; das Konstruktionsrezept (`kind: sphere`) bleibt für Undo/Redo und Projektwiederherstellung erhalten.
