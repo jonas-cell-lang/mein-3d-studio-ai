@@ -44,7 +44,7 @@ Eine Änderung dieser Semantik erfordert eine neue Projektformatversion und eine
 - Indizes müssen einen unterstützten Integer-Typ, gültige Vertex-Verweise und vollständige Dreiergruppen für Dreiecke enthalten.
 - Nicht-indizierte Mesh-Geometrie muss ebenfalls aus vollständigen Dreiecken bestehen.
 - Konturrahmen-Metadaten werden auf die tatsächlich unterstützten Eingabebereiche begrenzt: Wandstärke 0,2–100 mm und Rahmenhöhe 0,2–2000 mm. Der frühere Feldname `caseWallFrame` wird dabei ebenfalls geprüft.
-- Vorhandene Positions-, Drehungs- und Skalierungsarrays werden bereits in der Dokumentvalidierung auf mindestens drei endliche Komponenten und dieselben Grenzen wie der Laufzeit-Loader geprüft (Position/Drehung maximal 10'000; Skalierung maximal 1'000 und keine Nullkomponente). Fehlende oder nicht-arrayförmige Alt-Metadaten behalten die bisherigen Loader-Defaults.
+- Vorhandene Positions-, Drehungs- und Skalierungsarrays werden bereits in der Dokumentvalidierung auf mindestens drei endliche Komponenten und dieselben Grenzen wie der Laufzeit-Loader geprüft (Position/Drehung maximal 10'000; Skalierung maximal 1'000 und keine Nullkomponente). Die Prüfung gilt rekursiv auch für ursprüngliche CSG-Quellteile in `unionParts`, bevor deren Geometrien wiederhergestellt werden. Fehlende oder nicht-arrayförmige Alt-Metadaten behalten die bisherigen Loader-Defaults.
 - Ein fehlgeschlagener Geometrie-Wiederaufbau gibt bereits angelegte `BufferGeometry`-Ressourcen frei.
 - Fehlende oder unbekannte Versionen werden mit einer verständlichen Meldung abgelehnt.
 - Bei einer nicht unterstützten Version bleibt das aktuell geöffnete Projekt unverändert.
