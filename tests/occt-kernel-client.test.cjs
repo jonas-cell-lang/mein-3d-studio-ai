@@ -198,7 +198,8 @@ test("OCCT client validates native topology and fillet result payloads", async (
         if (message.method === "getFaceMeshes") {
           this.messages.push(message);
           queueMicrotask(() => this.onmessage({ data: { id: message.id, ok: true, result: {
-            faces: [{ index: 0, mesh: { positions: new Float32Array([0,0,0, 1,0,0, 0,1,0]), indices: new Uint32Array([0,1,2]), triangleCount: 1 } }]
+            faces: [{ index: 0, mesh: { positions: new Float32Array([0,0,0, 1,0,0, 0,1,0]), indices: new Uint32Array([0,1,2]), triangleCount: 1 } }],
+            triangleCount: 1
           } } }));
           return;
         }
