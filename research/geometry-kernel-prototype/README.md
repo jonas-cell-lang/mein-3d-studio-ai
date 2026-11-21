@@ -30,7 +30,7 @@ SILMO startet den Worker bei Bedarf. Der Client unter `src/occt-kernel-client.js
 
 - Echte OCCT-B-Rep-Quader werden im Worker erzeugt und für die Three.js-Anzeige tesselliert.
 - Unterstützte Skizzenextrusionen werden als OCCT-B-Rep-Körper erstellt.
-- Fuse, Cut und Common sind für zwei geeignete OCCT-Körper verfügbar.
+- Fuse, Cut und Common sind für zwei oder mehr geeignete OCCT-Körper verfügbar; Mehrkörper-Aufträge werden als geordnete B-Rep-Kette ausgeführt.
 - Undo/Redo kann unterstützte B-Rep-Körper und Boolean-Ergebnisse aus Konstruktionsrezepten rekonstruieren.
 - Projektformat v3 speichert optionale `occtSource`-Rezepte; beim Öffnen werden die B-Rep-Körper im Worker neu aufgebaut.
 - Löschen, Projektwechsel und Worker-Lebenszyklus geben verwaltete Handles frei.
