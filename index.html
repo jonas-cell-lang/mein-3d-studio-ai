@@ -4302,10 +4302,6 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
 
   canvas.addEventListener('pointerdown', e => {
-    if (occtEdgePickMode) window.__silmoOcctLastEdgePickEvent = {
-      received: true, sketchMode, clickContourMode, target: e.target?.tagName,
-      x: e.clientX, y: e.clientY, sourceMatchesSelected: window.__silmoOcctEdgeOverlay?.sourceMesh === selected
-    };
     if (sketchMode && clickContourMode) {
       if (e.cancelable) e.preventDefault();
       e.stopPropagation();
@@ -4370,15 +4366,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         // Der Three.js-Line-Raycaster ist je nach Zoomstufe und Gerätedichte
         // empfindlich. Ergänzend prüfen wir den tatsächlichen Bildschirmabstand
         // zur projizierten nativen Kanten-Polylinie (max. 14 CSS-Pixel).
-        const screenHit = edgeHits.length ? null : findOcctEdgeAtScreenPoint(e.clientX, e.clientY);
-        window.__silmoOcctLastEdgePickEvent = {
-          ...(window.__silmoOcctLastEdgePickEvent || {}),
-          edgeBranch: true, rayHits: edgeHits.length, screenHit,
-          edgeIndex: edgeHits.length ? edgeHits[0].object.userData.occtEdgeIndex : screenHit?.edgeIndex
-        };
-        const edgeIndex = edgeHits.length
-          ? edgeHits[0].object.userData.occtEdgeIndex
-          : screenHit?.edgeIndex;
+        const screenHit = findOcctEdgeAtScreenPoint(e.clientX, e.clientY);
+        // Der Bildschirmabstand unterscheidet nahe parallele Kanten zuverlässiger
+        // als der räumliche Linien-Raycaster, der mehrere Kanten treffen kann.
+        const edgeIndex = screenHit
+          ? screenHit.edgeIndex
+          : edgeHits[0]?.object.userData.occtEdgeIndex;
         if (Number.isInteger(edgeIndex)) {
           const picked = window.__silmoOcctEdgeOverlay.selectedIndices;
           if (picked.has(edgeIndex)) picked.delete(edgeIndex); else picked.add(edgeIndex);
