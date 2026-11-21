@@ -213,6 +213,46 @@ test('falsche App-Kennung und ungültige Objektlisten werden abgelehnt', () => {
   assert.throws(() => schema.validateProjectEnvelope([]), /kein gültiges JSON-Objekt/);
 });
 
+test('OCCT-Konstruktionsrezepte für Quader, Skizzen und Boolesche Körper werden validiert', () => {
+  const project = validProject();
+  project.objects.push(
+    { occtSource: { kind: 'box', widthMM: 20, depthMM: 30, heightMM: 40 } },
+    { occtSource: { kind: 'sketch', sketch: {
+      type: 'freeform2d', outlinePoints: [[0,0],[40,0],[40,30],[0,30]],
+      holes: [[[10,10],[10,20],[20,20],[20,10]]], extrusionMM: 5
+    } } },
+    { occtSource: {
+      kind: 'boolean', operation: 'cut',
+      operands: [
+        { kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20 },
+        { kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20 }
+      ],
+      translationsMM: [[0,0,0],[10,0,0]]
+    } }
+  );
+  assert.equal(schema.validateProjectEnvelope(project), project);
+
+  const invalidBox = structuredClone(project);
+  invalidBox.objects[0].occtSource.widthMM = Infinity;
+  assert.throws(() => schema.validateProjectEnvelope(invalidBox), /OCCT-Quaderabmessungen/);
+
+  const invalidSketch = structuredClone(project);
+  invalidSketch.objects[1].occtSource.sketch.outlinePoints = [[0,0],[1,1]];
+  assert.throws(() => schema.validateProjectEnvelope(invalidSketch), /OCCT-Skizzenquelle/);
+
+  const invalidBoolean = structuredClone(project);
+  invalidBoolean.objects[2].occtSource.translationsMM[1][0] = 200001;
+  assert.throws(() => schema.validateProjectEnvelope(invalidBoolean), /OCCT-Boolean-Konstruktionsdaten/);
+
+  const unsupported = structuredClone(project);
+  unsupported.objects[2].occtSource.operation = 'shell';
+  assert.throws(() => schema.validateProjectEnvelope(unsupported), /OCCT-Boolean-Konstruktionsdaten/);
+
+  const missingOperand = structuredClone(project);
+  missingOperand.objects[2].occtSource.operands.pop();
+  assert.throws(() => schema.validateProjectEnvelope(missingOperand), /OCCT-Boolean-Konstruktionsdaten/);
+});
+
 test('minimales und erweitertes v3-Fixture sind gültige Projektdateien', () => {
   for (const name of ['project-v3-minimal.json', 'project-v3-advanced.json']) {
     const fixture = readFixture(name);
