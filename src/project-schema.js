@@ -244,6 +244,7 @@
       const sketch = source.sketch;
       if (!sketch || typeof sketch !== 'object' || Array.isArray(sketch) ||
           !Array.isArray(sketch.outlinePoints) || sketch.outlinePoints.length < 3 ||
+          !validateSketchRing(sketch.outlinePoints) ||
           !Number.isFinite(sketch.extrusionMM) || sketch.extrusionMM < 0.1 || sketch.extrusionMM > 200000) {
         throw new Error('Ungültige OCCT-Skizzenquelle.');
       }
