@@ -435,11 +435,15 @@ async function execute(method, args) {
     const { shapeId, edgeIndices, radiusMM } = args;
     const shape = shapes.get(shapeId);
     if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
+    const validRadius = value => Number.isFinite(value) && value >= 0.01 && value <= 2000;
+    const validRadii = typeof radiusMM === "number"
+      ? validRadius(radiusMM)
+      : Array.isArray(radiusMM) && radiusMM.length === edgeIndices.length &&
+        radiusMM.every(value => value && validRadius(value.start) && validRadius(value.end));
     if (!Array.isArray(edgeIndices) || edgeIndices.length < 1 || edgeIndices.length > 12 ||
         !edgeIndices.every(index => Number.isInteger(index) && index >= 0) ||
-        new Set(edgeIndices).size !== edgeIndices.length ||
-        !Number.isFinite(radiusMM) || radiusMM < 0.01 || radiusMM > 2000) {
-      throw new Error("Kantenrundung benötigt eindeutige Kantenindizes und einen Radius von 0,01 bis 2000 mm.");
+        new Set(edgeIndices).size !== edgeIndices.length || !validRadii) {
+      throw new Error("Kantenrundung benötigt eindeutige Kantenindizes und Radien von 0,01 bis 2000 mm je Kante.");
     }
     if (kernel.getShapeType(shape) !== "solid") {
       throw new Error("Kantenrundung ist nur für einen einzelnen OCCT-Solid verfügbar.");
@@ -469,6 +473,54 @@ async function execute(method, args) {
       shapes.set(resultId, resultShape);
       resultShape = null;
       return { shapeId: resultId, volumeMM3, mesh, operation: "fillet", edgeIndices, radiusMM };
+    } finally {
+      if (resultShape !== null) {
+        try { kernel.release(resultShape); } catch { /* best effort cleanup */ }
+      }
+      for (const edge of edges) {
+        try { kernel.release(edge); } catch { /* best effort cleanup */ }
+      }
+    }
+  }
+
+  if (method === "chamferEdges") {
+    const { shapeId, edgeIndices, distanceMM } = args;
+    const shape = shapes.get(shapeId);
+    if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
+    if (!Array.isArray(edgeIndices) || edgeIndices.length < 1 || edgeIndices.length > 12 ||
+        !edgeIndices.every(index => Number.isInteger(index) && index >= 0) ||
+        new Set(edgeIndices).size !== edgeIndices.length ||
+        !Number.isFinite(distanceMM) || distanceMM < 0.01 || distanceMM > 2000) {
+      throw new Error("Kantenfase benötigt eindeutige Kantenindizes und einen Abstand von 0,01 bis 2000 mm.");
+    }
+    if (kernel.getShapeType(shape) !== "solid") {
+      throw new Error("Kantenfase ist nur für einen einzelnen OCCT-Solid verfügbar.");
+    }
+    const edges = kernel.getSubShapes(shape, "edge");
+    let resultShape = null;
+    try {
+      if (edgeIndices.some(index => index >= edges.length)) {
+        throw new Error("Mindestens ein ausgewählter Kantenindex liegt ausserhalb des Körpers.");
+      }
+      const selectedEdges = edgeIndices.map(index => edges[index]);
+      resultShape = kernel.chamfer(shape, selectedEdges, distanceMM);
+      const volumeMM3 = kernel.getVolume(resultShape);
+      const mesh = serializeMesh(kernel.tessellate(resultShape));
+      const positions = mesh.positions;
+      const indices = mesh.indices;
+      if (!Number.isFinite(volumeMM3) || volumeMM3 <= 0 ||
+          !kernel.isValid(resultShape) ||
+          positions.length < 9 || positions.length % 3 !== 0 ||
+          !Array.from(positions).every(Number.isFinite) ||
+          indices.length < 3 || indices.length % 3 !== 0 ||
+          !Array.from(indices).every(index => Number.isInteger(index) && index >= 0 && index < positions.length / 3) ||
+          mesh.triangleCount !== indices.length / 3) {
+        throw new Error("OCCT-Kantenfase lieferte keinen gültigen Solid mit positivem Volumen und gültigem Dreiecksnetz.");
+      }
+      const resultId = nextShapeId++;
+      shapes.set(resultId, resultShape);
+      resultShape = null;
+      return { shapeId: resultId, volumeMM3, mesh, operation: "chamfer", edgeIndices, distanceMM };
     } finally {
       if (resultShape !== null) {
         try { kernel.release(resultShape); } catch { /* best effort cleanup */ }
