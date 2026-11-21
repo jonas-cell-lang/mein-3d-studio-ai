@@ -210,6 +210,14 @@ test("OCCT client validates native topology and fillet result payloads", async (
           } } }));
           return;
         }
+        if (message.method === "chamferEdges") {
+          this.messages.push(message);
+          queueMicrotask(() => this.onmessage({ data: { id: message.id, ok: true, result: {
+            shapeId: 23, volumeMM3: 7800,
+            mesh: { positions: new Float32Array([0,0,0, 1,0,0, 0,1,0]), indices: new Uint32Array([0,1,2]), triangleCount: 1 }
+          } } }));
+          return;
+        }
         super.postMessage(message);
       }
     }
@@ -222,6 +230,17 @@ test("OCCT client validates native topology and fillet result payloads", async (
   assert.equal(rounded.mesh.triangleCount, 1);
   assert.deepEqual(worker.messages.find(message => message.method === "filletEdges").args,
     { shapeId: 7, edgeIndices: [0, 2], radiusMM: 1.5 });
+  const variableRounded = await client.filletEdges(7, [0, 2], [
+    { start: 1, end: 1.5 }, { start: 2, end: 1.25 }
+  ]);
+  assert.equal(variableRounded.shapeId, 22);
+  assert.deepEqual(worker.messages.filter(message => message.method === "filletEdges")[1].args.radiusMM,
+    [{ start: 1, end: 1.5 }, { start: 2, end: 1.25 }]);
+  const chamfered = await client.chamferEdges(7, [1, 3], 0.8);
+  assert.equal(chamfered.shapeId, 23);
+  assert.equal(chamfered.mesh.triangleCount, 1);
+  assert.deepEqual(worker.messages.find(message => message.method === "chamferEdges").args,
+    { shapeId: 7, edgeIndices: [1, 3], distanceMM: 0.8 });
   await client.dispose();
 });
 
@@ -236,7 +255,12 @@ test("OCCT client rejects invalid fillet parameters before contacting the worker
   await assert.rejects(client.filletEdges(7, [0, 0], 1), /Kantenrundung benötigt/);
   await assert.rejects(client.filletEdges(7, [0], 0.001), /Kantenrundung benötigt/);
   await assert.rejects(client.filletEdges(7, [0], 2001), /Kantenrundung benötigt/);
-  assert.equal(worker.messages.length, 0, "Ungültige Rundungsparameter dürfen keinen Worker-Aufruf auslösen");
+  await assert.rejects(client.filletEdges(7, [0, 1], [{ start: 1, end: 2 }]), /Kantenrundung benötigt/);
+  await assert.rejects(client.filletEdges(7, [0], [{ start: 0, end: 1 }]), /Kantenrundung benötigt/);
+  await assert.rejects(client.chamferEdges(7, [], 1), /Kantenfase benötigt/);
+  await assert.rejects(client.chamferEdges(7, [0, 0], 1), /Kantenfase benötigt/);
+  await assert.rejects(client.chamferEdges(7, [0], 2001), /Kantenfase benötigt/);
+  assert.equal(worker.messages.length, 0, "Ungültige Rundungs-/Fasenparameter dürfen keinen Worker-Aufruf auslösen");
   await client.dispose();
 });
 
