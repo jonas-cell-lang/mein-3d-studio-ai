@@ -81,6 +81,31 @@ async function execute(method, args) {
     return { stepText };
   }
 
+  if (method === "createCylinder") {
+    const { radiusMM, heightMM } = args;
+    if (!Number.isFinite(radiusMM) || radiusMM < 0.01 || radiusMM > 2000 ||
+        !Number.isFinite(heightMM) || heightMM < 0.01 || heightMM > 2000) {
+      throw new Error("Zylinderradius und -höhe müssen zwischen 0.01 und 2000 mm liegen.");
+    }
+    let shape = null;
+    try {
+      shape = kernel.makeCylinder(radiusMM, heightMM);
+      const volumeMM3 = kernel.getVolume(shape);
+      const mesh = serializeMesh(kernel.tessellate(shape));
+      if (!Number.isFinite(volumeMM3) || volumeMM3 <= 0) {
+        throw new Error("OCCT-Zylinder besitzt kein gültiges positives Volumen.");
+      }
+      const shapeId = nextShapeId++;
+      shapes.set(shapeId, shape);
+      shape = null;
+      return { shapeId, volumeMM3, mesh, shapeType: "solid" };
+    } finally {
+      if (shape !== null) {
+        try { kernel.release(shape); } catch { /* Fehlerpfad: best effort cleanup. */ }
+      }
+    }
+  }
+
   if (method === "createBox") {
     const { widthMM, depthMM, heightMM } = args;
     for (const [name, value] of Object.entries({ widthMM, depthMM, heightMM })) {
@@ -249,9 +274,9 @@ async function execute(method, args) {
   throw new Error("Unbekannter OCCT-Befehl: " + method);
 }
 
-// OCCT/WASM-Kernel-Aufrufe werden bewusst serialisiert. Web-Worker-Message-
- // Events können sich während await überlappen; parallele Mutationen am selben
- // Kernel würden sonst Erzeugung, Boolean-Operationen und Freigaben vermischen.
+// OCCT/WASM-Kernel-Aufrufe werden bewusst serialisiert. Worker-Message-
+// Events können sich während await überlappen; parallele Mutationen am selben
+// Kernel würden sonst Erzeugung, Boolean-Operationen und Freigaben vermischen.
 let executionQueue = Promise.resolve();
 
 self.addEventListener("message", event => {
