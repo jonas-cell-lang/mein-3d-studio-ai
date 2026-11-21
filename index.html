@@ -976,7 +976,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         operands.push(await createOcctShapeFromSource(operand, ownedHandles));
       }
       const result = await window.__silmoOcctClient.booleanOperation(
-        source.operation, operands.map(item => item.shapeId), source.translationsMM
+        source.operation, operands.map(item => item.shapeId), source.transformsMM ?? source.translationsMM
       );
       ownedHandles.push(result.shapeId);
       return result;
@@ -1002,7 +1002,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         }
         if (operands.length !== 2) throw new Error('OCCT-Undo benötigt genau zwei rekonstruierbare Ausgangskörper.');
         booleanResult = await window.__silmoOcctClient.booleanOperation(
-          source.operation, operands.map(item => item.shapeId), source.translationsMM
+          source.operation, operands.map(item => item.shapeId), source.transformsMM ?? source.translationsMM
         );
         createdHandles.push(booleanResult.shapeId);
         await Promise.all(createdHandles.filter(shapeId => shapeId !== booleanResult.shapeId).map(shapeId =>
