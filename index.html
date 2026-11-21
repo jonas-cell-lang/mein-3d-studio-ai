@@ -833,6 +833,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       mesh.userData.geometryKernel = 'occt-wasm';
       mesh.userData.occtShapeId = result.shapeId;
       mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      window.__silmoOcctLastRestored = { shapeId: result.shapeId, volumeMM3: result.volumeMM3 };
     } catch (error) {
       mesh.userData.geometryKernel = 'three-mesh-fallback';
       status.textContent = 'OCCT-Körper konnte nach Undo/Redo nicht wiederhergestellt werden: ' +
