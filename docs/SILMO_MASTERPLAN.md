@@ -770,3 +770,8 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Die bisherige diagnostische Untergrenze `0.01 mm` für Modell-Bounding-Box-Abmessungen ist als `PRINT_MIN_MODEL_DIMENSION_MM` zentral benannt.
 - Die Warnlogik, der Schwellenwert und der Meldungstext bleiben unverändert. Die Konstante ist ausdrücklich von STL-Weld- und CAD-Kernel-Toleranzen getrennt.
 - Der zentrale Zahlenwerttest und Laufzeit-Verwendungs-Audit wurden erweitert. CI für diesen Schritt steht noch aus.
+
+### 6.74 Manuell gezeichnete Bildkonturen: Mindestfläche benannt (21.11.2026)
+- Die bisherige Mindestfläche von `0.5 Pixel²` für das Speichern manuell gezeichneter Image-Studio-Konturen ist als `IMAGE_MIN_DRAWN_CONTOUR_AREA_PIXELS2` zentral benannt.
+- Die Bildpixel-Fläche bleibt ausdrücklich von der CAD-Mindestfläche in mm² getrennt; Verhalten und Grenzwert ändern sich nicht.
+- Der zentrale Zahlenwerttest und Laufzeit-Verwendungs-Audit wurden erweitert. CI für diesen Schritt steht noch aus.
