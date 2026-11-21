@@ -1033,13 +1033,16 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'CSG-Fehlerfall konnte nicht alle drei Originalobjekte auswählen');
   await showCreateSubtab(1);
   await page.evaluate(() => {
-    const originalCombine = window.SILMOCSG.combineMeshes;
+    const originalCSG = window.SILMOCSG;
+    const originalCombine = originalCSG.combineMeshes;
     const originalDispose = THREE.BufferGeometry.prototype.dispose;
-    window.__silmoCSGFailureProbe = { calls: 0, disposeCalls: 0, originalCombine, originalDispose };
-    window.SILMOCSG.combineMeshes = function (...args) {
-      window.__silmoCSGFailureProbe.calls += 1;
-      if (window.__silmoCSGFailureProbe.calls === 2) throw new Error('simulierter zweiter CSG-Schrittfehler');
-      return originalCombine(...args);
+    window.__silmoCSGFailureProbe = { calls: 0, disposeCalls: 0, originalCSG, originalDispose };
+    window.SILMOCSG = {
+      combineMeshes(...args) {
+        window.__silmoCSGFailureProbe.calls += 1;
+        if (window.__silmoCSGFailureProbe.calls === 2) throw new Error('simulierter zweiter CSG-Schrittfehler');
+        return originalCombine(...args);
+      }
     };
     THREE.BufferGeometry.prototype.dispose = function () {
       window.__silmoCSGFailureProbe.disposeCalls += 1;
@@ -1049,7 +1052,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#booleanUnion').click();
   const csgFailureProbe = await page.evaluate(() => {
     const probe = window.__silmoCSGFailureProbe;
-    window.SILMOCSG.combineMeshes = probe.originalCombine;
+    window.SILMOCSG = probe.originalCSG;
     THREE.BufferGeometry.prototype.dispose = probe.originalDispose;
     delete window.__silmoCSGFailureProbe;
     return { calls: probe.calls, disposeCalls: probe.disposeCalls };
