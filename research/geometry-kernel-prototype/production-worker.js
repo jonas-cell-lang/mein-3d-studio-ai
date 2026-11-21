@@ -364,6 +364,74 @@ async function execute(method, args) {
     };
   }
 
+  if (method === "listSubShapes") {
+    const shape = shapes.get(args.shapeId);
+    if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
+    const requestedTypes = ["face", "edge"];
+    const result = {};
+    for (const type of requestedTypes) {
+      const handles = kernel.getSubShapes(shape, type);
+      try {
+        result[type] = handles.map((handle, index) => {
+          if (type === "face") {
+            return { index, geometryType: kernel.surfaceType(handle) };
+          }
+          return {
+            index,
+            geometryType: kernel.curveType(handle),
+            lengthMM: kernel.curveLength(handle)
+          };
+        });
+      } finally {
+        for (const handle of handles) {
+          try { kernel.release(handle); } catch { /* best effort cleanup */ }
+        }
+      }
+    }
+    return result;
+  }
+
+  if (method === "filletEdges") {
+    const { shapeId, edgeIndices, radiusMM } = args;
+    const shape = shapes.get(shapeId);
+    if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
+    if (!Array.isArray(edgeIndices) || edgeIndices.length < 1 || edgeIndices.length > 12 ||
+        !edgeIndices.every(index => Number.isInteger(index) && index >= 0) ||
+        new Set(edgeIndices).size !== edgeIndices.length ||
+        !Number.isFinite(radiusMM) || radiusMM < 0.01 || radiusMM > 2000) {
+      throw new Error("Kantenrundung benötigt eindeutige Kantenindizes und einen Radius von 0,01 bis 2000 mm.");
+    }
+    if (kernel.getShapeType(shape) !== "solid") {
+      throw new Error("Kantenrundung ist nur für einen einzelnen OCCT-Solid verfügbar.");
+    }
+    const edges = kernel.getSubShapes(shape, "edge");
+    let resultShape = null;
+    try {
+      if (edgeIndices.some(index => index >= edges.length)) {
+        throw new Error("Mindestens ein ausgewählter Kantenindex liegt ausserhalb des Körpers.");
+      }
+      const selectedEdges = edgeIndices.map(index => edges[index]);
+      resultShape = kernel.fillet(shape, selectedEdges, radiusMM);
+      const volumeMM3 = kernel.getVolume(resultShape);
+      const mesh = serializeMesh(kernel.tessellate(resultShape));
+      if (!Number.isFinite(volumeMM3) || volumeMM3 <= 0 ||
+          !kernel.isValid(resultShape)) {
+        throw new Error("OCCT-Kantenrundung lieferte keinen gültigen Solid mit positivem Volumen.");
+      }
+      const resultId = nextShapeId++;
+      shapes.set(resultId, resultShape);
+      resultShape = null;
+      return { shapeId: resultId, volumeMM3, mesh, operation: "fillet", edgeIndices, radiusMM };
+    } finally {
+      if (resultShape !== null) {
+        try { kernel.release(resultShape); } catch { /* best effort cleanup */ }
+      }
+      for (const edge of edges) {
+        try { kernel.release(edge); } catch { /* best effort cleanup */ }
+      }
+    }
+  }
+
   if (method === "getVolume") {
     const shape = shapes.get(args.shapeId);
     if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
