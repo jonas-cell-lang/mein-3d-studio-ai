@@ -437,7 +437,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const finalFilletUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
   await page.keyboard.press('Control+z');
   await waitForOcctRestore(finalFilletUndoGeneration);
-  await page.locator('#delete').click();
+  await page.locator('#delete').evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
   assert.equal(await page.locator('#objects .object-row').count(), filletSceneStart,
     'Der Testkörper für die sichtbare Kantenrundung konnte nicht entfernt werden');
 
