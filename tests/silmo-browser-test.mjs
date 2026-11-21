@@ -328,7 +328,23 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
       } catch (error) {
         multiRounded = { error: String(error?.message || error) };
       }
+      let variableRounded = null;
+      try {
+        variableRounded = await client.filletEdges(source.shapeId, [0, 1], [
+          { start: 1, end: 1 }, { start: 1.5, end: 1.5 }
+        ]);
+      } catch (error) {
+        variableRounded = { error: String(error?.message || error) };
+      }
+      let chamfered = null;
+      try {
+        chamfered = await client.chamferEdges(source.shapeId, [2], 1);
+      } catch (error) {
+        chamfered = { error: String(error?.message || error) };
+      }
       const invalidIndexRejected = await client.filletEdges(source.shapeId, [999], 1)
+        .then(() => false, () => true);
+      const impossibleChamferRejected = await client.chamferEdges(source.shapeId, [2], 2000)
         .then(() => false, () => true);
       const result = {
         faceCount: topology.face.length,
@@ -343,10 +359,19 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
         multiRoundedVolume: multiRounded?.volumeMM3 ?? null,
         multiRoundedWorkerVolume: multiRounded?.shapeId ? await client.getVolume(multiRounded.shapeId) : null,
         multiRoundedError: multiRounded?.error || null,
+        variableRoundedVolume: variableRounded?.volumeMM3 ?? null,
+        variableRoundedWorkerVolume: variableRounded?.shapeId ? await client.getVolume(variableRounded.shapeId) : null,
+        variableRoundedError: variableRounded?.error || null,
+        chamferedVolume: chamfered?.volumeMM3 ?? null,
+        chamferedWorkerVolume: chamfered?.shapeId ? await client.getVolume(chamfered.shapeId) : null,
+        chamferError: chamfered?.error || null,
+        impossibleChamferRejected,
         invalidIndexRejected
       };
       await client.releaseShape(rounded.shapeId);
       if (multiRounded?.shapeId) await client.releaseShape(multiRounded.shapeId);
+      if (variableRounded?.shapeId) await client.releaseShape(variableRounded.shapeId);
+      if (chamfered?.shapeId) await client.releaseShape(chamfered.shapeId);
       return result;
     } finally {
       await client.releaseShape(source.shapeId);
@@ -372,6 +397,20 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
       String(topologyAndFillet.multiRoundedError));
   assert.ok(Math.abs(topologyAndFillet.multiRoundedWorkerVolume - topologyAndFillet.multiRoundedVolume) < 1e-7,
     'Mehrfach gerundeter OCCT-Körper ist im Worker nicht dauerhaft abfragbar');
+  assert.ok(Number.isFinite(topologyAndFillet.variableRoundedVolume) &&
+    topologyAndFillet.variableRoundedVolume > 0 &&
+    topologyAndFillet.variableRoundedVolume < topologyAndFillet.sourceVolume,
+    'Per-Kante-Radien ergaben keinen gültigen B-Rep-Körper: ' + String(topologyAndFillet.variableRoundedError));
+  assert.ok(Math.abs(topologyAndFillet.variableRoundedWorkerVolume - topologyAndFillet.variableRoundedVolume) < 1e-7,
+    'B-Rep mit unterschiedlichen Kantenradien ist im Worker nicht dauerhaft abfragbar');
+  assert.ok(Number.isFinite(topologyAndFillet.chamferedVolume) &&
+    topologyAndFillet.chamferedVolume > 0 &&
+    topologyAndFillet.chamferedVolume < topologyAndFillet.sourceVolume,
+    'Native OCCT-Kantenfase ergab keinen gültigen Solid: ' + String(topologyAndFillet.chamferError));
+  assert.ok(Math.abs(topologyAndFillet.chamferedWorkerVolume - topologyAndFillet.chamferedVolume) < 1e-7,
+    'Gefaster OCCT-Körper ist im Worker nicht dauerhaft abfragbar');
+  assert.equal(topologyAndFillet.impossibleChamferRejected, true,
+    'Geometrisch unmögliche Kantenfase muss kontrolliert abgewiesen werden');
 
   const torusResult = await page.evaluate(async () => {
     const created = window.__silmoOcctLastCreated;
