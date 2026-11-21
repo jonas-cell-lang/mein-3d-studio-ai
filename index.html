@@ -1014,6 +1014,16 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     list.disabled = false;
     $('toggleOcctFacePick').disabled = group.children.length === 0;
     updateOcctFaceHighlight();
+    window.__silmoOcctFacePickPoint = faceIndex => {
+      const faceMesh = group.children.find(mesh => mesh.userData.occtFaceIndex === faceIndex);
+      if (!faceMesh) return null;
+      faceMesh.geometry.computeBoundingBox();
+      const point = faceMesh.geometry.boundingBox.getCenter(new THREE.Vector3());
+      faceMesh.updateMatrixWorld(true);
+      point.applyMatrix4(faceMesh.matrixWorld).project(camera);
+      const rect = canvas.getBoundingClientRect();
+      return { x: rect.left + (point.x + 1) * rect.width / 2, y: rect.top + (1 - point.y) * rect.height / 2 };
+    };
   }
   function selectOcctFaceFromList() {
     const overlay = window.__silmoOcctFaceOverlay;
