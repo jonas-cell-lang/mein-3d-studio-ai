@@ -2356,12 +2356,41 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   });
 
   $('exportModel').onclick = stlIO.exportSTL;
-  $('importStepModel').onclick = () => $('stepFileInput').click();
-  $('stepFileInput').addEventListener('change', event => {
+  // Defensive fallback: keep STEP controls available if a host/editor strips
+  // non-standard file inputs while rebuilding the tool panel.
+  let importStepButton = $('importStepModel');
+  if (!importStepButton) {
+    importStepButton = document.createElement('button');
+    importStepButton.type = 'button';
+    importStepButton.id = 'importStepModel';
+    importStepButton.className = 'wide';
+    importStepButton.textContent = '⬆ STEP importieren (OCCT)';
+    document.querySelector('.left-panel')?.appendChild(importStepButton);
+  }
+  let exportStepButton = $('exportStepModel');
+  if (!exportStepButton) {
+    exportStepButton = document.createElement('button');
+    exportStepButton.type = 'button';
+    exportStepButton.id = 'exportStepModel';
+    exportStepButton.className = 'wide';
+    exportStepButton.textContent = '⬇ STEP exportieren (OCCT)';
+    document.querySelector('.left-panel')?.appendChild(exportStepButton);
+  }
+  let stepFileInput = $('stepFileInput');
+  if (!stepFileInput) {
+    stepFileInput = document.createElement('input');
+    stepFileInput.type = 'file';
+    stepFileInput.id = 'stepFileInput';
+    stepFileInput.accept = '.step,.stp,application/step';
+    stepFileInput.hidden = true;
+    document.body.appendChild(stepFileInput);
+  }
+  importStepButton.onclick = () => stepFileInput.click();
+  stepFileInput.addEventListener('change', event => {
     Array.from(event.target.files || []).forEach(importSTEPFile);
     event.target.value = '';
   });
-  $('exportStepModel').onclick = exportSelectedSTEP;
+  exportStepButton.onclick = exportSelectedSTEP;
 
   $('dropToBed').onclick = () => {
     const requested = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
