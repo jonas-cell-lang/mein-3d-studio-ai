@@ -188,6 +188,56 @@ test("OCCT client inspects a solid and validates the requested body handle", asy
   await assert.rejects(client.inspectShape(-1), /gültige OCCT-Körperkennung/);
   await client.dispose();
 });
+test("OCCT client validates native topology and fillet result payloads", async () => {
+  let worker;
+  const client = createClient({
+    WorkerClass: class extends FakeWorker {
+      constructor(url, options) { super(url, options); worker = this; }
+      postMessage(message) {
+        if (message.method === "listSubShapes") {
+          this.messages.push(message);
+          queueMicrotask(() => this.onmessage({ data: { id: message.id, ok: true, result: {
+            face: [{ index: 0, geometryType: "plane" }],
+            edge: [{ index: 0, geometryType: "line", lengthMM: 20 }]
+          } } }));
+          return;
+        }
+        if (message.method === "filletEdges") {
+          this.messages.push(message);
+          queueMicrotask(() => this.onmessage({ data: { id: message.id, ok: true, result: {
+            shapeId: 22, volumeMM3: 7900,
+            mesh: { positions: new Float32Array([0,0,0, 1,0,0, 0,1,0]), indices: new Uint32Array([0,1,2]), triangleCount: 1 }
+          } } }));
+          return;
+        }
+        super.postMessage(message);
+      }
+    }
+  });
+  const topology = await client.listSubShapes(7);
+  assert.equal(topology.face[0].geometryType, "plane");
+  assert.equal(topology.edge[0].lengthMM, 20);
+  const rounded = await client.filletEdges(7, [0, 2], 1.5);
+  assert.equal(rounded.shapeId, 22);
+  assert.equal(rounded.mesh.triangleCount, 1);
+  assert.deepEqual(worker.messages.find(message => message.method === "filletEdges").args,
+    { shapeId: 7, edgeIndices: [0, 2], radiusMM: 1.5 });
+  await client.dispose();
+});
+
+test("OCCT client rejects invalid fillet parameters before contacting the worker", async () => {
+  let worker;
+  const client = createClient({
+    WorkerClass: class extends FakeWorker { constructor(url, options) { super(url, options); worker = this; } }
+  });
+  await assert.rejects(client.filletEdges(7, [], 1), /Kantenrundung benötigt/);
+  await assert.rejects(client.filletEdges(7, [0, 0], 1), /Kantenrundung benötigt/);
+  await assert.rejects(client.filletEdges(7, [0], 0.001), /Kantenrundung benötigt/);
+  await assert.rejects(client.filletEdges(7, [0], 2001), /Kantenrundung benötigt/);
+  assert.equal(worker.messages.length, 0, "Ungültige Rundungsparameter dürfen keinen Worker-Aufruf auslösen");
+  await client.dispose();
+});
+
 test("OCCT client initializes lazily and sends CAD commands through one module worker", async () => {
   let worker;
   const client = createClient({
