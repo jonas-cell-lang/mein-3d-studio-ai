@@ -1081,6 +1081,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
     return nearest;
   }
+  window.__silmoOcctFindEdgeAtScreenPoint = findOcctEdgeAtScreenPoint;
 
   function syncOcctEdgeSelectionFromList() {
     const overlay = window.__silmoOcctEdgeOverlay;
