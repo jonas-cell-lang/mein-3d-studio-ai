@@ -350,6 +350,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
         faceCount: topology.face.length,
         edgeCount: topology.edge.length,
         faceTypes: topology.face.map(face => face.geometryType),
+        faceAreasFinite: topology.face.every(face => Number.isFinite(face.areaMM2) && face.areaMM2 > 0),
+        totalFaceAreaMM2: topology.face.reduce((sum, face) => sum + face.areaMM2, 0),
         edgeTypes: topology.edge.map(edge => edge.geometryType),
         edgeLengthsFinite: topology.edge.every(edge => Number.isFinite(edge.lengthMM) && edge.lengthMM > 0),
         sourceVolume: source.volumeMM3,
@@ -381,6 +383,9 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(topologyAndFillet.edgeCount, 12, 'OCCT-Topologie liefert für den Quader nicht zwölf Kanten');
   assert.ok(topologyAndFillet.faceTypes.every(type => typeof type === 'string' && type.length > 0),
     'OCCT-Flächentypen fehlen');
+  assert.equal(topologyAndFillet.faceAreasFinite, true, 'Native OCCT-Flächen müssen gültige Oberflächeninhalte liefern');
+  assert.ok(Math.abs(topologyAndFillet.totalFaceAreaMM2 - 2400) < 1e-5,
+    'Die sechs nativen Quaderflächen müssen zusammen 2400 mm² ergeben');
   assert.ok(topologyAndFillet.edgeTypes.every(type => typeof type === 'string' && type.length > 0) &&
     topologyAndFillet.edgeLengthsFinite, 'OCCT-Kantentypen oder Kantenlängen sind ungültig');
   assert.ok(topologyAndFillet.roundedVolume > 0 &&
