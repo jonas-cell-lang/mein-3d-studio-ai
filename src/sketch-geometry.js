@@ -70,7 +70,7 @@
   }
 
 
-  function resampleClosedOutline(points, count = 64, minimumPerimeter = 1e-8) {
+  function resampleClosedOutline(points, count = 64, minimumPerimeter = TOLERANCES.LOFT_PROFILE_RESAMPLE_MIN_PERIMETER_WORLD_UNITS || 1e-8) {
     const maximumOutlinePoints = 10000, maximumSamples = 10000;
     if (!Array.isArray(points) || points.length < 3 || points.length > maximumOutlinePoints ||
         !Number.isInteger(count) || count < 3 || count > maximumSamples ||
