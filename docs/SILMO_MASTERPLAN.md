@@ -867,3 +867,13 @@ Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Pa
 - Client-Unit-Tests prüfen STEP-Import/Export-Befehle und Eingabevalidierung; Projekt-Schema-Tests prüfen gültige, fehlerhafte und zu grosse STEP-Quellen.
 - Code-Checks, isolierte OCCT-Kernprüfungen und Browser-Interaktionstests auf Commit `1fd058181eb6a850339adec3cea94aa4dd5f9659` erfolgreich.
 - PR #70 bleibt Draft und ungemergt. Kein Merge, Deployment oder Veröffentlichung.
+
+
+## 6.86 Native OCCT-Zylinder (21.11.2026)
+
+- Ergänzt: analytische Zylindererzeugung im produktiven OCCT-Worker mit `makeCylinder(radiusMM, heightMM)` aus dem gepinnten `occt-wasm` 5.17.2.
+- Neue SILMO-Oberflächenaktion „OCCT-B-Rep-Zylinder“ erstellt einen echten B-Rep-Zylinder mit Radius 10 mm und Höhe 30 mm.
+- Begrenzungen: Radius und Höhe jeweils 0,01–2000 mm; Volumen und Tessellierung werden vor Übernahme validiert.
+- Konstruktionsquelle `kind: cylinder` wird schema-validiert und bei Undo/Redo sowie Projektwiederherstellung rekonstruiert.
+- Ergänzte Client-, Projektschema- und Browser-End-to-End-Tests; CI muss den aktuellen Commit noch bestätigen.
+- PR #70 bleibt Draft/offen; kein Merge, Deployment oder Release ohne ausdrückliche Freigabe.
