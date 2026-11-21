@@ -57,6 +57,7 @@ test('Toleranzwerte behalten die im Audit belegten Werte', () => {
   assert.equal(tolerances.CLICK_CONTOUR_STRAIGHTEN_MIN_DISTANCE_WORLD_UNITS, 1e-4);
   assert.equal(tolerances.SKETCH_POLYLINE_DEGENERATE_LENGTH_SQUARED_WORLD_UNITS2, 1e-12);
   assert.equal(tolerances.FREEFORM_MIN_AREA_WORLD_UNITS2, 1e-4);
+  assert.equal(tolerances.IMAGE_MIN_COMPONENT_PIXEL_COUNT, 4);
   assert.equal(tolerances.IMAGE_MIN_COMPONENT_AREA_FRACTION, 0.000025);
   assert.equal(tolerances.IMAGE_CONTOUR_SIMPLIFICATION_TOLERANCE_PIXELS, 1.1);
   assert.equal(tolerances.IMAGE_MIN_PRINT_CONTOUR_AREA_MM2, 0.01);
