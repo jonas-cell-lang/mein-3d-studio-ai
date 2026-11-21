@@ -1095,7 +1095,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       list.disabled = result.edge.length === 0;
       apply.disabled = true;
       $('toggleOcctEdgePick').disabled = visibleIndices.size === 0;
-      $('occtTopologySummary').textContent = result.face.length + ' echte B-Rep-Flächen, ' + result.edge.length + ' native Kanten und ' + visibleIndices.size + ' direkt auswählbare Kanten geladen.';
+      $('occtTopologySummary').textContent = result.face.length + ' echte B-Rep-Flächen und ' + result.edge.length + ' echte B-Rep-Kanten; ' + visibleIndices.size + ' davon direkt auswählbar.';
       window.__silmoOcctLastSubShapes = result;
       window.__silmoOcctLastWireframe = wireframe;
       status.textContent = 'Topologie geladen. Aktiviere die 3D-Kantenauswahl und klicke direkt auf eine Kante – alternativ kannst du die Liste verwenden.';
