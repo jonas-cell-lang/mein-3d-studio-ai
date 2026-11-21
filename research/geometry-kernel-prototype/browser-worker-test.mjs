@@ -29,6 +29,22 @@ try {
     && result.booleanStress.positionValues > 0
     && result.booleanStress.indexValues > 0,
   "worker boolean stress result did not produce a usable mesh");
+  assert.equal(result.patternedStress?.holes, 40, "worker did not run the 40-hole pattern");
+  assert.equal(result.patternedStress?.solidCount, 1, "40-hole result did not retain one solid");
+  assert.ok(Math.abs(result.patternedStress.volume - result.patternedStress.expectedVolume) < 1e-6,
+    "40-hole pattern has incorrect analytic volume");
+  assert.ok(result.patternedStress.triangleCount > 0
+    && result.patternedStress.positionValues > 0
+    && result.patternedStress.indexValues > 0,
+  "40-hole pattern did not produce a usable mesh");
+  assert.equal(result.thinWallStress?.thicknessMM, 1.2, "worker did not test the thin plate");
+  assert.equal(result.thinWallStress?.solidCount, 1, "thin-wall result did not retain one solid");
+  assert.ok(Math.abs(result.thinWallStress.volume - result.thinWallStress.expectedVolume) < 1e-6,
+    "thin-wall result has incorrect analytic volume");
+  assert.ok(result.thinWallStress.triangleCount > 0, "thin-wall result did not tessellate");
+  assert.equal(result.releaseAndReuse?.status, "passed", "kernel could not be reused after releaseAll");
+  assert.ok(Math.abs(result.releaseAndReuse.boxVolume - 8) < 1e-7,
+    "kernel reuse returned incorrect geometry");
   assert.deepEqual(errors, [], "browser reported worker, JavaScript, or console errors");
   console.log(JSON.stringify({ status, ...result }, null, 2));
 } finally {
