@@ -285,3 +285,11 @@ Die Mindestflächenprüfung verwendet zusätzlich `IMAGE_MIN_AREA_COMPARISON_EPS
 - Alle drei Werte behalten den bisherigen Zahlenwert `1e-12`; die Änderung trennt ausschliesslich ihre Dimension und fachliche Bedeutung.
 - `src/project-schema.js` erhält die zentrale Toleranz-API explizit. Das Laufzeit-Ladeschema lädt `src/tolerances.js` bereits vor `src/project-schema.js`.
 - Unit-Tests sichern die drei Werte und nehmen `project-schema.js` in den Laufzeit-Verwendungs-Audit auf. Die bestehenden positiven und negativen Projektimporttests bleiben Regressionstests.
+
+
+### 3.14 Image-Studio: Konturvereinfachung im Pixelraum (21.11.2026)
+- Die Ramer-Douglas-Peucker-Vereinfachung der aus dem Bild extrahierten Konturen verwendet `IMAGE_CONTOUR_SIMPLIFICATION_TOLERANCE_PIXELS = 1.1`.
+- Der Wert wird auf Konturpunkten im ursprünglichen Bildpixelraum angewendet, bevor die Punkte mit Bildskalierung und physischer Breite in CAD-Millimeter umgerechnet werden.
+- Der Wert ist deshalb ausdrücklich eine Bildverarbeitungs-/Detailregel und keine Millimeter-, Welteinheiten- oder Kernel-Toleranz.
+- `src/image-studio.js` verwendet die zentrale Konstante; `tests/tolerances.test.cjs` sichert den unveränderten Zahlenwert und den Laufzeit-Verwendungs-Audit.
+- Die bisherige Konturvereinfachung bleibt numerisch unverändert. Weitere Pixel-/Farb-Schwellen werden nicht pauschal in die CAD-Toleranz-API aufgenommen.
