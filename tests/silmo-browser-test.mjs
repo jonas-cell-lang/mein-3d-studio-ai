@@ -2319,6 +2319,12 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const tutorialStartRows = await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click();
   assert.equal(await page.locator('#objects .object-row').count(), tutorialStartRows + 1, 'Tutorial-Testobjekt wurde nicht erstellt');
+  // Hover-Auswahlhilfe ist im Zeichenmodus absichtlich deaktiviert. Der Test
+  // beendet einen eventuell aus vorherigen Tests verbliebenen Zeichenmodus,
+  // bevor er die Maus-Auswahlhilfe prüft.
+  if (!await page.locator('#cancelSketch').isDisabled()) {
+    await page.locator('#cancelSketch').click();
+  }
   const hoverPoint = await page.evaluate(() => window.__silmoHoverTestPoint?.());
   assert.ok(hoverPoint, 'Kein nicht ausgewähltes Testobjekt für die Hover-Auswahlhilfe gefunden');
   await page.mouse.move(hoverPoint.x, hoverPoint.y);
