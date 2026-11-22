@@ -27,7 +27,7 @@
   const rightContainer = document.createElement('div'); rightContainer.className = 'tab-content';
   const paneMap = {};
   const tabDefs = [
-    ['create','Erstellen'],['draw','Zeichnen'],['edit','Bearbeiten'],['measure','Messen & Prüfen'],['project','Projekt'],['print','3D-Druck'],['expert','Expertenzentrum']
+    ['create','Modellieren'],['draw','Zeichnen'],['edit','Bearbeiten'],['measure','Messen & Prüfen'],['project','Projekt'],['print','3D-Druck'],['expert','Expertenzentrum']
   ];
   for (const [key] of tabDefs) {
     paneMap[key] = {};
@@ -377,6 +377,26 @@
   heading(paneMap.expert.right,'Erweiterte Hinweise','expert-only');
   paneMap.expert.right.appendChild(sizeNote);
 
+  // Erweiterte Boolesche CAD-Operationen bleiben vollständig erhalten,
+  // verlassen aber den normalen SketchUp-orientierten Modellierbereich.
+  const booleanCadDetails=document.createElement('details');
+  booleanCadDetails.className='advanced-cad-tools';
+  const booleanCadSummary=document.createElement('summary');
+  booleanCadSummary.textContent='Erweiterte CAD-Formoperationen';
+  booleanCadDetails.appendChild(booleanCadSummary);
+  const booleanHeading=[...paneMap.create.left.querySelectorAll(':scope > h2')].find(h=>h.textContent==='Formen kombinieren');
+  const objectListHeading=[...paneMap.create.left.querySelectorAll(':scope > h2')].find(h=>h.textContent==='Objektliste');
+  if(booleanHeading && objectListHeading){
+    paneMap.expert.left.appendChild(booleanCadDetails);
+    let node=booleanHeading;
+    while(node && node!==objectListHeading){
+      const next=node.nextSibling;
+      booleanCadDetails.appendChild(node);
+      node=next;
+    }
+  }
+
+
 
   // v90: Echte Unterreiter – sichtbar bleibt ausschliesslich der aktive Bereich.
   function addSectionTabs(container, targets, ariaLabel, groupHeadings=false) {
@@ -440,7 +460,7 @@
   }
   const directHeadings=(pane)=>[...pane.querySelectorAll(':scope > h2')];
   const createHeadings=directHeadings(paneMap.create.left);
-  addSectionTabs(paneMap.create.left,createHeadings.map((h,i)=>({label:['Grundformen','Kombinieren','Objektliste'][i]||h.textContent,target:h})),'Unterbereiche Erstellen',true);
+  addSectionTabs(paneMap.create.left,createHeadings.map(h=>({label:h.textContent==='Objekte'?'Grundformen':h.textContent,target:h})),'Unterbereiche Modellieren',true);
   const drawHeadings=directHeadings(paneMap.draw.left);
   addSectionTabs(paneMap.draw.left,drawHeadings.map((h,i)=>({label:['Skizzieren','Kontur','Aktionen'][i]||h.textContent,target:h})),'Unterbereiche Zeichnen',true);
   const projectHeadings=directHeadings(paneMap.project.left);
