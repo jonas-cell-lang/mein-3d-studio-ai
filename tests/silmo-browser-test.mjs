@@ -73,7 +73,23 @@ try {
   }));
   assert.deepEqual(runtimeInfo, { revision: '128', loader: 'function', exporter: 'function' }, 'Lokale Three.js r128 Runtime oder STL-Erweiterungen fehlen');
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v94/, 'Build-Metadaten zeigen nicht v94');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v95/, 'Build-Metadaten zeigen nicht v95');
+  const mainTabs = await page.locator('.tool-tabs [role="tab"]:not([hidden])').allTextContents();
+  assert.deepEqual(mainTabs, ['Erstellen','Zeichnen','Bearbeiten','Messen & Prüfen','Projekt','3D-Druck'], 'Hauptreiter sind nicht vollständig oder falsch sortiert');
+  await page.locator('[data-tab="project"]').click();
+  const projectSubtabs = page.locator('#pane-project-left > .inner-tab-nav button');
+  assert.deepEqual(await projectSubtabs.allTextContents(), ['Projektdatei','Import','Export'], 'Projekt-Unterreiter fehlen oder sind falsch sortiert');
+  assert.equal(await page.locator('#saveProjectButton').isVisible(), true, 'Projekt speichern ist nicht im Projekt-Reiter sichtbar');
+  assert.equal(await page.locator('#openProjectButton').isVisible(), true, 'Projekt öffnen ist nicht im Projekt-Reiter sichtbar');
+  await projectSubtabs.nth(1).click();
+  for (const id of ['importModel','importStepModel','stlDropZone']) assert.equal(await page.locator('#'+id).isVisible(), true, id+' ist im Import-Unterreiter nicht sichtbar');
+  await projectSubtabs.nth(2).click();
+  for (const id of ['exportModel','exportStepModel']) assert.equal(await page.locator('#'+id).isVisible(), true, id+' ist im Export-Unterreiter nicht sichtbar');
+  await page.locator('[data-tab="print"]').click();
+  for (const id of ['bedWidth','bedDepth','applyBedSize','runPrintCheck']) assert.equal(await page.locator('#'+id).isVisible(), true, id+' fehlt im 3D-Druck-Reiter');
+  await page.locator('#runPrintCheck').click();
+  assert.match(await page.locator('#printCheckReport').innerText(), /Keine Modelle vorhanden/, 'Druckprüfung behandelt eine leere Szene nicht korrekt');
+  await page.locator('[data-tab="create"]').click();
   assert.equal(await page.evaluate(() => window.SILMOUnits?.mmToWorldUnits(10)), 1, 'Zentrale Einheiten-API ist im Browser nicht verfügbar');
   assert.equal(await page.evaluate(() => window.SILMOUnits?.worldUnitsToMm(1)), 10, 'Zentrale Einheiten-API liefert falsche Millimeterwerte');
   assert.equal(await page.evaluate(() => window.SILMOTolerances?.CSG_GEOMETRY_WORLD_UNITS), 1e-5, 'Zentrale Toleranz-API ist nicht verfügbar oder hat den falschen CSG-Wert');
@@ -701,7 +717,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(Math.abs(visibleDraft.neutralPlane.origin.x - 0.5) < 1e-9 &&
     Math.abs(visibleDraft.neutralPlane.normal.z - 1) < 1e-9,
     'Ursprung oder Normale der frei eingestellten Neutralebene wurden nicht übernommen');
-  await page.locator('[data-tab="print"]').click();
+  await page.locator('[data-tab="project"]').click();
   const draftProjectDownloadPromise = page.waitForEvent('download', { timeout: 10000 });
   await page.locator('#saveProjectButton').click();
   const draftProjectDownload = await draftProjectDownloadPromise;
@@ -769,6 +785,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#objects .object-select').filter({ hasText: 'OCCT-B-Rep-Quader' }).last().evaluate(button =>
     button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
   const [stepDownload] = await Promise.all([
+    await page.locator('#pane-project-left > .inner-tab-nav button').nth(2).click();
     page.waitForEvent('download'),
     page.locator('#exportStepModel').click()
   ]);
@@ -781,6 +798,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.match(exportedStepText, /END-ISO-10303-21;\s*$/i, 'STEP-Export besitzt keinen gültigen Abschluss');
   const beforeStepImportCount = await page.locator('#objects .object-row').count();
   await page.locator('#stepFileInput').setInputFiles({
+    await page.locator('#pane-project-left > .inner-tab-nav button').nth(1).click();
     name: 'silmo-roundtrip.step',
     mimeType: 'application/step',
     buffer: Buffer.from(exportedStepText)
@@ -972,7 +990,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'Redo stellte das OCCT-Cut-Ergebnis nicht als echten B-Rep-Körper wieder her');
 
   // OCCT-Projekt-Roundtrip: echten Cut-Körper speichern und in einem frischen Browserkontext rekonstruieren.
-  await page.locator('[data-tab="print"]').click();
+  await page.locator('[data-tab="project"]').click();
   await page.locator('#saveProjectButton').waitFor({ state: 'visible', timeout: 5000 });
   const occtProjectDownloadPromise = page.waitForEvent('download', { timeout: 10000 });
   await page.locator('#saveProjectButton').click();
@@ -1976,7 +1994,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     return /Skizzenkörper als exakter OCCT-B-Rep erstellt|OCCT-Extrusion nicht verfügbar/.test(text);
   }, null, { timeout: 20000 });
   await examPage.evaluate(()=>window.__silmoTutorialEnterExamForTest());
-  await examPage.locator('[data-tab="print"]').click();
+  await examPage.locator('[data-tab="project"]').click();
+  await examPage.locator('#pane-project-left > .inner-tab-nav button').nth(2).click();
   const examExport=examPage.waitForEvent('download');
   await examPage.locator('#exportModel').click();
   await examExport;
@@ -2123,6 +2142,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   // Aufgabe 26: Projekt sichern, STL exportieren und eine STL direkt in die neue Ablage ziehen.
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(25)),true,'Aufgabe 26 kann nicht geöffnet werden');
   assert.equal(await page.locator('#stlDropZone').count(),1,'STL-Ablagefläche fehlt');
+  await page.locator('#pane-project-left > .inner-tab-nav button').nth(2).click();
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/Downloads-Ordner/,'Aufgabe 26 erklärt den Import aus Downloads nicht');
   const saveDownload=page.waitForEvent('download');
   await page.locator('#saveProjectButton').click();
@@ -2131,10 +2151,12 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const savedProject = JSON.parse(readFileSync(savedProjectPath, 'utf8'));
   assert.equal(savedProject.version, 3, 'Gespeicherte Projekte verwenden nicht mehr Formatversion 3');
   const exportDownload=page.waitForEvent('download');
+  await page.locator('#pane-project-left > .inner-tab-nav button').nth(1).click();
   await page.locator('#exportModel').click();
   await exportDownload;
   const modelCountBeforeImport=await page.locator('#objects .object-row').count();
   await page.locator('#stlDropZone').evaluate(zone=>{
+    // STL-Dateien werden im Import-Unterreiter abgelegt.
     const stl='solid test\\nfacet normal 0 0 1\\nouter loop\\nvertex 0 0 0\\nvertex 10 0 0\\nvertex 0 10 0\\nendloop\\nendfacet\\nendsolid test';
     const transfer=new DataTransfer();
     transfer.items.add(new File([stl],'test-import.stl',{type:'model/stl'}));
@@ -2664,7 +2686,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#booleanUnion').click();
   assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+1,'Verbinden erzeugt nicht genau ein Ergebnisobjekt');
   assert.equal((await page.evaluate(()=>window.__silmoUnionSnapshot())).partCount,2,'Verbundene Form speichert die ursprünglichen Einzelteile nicht');
-  await page.locator('[data-tab="print"]').click();
+  await page.locator('[data-tab="project"]').click();
   const unionDownloadPromise=page.waitForEvent('download');
   await page.locator('#saveProjectButton').click();
   const unionDownload=await unionDownloadPromise;
@@ -2982,7 +3004,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   for (const key of ['parallelOK','perpendicularOK','tangentOK','concentricOK','lengthOK','distanceOK']) assert.equal(relationTest[key],true,'Skizzenbedingung/Bemaßung '+key+' funktioniert nicht');
 
   // Hohl-Loft-Metadaten müssen Speichern und erneutes Öffnen überstehen.
-  await page.locator('[data-tab="print"]').click();
+  await page.locator('[data-tab="project"]').click();
   const hollowLoftDownloadPromise=page.waitForEvent('download');
   await page.locator('#saveProjectButton').click();
   const hollowLoftDownload=await hollowLoftDownloadPromise;
@@ -2994,7 +3016,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const hollowLoftRoundTripPage=await browser.newPage();
   await hollowLoftRoundTripPage.goto(page.url());
   await hollowLoftRoundTripPage.waitForFunction(()=>typeof window.SILMOProjectSchema?.validateProjectEnvelope==='function',null,{timeout:15000});
-  await hollowLoftRoundTripPage.locator('[data-tab="print"]').click();
+  await hollowLoftRoundTripPage.locator('[data-tab="project"]').click();
   await hollowLoftRoundTripPage.locator('#projectFileInput').setInputFiles(hollowLoftSavedPath);
   await hollowLoftRoundTripPage.waitForFunction(()=>window.__silmoLoftMetadataSnapshot?.().some(item=>item.innerContourCount===1&&item.sourceHoleCount===1&&item.sourceReferencesResolve),null,{timeout:15000});
   const restoredHollowLoft=await hollowLoftRoundTripPage.evaluate(()=>window.__silmoLoftMetadataSnapshot());
@@ -3018,7 +3040,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     [[[50,50],[50,55],[55,55],[55,50]]]
   ));
   assert.equal(invalidSketchHole.ok,false,'Innenloch ausserhalb der Aussenkontur wurde akzeptiert');
-  await sketchHolePage.locator('[data-tab="print"]').click();
+  await sketchHolePage.locator('[data-tab="project"]').click();
   const sketchHoleDownloadPromise=sketchHolePage.waitForEvent('download',{timeout:10000});
   await sketchHolePage.locator('#saveProjectButton').click();
   const sketchHoleDownload=await sketchHoleDownloadPromise;
@@ -3165,7 +3187,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(advancedImageState.contourCount,1,'Image-Studio-Kontur wurde nicht geladen');
   // Die Speichern-Funktion liegt im Druck-Reiter. Erst dorthin wechseln,
   // dann sicherstellen, dass der Button wirklich sichtbar und anklickbar ist.
-  await advancedPage.locator('[data-tab="print"]').click();
+  await advancedPage.locator('[data-tab="project"]').click();
   await advancedPage.locator('#saveProjectButton').waitFor({state:'visible',timeout:5000});
   // Diagnose the browser's actual handling of the generated download link.
   await advancedPage.evaluate(() => {
@@ -3241,7 +3263,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.match(await roundTripPage.locator('#status').innerText(),/Positionsdaten müssen das itemSize 3 haben/,'Ungültige Positionsdaten werden nicht mit einer klaren Meldung abgewiesen');
   assert.equal(await roundTripPage.locator('#objects .object-row').count(),savedProject.objects.length,'Ungültige Geometriedaten haben das zuvor geöffnete Projekt verändert');
 
-  await roundTripPage.locator('[data-tab="print"]').click();
+  await roundTripPage.locator('[data-tab="project"]').click();
   await roundTripPage.waitForFunction(() => typeof window.THREE?.STLExporter === 'function', null, {timeout:15000});
   const roundTripExportPromise = roundTripPage.waitForEvent('download',{timeout:5000}).catch(() => null);
   await roundTripPage.locator('#exportModel').click();
