@@ -153,6 +153,9 @@ jobs:
           PY
           touch _site/.nojekyll
 
+      - name: Validate live Pages smoke test script
+        run: node --check scripts/smoke-test-pages.mjs
+
       - name: Upload website artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -173,3 +176,7 @@ jobs:
       - name: Publish website
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify files on the live GitHub Pages website
+        env:
+          SILMO_PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node scripts/smoke-test-pages.mjs
