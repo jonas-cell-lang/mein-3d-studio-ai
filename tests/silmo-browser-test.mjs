@@ -603,7 +603,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     far: window.__silmoOcctFindEdgeAtScreenPoint(point.x + 40, point.y + 40)
   }), edgeScreenPoint);
   assert.equal(edgePickTolerance.near?.edgeIndex, 0,
-    'Die bildschirmbasierte Kantenerkennung verfehlt einen Klick innerhalb der 14-Pixel-Toleranz');
+    'Die bildschirmbasierte Kantenerkennung verfehlt einen Klick innerhalb der 14-Pixel-Toleranz: ' + JSON.stringify(edgePickTolerance));
   assert.equal(edgePickTolerance.far, null,
     'Die bildschirmbasierte Kantenerkennung akzeptiert einen Klick ausserhalb der Toleranz');
   await page.mouse.click(edgeScreenPoint.x + 8, edgeScreenPoint.y + 6);
