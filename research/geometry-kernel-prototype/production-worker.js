@@ -572,6 +572,58 @@ async function execute(method, args) {
     }
   }
 
+  if (method === "draftFaces") {
+    const { shapeId, faceIndices, angleDeg, direction, neutralPlane } = args;
+    const shape = shapes.get(shapeId);
+    if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
+    const validVector = value => value && [value.x, value.y, value.z].every(Number.isFinite) &&
+      Math.hypot(value.x, value.y, value.z) > 1e-9;
+    if (!Array.isArray(faceIndices) || faceIndices.length < 1 || faceIndices.length > 12 ||
+        !faceIndices.every(index => Number.isInteger(index) && index >= 0) ||
+        new Set(faceIndices).size !== faceIndices.length ||
+        !Number.isFinite(angleDeg) || Math.abs(angleDeg) < 0.1 || Math.abs(angleDeg) > 20 ||
+        !validVector(direction) || !validVector(neutralPlane?.origin) ||
+        !validVector(neutralPlane?.normal)) {
+      throw new Error("Flächenneigung benötigt eindeutige Flächen, einen Winkel von 0,1 bis 20 Grad sowie gültige Richtungs- und Neutralebenenvektoren.");
+    }
+    if (kernel.getShapeType(shape) !== "solid") {
+      throw new Error("Flächenneigung ist nur für einen einzelnen OCCT-Solid verfügbar.");
+    }
+    const faces = kernel.getSubShapes(shape, "face");
+    let resultShape = null;
+    try {
+      if (faceIndices.some(index => index >= faces.length)) {
+        throw new Error("Mindestens ein ausgewählter Flächenindex liegt ausserhalb des Körpers.");
+      }
+      const selectedFaces = faceIndices.map(index => faces[index]);
+      const normalize = vector => {
+        const length = Math.hypot(vector.x, vector.y, vector.z);
+        return { x: vector.x / length, y: vector.y / length, z: vector.z / length };
+      };
+      resultShape = kernel.draft(shape, selectedFaces, angleDeg * Math.PI / 180,
+        normalize(direction), {
+          origin: neutralPlane.origin,
+          normal: normalize(neutralPlane.normal)
+        });
+      const volumeMM3 = kernel.getVolume(resultShape);
+      const mesh = serializeMesh(kernel.tessellate(resultShape));
+      if (!Number.isFinite(volumeMM3) || volumeMM3 <= 0 || !kernel.isValid(resultShape)) {
+        throw new Error("OCCT-Flächenneigung lieferte keinen gültigen Solid mit positivem Volumen.");
+      }
+      const resultId = nextShapeId++;
+      shapes.set(resultId, resultShape);
+      resultShape = null;
+      return { shapeId: resultId, volumeMM3, mesh, operation: "draft", faceIndices, angleDeg };
+    } finally {
+      if (resultShape !== null) {
+        try { kernel.release(resultShape); } catch { /* best effort cleanup */ }
+      }
+      for (const face of faces) {
+        try { kernel.release(face); } catch { /* best effort cleanup */ }
+      }
+    }
+  }
+
   if (method === "getVolume") {
     const shape = shapes.get(args.shapeId);
     if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
