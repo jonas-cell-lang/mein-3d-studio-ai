@@ -2368,7 +2368,13 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(selectionAfterDeselect?.selectedId, null,
     'Testobjekt konnte vor der Hover-Prüfung nicht abgewählt werden');
   const hoverPoint = await page.evaluate(() => window.__silmoHoverTestPoint?.());
-  assert.ok(hoverPoint, 'Kein nicht ausgewähltes Testobjekt für die Hover-Auswahlhilfe gefunden');
+  assert.ok(hoverPoint, 'Kein nicht ausgewähltes Testobjekt für die Hover-Auswahlhilfe gefunden. Diagnose: ' +
+    JSON.stringify(await page.evaluate(() => ({
+      model: window.__silmoModelingTestSnapshot?.(),
+      canvas: (() => { const r = document.querySelector('canvas')?.getBoundingClientRect(); return r ? {x:r.x,y:r.y,width:r.width,height:r.height} : null; })(),
+      camera: window.__silmoHoverDebugSnapshot?.() || null,
+      tutorial: (() => { const e=document.querySelector('#tutorialCard'); return e ? {display:getComputedStyle(e).display,visibility:getComputedStyle(e).visibility,rect:(()=>{const r=e.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};})()} : null; })()
+    }))));
   assert.equal(hoverPoint.targetElement, 'CANVAS', 'Hover-Testpunkt liegt nicht auf der 3D-Canvas: ' + JSON.stringify(hoverPoint));
   await page.mouse.move(hoverPoint.x, hoverPoint.y);
   try {
