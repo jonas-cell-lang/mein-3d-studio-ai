@@ -683,7 +683,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   const CSG_EPSILON = window.SILMOTolerances.CSG_GEOMETRY_WORLD_UNITS;
 
   function getOcctSourceDescriptor(obj) {
-    if (['box', 'sphere', 'cylinder', 'cone', 'torus', 'boolean', 'step', 'fillet', 'chamfer'].includes(obj.userData.occtSource?.kind)) {
+    if (['box', 'sphere', 'cylinder', 'cone', 'torus', 'boolean', 'step', 'fillet', 'chamfer', 'draft'].includes(obj.userData.occtSource?.kind)) {
       return JSON.parse(JSON.stringify(obj.userData.occtSource));
     }
     if (obj.userData.sketch?.outlinePoints) {
@@ -1841,6 +1841,16 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       ownedHandles.push(result.shapeId);
       return result;
     }
+    if (source.kind === 'draft' && source.base &&
+        Array.isArray(source.faceIndices) && source.faceIndices.length === 1 &&
+        Number.isFinite(source.angleDeg) && source.direction && source.neutralPlane) {
+      const base = await createOcctShapeFromSource(source.base, ownedHandles);
+      const result = await window.__silmoOcctClient.draftFaces(
+        base.shapeId, source.faceIndices, source.angleDeg, source.direction, source.neutralPlane
+      );
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
     throw new Error('Gespeicherte OCCT-Konstruktionsquelle kann nicht rekonstruiert werden.');
   }
 
@@ -1851,7 +1861,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       return;
     }
     const source = mesh.userData.occtSource;
-    if (source?.kind === 'boolean' || source?.kind === 'fillet' || source?.kind === 'chamfer') {
+    if (source?.kind === 'boolean' || source?.kind === 'fillet' || source?.kind === 'chamfer' || source?.kind === 'draft') {
       const createdHandles = [];
       let rebuiltResult = null;
       try {
@@ -3011,6 +3021,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     <button class="wide" id="toggleOcctFacePick" type="button" disabled>⌖ 3D-Flächenauswahl einschalten</button>
     <div class="field"><label for="occtFaceList">Native Flächen</label><select id="occtFaceList" size="5" disabled style="width:100%;min-height:96px;padding:7px;background:#0b1422;color:#edf4ff;border:1px solid #2b405a;border-radius:8px"></select></div>
     <p class="note" id="occtFaceSummary">Lade zuerst die Topologie eines OCCT-Körpers.</p>
+    <div class="field"><label for="occtDraftAngle">Neigungswinkel (Grad)</label><input id="occtDraftAngle" type="number" min="-20" max="20" step="0.5" value="5"></div>
+    <p class="note">Neigt eine ausgewählte ebene, zylindrische oder konische Fläche. Zugrichtung: +Z. Neutralebene: XY bei Z = 0.</p>
+    <button class="wide primary" id="applyOcctDraft" type="button" disabled>↗ Ausgewählte Fläche neigen</button>
     <div class="panel-rule"></div>
     <h2>OCCT-Kantenbearbeitung</h2>
     <p class="note">Wähle einen nativen OCCT-Körper aus. Lade seine echten B-Rep-Kanten und markiere eine oder mehrere Kanten für Rundungen oder Fasen.</p>
@@ -3028,6 +3041,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   $('loadOcctEdges').onclick = loadSelectedOcctEdges;
   $('occtFaceList').onchange = selectOcctFaceFromList;
   $('toggleOcctFacePick').onclick = toggleOcctFacePickMode;
+  $('applyOcctDraft').onclick = applySelectedOcctDraft;
   $('toggleOcctEdgePick').onclick = toggleOcctEdgePickMode;
   $('occtEdgeList').onchange = syncOcctEdgeSelectionFromList;
   $('applyOcctFillet').onclick = applySelectedOcctFillet;
