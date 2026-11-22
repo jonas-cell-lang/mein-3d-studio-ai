@@ -269,6 +269,8 @@
   const actionWrap=document.createElement('div');actionWrap.className='cad-draw-actions';actionWrap.append(startSketchButton,createSketchButton,cancelSketchButton);
   paneMap.draw.left.insertBefore(clickContourPanel,contourToolsHeading);
   paneMap.draw.left.insertBefore(sketchLockNote,contourToolsHeading);
+  paneMap.draw.left.insertBefore(pickFacePlaneButton,contourToolsHeading);
+  paneMap.draw.left.insertBefore(pickFacePlaneNote,contourToolsHeading);
   paneMap.draw.left.insertBefore(actionWrap,contourToolsHeading);
   paneMap.draw.left.insertBefore(sketchStatus,contourToolsHeading);
   // Die Werkzeugauswahl und Parameter liegen nun bewusst rechts; links bleibt die Werkzeugpalette.
