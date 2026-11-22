@@ -3529,10 +3529,20 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           let visibleRoot = visibleHit?.object || null;
           while (visibleRoot && !objects.includes(visibleRoot)) visibleRoot = visibleRoot.parent;
           if (visibleRoot !== candidate) continue;
+          const screenX = rect.left + (x + 1) * rect.width / 2;
+          const screenY = rect.top + (1 - y) * rect.height / 2;
+          // Nur einen Punkt zurückgeben, an dem die Canvas tatsächlich das
+          // oberste DOM-Element ist. Overlays (z. B. Viewport-Hinweise) dürfen
+          // den synthetischen Mauszeiger sonst abfangen, sodass kein
+          // pointermove auf der 3D-Canvas ankommt.
+          const targetElement = document.elementFromPoint(screenX, screenY);
+          if (targetElement !== canvas && !canvas.contains(targetElement)) continue;
           return {
             objectId: candidate.uuid,
-            x: rect.left + (x + 1) * rect.width / 2,
-            y: rect.top + (1 - y) * rect.height / 2
+            x: screenX,
+            y: screenY,
+            targetElement: targetElement?.id || targetElement?.tagName || null,
+            canvasRect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
           };
         }
       }
