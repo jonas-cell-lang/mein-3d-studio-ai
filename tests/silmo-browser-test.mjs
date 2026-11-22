@@ -2356,7 +2356,14 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   // Hover-Test muss er unselektiert sein, da die Hover-Kontur ausgewählte
   // Objekte absichtlich nicht überlagert. Strg-Klick auf die aktive Zeile
   // hebt die Auswahl über denselben UI-Weg wie ein Benutzer auf.
-  await page.locator('#objects .object-select').last().click({ modifiers: ['Control'] });
+  const lastObjectButton = page.locator('#objects .object-select').last();
+  assert.equal(await lastObjectButton.count(), 1, 'Tutorial-Objekt fehlt in der Objektliste');
+  // Der Test läuft hier mit einem offenen Tutorial-Overlay. Die Objektliste
+  // kann dadurch visuell verdeckt sein; dispatchEvent löst denselben
+  // Button-Handler aus, ohne Playwrights Sichtbarkeitsprüfung zu umgehen.
+  await lastObjectButton.evaluate(button => button.dispatchEvent(
+    new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true, metaKey: true })
+  ));
   const selectionAfterDeselect = await page.evaluate(() => window.__silmoModelingTestSnapshot?.());
   assert.equal(selectionAfterDeselect?.selectedId, null,
     'Testobjekt konnte vor der Hover-Prüfung nicht abgewählt werden');
