@@ -5205,6 +5205,29 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const mod = e.ctrlKey || e.metaKey;
     const key = String(e.key || '').toLowerCase();
 
+    // SketchUp-orientierte Werkzeugkürzel: L = Linie, R = Rechteck,
+    // C = Kreis. Die vorhandenen Skizzierwerkzeuge werden wiederverwendet;
+    // ein bereits aktiver Zeichenmodus wird beim Werkzeugwechsel nicht neu gestartet.
+    if (!mod && !e.altKey && ['l','r','c'].includes(key)) {
+      const toolByShortcut = { l:'line2d', r:'rectangle', c:'circle' };
+      const sketchTool = document.getElementById('sketchTool');
+      const startButton = document.getElementById('startSketch');
+      if (sketchTool && startButton) {
+        e.preventDefault();
+        sketchTool.value = toolByShortcut[key];
+        sketchTool.dispatchEvent(new Event('change', { bubbles:true }));
+        if (!sketchMode) startButton.click();
+        const labels = { l:'Linie', r:'Rechteck', c:'Kreis' };
+        status.textContent = 'Werkzeug aktiv: ' + labels[key] + '. Zeichne im 3D-Fenster.';
+        return;
+      }
+    }
+    if (!mod && key === 'escape' && sketchMode) {
+      e.preventDefault();
+      document.getElementById('cancelSketch')?.click();
+      return;
+    }
+
     // Strg+A / Cmd+A hat Vorrang: niemals Seitentext markieren, sondern
     // alle 3D-Objekte wählen – auch wenn zuvor ein anderes Element Fokus hatte.
     if (mod && (key === 'a' || e.code === 'KeyA')) {
