@@ -212,7 +212,7 @@ test("OCCT client validates native topology and fillet result payloads", async (
         if (message.method === "listSubShapes") {
           this.messages.push(message);
           queueMicrotask(() => this.onmessage({ data: { id: message.id, ok: true, result: {
-            face: [{ index: 0, geometryType: "plane", areaMM2: invalidFaceArea ? Number.NaN : 400 }],
+            face: [{ index: 0, geometryType: "plane", areaMM2: invalidFaceArea ? Number.NaN : 400, centerMM: [10, 10, 10] }],
             edge: [{ index: 0, geometryType: "line", lengthMM: 20 }]
           } } }));
           return;
