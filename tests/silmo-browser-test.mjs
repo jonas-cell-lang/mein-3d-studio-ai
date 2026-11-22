@@ -75,7 +75,8 @@ try {
   assert.equal(await page.locator('#occtFilletPanel').isVisible(), false, 'Alte OCCT-Flächen- und Kantenwerkzeuge sind im Normalmodus sichtbar');
   await page.locator('#modeToggle').click();
   assert.match(await page.locator('#modeToggle').innerText(), /EIN/, 'Erweiterte Funktionen lassen sich für den vollständigen CAD-Test nicht einschalten');
-  assert.equal(await page.locator('#occtFilletPanel').isVisible(), true, 'OCCT-Flächen- und Kantenwerkzeuge bleiben im Expertenmodus verborgen');
+  await showCreateSubtab(0);
+  assert.equal(await page.locator('#occtFilletPanel').isVisible(), true, 'OCCT-Flächen- und Kantenwerkzeuge bleiben im Expertenmodus im Grundformen-Untertab verborgen');
   // SketchUp-orientierte Grundkürzel müssen vorhandene Skizzierwerkzeuge aktivieren.
   await page.keyboard.press('l');
   assert.equal(await page.locator('#sketchTool').inputValue(), 'line2d', 'L aktiviert nicht das Linienwerkzeug');
