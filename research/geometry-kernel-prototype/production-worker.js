@@ -392,7 +392,12 @@ async function execute(method, args) {
             if (!Number.isFinite(areaMM2) || areaMM2 <= 0) {
               throw new Error("OCCT lieferte eine ungültige native Flächenfläche.");
             }
-            return { index, geometryType, areaMM2 };
+            const center = kernel.getSurfaceCenterOfMass(handle);
+            const centerMM = [center.x, center.y, center.z];
+            if (!centerMM.every(Number.isFinite)) {
+              throw new Error("OCCT lieferte einen ungültigen Flächenschwerpunkt.");
+            }
+            return { index, geometryType, areaMM2, centerMM };
           }
           const lengthMM = kernel.curveLength(handle);
           if (!Number.isFinite(lengthMM) || lengthMM <= 0) {
