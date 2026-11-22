@@ -277,6 +277,36 @@ test('OCCT-Konstruktionsrezepte für Quader, Skizzen und Boolesche Körper werde
     assert.throws(() => schema.validateProjectEnvelope(invalidFillet));
   }
 
+  const validChamfer = validProject();
+  validChamfer.objects.push({ occtSource: {
+    kind: 'chamfer', base: { kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20 },
+    edgeIndices: [1, 4], distanceMM: 1.25
+  } });
+  assert.equal(schema.validateProjectEnvelope(validChamfer), validChamfer);
+
+  const validDraft = validProject();
+  validDraft.objects.push({ occtSource: {
+    kind: 'draft', base: { kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20 },
+    faceIndices: [2], angleDeg: -5,
+    direction: { x: 0.25, y: 0, z: 1 },
+    neutralPlane: { origin: { x: 0.5, y: 0, z: 0 }, normal: { x: 0, y: 0, z: 1 } }
+  } });
+  assert.equal(schema.validateProjectEnvelope(validDraft), validDraft);
+
+  for (const invalidSource of [
+    { kind: 'chamfer', base: { kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20 }, edgeIndices: [0, 0], distanceMM: 1 },
+    { kind: 'chamfer', base: { kind: 'unknown' }, edgeIndices: [0], distanceMM: 1 },
+    { kind: 'chamfer', base: { kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20 }, edgeIndices: [0], distanceMM: 0 },
+    { kind: 'draft', base: { kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20 }, faceIndices: [], angleDeg: 5, direction: { x: 0, y: 0, z: 1 }, neutralPlane: { origin: { x: 0, y: 0, z: 0 }, normal: { x: 0, y: 0, z: 1 } } },
+    { kind: 'draft', base: { kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20 }, faceIndices: [0], angleDeg: 0, direction: { x: 0, y: 0, z: 1 }, neutralPlane: { origin: { x: 0, y: 0, z: 0 }, normal: { x: 0, y: 0, z: 1 } } },
+    { kind: 'draft', base: { kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20 }, faceIndices: [0], angleDeg: 5, direction: { x: 0, y: 0, z: 0 }, neutralPlane: { origin: { x: 0, y: 0, z: 0 }, normal: { x: 0, y: 0, z: 1 } } },
+    { kind: 'draft', base: { kind: 'unknown' }, faceIndices: [0], angleDeg: 5, direction: { x: 0, y: 0, z: 1 }, neutralPlane: { origin: { x: 0, y: 0, z: 0 }, normal: { x: 0, y: 0, z: 1 } } }
+  ]) {
+    const invalidRecipe = validProject();
+    invalidRecipe.objects.push({ occtSource: invalidSource });
+    assert.throws(() => schema.validateProjectEnvelope(invalidRecipe));
+  }
+
   const invalidBoolean = structuredClone(project);
   invalidBoolean.objects[4].occtSource.translationsMM[1][0] = 200001;
   assert.throws(() => schema.validateProjectEnvelope(invalidBoolean), /OCCT-Boolean-Konstruktionsdaten/);
