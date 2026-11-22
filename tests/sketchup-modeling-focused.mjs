@@ -28,12 +28,14 @@ try {
   console.log('OCCT-SCHALTER-DIAGNOSE', JSON.stringify(occtState));
   assert.equal(await page.locator('#addOcctBox').isVisible(), true, 'OCCT-Spezialwerkzeug wird beim Einschalten im Modellieren-Reiter nicht eingeblendet: ' + JSON.stringify(occtState));
   await page.locator('[data-tab="draw"]').click();
-  assert.equal(await page.locator('#createContourFrame').isVisible(), true, 'Hohlrahmen-Werkzeug wird beim Einschalten im Zeichnen-Reiter nicht eingeblendet');
+  await page.locator('.inner-tab-nav button').filter({ hasText: 'Kontur' }).click();
+  assert.equal(await page.locator('#createContourFrame').isVisible(), true, 'Hohlrahmen-Werkzeug wird beim Einschalten im Kontur-Unterreiter nicht eingeblendet');
   assert.equal(await page.locator('#subtractSelected').isVisible(), true, 'Subtraktionswerkzeug wird beim Einschalten im Zeichnen-Reiter nicht eingeblendet');
   await page.locator('#modeToggle').click();
   await page.locator('[data-tab="create"]').click();
   assert.equal(await page.locator('#addOcctBox').isVisible(), false, 'OCCT-Spezialwerkzeug wird beim Ausschalten nicht ausgeblendet');
   await page.locator('[data-tab="draw"]').click();
+  await page.locator('.inner-tab-nav button').filter({ hasText: 'Kontur' }).click();
   assert.equal(await page.locator('#createContourFrame').isVisible(), false, 'Hohlrahmen-Werkzeug bleibt nach Ausschalten sichtbar');
   assert.equal(await page.locator('#subtractSelected').isVisible(), false, 'Subtraktionswerkzeug bleibt nach Ausschalten sichtbar');
 
