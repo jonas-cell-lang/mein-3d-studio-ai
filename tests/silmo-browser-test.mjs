@@ -2114,12 +2114,12 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(22)),true,'Aufgabe 23 kann nach Tastenkürzel nicht erneut geöffnet werden');
   await page.locator('#tutorialSkipStep').click();
   assert.match(await page.locator('#tutorialStepLabel').innerText(),/AUFGABE 24 VON 26/,'Schaltfläche überspringt Aufgabe 23 nicht');
-  // Aufgabe 25: Die Anleitung muss auf die getrennten Reiter für Bettgrösse und Prüfung hinweisen.
+  // Aufgabe 25: Die Anleitung bündelt Bettgrösse und Prüfung im 3D-Druck-Reiter.
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(24)),true,'Aufgabe 25 kann nicht geöffnet werden');
   assert.match(await page.locator('#tutorialTitle').innerText(),/Druckbett einstellen und prüfen/,'Aufgabe 25 hat den falschen Titel');
   assert.equal(await page.locator('#tutorialInstructionList li').count(),8,'Aufgabe 25 enthält nicht acht konkrete Schritte');
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/3D-Druck/,'Aufgabe 25 nennt den richtigen Reiter für die Druckbettprüfung nicht');
-  await page.locator('[data-tab="print"]').click();
+
   const bedWidthBefore=Number(await page.locator('#bedWidth').inputValue());
   const bedDepthBefore=Number(await page.locator('#bedDepth').inputValue());
   const targetBedWidth=Math.min(2000,bedWidthBefore+37);
@@ -2141,14 +2141,14 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.waitForFunction(()=>document.querySelector('#tutorialNext')?.disabled===false,null,{timeout:5000});
   assert.match(await page.locator('#tutorialFeedback').innerText(),/Erfolgskontrolle bestanden/,'Aufgabe 25 erkennt die Druckbettprüfung nicht');
   // Ungültige Masse dürfen die letzte gültige Platte nicht unbemerkt überschreiben.
-  await page.locator('[data-tab="print"]').click();
+
   await page.locator('#bedWidth').fill('2');
   await page.locator('#checkBed').click();
   assert.match(await page.locator('#status').innerText(),/Druckbett nicht übernommen/,'Ungültige Druckbettgrösse wird nicht klar abgewiesen');
   const afterInvalidBed=await page.evaluate(()=>window.__silmoBedSnapshot());
   assert.equal(afterInvalidBed.widthMM,targetBedWidth,'Ungültige Breite hat den letzten gültigen Druckbettzustand verändert');
   // Testzustand zurücksetzen: nachfolgende Geometrieprüfungen erwarten das Standardbett 200 × 200 mm.
-  await page.locator('[data-tab="print"]').click();
+
   await page.locator('#bedWidth').fill(String(bedWidthBefore));
   await page.locator('#bedDepth').fill(String(bedDepthBefore));
   await page.locator('#applyBedSize').click();
