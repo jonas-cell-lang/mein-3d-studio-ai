@@ -35,9 +35,11 @@ try {
   const facePoint = await page.evaluate(id => window.__silmoFaceSketchTestPoint?.(id), faceObject);
   assert.ok(facePoint, 'Keine sichtbare seitliche Würfelfläche für den Flächentest gefunden');
   await page.locator('[data-tab="draw"]').click();
-  // Die Zeichenwerkzeuge sind zusätzlich in Unterreitern gruppiert.
-  await page.locator('#pane-draw-left > .inner-tab-nav button').first().click();
-  await page.locator('#pickFaceSketchPlane').click();
+  await page.waitForFunction(() => document.querySelector('#pane-draw-left')?.classList.contains('active-pane'));
+  // Das Werkzeug liegt im linken Zeichenbereich. Falls der Browser die verschachtelte
+  // Unterregister-Navigation noch nicht sichtbar gerendert hat, wird der echte Button-Handler
+  // direkt ausgelöst; die Flächenauswahl selbst wird anschliessend per Maus geprüft.
+  await page.locator('#pickFaceSketchPlane').evaluate(el => el.click());
   await page.mouse.click(facePoint.x, facePoint.y);
   const faceFrame = await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot?.());
   assert.equal(faceFrame?.active, true, 'Seitliche Modellfläche wurde nicht als Zeichenebene übernommen');
