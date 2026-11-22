@@ -19,11 +19,17 @@ try {
   // Der neue Ein/Aus-Schalter blendet Spezialfunktionen wirklich aus und wieder ein.
   assert.match(await page.locator('#modeToggle').innerText(), /AUS/, 'Erweiterte Funktionen sind nicht standardmässig ausgeschaltet');
   assert.equal(await page.locator('#addOcctBox').isVisible(), false, 'OCCT-Spezialwerkzeug ist im Normalmodus sichtbar');
+  assert.equal(await page.locator('#createContourFrame').isVisible(), false, 'Hohlrahmen-Werkzeug ist im Normalmodus sichtbar');
+  assert.equal(await page.locator('#subtractSelected').isVisible(), false, 'Subtraktionswerkzeug ist im Normalmodus sichtbar');
   await page.locator('#modeToggle').click();
   assert.match(await page.locator('#modeToggle').innerText(), /EIN/, 'Schalter zeigt den eingeschalteten Zustand nicht');
   assert.equal(await page.locator('#addOcctBox').isVisible(), true, 'OCCT-Spezialwerkzeug wird beim Einschalten nicht eingeblendet');
+  assert.equal(await page.locator('#createContourFrame').isVisible(), true, 'Hohlrahmen-Werkzeug wird beim Einschalten nicht eingeblendet');
+  assert.equal(await page.locator('#subtractSelected').isVisible(), true, 'Subtraktionswerkzeug wird beim Einschalten nicht eingeblendet');
   await page.locator('#modeToggle').click();
   assert.equal(await page.locator('#addOcctBox').isVisible(), false, 'OCCT-Spezialwerkzeug wird beim Ausschalten nicht ausgeblendet');
+  assert.equal(await page.locator('#createContourFrame').isVisible(), false, 'Hohlrahmen-Werkzeug bleibt nach Ausschalten sichtbar');
+  assert.equal(await page.locator('#subtractSelected').isVisible(), false, 'Subtraktionswerkzeug bleibt nach Ausschalten sichtbar');
 
 
   // Erweiterte CAD-Funktionen bleiben erreichbar, sind aber standardmässig im Expertenbereich.
