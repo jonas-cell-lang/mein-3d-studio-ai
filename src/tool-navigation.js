@@ -313,7 +313,8 @@
   const moveHelp=document.createElement('p'); moveHelp.className='note'; moveHelp.textContent='Pfeiltasten bewegen X/Y. Mit Shift wird der Schritt verzehnfacht. Die Schrittweite lässt sich hier einstellen.'; paneMap.edit.left.appendChild(moveHelp);
   heading(paneMap.edit.right,'Position'); put(paneMap.edit.right,'positionFields');
 
-  heading(paneMap.measure.left,'Messen & Prüfen'); put(paneMap.measure.left,'checkBed');
+  heading(paneMap.measure.left,'Objektmessung');
+  const measureIntro=document.createElement('p');measureIntro.className='note';measureIntro.textContent='Wähle ein Modell in der Objektliste. Rechts kannst du Position, exakte Masse in Millimetern, Skalierung und Farbe kontrollieren und anpassen. Native OCCT-Körper lassen sich zusätzlich über „Körper prüfen“ oben technisch vermessen.';paneMap.measure.left.appendChild(measureIntro);
   function addBedButton(pane,key){ const b=document.createElement('button'); b.type='button'; b.className='wide'; b.textContent='⬇ Auf Arbeitsplatte stellen'; b.dataset.bedAction=key; b.addEventListener('click',()=>document.getElementById('dropToBed').click()); pane.appendChild(b); }
   ['create','draw','edit','measure','print','expert'].forEach(key=>addBedButton(paneMap[key].left,key));
   heading(paneMap.measure.right,'Skalierung (%)'); put(paneMap.measure.right,'percentFields');
@@ -337,9 +338,23 @@
   heading(paneMap.project.left,'Modelle exportieren');
   const exportIntro=document.createElement('p');exportIntro.className='note';exportIntro.textContent='Exportiere die ausgewählten Modelle als STL für den Slicer oder als STEP für andere CAD-Programme.';paneMap.project.left.appendChild(exportIntro);
   ['exportModel','exportStepModel'].forEach(id=>put(paneMap.project.left,id));
+  heading(paneMap.project.right,'Dateiformate');
+  const projectFormatNotes=document.createElement('div');projectFormatNotes.className='note';
+  projectFormatNotes.innerHTML='<p><strong> SILMO-Projekt (.json)</strong><br>Enthält Szene, bearbeitbare Modellinformationen und Projektdaten. Zum späteren Weiterarbeiten verwenden.</p><p><strong>STL (.stl)</strong><br>Enthält ein Dreiecksnetz. Ideal für Slicer und 3D-Druck, aber keine vollständige CAD-Konstruktionshistorie.</p><p><strong>STEP (.step / .stp)</strong><br>Für den Austausch präziser CAD-Körper. Die STEP-Funktionen benötigen unterstützte OCCT-Geometrie.</p>';
+  paneMap.project.right.appendChild(projectFormatNotes);
+  heading(paneMap.project.right,'Empfohlener Ablauf');
+  const projectFlow=document.createElement('ol');['Projekt speichern, bevor du grössere Änderungen machst.','STL exportieren, wenn du das Modell slicen oder drucken willst.','STEP verwenden, wenn du präzise CAD-Geometrie weitergeben möchtest.','Eine frühere JSON-Projektdatei über „Projekt öffnen“ wieder laden.'].forEach(item=>{const li=document.createElement('li');li.textContent=item;projectFlow.appendChild(li);});
+  paneMap.project.right.appendChild(projectFlow);
+
+  heading(paneMap.print.right,'Vor dem Drucken');
+  const printGuide=document.createElement('ol');['Druckbettgrösse passend zum Drucker einstellen.','Modelle bei Bedarf auf die Arbeitsplatte stellen.','Druckbettprüfung ausführen, damit Modelle innerhalb der Platte liegen.','Zusätzlich die Druckmodell-Prüfung starten und Warnungen kontrollieren.'].forEach(item=>{const li=document.createElement('li');li.textContent=item;printGuide.appendChild(li);});
+  paneMap.print.right.appendChild(printGuide);
+  const printLimit=document.createElement('p');printLimit.className='note';printLimit.textContent='Die automatische Prüfung ist eine Vorprüfung. Sie ersetzt keinen Slicer und garantiert nicht, dass jedes Modell fehlerfrei gedruckt werden kann.';paneMap.print.right.appendChild(printLimit);
 
   heading(paneMap.print.left,'Druckbettgrösse (mm)');
   ['bedWidth','bedDepth','applyBedSize'].forEach(id=>put(paneMap.print.left,id));
+  heading(paneMap.print.left,'Druckbettprüfung');
+  put(paneMap.print.left,'checkBed');
   paneMap.print.left.appendChild(bedNote);
   heading(paneMap.print.left,'Druckmodell prüfen');
   const printCheckButton = document.createElement('button');
