@@ -35,6 +35,7 @@ try {
   await page.waitForFunction(() => window.__silmoHoverSnapshot?.().outlineVisible === true, null, { timeout: 5000 });
   const hoverState = await page.evaluate(() => window.__silmoHoverSnapshot());
   assert.equal(hoverState.objectId, hoverPoint.objectId, 'Die blaue Kontur gehört nicht zum Objekt unter dem Mauszeiger');
+  await page.screenshot({ path: 'test-results/sketchup-hover-preview.png', fullPage: true });
   await page.mouse.move(2, 2);
   await page.waitForFunction(() => window.__silmoHoverSnapshot?.().outlineVisible === false, null, { timeout: 3000 });
 
