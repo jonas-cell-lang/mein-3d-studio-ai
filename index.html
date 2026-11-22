@@ -3373,7 +3373,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     hoverObject = null;
   }
   function updateHoverOutline(event) {
-    if (event.pointerType !== 'mouse' || sketchMode || dragging) return;
+    if (event.pointerType !== 'mouse' || sketchMode || dragging) {
+      clearHoverOutline();
+      return;
+    }
     setPointerRay(event);
     const hit = raycaster.intersectObjects(objects, false)
       .find(entry => entry.object !== selected && !selectedObjects.includes(entry.object));
@@ -3401,16 +3404,24 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     outlineVisible: !!hoverOutline && hoverOutline.visible
   });
   window.__silmoHoverTestPoint = () => {
-    const candidate = objects.find(obj => obj !== selected && !selectedObjects.includes(obj));
-    if (!candidate) return null;
-    const center = new THREE.Box3().setFromObject(candidate).getCenter(new THREE.Vector3()).project(camera);
     const rect = canvas.getBoundingClientRect();
-    if (center.z < -1 || center.z > 1 || !rect.width || !rect.height) return null;
-    return {
-      objectId: candidate.uuid,
-      x: rect.left + (center.x + 1) * rect.width / 2,
-      y: rect.top + (1 - center.y) * rect.height / 2
-    };
+    if (!rect.width || !rect.height) return null;
+    for (const candidate of objects) {
+      if (candidate === selected || selectedObjects.includes(candidate)) continue;
+      const center = new THREE.Box3().setFromObject(candidate).getCenter(new THREE.Vector3()).project(camera);
+      if (center.z < -1 || center.z > 1) continue;
+      pointerNDC.set(center.x, center.y);
+      raycaster.setFromCamera(pointerNDC, camera);
+      const visibleHit = raycaster.intersectObjects(objects, false)
+        .find(entry => entry.object !== selected && !selectedObjects.includes(entry.object));
+      if (visibleHit?.object !== candidate) continue;
+      return {
+        objectId: candidate.uuid,
+        x: rect.left + (center.x + 1) * rect.width / 2,
+        y: rect.top + (1 - center.y) * rect.height / 2
+      };
+    }
+    return null;
   };
 
   let sketchPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
@@ -4683,6 +4694,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
 
   canvas.addEventListener('pointerdown', e => {
+    clearHoverOutline();
     if (sketchMode && clickContourMode) {
       if (e.cancelable) e.preventDefault();
       e.stopPropagation();
