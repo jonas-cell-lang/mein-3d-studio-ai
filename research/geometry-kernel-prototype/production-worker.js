@@ -473,14 +473,17 @@ async function execute(method, args) {
     const { shapeId, edgeIndices, radiusMM } = args;
     const shape = shapes.get(shapeId);
     if (!shape) throw new Error("OCCT-Körperkennung ist unbekannt oder wurde freigegeben.");
+    if (!Array.isArray(edgeIndices) || edgeIndices.length < 1 || edgeIndices.length > 12 ||
+        !edgeIndices.every(index => Number.isInteger(index) && index >= 0) ||
+        new Set(edgeIndices).size !== edgeIndices.length) {
+      throw new Error("Kantenrundung benötigt eindeutige Kantenindizes und Radien von 0,01 bis 2000 mm je Kante.");
+    }
     const validRadius = value => Number.isFinite(value) && value >= 0.01 && value <= 2000;
     const validRadii = typeof radiusMM === "number"
       ? validRadius(radiusMM)
       : Array.isArray(radiusMM) && radiusMM.length === edgeIndices.length &&
         radiusMM.every(value => value && validRadius(value.start) && validRadius(value.end));
-    if (!Array.isArray(edgeIndices) || edgeIndices.length < 1 || edgeIndices.length > 12 ||
-        !edgeIndices.every(index => Number.isInteger(index) && index >= 0) ||
-        new Set(edgeIndices).size !== edgeIndices.length || !validRadii) {
+    if (!validRadii) {
       throw new Error("Kantenrundung benötigt eindeutige Kantenindizes und Radien von 0,01 bis 2000 mm je Kante.");
     }
     if (kernel.getShapeType(shape) !== "solid") {
@@ -501,7 +504,7 @@ async function execute(method, args) {
       if (!Number.isFinite(volumeMM3) || volumeMM3 <= 0 ||
           !kernel.isValid(resultShape) ||
           positions.length < 9 || positions.length % 3 !== 0 ||
-          !Array.from(positions).every(Number.isFinite) ||
+          !positions.every(Number.isFinite) ||
           indices.length < 3 || indices.length % 3 !== 0 ||
           !indices.every(index => index < positions.length / 3) ||
           mesh.triangleCount !== indices.length / 3) {
@@ -551,7 +554,7 @@ async function execute(method, args) {
           positions.length < 9 || positions.length % 3 !== 0 ||
           !Array.from(positions).every(Number.isFinite) ||
           indices.length < 3 || indices.length % 3 !== 0 ||
-          !Array.from(indices).every(index => Number.isInteger(index) && index >= 0 && index < positions.length / 3) ||
+          !indices.every(index => index < positions.length / 3) ||
           mesh.triangleCount !== indices.length / 3) {
         throw new Error("OCCT-Kantenfase lieferte keinen gültigen Solid mit positivem Volumen und gültigem Dreiecksnetz.");
       }
