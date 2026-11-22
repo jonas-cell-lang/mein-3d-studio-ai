@@ -24,7 +24,9 @@ try {
   await page.locator('#modeToggle').click();
   assert.match(await page.locator('#modeToggle').innerText(), /EIN/, 'Schalter zeigt den eingeschalteten Zustand nicht');
   await page.locator('[data-tab="create"]').click();
-  assert.equal(await page.locator('#addOcctBox').isVisible(), true, 'OCCT-Spezialwerkzeug wird beim Einschalten im Modellieren-Reiter nicht eingeblendet');
+  const occtState = await page.locator('#addOcctBox').evaluate(el => ({ elementClass: el.className, bodyClass: document.body.className, display: getComputedStyle(el).display, visibility: getComputedStyle(el).visibility, paneClass: el.closest('.tab-pane')?.className, parentClass: el.parentElement?.className }));
+  console.log('OCCT-SCHALTER-DIAGNOSE', JSON.stringify(occtState));
+  assert.equal(await page.locator('#addOcctBox').isVisible(), true, 'OCCT-Spezialwerkzeug wird beim Einschalten im Modellieren-Reiter nicht eingeblendet: ' + JSON.stringify(occtState));
   await page.locator('[data-tab="draw"]').click();
   assert.equal(await page.locator('#createContourFrame').isVisible(), true, 'Hohlrahmen-Werkzeug wird beim Einschalten im Zeichnen-Reiter nicht eingeblendet');
   assert.equal(await page.locator('#subtractSelected').isVisible(), true, 'Subtraktionswerkzeug wird beim Einschalten im Zeichnen-Reiter nicht eingeblendet');
