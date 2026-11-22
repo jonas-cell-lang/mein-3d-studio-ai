@@ -784,8 +784,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   // STEP-Export und anschliessender Import über die echte SILMO-Dateiauswahl.
   await page.locator('#objects .object-select').filter({ hasText: 'OCCT-B-Rep-Quader' }).last().evaluate(button =>
     button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  await page.locator('#pane-project-left > .inner-tab-nav button').nth(2).click();
   const [stepDownload] = await Promise.all([
-    await page.locator('#pane-project-left > .inner-tab-nav button').nth(2).click();
     page.waitForEvent('download'),
     page.locator('#exportStepModel').click()
   ]);
@@ -797,6 +797,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.match(exportedStepText, /^ISO-10303-21/i, 'STEP-Export enthält keinen ISO-10303-21-Header');
   assert.match(exportedStepText, /END-ISO-10303-21;\s*$/i, 'STEP-Export besitzt keinen gültigen Abschluss');
   const beforeStepImportCount = await page.locator('#objects .object-row').count();
+  await page.locator('#pane-project-left > .inner-tab-nav button').nth(1).click();
   await page.locator('#stepFileInput').setInputFiles({
     await page.locator('#pane-project-left > .inner-tab-nav button').nth(1).click();
     name: 'silmo-roundtrip.step',
@@ -2142,7 +2143,6 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   // Aufgabe 26: Projekt sichern, STL exportieren und eine STL direkt in die neue Ablage ziehen.
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(25)),true,'Aufgabe 26 kann nicht geöffnet werden');
   assert.equal(await page.locator('#stlDropZone').count(),1,'STL-Ablagefläche fehlt');
-  await page.locator('#pane-project-left > .inner-tab-nav button').nth(2).click();
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/Downloads-Ordner/,'Aufgabe 26 erklärt den Import aus Downloads nicht');
   const saveDownload=page.waitForEvent('download');
   await page.locator('#saveProjectButton').click();
@@ -2151,9 +2151,10 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const savedProject = JSON.parse(readFileSync(savedProjectPath, 'utf8'));
   assert.equal(savedProject.version, 3, 'Gespeicherte Projekte verwenden nicht mehr Formatversion 3');
   const exportDownload=page.waitForEvent('download');
-  await page.locator('#pane-project-left > .inner-tab-nav button').nth(1).click();
+  await page.locator('#pane-project-left > .inner-tab-nav button').nth(2).click();
   await page.locator('#exportModel').click();
   await exportDownload;
+  await page.locator('#pane-project-left > .inner-tab-nav button').nth(1).click();
   const modelCountBeforeImport=await page.locator('#objects .object-row').count();
   await page.locator('#stlDropZone').evaluate(zone=>{
     // STL-Dateien werden im Import-Unterreiter abgelegt.
