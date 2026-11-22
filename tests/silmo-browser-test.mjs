@@ -58,8 +58,31 @@ async function showDrawLeftSubtab(index) {
   await pane.waitFor({ state: 'visible' });
   const tabs = pane.locator(':scope > .inner-tab-nav button');
   await tabs.nth(index).waitFor({ state: 'visible' });
+  const tabLabels = await tabs.allTextContents();
   await tabs.nth(index).click();
   await pane.locator('.inner-tab-panel').nth(index).waitFor({ state: 'visible' });
+  const targetId = index === 0 ? '#pickFaceSketchPlane' : null;
+  if (targetId && !(await page.locator(targetId).isVisible())) {
+    const diagnostic = await pane.evaluate(root => ({
+      tabs: [...root.querySelectorAll(':scope > .inner-tab-nav button')].map(button => ({
+        label: button.textContent.trim(), selected: button.getAttribute('aria-selected')
+      })),
+      panels: [...root.querySelectorAll(':scope > .inner-tab-panel')].map((panel, panelIndex) => ({
+        panelIndex, hidden: panel.hidden,
+        headings: [...panel.querySelectorAll(':scope > h2')].map(heading => heading.textContent.trim()),
+        containsFacePicker: !!panel.querySelector('#pickFaceSketchPlane')
+      })),
+      facePicker: (() => {
+        const button = root.querySelector('#pickFaceSketchPlane');
+        if (!button) return null;
+        const style = getComputedStyle(button);
+        return { parentId: button.parentElement?.id, parentClass: button.parentElement?.className,
+          hidden: button.hidden, display: style.display, visibility: style.visibility };
+      })()
+    }));
+    throw new Error('Flächenwahl nach Aktivierung des Zeichen-Unterreiters nicht sichtbar. ' +
+      JSON.stringify({ requestedIndex: index, tabLabels, diagnostic }));
+  }
 }
 async function waitForSelectedSketchOcct() {
   await page.waitForFunction(() => window.__silmoSketchSnapshot()?.geometryKernel === 'occt-wasm', null, { timeout: 45000 });
