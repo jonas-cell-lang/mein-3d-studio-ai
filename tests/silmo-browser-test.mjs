@@ -2983,8 +2983,11 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await createSubtabs.count(),2,'SketchUp-Modellieren muss Grundformen und Objektliste als zwei Unterreiter zeigen');
   assert.match(await createSubtabs.nth(0).innerText(),/Grundformen/,'Grundformen-Unterreiter fehlt');
   assert.match(await createSubtabs.nth(1).innerText(),/Objektliste/,'Objektliste-Unterreiter fehlt');
-  assert.equal(await createSubtabs.nth(0).getAttribute('aria-selected'),'true','Grundformen ist beim Öffnen des Modellieren-Bereichs nicht aktiv');
-  assert.equal(await page.locator('#pane-create-left .inner-tab-panel').nth(0).isVisible(),true,'Grundformen-Bereich ist nicht sichtbar');
+  // Der Modellieren-Bereich darf den zuletzt gewählten Unterreiter behalten.
+  // Für die folgenden Grundformen-Prüfungen wird er ausdrücklich aktiviert.
+  await createSubtabs.nth(0).click();
+  assert.equal(await createSubtabs.nth(0).getAttribute('aria-selected'),'true','Grundformen-Unterreiter lässt sich nicht aktivieren');
+  assert.equal(await page.locator('#pane-create-left .inner-tab-panel').nth(0).isVisible(),true,'Grundformen-Bereich ist nach Aktivierung nicht sichtbar');
   await showExpertBooleanTools();
   assert.equal(await page.locator('#pane-expert-left details.advanced-cad-tools').isVisible(),true,'Erweiterte Boolean-CAD-Werkzeuge fehlen im Expertenzentrum');
   await showCreateSubtab(0);
