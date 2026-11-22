@@ -191,16 +191,17 @@ test("OCCT client inspects a solid and validates the requested body handle", asy
 test("OCCT client validates native topology and fillet result payloads", async () => {
   let worker;
   let invalidFaceArea = false;
+  let faceMeshPayload = {
+    faces: [{ index: 0, mesh: { positions: new Float32Array([0,0,0, 1,0,0, 0,1,0]), indices: new Uint32Array([0,1,2]), triangleCount: 1 } }],
+    triangleCount: 1
+  };
   const client = createClient({
     WorkerClass: class extends FakeWorker {
       constructor(url, options) { super(url, options); worker = this; }
       postMessage(message) {
         if (message.method === "getFaceMeshes") {
           this.messages.push(message);
-          queueMicrotask(() => this.onmessage({ data: { id: message.id, ok: true, result: {
-            faces: [{ index: 0, mesh: { positions: new Float32Array([0,0,0, 1,0,0, 0,1,0]), indices: new Uint32Array([0,1,2]), triangleCount: 1 } }],
-            triangleCount: 1
-          } } }));
+          queueMicrotask(() => this.onmessage({ data: { id: message.id, ok: true, result: faceMeshPayload } }));
           return;
         }
         if (message.method === "listSubShapes") {
@@ -235,6 +236,30 @@ test("OCCT client validates native topology and fillet result payloads", async (
   assert.equal(faceMeshes.faces.length, 1);
   assert.equal(faceMeshes.faces[0].mesh.triangleCount, 1);
   assert.deepEqual(worker.messages.find(message => message.method === "getFaceMeshes").args, { shapeId: 7 });
+  faceMeshPayload = {
+    faces: [{ index: 0, mesh: { positions: new Float32Array([0,0,0, 1,0,0, 0,1,0]), indices: new Uint32Array([0,1,9]), triangleCount: 1 } }],
+    triangleCount: 1
+  };
+  await assert.rejects(client.getFaceMeshes(7), /ungültige native Flächen-Netze/);
+  faceMeshPayload = {
+    faces: [{ index: 0, mesh: { positions: new Float32Array([0,0,0, 1,0,0, 0,1,0]), indices: new Uint32Array([0,1,2]), triangleCount: 2 } }],
+    triangleCount: 2
+  };
+  await assert.rejects(client.getFaceMeshes(7), /ungültige native Flächen-Netze/);
+  faceMeshPayload = {
+    faces: [{ index: 0, mesh: { positions: new Float32Array([NaN,0,0, 1,0,0, 0,1,0]), indices: new Uint32Array([0,1,2]), triangleCount: 1 } }],
+    triangleCount: 1
+  };
+  await assert.rejects(client.getFaceMeshes(7), /ungültige native Flächen-Netze/);
+  faceMeshPayload = {
+    faces: [{ index: 0, mesh: { positions: new Float32Array([0,0,0, 1,0,0, 0,1,0, 2,2,2]), indices: new Uint32Array([0,1,2]), triangleCount: 1 } }],
+    triangleCount: 1
+  };
+  await assert.rejects(client.getFaceMeshes(7), /ungültige native Flächen-Netze/);
+  faceMeshPayload = {
+    faces: [{ index: 0, mesh: { positions: new Float32Array([0,0,0, 1,0,0, 0,1,0]), indices: new Uint32Array([0,1,2]), triangleCount: 1 } }],
+    triangleCount: 1
+  };
   const topology = await client.listSubShapes(7);
   assert.equal(topology.face[0].geometryType, "plane");
   assert.equal(topology.face[0].areaMM2, 400);
