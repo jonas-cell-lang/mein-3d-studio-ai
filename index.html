@@ -3497,19 +3497,41 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     for (const candidate of objects) {
       candidate.updateMatrixWorld(true);
       if (candidate === selected || selectedObjects.includes(candidate)) continue;
-      const center = new THREE.Box3().setFromObject(candidate).getCenter(new THREE.Vector3()).project(camera);
-      if (center.z < -1 || center.z > 1) continue;
-      pointerNDC.set(center.x, center.y);
-      raycaster.setFromCamera(pointerNDC, camera);
-      const visibleHit = raycaster.intersectObjects(objects, true)[0];
-      let visibleRoot = visibleHit?.object || null;
-      while (visibleRoot && !objects.includes(visibleRoot)) visibleRoot = visibleRoot.parent;
-      if (visibleRoot !== candidate) continue;
-      return {
-        objectId: candidate.uuid,
-        x: rect.left + (center.x + 1) * rect.width / 2,
-        y: rect.top + (1 - center.y) * rect.height / 2
-      };
+      const bounds = new THREE.Box3().setFromObject(candidate);
+      if (bounds.isEmpty()) continue;
+      const projected = [];
+      for (const x of [bounds.min.x, bounds.max.x]) {
+        for (const y of [bounds.min.y, bounds.max.y]) {
+          for (const z of [bounds.min.z, bounds.max.z]) {
+            const point = new THREE.Vector3(x, y, z).project(camera);
+            if (point.z >= -1 && point.z <= 1) projected.push(point);
+          }
+        }
+      }
+      if (!projected.length) continue;
+      const minX = Math.max(-0.96, Math.min(...projected.map(point => point.x)));
+      const maxX = Math.min(0.96, Math.max(...projected.map(point => point.x)));
+      const minY = Math.max(-0.96, Math.min(...projected.map(point => point.y)));
+      const maxY = Math.min(0.96, Math.max(...projected.map(point => point.y)));
+      // Die Objektmitte kann von einem bereits ausgewählten Körper verdeckt sein.
+      // Mehrere Punkte im projizierten Begrenzungsrahmen prüfen deshalb echte Sichtbarkeit.
+      for (const fy of [0.2, 0.35, 0.5, 0.65, 0.8]) {
+        for (const fx of [0.2, 0.35, 0.5, 0.65, 0.8]) {
+          const x = minX + (maxX - minX) * fx;
+          const y = minY + (maxY - minY) * fy;
+          pointerNDC.set(x, y);
+          raycaster.setFromCamera(pointerNDC, camera);
+          const visibleHit = raycaster.intersectObjects(objects, true)[0];
+          let visibleRoot = visibleHit?.object || null;
+          while (visibleRoot && !objects.includes(visibleRoot)) visibleRoot = visibleRoot.parent;
+          if (visibleRoot !== candidate) continue;
+          return {
+            objectId: candidate.uuid,
+            x: rect.left + (x + 1) * rect.width / 2,
+            y: rect.top + (1 - y) * rect.height / 2
+          };
+        }
+      }
     }
     return null;
   };
