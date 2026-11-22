@@ -3378,9 +3378,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       return;
     }
     setPointerRay(event);
-    const hit = raycaster.intersectObjects(objects, false)
-      .find(entry => entry.object !== selected && !selectedObjects.includes(entry.object));
-    const nextObject = hit?.object || null;
+    const hit = raycaster.intersectObjects(objects, false)[0];
+    const nextObject = hit && hit.object !== selected && !selectedObjects.includes(hit.object)
+      ? hit.object
+      : null;
     if (nextObject !== hoverObject) {
       clearHoverOutline();
       if (nextObject) {
@@ -3412,8 +3413,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       if (center.z < -1 || center.z > 1) continue;
       pointerNDC.set(center.x, center.y);
       raycaster.setFromCamera(pointerNDC, camera);
-      const visibleHit = raycaster.intersectObjects(objects, false)
-        .find(entry => entry.object !== selected && !selectedObjects.includes(entry.object));
+      const visibleHit = raycaster.intersectObjects(objects, false)[0];
       if (visibleHit?.object !== candidate) continue;
       return {
         objectId: candidate.uuid,
