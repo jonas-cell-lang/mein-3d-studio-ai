@@ -28,7 +28,7 @@ try {
   console.log('OCCT-SCHALTER-DIAGNOSE', JSON.stringify(occtState));
   assert.equal(await page.locator('#addOcctBox').isVisible(), true, 'OCCT-Spezialwerkzeug wird beim Einschalten im Modellieren-Reiter nicht eingeblendet: ' + JSON.stringify(occtState));
   await page.locator('[data-tab="draw"]').click();
-  await page.locator('.inner-tab-nav button').filter({ hasText: 'Kontur' }).click();
+  await page.locator('#pane-draw-left .inner-tab-nav button').filter({ hasText: 'Kontur' }).click();
   assert.equal(await page.locator('#createContourFrame').isVisible(), true, 'Hohlrahmen-Werkzeug wird beim Einschalten im Kontur-Unterreiter nicht eingeblendet');
   assert.equal(await page.locator('#subtractSelected').isVisible(), true, 'Subtraktionswerkzeug wird beim Einschalten im Zeichnen-Reiter nicht eingeblendet');
   await page.locator('#modeToggle').click();
