@@ -651,6 +651,55 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await page.locator('#objects .object-row').count(), chamferSceneStart,
     'Der Testkörper für die sichtbare Kantenfase konnte nicht entfernt werden');
 
+  // Sichtbarer Draft-Workflow: eine native Seitenfläche neigen und Undo/Redo prüfen.
+  const draftSceneStart = await page.locator('#objects .object-row').count();
+  await page.locator('#addOcctBox').click();
+  await page.waitForFunction(() => /^OCCT-B-Rep-Quader erstellt/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  await page.locator('#loadOcctEdges').click();
+  await page.waitForFunction(() => document.querySelectorAll('#occtFaceList option').length === 6, null, { timeout: 45000 });
+  const draftFaceIndex = await page.evaluate(() => {
+    const faces = window.__silmoOcctFaceOverlay?.faces || [];
+    return faces.find(face => Math.abs(face.centerMM?.[0] ?? Infinity) < 1e-5 &&
+      Math.abs((face.centerMM?.[2] ?? -Infinity) - 10) < 1e-5)?.index ?? null;
+  });
+  assert.notEqual(draftFaceIndex, null, 'Der Quader besitzt keine auswählbare vertikale Fläche für den Draft-Test');
+  await page.locator('#occtFaceList').selectOption(String(draftFaceIndex));
+  await page.locator('#occtDraftAngle').fill('5');
+  assert.equal(await page.locator('#applyOcctDraft').isDisabled(), false,
+    'Die gültige native Fläche aktiviert das Flächenneigungswerkzeug nicht');
+  const draftUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.locator('#applyOcctDraft').click();
+  await page.waitForFunction(() => /^Echte OCCT-Flächenneigung erfolgreich/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
+  const visibleDraft = await page.evaluate(async () => ({
+    ...window.__silmoOcctLastDraft,
+    workerVolumeMM3: await window.__silmoOcctClient.getVolume(window.__silmoOcctLastDraft.shapeId)
+  }));
+  assert.ok(visibleDraft.volumeMM3 > 0 && visibleDraft.volumeMM3 < 8000 &&
+    Math.abs(visibleDraft.workerVolumeMM3 - visibleDraft.volumeMM3) < 1e-7,
+    'Sichtbare OCCT-Flächenneigung hat keinen gültigen nativen Solid erzeugt');
+  assert.deepEqual(visibleDraft.faceIndices, [draftFaceIndex]);
+  assert.equal(visibleDraft.angleDeg, 5);
+  await page.keyboard.press('Control+z');
+  await waitForOcctRestore(draftUndoGeneration);
+  const restoredBeforeDraft = await page.evaluate(async () =>
+    window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
+  assert.ok(Math.abs(restoredBeforeDraft - 8000) < 1e-7,
+    'Undo hat den ursprünglichen Quader vor der Flächenneigung nicht rekonstruiert');
+  const draftRedoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+y');
+  await waitForOcctRestore(draftRedoGeneration);
+  const restoredAfterDraft = await page.evaluate(async () =>
+    window.__silmoOcctClient.getVolume(window.__silmoOcctLastRestored.shapeId));
+  assert.ok(Math.abs(restoredAfterDraft - visibleDraft.volumeMM3) < 1e-7,
+    'Redo hat den geneigten OCCT-Körper nicht aus seiner Konstruktionsquelle rekonstruiert');
+  const finalDraftUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
+  await page.keyboard.press('Control+z');
+  await waitForOcctRestore(finalDraftUndoGeneration);
+  await page.locator('#delete').evaluate(button =>
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  assert.equal(await page.locator('#objects .object-row').count(), draftSceneStart,
+    'Der Testkörper für die sichtbare Flächenneigung konnte nicht entfernt werden');
+
   // STEP-Export und anschliessender Import über die echte SILMO-Dateiauswahl.
   await page.locator('#objects .object-select').filter({ hasText: 'OCCT-B-Rep-Quader' }).last().evaluate(button =>
     button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
