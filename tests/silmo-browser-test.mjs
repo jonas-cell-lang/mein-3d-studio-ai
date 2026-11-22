@@ -676,6 +676,13 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#occtDraftNormalZ').fill('1');
   assert.equal(await page.locator('#applyOcctDraft').isDisabled(), false,
     'Die gültige native Fläche aktiviert das Flächenneigungswerkzeug nicht');
+  await page.locator('#occtDraftDirectionX').fill('0');
+  await page.locator('#occtDraftDirectionY').fill('0');
+  await page.locator('#occtDraftDirectionZ').fill('0');
+  await page.locator('#applyOcctDraft').click();
+  await page.waitForFunction(() => /Zugrichtung und Normalenvektor/.test(document.querySelector('#status')?.textContent || ''));
+  await page.locator('#occtDraftDirectionX').fill('0.25');
+  await page.locator('#occtDraftDirectionZ').fill('1');
   const draftUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
   await page.locator('#applyOcctDraft').click();
   await page.waitForFunction(() => /^Echte OCCT-Flächenneigung erfolgreich/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 45000 });
@@ -694,6 +701,20 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(Math.abs(visibleDraft.neutralPlane.origin.x - 0.5) < 1e-9 &&
     Math.abs(visibleDraft.neutralPlane.normal.z - 1) < 1e-9,
     'Ursprung oder Normale der frei eingestellten Neutralebene wurden nicht übernommen');
+  await page.locator('[data-tab="print"]').click();
+  const draftProjectDownloadPromise = page.waitForEvent('download', { timeout: 10000 });
+  await page.locator('#saveProjectButton').click();
+  const draftProjectDownload = await draftProjectDownloadPromise;
+  const draftProjectPath = await draftProjectDownload.path();
+  assert.ok(draftProjectPath && statSync(draftProjectPath).size > 1000,
+    'Projektdatei mit geneigtem OCCT-Körper wurde nicht gespeichert');
+  const savedDraftProject = JSON.parse(readFileSync(draftProjectPath, 'utf8'));
+  const savedDraftSource = savedDraftProject.objects.at(-1).occtSource;
+  assert.equal(savedDraftSource?.kind, 'draft',
+    'Flächenneigungs-Rezept fehlt in der gespeicherten Projektdatei');
+  assert.ok(Math.abs(savedDraftSource.direction.x - 0.25) < 1e-9 &&
+    Math.abs(savedDraftSource.neutralPlane.origin.x - 0.5) < 1e-9,
+    'Zugrichtung oder Neutralebene gingen beim Speichern verloren');
   await page.keyboard.press('Control+z');
   await waitForOcctRestore(draftUndoGeneration);
   const restoredBeforeDraft = await page.evaluate(async () =>
