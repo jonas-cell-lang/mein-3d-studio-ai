@@ -48,7 +48,7 @@ try {
     quaternionAxis[1] - faceFrame.normal[1],
     quaternionAxis[2] - faceFrame.normal[2]
   ) < 1e-5, 'Extrusionsachse ist nicht korrekt auf die gewählte Fläche ausgerichtet');
-  await page.locator('#cancelSketch').click();
+  // Der folgende Escape-Test beendet den Zeichenmodus und setzt die Flächenauswahl zurück.
 
   // 2) Tastenkürzel: L, R und C starten das vorhandene Werkzeug; Escape beendet es.
   for (const [key, tool] of [['l', 'line2d'], ['r', 'rectangle'], ['c', 'circle']]) {
