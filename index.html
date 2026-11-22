@@ -3116,6 +3116,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   // der Events im aktiven DOM vorhanden sind.
   const occtFilletPanel = document.createElement('div');
   occtFilletPanel.id = 'occtFilletPanel';
+  occtFilletPanel.className = 'expert-only';
   occtFilletPanel.innerHTML = `
     <div class="panel-rule"></div>
     <h2>OCCT-Flächenauswahl</h2>
