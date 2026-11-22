@@ -4671,11 +4671,15 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     document.getElementById('clickContourFinish').disabled = true;
     if (gizmoMode === 'rotate') { gizmoMode = 'move'; activeRotationAxis = null; setRotationGuideAxis(null); updateMoveGizmo(); }
     sketchMode = true;
-    // Zeichenhilfe v74: automatisch in eine ruhige Draufsicht wechseln.
-    // So liegt die XY-Zeichenebene flach vor dem Benutzer und lässt sich
-    // mit Maus, Touch oder Apple Pencil wesentlich leichter treffen.
-    targetRX = Math.PI / 2 - 0.035;
-    targetRY = 0;
+    // Auf einer ausgewählten Modellfläche blickt die Kamera frontal auf
+    // deren lokale Zeichenebene. Für normale XY-Skizzen bleibt die Draufsicht.
+    if (faceSketchPlaneActive) {
+      targetRX = Math.asin(Math.max(-1, Math.min(1, faceSketchFrame.normal.z)));
+      targetRY = Math.atan2(faceSketchFrame.normal.x, faceSketchFrame.normal.y);
+    } else {
+      targetRX = Math.PI / 2 - 0.035;
+      targetRY = 0;
+    }
     updateGizmoModeButton();
     rotationAngleLabel.hidden = true;
     updateSketchPlaneFromUI();
@@ -4783,6 +4787,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const point = new THREE.Vector3(x, y, z).project(camera);
     const rect = canvas.getBoundingClientRect();
     return { x: rect.left + (point.x + 1) * rect.width / 2, y: rect.top + (1 - point.y) * rect.height / 2 };
+  };
+  window.__silmoFaceSketchScreenPointForTest = (x, y) => {
+    const world = sketchPointToWorld(new THREE.Vector3(x, y, 0)).project(camera);
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height || world.z < -1 || world.z > 1) return null;
+    return { x: rect.left + (world.x + 1) * rect.width / 2, y: rect.top + (1 - world.y) * rect.height / 2 };
   };
   window.__silmoSketchClampPointForTest = (x, y, z=0) => {
     const point = clampSketchPoint(new THREE.Vector3(x, y, z));
