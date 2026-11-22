@@ -534,7 +534,7 @@
     expertToggle.textContent=opening?'⚙ Expertenzentrum schliessen':'⚙ Expertenzentrum öffnen';
     if(opening){
       document.body.classList.add('expert-mode'); document.body.classList.remove('beginner-mode');
-      const mode=document.getElementById('modeToggle'); if(mode){mode.textContent='Expertenmodus';mode.setAttribute('aria-pressed','true');}
+      const mode=document.getElementById('modeToggle'); if(mode){mode.textContent='Erweiterte Funktionen: EIN';mode.setAttribute('aria-pressed','true');}
       selectTab('expert');
     } else {
       document.body.classList.remove('expert-mode');
