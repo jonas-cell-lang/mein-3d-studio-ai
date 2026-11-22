@@ -715,6 +715,35 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(Math.abs(savedDraftSource.direction.x - 0.25) < 1e-9 &&
     Math.abs(savedDraftSource.neutralPlane.origin.x - 0.5) < 1e-9,
     'Zugrichtung oder Neutralebene gingen beim Speichern verloren');
+  const draftRoundTripPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const draftRoundTripErrors = [];
+  draftRoundTripPage.on('pageerror', error => draftRoundTripErrors.push(error.message));
+  await draftRoundTripPage.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
+  await draftRoundTripPage.waitForSelector('#viewport canvas', { timeout: 20000 });
+  await draftRoundTripPage.locator('#projectFileInput').setInputFiles({
+    name: 'draft-roundtrip.silmo.json',
+    mimeType: 'application/json',
+    buffer: readFileSync(draftProjectPath)
+  });
+  await draftRoundTripPage.waitForFunction(() =>
+    /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 10000 });
+  await draftRoundTripPage.evaluate(async () => {
+    if (window.__silmoOcctProjectRestorePromise) await window.__silmoOcctProjectRestorePromise;
+  });
+  const reopenedDraft = await draftRoundTripPage.evaluate(async () => {
+    const restored = window.__silmoOcctProjectRestoreSummary?.at(-1);
+    return {
+      source: restored?.occtSource,
+      volumeMM3: restored?.shapeId ? await window.__silmoOcctClient.getVolume(restored.shapeId) : null
+    };
+  });
+  assert.equal(reopenedDraft.source?.kind, 'draft',
+    'Gespeicherter geneigter OCCT-Körper wurde beim Projektimport nicht rekonstruiert');
+  assert.ok(Number.isFinite(reopenedDraft.volumeMM3) &&
+    Math.abs(reopenedDraft.volumeMM3 - visibleDraft.volumeMM3) < 1e-7,
+    'Projekt-Roundtrip hat das native Volumen des geneigten Körpers verändert');
+  assert.deepEqual(draftRoundTripErrors, [], 'Projektimport des geneigten Körpers erzeugte Browserfehler');
+  await draftRoundTripPage.close();
   await page.keyboard.press('Control+z');
   await waitForOcctRestore(draftUndoGeneration);
   const restoredBeforeDraft = await page.evaluate(async () =>
