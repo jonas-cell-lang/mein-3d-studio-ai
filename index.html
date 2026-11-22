@@ -1222,14 +1222,44 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const line = overlay?.group.children.find(item => item.userData.occtEdgeIndex === edgeIndex);
       if (!line) return null;
       overlay.group.updateMatrixWorld(true);
+      camera.updateMatrixWorld(true);
       const attr = line.geometry.getAttribute('position');
-      const point = new THREE.Vector3().fromBufferAttribute(attr, Math.floor(attr.count / 2));
-      point.applyMatrix4(line.matrixWorld).project(camera);
       const rect = canvas.getBoundingClientRect();
-      return {
-        x: rect.left + (point.x + 1) * rect.width / 2,
-        y: rect.top + (1 - point.y) * rect.height / 2
+      if (!attr || attr.count < 2 || !rect.width || !rect.height) return null;
+      const project = index => {
+        const point = new THREE.Vector3().fromBufferAttribute(attr, index)
+          .applyMatrix4(line.matrixWorld).project(camera);
+        if (point.z < -1 || point.z > 1) return null;
+        return {
+          x: rect.left + (point.x + 1) * rect.width / 2,
+          y: rect.top + (1 - point.y) * rect.height / 2
+        };
       };
+      // Einen tatsächlich im Kamerabereich liegenden Kantenabschnitt wählen.
+      // Der alte Median-Vertex konnte bei perspektivisch abgeschnittenen Kanten
+      // ausserhalb des sichtbaren Bereichs liegen und dadurch den Test/Klick verfehlen.
+      const visibleSegments = [];
+      for (let i = 0; i < attr.count - 1; i++) {
+        const a = project(i), b = project(i + 1);
+        if (!a || !b) continue;
+        const length = Math.hypot(b.x - a.x, b.y - a.y);
+        if (length > 1) visibleSegments.push({ a, b, length });
+      }
+      if (!visibleSegments.length) return null;
+      const target = visibleSegments.reduce((sum, segment) => sum + segment.length, 0) / 2;
+      let traversed = 0;
+      for (const segment of visibleSegments) {
+        if (traversed + segment.length >= target) {
+          const t = Math.max(0, Math.min(1, (target - traversed) / segment.length));
+          return {
+            x: segment.a.x + (segment.b.x - segment.a.x) * t,
+            y: segment.a.y + (segment.b.y - segment.a.y) * t
+          };
+        }
+        traversed += segment.length;
+      }
+      const last = visibleSegments[visibleSegments.length - 1];
+      return { x: (last.a.x + last.b.x) / 2, y: (last.a.y + last.b.y) / 2 };
     };
     $('toggleOcctEdgePick').disabled = false;
     $('toggleOcctEdgePick').textContent = '⌖ 3D-Kantenauswahl einschalten';
