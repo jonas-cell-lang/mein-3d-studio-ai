@@ -9,6 +9,7 @@ on:
       - main
       - fix/v35-selection-tools
       - fix/v38-diagnostics-shortcuts-grouping
+      - phase1/history-foundation
   workflow_dispatch:
 
 permissions:
@@ -17,7 +18,7 @@ permissions:
 jobs:
   browser-test:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,11 +28,15 @@ jobs:
           node-version: 22
       - name: Install locked runtime dependencies
         run: npm ci
+      - name: Install pinned OCCT worker dependencies
+        run: npm install --prefix research/geometry-kernel-prototype --no-audit --no-fund
+      - name: Bundle production OCCT worker
+        run: npm run build:worker --prefix research/geometry-kernel-prototype
 
       - name: Install Playwright
         run: |
-          npm install --no-save playwright@1.55.0
-          npx playwright install --with-deps chromium
+          npm install --no-save playwright@1.65.1
+          npx playwright install --with-deps chromium webkit
 
       - name: Prepare local Three.js runtime
         run: npm run prepare:runtime
@@ -44,5 +49,9 @@ jobs:
           done
           cat /tmp/silmo-http.log
           exit 1
-      - name: Test real browser interactions
+      - name: Test Chromium browser interactions
+        run: node tests/silmo-browser-test.mjs
+      - name: Test Safari-compatible WebKit interactions
+        env:
+          SILMO_BROWSER: webkit
         run: node tests/silmo-browser-test.mjs

@@ -96,30 +96,154 @@
     }
   }
 
+  const MAX_INPUT_TRIANGLES = 25000;
+  const MAX_OUTPUT_TRIANGLES = 250000;
+  const MAX_ABSOLUTE_COORDINATE = 10000000;
+
   function polygonsFromMesh(mesh) {
+    if (!mesh || !mesh.isMesh || !mesh.geometry || !mesh.geometry.isBufferGeometry) {
+      throw new TypeError('CSG benötigt zwei gültige Meshes mit BufferGeometry.');
+    }
     mesh.updateMatrixWorld(true);
-    const geom = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
+    const geom = mesh.geometry;
     const pos = geom.getAttribute('position');
+    const index = geom.index;
+    if (!pos || pos.itemSize !== 3 || pos.normalized === true || !pos.array || pos.array.length !== pos.count * 3) {
+      throw new TypeError('CSG benötigt ein Positionsattribut mit genau drei Komponenten pro Punkt.');
+    }
+    if (index && (index.itemSize !== 1 || index.normalized === true || !index.array || index.array.length !== index.count)) {
+      throw new TypeError('CSG benötigt ein Indexattribut mit genau einem Index pro Eintrag.');
+    }
+    const elementCount = index ? index.count : pos.count;
+    if (!Number.isInteger(elementCount) || elementCount < 3 || elementCount % 3 !== 0) {
+      throw new TypeError('CSG benötigt vollständige Dreiecke und ein gültiges Positionsattribut.');
+    }
+    const triangleCount = elementCount / 3;
+    if (triangleCount > MAX_INPUT_TRIANGLES) {
+      throw new RangeError('CSG-Eingaben sind auf maximal ' + MAX_INPUT_TRIANGLES + ' Dreiecke pro Mesh begrenzt.');
+    }
     const world = mesh.matrixWorld;
+    if (!world.elements.every(Number.isFinite)) throw new TypeError('CSG-Transformation enthält ungültige Werte.');
+    const reverseWinding = world.determinant() < 0;
     const polygons = [];
-    for (let i = 0; i + 2 < pos.count; i += 3) {
+    const vertex = new THREE.Vector3();
+    for (let i = 0; i < elementCount; i += 3) {
       const verts = [];
-      for (let j = 0; j < 3; j++) verts.push(new CSGVertex(new THREE.Vector3(pos.getX(i+j),pos.getY(i+j),pos.getZ(i+j)).applyMatrix4(world)));
+      for (let j = 0; j < 3; j++) {
+        const vertexIndex = index ? index.getX(i + j) : i + j;
+        if (!Number.isInteger(vertexIndex) || vertexIndex < 0 || vertexIndex >= pos.count) {
+          throw new TypeError('CSG-Index verweist ausserhalb des Positionsattributs.');
+        }
+        const x = pos.getX(vertexIndex), y = pos.getY(vertexIndex), z = pos.getZ(vertexIndex);
+        if (![x, y, z].every(Number.isFinite) ||
+            Math.max(Math.abs(x), Math.abs(y), Math.abs(z)) > MAX_ABSOLUTE_COORDINATE) {
+          throw new TypeError('CSG-Eingabe enthält ungültige oder zu grosse Koordinaten.');
+        }
+        vertex.set(x, y, z).applyMatrix4(world);
+        if (![vertex.x, vertex.y, vertex.z].every(Number.isFinite) ||
+            Math.max(Math.abs(vertex.x), Math.abs(vertex.y), Math.abs(vertex.z)) > MAX_ABSOLUTE_COORDINATE) {
+          throw new TypeError('CSG-Weltkoordinaten sind ungültig oder ausserhalb des erlaubten Bereichs.');
+        }
+        verts.push(new CSGVertex(vertex));
+      }
+      if (reverseWinding) [verts[1], verts[2]] = [verts[2], verts[1]];
       const cross = verts[1].pos.clone().sub(verts[0].pos).cross(verts[2].pos.clone().sub(verts[0].pos));
       if (cross.lengthSq() > CSG_EPSILON * CSG_EPSILON) polygons.push(new CSGPolygon(verts));
     }
-    if (geom !== mesh.geometry) geom.dispose();
     if (!polygons.length) throw new Error('Eine Form enthält keine gültigen Dreiecke.');
     return polygons;
   }
 
   function geometryFromPolygons(polygons, localOffset) {
     const coords = [];
+    let outputTriangles = 0;
+
+    // BSP-Schnitte können T-Verbindungen erzeugen: Ein Polygon besitzt eine
+    // lange Kante, während das Nachbarpolygon dieselbe Kante in Teilstücke
+    // zerlegt. Alle Endpunkte auf derselben geometrischen Linie werden deshalb
+    // vor der Triangulierung gesammelt und in beide Polygonränder eingefügt.
+    const lineGroups = new Map();
+    const directionQuantum = tolerances.CSG_LINE_DIRECTION_QUANTUM;
+    const lineQuantum = CSG_EPSILON;
+    function lineInfo(a, b) {
+      const direction = b.clone().sub(a);
+      const length = direction.length();
+      if (!(length > CSG_EPSILON)) return null;
+      direction.multiplyScalar(1 / length);
+      if (direction.x < -directionQuantum ||
+          (Math.abs(direction.x) <= directionQuantum && direction.y < -directionQuantum) ||
+          (Math.abs(direction.x) <= directionQuantum && Math.abs(direction.y) <= directionQuantum && direction.z < 0)) {
+        direction.negate();
+      }
+      const moment = a.clone().cross(direction);
+      const key = [
+        Math.round(direction.x / directionQuantum),
+        Math.round(direction.y / directionQuantum),
+        Math.round(direction.z / directionQuantum),
+        Math.round(moment.x / lineQuantum),
+        Math.round(moment.y / lineQuantum),
+        Math.round(moment.z / lineQuantum)
+      ].join(':');
+      return { key, direction };
+    }
+    polygons.forEach(poly => {
+      for (let i = 0; i < poly.vertices.length; i++) {
+        const a = poly.vertices[i].pos, b = poly.vertices[(i + 1) % poly.vertices.length].pos;
+        const info = lineInfo(a, b);
+        if (!info) continue;
+        let group = lineGroups.get(info.key);
+        if (!group) { group = { direction: info.direction, points: [] }; lineGroups.set(info.key, group); }
+        group.points.push(a, b);
+      }
+    });
+
     polygons.forEach(poly => {
       if (poly.vertices.length < 3) return;
-      for (let i = 2; i < poly.vertices.length; i++) {
-        [poly.vertices[0], poly.vertices[i-1], poly.vertices[i]].forEach(v => {
-          const p = v.pos.clone().sub(localOffset); coords.push(p.x,p.y,p.z);
+      const boundary = [];
+      for (let i = 0; i < poly.vertices.length; i++) {
+        const a = poly.vertices[i].pos;
+        const b = poly.vertices[(i + 1) % poly.vertices.length].pos;
+        boundary.push(a);
+        const info = lineInfo(a, b);
+        const group = info && lineGroups.get(info.key);
+        if (!group) continue;
+        const direction = b.clone().sub(a);
+        const lengthSquared = direction.lengthSq();
+        if (lengthSquared <= CSG_EPSILON * CSG_EPSILON) continue;
+        const candidates = [];
+        const seen = new Set();
+        for (const point of group.points) {
+          const t = point.clone().sub(a).dot(direction) / lengthSquared;
+          if (t <= CSG_EPSILON / Math.sqrt(lengthSquared) ||
+              t >= 1 - CSG_EPSILON / Math.sqrt(lengthSquared)) continue;
+          const projection = a.clone().addScaledVector(direction, t);
+          if (projection.distanceToSquared(point) > CSG_EPSILON * CSG_EPSILON) continue;
+          const key = [
+            Math.round(point.x / CSG_EPSILON),
+            Math.round(point.y / CSG_EPSILON),
+            Math.round(point.z / CSG_EPSILON)
+          ].join(':');
+          if (!seen.has(key)) { seen.add(key); candidates.push({ point, t }); }
+        }
+        candidates.sort((left, right) => left.t - right.t);
+        candidates.forEach(candidate => boundary.push(candidate.point));
+      }
+      if (boundary.length < 3) return;
+      const center = new THREE.Vector3();
+      boundary.forEach(point => center.add(point));
+      center.multiplyScalar(1 / boundary.length);
+      outputTriangles += boundary.length;
+      if (outputTriangles > MAX_OUTPUT_TRIANGLES) {
+        throw new RangeError('CSG-Ergebnis überschreitet die Grenze von ' + MAX_OUTPUT_TRIANGLES + ' Dreiecken.');
+      }
+      for (let i = 0; i < boundary.length; i++) {
+        [center, boundary[i], boundary[(i + 1) % boundary.length]].forEach(point => {
+          const p = point.clone().sub(localOffset);
+          if (![p.x, p.y, p.z].every(Number.isFinite) ||
+              Math.max(Math.abs(p.x), Math.abs(p.y), Math.abs(p.z)) > MAX_ABSOLUTE_COORDINATE) {
+            throw new TypeError('CSG-Ergebnis enthält ungültige oder zu grosse Koordinaten.');
+          }
+          coords.push(p.x,p.y,p.z);
         });
       }
     });
@@ -131,6 +255,9 @@
   }
 
   function combineMeshes(base, tool, operation) {
+    if (operation !== 'union' && operation !== 'subtract') {
+      throw new Error('Unbekannte CSG-Operation: ' + String(operation));
+    }
     const a = new CSGNode(polygonsFromMesh(base));
     const b = new CSGNode(polygonsFromMesh(tool));
     if (operation === 'union') {

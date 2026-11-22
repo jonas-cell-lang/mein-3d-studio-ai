@@ -3,7 +3,7 @@
 **Stand:** 15.11.2026  
 **Ausgangsstand:** v90 – Focused CAD Subtabs  
 **Ablage:** `main` (Dokumentations-Commit; keine Änderung an der App)  
-**Status:** Recherche und Vorauswahl; noch keine SILMO-Integration und noch kein eigener Laufzeit-Benchmark.
+**Status:** Erste produktive OCCT-Worker-Integration (B-Rep-Quader als vertikaler Schnitt) wurde am 21.11.2026 implementiert und durch Unit-, Browser- und OCCT-Worker-CI erfolgreich geprüft. Die vollständige Migration der CAD-Werkzeuge ist ausdrücklich noch offen.
 
 ## 1. Ziel und Entscheidungsregel
 
@@ -193,7 +193,13 @@ Ein kleiner, versionierter Testsatz soll für alle Kerne identisch sein:
 
 Die konkreten Sollwerte werden im Testcode festgehalten. Bei numerischen Resultaten wird eine vorab definierte absolute und relative Toleranz verwendet; sie darf nicht pro Test nachträglich so angepasst werden, dass ein Fehler als Erfolg erscheint.
 
-## 6. Integrationsprinzip für SILMO
+## 6. Erste produktive Integrationsstufe und weitere Schritte
+
+Der Kandidat `occt-wasm` 5.17.2 / OCCT 8.0.1 wird nun nicht mehr nur isoliert getestet: Ein gebündelter Modul-Worker kapselt den Kern, und `src/occt-kernel-client.js` stellt eine SILMO-eigene Schnittstelle bereit. Der erste Produktions-Vertikalschnitt erzeugt einen 20 × 20 × 20-mm-B-Rep-Quader, fragt sein analytisches Volumen im Worker ab und übergibt nur die tessellierte Darstellung an Three.js. Dieser erste Schritt beweist die Verbindung der drei Schichten, nicht die vollständige CAD-Migration.
+
+Danach folgen in dieser Reihenfolge: (1) persistente SILMO-Körperkennung und sichere Freigabe/Lebensdauer, (2) STEP/B-Rep-Persistenz und Projektformat-Migration, (3) Umwandlung vorhandener Skizzenprofile in OCCT-Geometrie, (4) OCCT-Boolean-Operationen mit dem gemeinsamen Testkorpus, (5) Topologieauswahl und Operation-Historie, (6) Fillet/Chamfer, Sweep/Loft und weitere Werkzeuge. Der bisherige BSP-/Mesh-Pfad bleibt bis zu bestandenen Regressionen als Rückfallmöglichkeit erhalten.
+
+## 7. Integrationsprinzip für SILMO
 
 Unabhängig vom gewählten Kern gilt:
 
@@ -206,7 +212,7 @@ Unabhängig vom gewählten Kern gilt:
 7. Die bisherige BSP-CSG-Implementierung bleibt während des Vergleichs unangetastet.
 8. Migration erfolgt erst nach bestandenen Tests und mit Rückfallmöglichkeit.
 
-## 7. Offene Architekturfragen
+## 8. Offene Architekturfragen
 
 - Wie werden SILMO-IDs für Flächen, Kanten und Punkte über Änderungen hinweg stabil gehalten?
 - Wie wird Feature-Historie im SILMO-Dokumentmodell gespeichert?

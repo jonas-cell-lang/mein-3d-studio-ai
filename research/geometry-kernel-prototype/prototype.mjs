@@ -17,6 +17,9 @@ const time = async (name, fn) => {
   timings[name] = Number((performance.now() - t0).toFixed(3));
   return result;
 };
+const solidCount = (shape) => kernel.getShapeType(shape) === "solid"
+  ? 1
+  : kernel.subShapeCount(shape, "solid");
 
 try {
   const box = await time("box", () => kernel.makeBox(40, 30, 20));
@@ -39,6 +42,58 @@ try {
   }
   closeTo(kernel.getVolume(fourHolePlate), 6000 - 180 * Math.PI,
     "40x30x5 plate with four radius-3 through-holes");
+
+  // Repeated boolean stress: twelve independently positioned through-holes.
+  const repeatedCutBase = kernel.makeBox(40, 30, 5);
+  let twelveHolePlate = repeatedCutBase;
+  for (const [x, y] of [
+    [6, 7], [14, 7], [22, 7], [30, 7],
+    [6, 15], [14, 15], [22, 15], [30, 15],
+    [6, 23], [14, 23], [22, 23], [30, 23]
+  ]) {
+    const cutter = kernel.translate(kernel.makeCylinder(1, 5.2), x, y, -0.1);
+    twelveHolePlate = kernel.cut(twelveHolePlate, cutter);
+  }
+  closeTo(kernel.getVolume(twelveHolePlate), 6000 - 60 * Math.PI,
+    "40x30x5 plate after twelve sequential radius-1 through-holes");
+  assert.equal(solidCount(twelveHolePlate), 1,
+    "repeated boolean cuts must preserve exactly one solid body");
+  const repeatedCutMesh = kernel.tessellate(twelveHolePlate);
+  assert.ok(repeatedCutMesh.triangleCount > 0,
+    "repeated boolean result must remain tessellatable");
+
+  // Larger patterned-part stress: forty holes in a single 80x50x4 mm plate.
+  const patternedPlate = kernel.makeBox(80, 50, 4);
+  const patternedHoleCount = 40;
+  const patternedHoleResult = await time("forty-hole-pattern", () => {
+    let result = patternedPlate;
+    for (let row = 0; row < 5; row++) {
+      for (let column = 0; column < 8; column++) {
+        const x = 8 + column * 9;
+        const y = 7 + row * 9;
+        const cutter = kernel.translate(kernel.makeCylinder(1.5, 4.2), x, y, -0.1);
+        result = kernel.cut(result, cutter);
+      }
+    }
+    return result;
+  });
+  const patternedExpectedVolume = 80 * 50 * 4 - patternedHoleCount * Math.PI * 1.5 ** 2 * 4;
+  closeTo(kernel.getVolume(patternedHoleResult), patternedExpectedVolume,
+    "80x50x4 mm patterned plate with forty radius-1.5 through-holes");
+  assert.equal(solidCount(patternedHoleResult), 1,
+    "forty-hole patterned plate must retain exactly one solid body");
+  const patternedMesh = await time("forty-hole-tessellation", () => kernel.tessellate(patternedHoleResult));
+  assert.ok(patternedMesh.triangleCount > 0 && patternedMesh.positions.length > 0,
+    "forty-hole patterned plate must remain tessellatable");
+
+  // Thin-wall check: a small through-hole in a 1.2 mm plate.
+  const thinPlate = kernel.makeBox(40, 30, 1.2);
+  const thinPlateCutter = kernel.translate(kernel.makeCylinder(0.5, 1.4), 20, 15, -0.1);
+  const thinPlateWithHole = await time("thin-wall-cut", () => kernel.cut(thinPlate, thinPlateCutter));
+  closeTo(kernel.getVolume(thinPlateWithHole), 40 * 30 * 1.2 - Math.PI * 0.25 * 1.2,
+    "1.2 mm thin plate with radius-0.5 through-hole");
+  assert.equal(solidCount(thinPlateWithHole), 1,
+    "thin-plate boolean result must contain exactly one solid body");
 
   const filletBase = kernel.makeBox(20, 20, 20);
   const edges = kernel.getSubShapes(filletBase, "edge");
@@ -85,6 +140,10 @@ try {
       "analytic box volume and exact bounding extents",
       "boolean subtraction with analytic volume",
       "plate with four through-holes",
+      "twelve sequential through-hole booleans with analytic volume and tessellation",
+      "forty-hole patterned plate with analytic volume, one-solid check and tessellation",
+      "thin-plate through-hole with analytic volume",
+      "boolean results retain one solid body, including compound-root results",
       "fillet and topological sub-shape queries",
       "mesh tessellation",
       "STEP export/import round trip",

@@ -26,6 +26,11 @@ jobs:
       - name: Install pinned prototype dependency
         working-directory: research/geometry-kernel-prototype
         run: npm install --no-audit --no-fund
+      - name: Build production OCCT worker bundle
+        working-directory: research/geometry-kernel-prototype
+        run: |
+          npm run build:worker
+          test -s dist-production/silmo-occt-worker.js
       - name: Run isolated analytic geometry tests
         working-directory: research/geometry-kernel-prototype
         run: npm test

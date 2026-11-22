@@ -18,13 +18,20 @@ Diese Anleitung startet die SILMO-Web-App lokal mit den festgelegten, kostenlose
    npm ci
    ```
 
-4. Die lokalen Three.js-Dateien aus dem installierten Paket vorbereiten:
+4. Den gepinnten OCCT-WASM-Worker-Build installieren und erstellen:
+
+   ```sh
+   npm install --prefix research/geometry-kernel-prototype --no-audit --no-fund
+   npm run build:worker --prefix research/geometry-kernel-prototype
+   ```
+
+5. Die lokalen Laufzeitdateien vorbereiten:
 
    ```sh
    npm run prepare:runtime
    ```
 
-Der Vorbereitungsschritt erstellt den ignorierten Ordner `vendor/three/` mit Three.js r128, STLLoader und STLExporter. Der Ordner wird nicht von Hand bearbeitet.
+Der Vorbereitungsschritt erstellt die ignorierten Ordner `vendor/three/` und `vendor/occt/`. Sie enthalten Three.js r128, die STL-Erweiterungen, den gebündelten OCCT-Worker und `occt-wasm.wasm`. Die generierten Dateien werden nicht von Hand bearbeitet.
 
 ## Start unter macOS und Linux
 
@@ -58,14 +65,16 @@ Bei jedem neuen Checkout oder wenn `node_modules/` bzw. `vendor/` gelöscht wurd
 
 ```sh
 npm ci
+npm install --prefix research/geometry-kernel-prototype --no-audit --no-fund
+npm run build:worker --prefix research/geometry-kernel-prototype
 npm run prepare:runtime
 ```
 
 ## Wichtige Hinweise
 
-- `npm ci` installiert exakt die in `package-lock.json` festgelegte Three.js-Version.
+- `npm ci` installiert exakt die in der Root-`package-lock.json` festgelegte Three.js-Version. Der OCCT-Prototyp verwendet separat direkt gepinnte Paketversionen; `occt-wasm` ist auf 5.17.2 festgelegt.
 - Die Vorbereitung kopiert nur die Three.js-Dateien aus dem installierten Paket in `vendor/three/`; die Quellversion bleibt unverändert.
 - `node_modules/` und `vendor/` sind generierte Ordner und werden nicht eingecheckt.
 - Der lokale Webserver stellt nur Projektdateien bereit. Er verändert weder GitHub noch die öffentliche Live-App.
 - SILMO muss über den lokalen Webserver gestartet werden, nicht durch direktes Öffnen der HTML-Datei (`file://`).
-- Der Browser lädt die Kernbibliotheken nun aus `./vendor/three/` und benötigt dafür kein externes CDN. Die lokalen App-Module umfassen `src/developer-diagnostics.js`, `src/tool-navigation.js`, `src/units.js`, `src/tolerances.js`, `src/csg.js`, `src/project-schema.js`, `src/project-geometry.js`, `src/project-io.js`, `src/tutorial.js` und `src/image-studio.js`.
+- Der Browser lädt Three.js aus `./vendor/three/` und den OCCT-Kern bei Bedarf aus `./vendor/occt/`; beide Runtime-Pfade benötigen kein externes CDN. Die lokalen App-Module umfassen `src/developer-diagnostics.js`, `src/tool-navigation.js`, `src/units.js`, `src/tolerances.js`, `src/csg.js`, `src/project-schema.js`, `src/project-geometry.js`, `src/project-io.js`, `src/tutorial.js` und `src/image-studio.js`, `src/primitive-geometry.js`.

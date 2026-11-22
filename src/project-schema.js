@@ -1,8 +1,9 @@
 (function (root, factory) {
-  const api = factory();
+  const api = factory(root.SILMOTolerances);
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.SILMOProjectSchema = api;
-})(globalThis, function () {
+})(globalThis, function (tolerances) {
+  if (!tolerances) throw new Error('SILMO-Projektschema benötigt die zentrale Toleranz-API.');
   const CURRENT_PROJECT_VERSION = 3;
   const SUPPORTED_PROJECT_VERSIONS = Object.freeze([3]);
 
@@ -27,7 +28,8 @@
     let positionCount = 0;
     for (const [name, item] of Object.entries(data.attributes)) {
       if (!/^[a-zA-Z][a-zA-Z0-9_]{0,31}$/.test(name) ||
-          !item || typeof item !== 'object' || !Array.isArray(item.array)) {
+          !item || typeof item !== 'object' || !Array.isArray(item.array) ||
+          (Object.prototype.hasOwnProperty.call(item, 'normalized') && typeof item.normalized !== 'boolean')) {
         throw new Error('Ungültiges Geometrieattribut.');
       }
       const valueRange = attributeTypeRanges[item.arrayType];
@@ -76,6 +78,327 @@
     return data;
   }
 
+  function validateContourFrameMetadata(object) {
+    if (!object || typeof object !== 'object' || Array.isArray(object)) return;
+    const frame = object.contourFrame ?? object.caseWallFrame;
+    if (frame == null) return;
+    if (!frame || typeof frame !== 'object' || Array.isArray(frame) ||
+        !Number.isFinite(frame.wallThicknessMM) || frame.wallThicknessMM < 0.2 || frame.wallThicknessMM > 100 ||
+        !Number.isFinite(frame.wallHeightMM) || frame.wallHeightMM < 0.2 || frame.wallHeightMM > 2000) {
+      throw new Error('Ungültige Hohlrahmen-Metadaten: Wandstärke oder Rahmenhöhe liegt ausserhalb des unterstützten Bereichs.');
+    }
+  }
+
+  function validateObjectTransformMetadata(object) {
+    if (!object || typeof object !== 'object' || Array.isArray(object)) return;
+    for (const [name, maximum] of [['position', 10000], ['rotation', 10000], ['scale', 1000]]) {
+      const values = object[name];
+      // Fehlende/nicht-arrayförmige Alt-Metadaten behalten die bisherigen Defaults
+      // im Projekt-I/O. Vorhandene Arrays müssen aber sicher anwendbar sein.
+      if (!Array.isArray(values)) continue;
+      if (values.length < 3 || values.slice(0, 3).some(value =>
+        !Number.isFinite(value) || Math.abs(value) > maximum ||
+        (name === 'scale' && value === 0))) {
+        throw new Error('Ungültige Objektposition, Drehung oder Skalierung.');
+      }
+    }
+  }
+
+  function validateProjectObjectIdentities(objects) {
+    const ids = new Set();
+    for (const object of objects) {
+      if (object?.objectId == null) continue;
+      if (typeof object.objectId !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(object.objectId) || ids.has(object.objectId)) {
+        throw new Error('Ungültige oder doppelte Objektkennung in der Projektdatei.');
+      }
+      ids.add(object.objectId);
+    }
+  }
+
+  const SKETCH_RING_COORDINATE_LIMIT = 10000;
+  const MAX_SKETCH_CONTOUR_POINTS = 5000;
+
+  function sketchCross(a, b, c) {
+    return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  }
+
+  function sketchPointOnSegment(point, a, b) {
+    return Math.abs(sketchCross(a, b, point)) <= tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 &&
+      point[0] >= Math.min(a[0], b[0]) - tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM &&
+      point[0] <= Math.max(a[0], b[0]) + tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM &&
+      point[1] >= Math.min(a[1], b[1]) - tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM &&
+      point[1] <= Math.max(a[1], b[1]) + tolerances.PROJECT_SKETCH_RING_BOUNDS_EPSILON_MM;
+  }
+
+  function sketchSegmentsIntersect(a, b, c, d) {
+    const abC = sketchCross(a, b, c), abD = sketchCross(a, b, d);
+    const cdA = sketchCross(c, d, a), cdB = sketchCross(c, d, b);
+    if (((abC > tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && abD < -tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2) ||
+         (abC < -tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && abD > tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2)) &&
+        ((cdA > tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && cdB < -tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2) ||
+         (cdA < -tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && cdB > tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2))) return true;
+    return (Math.abs(abC) <= tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && sketchPointOnSegment(c, a, b)) ||
+      (Math.abs(abD) <= tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && sketchPointOnSegment(d, a, b)) ||
+      (Math.abs(cdA) <= tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && sketchPointOnSegment(a, c, d)) ||
+      (Math.abs(cdB) <= tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2 && sketchPointOnSegment(b, c, d));
+  }
+
+  function sketchRingArea(ring) {
+    let area = 0;
+    for (let i = 0; i < ring.length; i++) {
+      const a = ring[i], b = ring[(i + 1) % ring.length];
+      area += a[0] * b[1] - b[0] * a[1];
+    }
+    return area / 2;
+  }
+
+  function validateSketchRing(ring) {
+    if (!Array.isArray(ring) || ring.length < 3 || ring.length > 1000 ||
+        !ring.every(point => Array.isArray(point) && point.length === 2 &&
+          point.every(value => Number.isFinite(value) && Math.abs(value) <= SKETCH_RING_COORDINATE_LIMIT))) return false;
+    if (Math.abs(sketchRingArea(ring)) <= tolerances.PROJECT_SKETCH_RING_ORIENTATION_EPSILON_MM2) return false;
+    for (let i = 0; i < ring.length; i++) {
+      const a = ring[i], b = ring[(i + 1) % ring.length];
+      if (Math.hypot(a[0] - b[0], a[1] - b[1]) <= tolerances.PROJECT_SKETCH_RING_MIN_EDGE_MM) return false;
+      for (let j = i + 1; j < ring.length; j++) {
+        if (j === i || j === (i + 1) % ring.length || i === (j + 1) % ring.length) continue;
+        if (sketchSegmentsIntersect(a, b, ring[j], ring[(j + 1) % ring.length])) return false;
+      }
+    }
+    return true;
+  }
+
+  function sketchPointInRing(point, ring) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const a = ring[j], b = ring[i];
+      if (sketchPointOnSegment(point, a, b)) return 0;
+      if ((a[1] > point[1]) !== (b[1] > point[1]) &&
+          point[0] < (b[0] - a[0]) * (point[1] - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
+    }
+    return inside ? 1 : -1;
+  }
+
+  function sketchRingBounds(ring) {
+    return ring.reduce((bounds, point) => ({
+      minX: Math.min(bounds.minX, point[0]), maxX: Math.max(bounds.maxX, point[0]),
+      minY: Math.min(bounds.minY, point[1]), maxY: Math.max(bounds.maxY, point[1])
+    }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity });
+  }
+
+  function sketchBoundsOverlap(a, b) {
+    return a.minX <= b.maxX && a.maxX >= b.minX && a.minY <= b.maxY && a.maxY >= b.minY;
+  }
+
+  function sketchRingsIntersect(a, b) {
+    if (!sketchBoundsOverlap(sketchRingBounds(a), sketchRingBounds(b))) return false;
+    for (let i = 0; i < a.length; i++) for (let j = 0; j < b.length; j++) {
+      if (sketchSegmentsIntersect(a[i], a[(i + 1) % a.length], b[j], b[(j + 1) % b.length])) return true;
+    }
+    return false;
+  }
+
+  function validateSketchMetadata(object) {
+    if (!object || typeof object !== 'object' || Array.isArray(object) || object.sketch == null) return;
+    const sketch = object.sketch;
+    if (!sketch || typeof sketch !== 'object' || Array.isArray(sketch)) throw new Error('Ungültige Skizzen-Metadaten.');
+    if (sketch.type !== 'freeform2d' || sketch.holes == null) return;
+    const holes = sketch.holes;
+    const outer = object.sketchOutline;
+    const totalContourPoints = (Array.isArray(outer) ? outer.length : 0) +
+      (Array.isArray(holes) ? holes.reduce((sum, ring) => sum + (Array.isArray(ring) ? ring.length : 0), 0) : 0);
+    if (!Array.isArray(holes) || holes.length > 100 || totalContourPoints > MAX_SKETCH_CONTOUR_POINTS ||
+        !holes.every(validateSketchRing) ||
+        (holes.length > 0 && !validateSketchRing(outer))) {
+      throw new Error('Ungültige oder zu umfangreiche Skizzen-Innenkonturen.');
+    }
+    if (!holes.length) return;
+    for (let i = 0; i < holes.length; i++) {
+      const hole = holes[i];
+      if (hole.some(point => sketchPointInRing(point, outer) !== 1) || sketchRingsIntersect(hole, outer)) {
+        throw new Error('Skizzen-Innenkontur liegt ausserhalb der Aussenkontur oder berührt deren Rand.');
+      }
+      for (let j = 0; j < i; j++) {
+        if (sketchRingsIntersect(hole, holes[j]) ||
+            sketchPointInRing(hole[0], holes[j]) !== -1 ||
+            sketchPointInRing(holes[j][0], hole) !== -1) {
+          throw new Error('Skizzen-Innenkonturen überschneiden sich, berühren sich oder liegen ineinander.');
+        }
+      }
+    }
+  }
+
+  function validateOcctSource(source, depth = 0) {
+    if (source == null) return;
+    if (!source || typeof source !== 'object' || Array.isArray(source) || depth > 4) {
+      throw new Error('Ungültige OCCT-Konstruktionsdaten.');
+    }
+    if (source.kind === 'torus') {
+      if (![source.majorRadiusMM, source.minorRadiusMM].every(value =>
+        Number.isFinite(value) && value >= 0.01 && value <= 2000) ||
+        source.majorRadiusMM <= source.minorRadiusMM) {
+        throw new Error('Ungültige OCCT-Torusabmessungen.');
+      }
+      return;
+    }
+    if (source.kind === 'cone') {
+      if (![source.radiusMM, source.heightMM].every(value =>
+        Number.isFinite(value) && value >= 0.01 && value <= 2000)) {
+        throw new Error('Ungültige OCCT-Kegelabmessungen.');
+      }
+      return;
+    }
+    if (source.kind === 'sphere') {
+      if (!Number.isFinite(source.radiusMM) || source.radiusMM < 0.01 || source.radiusMM > 2000) throw new Error('Ungültiger OCCT-Kugelradius.');
+      return;
+    }
+    if (source.kind === 'cylinder') {
+      if (![source.radiusMM, source.heightMM].every(value =>
+        Number.isFinite(value) && value >= 0.01 && value <= 2000)) {
+        throw new Error('Ungültige OCCT-Zylinderabmessungen.');
+      }
+      return;
+    }
+    if (source.kind === 'box') {
+      if (![source.widthMM, source.depthMM, source.heightMM].every(value =>
+        Number.isFinite(value) && value > 0 && value <= 200000)) {
+        throw new Error('Ungültige OCCT-Quaderabmessungen.');
+      }
+      return;
+    }
+    if (source.kind === 'step') {
+      if (typeof source.stepText !== 'string' || source.stepText.length < 20 ||
+          source.stepText.length > 10 * 1024 * 1024 ||
+          !/^ISO-10303-21\s*;/i.test(source.stepText.trimStart()) ||
+          !/END-ISO-10303-21\s*;\s*$/i.test(source.stepText.trim())) {
+        throw new Error('Ungültige oder zu grosse STEP-Konstruktionsquelle.');
+      }
+      return;
+    }
+    if (source.kind === 'sketch') {
+      const sketch = source.sketch;
+      if (!sketch || typeof sketch !== 'object' || Array.isArray(sketch) ||
+          !Array.isArray(sketch.outlinePoints) || sketch.outlinePoints.length < 3 ||
+          !validateSketchRing(sketch.outlinePoints) ||
+          !Number.isFinite(sketch.extrusionMM) || sketch.extrusionMM < 0.1 || sketch.extrusionMM > 200000) {
+        throw new Error('Ungültige OCCT-Skizzenquelle.');
+      }
+      validateSketchMetadata({ sketchOutline: sketch.outlinePoints, sketch });
+      return;
+    }
+    if (source.kind === 'fillet') {
+      if (!Array.isArray(source.edgeIndices) || source.edgeIndices.length < 1 ||
+          source.edgeIndices.length > 12 ||
+          !source.edgeIndices.every(index => Number.isInteger(index) && index >= 0 && index <= 100000) ||
+          new Set(source.edgeIndices).size !== source.edgeIndices.length ||
+          !Number.isFinite(source.radiusMM) || source.radiusMM < 0.01 || source.radiusMM > 2000 ||
+          !source.base || typeof source.base !== 'object' || Array.isArray(source.base)) {
+        throw new Error('Ungültige OCCT-Kantenrundungsdaten.');
+      }
+      validateOcctSource(source.base, depth + 1);
+      return;
+    }
+    if (source.kind === 'chamfer') {
+      if (!Array.isArray(source.edgeIndices) || source.edgeIndices.length < 1 ||
+          source.edgeIndices.length > 12 ||
+          !source.edgeIndices.every(index => Number.isInteger(index) && index >= 0 && index <= 100000) ||
+          new Set(source.edgeIndices).size !== source.edgeIndices.length ||
+          !Number.isFinite(source.distanceMM) || source.distanceMM < 0.01 || source.distanceMM > 2000 ||
+          !source.base || typeof source.base !== 'object' || Array.isArray(source.base)) {
+        throw new Error('Ungültige OCCT-Kantenfasendaten.');
+      }
+      validateOcctSource(source.base, depth + 1);
+      return;
+    }
+    if (source.kind === 'draft') {
+      const validVector = (vector, allowZero = false) => vector && typeof vector === 'object' &&
+        !Array.isArray(vector) &&
+        [vector.x, vector.y, vector.z].every(value => Number.isFinite(value) && Math.abs(value) <= 1000000) &&
+        (allowZero || Math.hypot(vector.x, vector.y, vector.z) > 1e-9);
+      if (!Array.isArray(source.faceIndices) || source.faceIndices.length !== 1 ||
+          !source.faceIndices.every(index => Number.isInteger(index) && index >= 0 && index <= 100000) ||
+          !Number.isFinite(source.angleDeg) || Math.abs(source.angleDeg) < 0.1 || Math.abs(source.angleDeg) > 20 ||
+          !validVector(source.direction) ||
+          !source.neutralPlane || typeof source.neutralPlane !== 'object' || Array.isArray(source.neutralPlane) ||
+          !validVector(source.neutralPlane.origin, true) ||
+          !validVector(source.neutralPlane.normal) ||
+          [source.neutralPlane.origin.x, source.neutralPlane.origin.y, source.neutralPlane.origin.z]
+            .some(value => Math.abs(value) > 200000) ||
+          !source.base || typeof source.base !== 'object' || Array.isArray(source.base)) {
+        throw new Error('Ungültige OCCT-Flächenneigungsdaten.');
+      }
+      validateOcctSource(source.base, depth + 1);
+      return;
+    }
+    if (source.kind === 'boolean') {
+      const validMatrix = matrix => {
+        if (!Array.isArray(matrix) || matrix.length !== 12 ||
+            !matrix.every(Number.isFinite) ||
+            matrix.some((value, index) => index % 4 === 3
+              ? Math.abs(value) > 200000
+              : Math.abs(value) > 1000)) return false;
+        const determinant =
+          matrix[0] * (matrix[5] * matrix[10] - matrix[6] * matrix[9]) -
+          matrix[1] * (matrix[4] * matrix[10] - matrix[6] * matrix[8]) +
+          matrix[2] * (matrix[4] * matrix[9] - matrix[5] * matrix[8]);
+        return Number.isFinite(determinant) && Math.abs(determinant) > 1e-12;
+      };
+      if (!['fuse', 'cut', 'common'].includes(source.operation) ||
+          !Array.isArray(source.operands) || source.operands.length !== 2 ||
+          !Array.isArray(source.translationsMM) || source.translationsMM.length !== 2 ||
+          source.translationsMM.some(offset => !Array.isArray(offset) || offset.length !== 3 ||
+            !offset.every(value => Number.isFinite(value) && Math.abs(value) <= 200000)) ||
+          (source.transformsMM != null &&
+            (!Array.isArray(source.transformsMM) || source.transformsMM.length !== 2 ||
+             !source.transformsMM.every(validMatrix)))) {
+        throw new Error('Ungültige OCCT-Boolean-Konstruktionsdaten.');
+      }
+      source.operands.forEach(operand => validateOcctSource(operand, depth + 1));
+      return;
+    }
+    throw new Error('Unbekannte OCCT-Konstruktionsart.');
+  }
+
+  function validateLoftMetadata(object) {
+    if (!object || typeof object !== 'object' || Array.isArray(object) || object.loft == null) return;
+    const loft = object.loft;
+    const validId = value => typeof value === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(value);
+    if (!loft || typeof loft !== 'object' || Array.isArray(loft) ||
+        loft.sections !== 2 || !validId(loft.sourceA) || !validId(loft.sourceB) ||
+        !Number.isInteger(loft.innerContourCount) || loft.innerContourCount < 0 || loft.innerContourCount > 8 ||
+        !Array.isArray(loft.sourceHoles) || loft.sourceHoles.length !== loft.innerContourCount ||
+        !loft.sourceHoles.every(pair => pair && typeof pair === 'object' && !Array.isArray(pair) &&
+          validId(pair.a) && validId(pair.b))) {
+      throw new Error('Ungültige Loft-Metadaten oder Innenkontur-Zuordnung.');
+    }
+    const sourceIds = [loft.sourceA, loft.sourceB, ...loft.sourceHoles.flatMap(pair => [pair.a, pair.b])];
+    if (new Set(sourceIds).size !== sourceIds.length) {
+      throw new Error('Loft-Quellprofile müssen eindeutige Objektkennungen besitzen.');
+    }
+  }
+
+  const MAX_PROJECT_GEOMETRY_VALUES = 15000000;
+
+  function validateProjectGeometryBudget(objects) {
+    let totalValues = 0;
+    function visit(object) {
+      if (!object || typeof object !== 'object' || Array.isArray(object)) return;
+      // Ursprüngliche CSG-Formteile werden separat wiederhergestellt und
+      // benötigen dieselbe frühe Transformationsprüfung wie Hauptobjekte.
+      validateObjectTransformMetadata(object);
+      if (object.geometry != null) {
+        const geometry = validateSerializedGeometry(object.geometry);
+        for (const attribute of Object.values(geometry.attributes)) totalValues += attribute.array.length;
+        if (geometry.index) totalValues += geometry.index.array.length;
+        if (totalValues > MAX_PROJECT_GEOMETRY_VALUES) {
+          throw new Error('Das Projekt enthält insgesamt zu viele Geometriedaten für einen sicheren Import.');
+        }
+      }
+      if (Array.isArray(object.unionParts)) object.unionParts.forEach(visit);
+    }
+    objects.forEach(visit);
+  }
+
   function validateProjectEnvelope(project) {
     if (!project || typeof project !== 'object' || Array.isArray(project)) {
       throw new Error('Projektdatei ist kein gültiges JSON-Objekt.');
@@ -92,6 +415,9 @@
     if (!Array.isArray(project.objects) || project.objects.length > 100) {
       throw new Error('Die Projektdatei enthält eine ungültige Objektliste (maximal 100 Objekte).');
     }
+    validateProjectObjectIdentities(project.objects);
+    project.objects.forEach(object => { validateObjectTransformMetadata(object); validateContourFrameMetadata(object); validateSketchMetadata(object); validateLoftMetadata(object); validateOcctSource(object.occtSource); });
+    validateProjectGeometryBudget(project.objects);
     return project;
   }
 

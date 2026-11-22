@@ -124,7 +124,7 @@
   function transforms(){try{return window.__silmoTutorialAllTransforms?.()||[];}catch(_){return [];}}
   function sketchSnapshot(){try{return window.__silmoSketchSnapshot?.()||null;}catch(_){return null;}}
   function fieldValues(id){const el=$(id);return el?[...el.querySelectorAll('input,select')].map(x=>x.value).join('|'):'';}
-  function positionChanged(before){if(!Array.isArray(before))return false;const now=positions();return Array.isArray(now)&&before.some(p=>{const n=now.find(x=>x&&p&&x.uuid===p.uuid);return n&&(Math.abs(n.x-p.x)>1e-5||Math.abs(n.y-p.y)>1e-5||Math.abs(n.z-p.z)>1e-5);});}
+  function positionChanged(before){if(!Array.isArray(before))return false;const now=positions();return Array.isArray(now)&&before.some(p=>{const n=now.find(x=>x&&p&&x.uuid===p.uuid);return n&&(Math.abs(n.x-p.x)>window.SILMOTolerances.TUTORIAL_POSITION_CHANGE_WORLD_UNITS||Math.abs(n.y-p.y)>window.SILMOTolerances.TUTORIAL_POSITION_CHANGE_WORLD_UNITS||Math.abs(n.z-p.z)>window.SILMOTolerances.TUTORIAL_POSITION_CHANGE_WORLD_UNITS);});}
   function rotationChanged(before){if(!Array.isArray(before))return false;const now=transforms();return Array.isArray(now)&&before.some(p=>{const n=now.find(x=>x&&p&&x.uuid===p.uuid);return n&&['qx','qy','qz','qw'].some(k=>Math.abs((n[k]||0)-(p[k]||0))>0.01);});}
   function scaleChanged(before){if(!Array.isArray(before))return false;const now=transforms();return Array.isArray(now)&&before.some(p=>{const n=now.find(x=>x&&p&&x.uuid===p.uuid);return n&&['sx','sy','sz'].some(k=>Math.abs((n[k]||1)-(p[k]||1))>0.01);});}
   function transformChanged(before){if(!Array.isArray(before))return false;const now=transforms();return Array.isArray(now)&&before.some(p=>{const n=now.find(x=>x&&p&&x.uuid===p.uuid);return n&&['x','y','z','sx','sy','sz','qx','qy','qz','qw'].some(k=>Math.abs((n[k]||0)-(p[k]||0))>0.01);});}
@@ -261,7 +261,7 @@
   function runExam(){
     const audit=window.__silmoTutorialModelAudit?.()||[];
     const valid=audit.filter(x=>x&&x.vertexCount>=20&&x.width>0&&x.depth>0&&x.height>0&&[x.width,x.depth,x.height].every(Number.isFinite));
-    const hasExport=exportObserved||/STL exportiert/i.test($('status')?.textContent||'');
+    const hasExport=exportObserved||Number(window.__silmoExportRevision)>0||/STL exportiert/i.test($('status')?.textContent||'');
     const heart=refreshHeartRecognition();
     const checks=[
       {label:'Mindestens ein echter 3D-Körper mit ausreichend Geometrie',ok:valid.length>0},
