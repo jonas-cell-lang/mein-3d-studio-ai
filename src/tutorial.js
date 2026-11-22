@@ -41,7 +41,7 @@
     ['⌗','Skizzenmasse','draw','loadSketchDimensions'],['✥','Konturpunkte','draw','loadSketchPoints'],
     ['◒','Abrunden / Fase','draw','applyEdgeFillet'],['∿','Loft / Sweep','draw','createLoft'],
     ['⬇','STL exportieren','project','exportModel'],['▣','Druckbett','print','applyBedSize'],
-    ['✓','Druckprüfung','print','checkBed'],['💾','Projekt sichern','print','saveProjectButton'],['📂','Projekt öffnen','print','openProjectButton']
+    ['✓','Druckprüfung','print','checkBed'],['💾','Projekt sichern','project','saveProjectButton'],['📂','Projekt öffnen','project','openProjectButton']
   ];
   $('tutorialToolGallery').innerHTML = toolCards.map(([glyph,label,tab,target]) =>
     '<button type="button" class="tutorial-tool-card" data-tool-tab="' + tab + '" data-target="' + target + '"><span class="tutorial-tool-icon" aria-hidden="true">' + glyph + '</span><span>' + label + '</span></button>'
