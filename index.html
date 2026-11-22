@@ -2182,7 +2182,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       window.__silmoOcctLastRestored = null;
       window.__silmoOcctRestorePromise = Promise.all(restoredObjects.map(obj => {
         if (obj.userData.sketch?.outlinePoints ||
-            ['box', 'sphere', 'cylinder', 'cone', 'torus', 'step', 'boolean', 'fillet', 'chamfer'].includes(obj.userData.occtSource?.kind)) {
+            ['box', 'sphere', 'cylinder', 'cone', 'torus', 'step', 'boolean', 'fillet', 'chamfer', 'draft'].includes(obj.userData.occtSource?.kind)) {
           return rebuildOcctObjectHandle(obj);
         }
         return null;
@@ -2301,7 +2301,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       window.__silmoOcctProjectRestoreGeneration = projectRestoreGeneration;
       window.__silmoOcctProjectRestorePromise = Promise.all(objects.map(obj => {
         if (obj.userData.sketch?.outlinePoints ||
-            ['box', 'sphere', 'cylinder', 'cone', 'torus', 'step', 'boolean', 'fillet', 'chamfer'].includes(obj.userData.occtSource?.kind)) {
+            ['box', 'sphere', 'cylinder', 'cone', 'torus', 'step', 'boolean', 'fillet', 'chamfer', 'draft'].includes(obj.userData.occtSource?.kind)) {
           return rebuildOcctObjectHandle(obj);
         }
         return null;
