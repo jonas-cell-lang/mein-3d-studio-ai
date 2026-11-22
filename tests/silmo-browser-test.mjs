@@ -96,6 +96,12 @@ try {
   assert.match(await page.locator('#printCheckReport').innerText(), /Würfel:/, 'Druckprüfung analysiert das beim Start vorhandene Beispielmodell nicht');
   assert.match(await page.locator('#status').innerText(), /3D-Druck-Vorprüfung beendet/, 'Druckprüfung meldet keinen Abschluss');
   await page.locator('[data-tab="create"]').click();
+  await page.locator('#tutorialLaunch').click();
+  await page.locator('#tutorialQuickGuide > summary').click();
+  await page.locator('#tutorialToolGallery [data-target="exportModel"]').click();
+  assert.equal(await page.locator('[data-tab="project"]').getAttribute('aria-selected'), 'true', 'Tutorial-Schnelllink wechselt nicht in den Projekt-Reiter');
+  assert.equal(await page.locator('#exportModel').isVisible(), true, 'Tutorial-Schnelllink öffnet den Export-Unterreiter nicht');
+  await page.locator('#tutorialSkip').click();
   assert.equal(await page.evaluate(() => window.SILMOUnits?.mmToWorldUnits(10)), 1, 'Zentrale Einheiten-API ist im Browser nicht verfügbar');
   assert.equal(await page.evaluate(() => window.SILMOUnits?.worldUnitsToMm(1)), 10, 'Zentrale Einheiten-API liefert falsche Millimeterwerte');
   assert.equal(await page.evaluate(() => window.SILMOTolerances?.CSG_GEOMETRY_WORLD_UNITS), 1e-5, 'Zentrale Toleranz-API ist nicht verfügbar oder hat den falschen CSG-Wert');
