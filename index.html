@@ -3891,7 +3891,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         document.getElementById('sketchStatus').textContent = 'Die Linie ist zu kurz. Ziehe eine längere Linie oder Kurve.';
       }
     } else if (activeTool === 'freeform2d') {
-      if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
+      if (e && intersectSketchPlane(e, sketchPoint)) {
         snapSketchPoint(sketchPoint);
         const points = sketchDraft?.type === 'freeform2d' ? sketchDraft.points : [sketchStart.clone()];
         if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > window.SILMOTolerances.SKETCH_POLYLINE_SAMPLE_MIN_DISTANCE_WORLD_UNITS) points.push(sketchPoint.clone());
@@ -3917,7 +3917,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         sketchDraft = null;
         document.getElementById('sketchStatus').textContent = 'Eine Freiform braucht mindestens drei unterschiedliche Punkte.';
       }
-    } else if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
+    } else if (e && intersectSketchPlane(e, sketchPoint)) {
       snapSketchPoint(sketchPoint);
       const dx = sketchPoint.x - sketchStart.x, dy = sketchPoint.y - sketchStart.y;
       const width = Math.abs(dx), depth = Math.abs(dy);
@@ -4573,6 +4573,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         if(exactX!==undefined&&exactX.trim()!==''){const value=Number(exactX);if(!Number.isFinite(value)||Math.abs(value)>2000)throw new Error('Mittelpunkt X muss zwischen −2000 und 2000 mm liegen.');meshPosition.x=window.SILMOUnits.mmToWorldUnits(value);}
         if(exactY!==undefined&&exactY.trim()!==''){const value=Number(exactY);if(!Number.isFinite(value)||Math.abs(value)>2000)throw new Error('Mittelpunkt Y muss zwischen −2000 und 2000 mm liegen.');meshPosition.y=window.SILMOUnits.mmToWorldUnits(value);}
       }
+      if (faceSketchPlaneActive) {
+        // Skizzengeometrie entsteht in lokalen U/V-Koordinaten. Vor dem Einfügen
+        // wird sie in die Weltorientierung der gewählten Modellfläche überführt.
+        geometry.applyQuaternion(faceSketchFrame.quaternion);
+        meshPosition.copy(sketchPointToWorld(meshPosition));
+      }
       geometry.computeBoundingBox();
       geometry.computeBoundingSphere();
       const worldSketchBounds = geometry.boundingBox.clone().translate(meshPosition);
@@ -4865,7 +4871,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       if (e.cancelable) e.preventDefault();
       e.stopPropagation();
       setPointerRay(e);
-      if (!raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) return;
+      if (!intersectSketchPlane(e, sketchPoint)) return;
       const point = straightenContourPoint(snapSketchPoint(sketchPoint.clone()));
       if (clickContourPoints.length && clickContourPoints[0].distanceTo(point) < window.SILMOTolerances.CLICK_CONTOUR_CLOSE_DISTANCE_WORLD_UNITS && clickContourPoints.length >= 3) {
         document.getElementById('clickContourFinish').click();
@@ -4885,7 +4891,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       if (e.cancelable) e.preventDefault();
       e.stopPropagation();
       setPointerRay(e);
-      if (!raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) return;
+      if (!intersectSketchPlane(e, sketchPoint)) return;
       snapSketchPoint(sketchPoint);
       sketchStart.copy(sketchPoint);
       const startTool = document.getElementById('sketchTool').value;
@@ -5048,7 +5054,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   canvas.addEventListener('pointermove', e => {
     if (sketchDrawing && e.pointerId === sketchPointerId) {
       setPointerRay(e);
-      if (raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
+      if (intersectSketchPlane(e, sketchPoint)) {
         snapSketchPoint(sketchPoint);
         const tool = document.getElementById('sketchTool').value;
         if (tool === 'line3d' || tool === 'curve2d') {
