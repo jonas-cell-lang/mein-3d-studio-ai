@@ -74,8 +74,10 @@ try {
   await page.locator('#createSketchSolid').waitFor({ state: 'visible' });
   assert.equal(await page.locator('#createSketchSolid').isDisabled(), false, 'Rechteck-Skizze auf der Seitenfläche wurde nicht abgeschlossen');
   await page.locator('#createSketchSolid').click();
-  await page.waitForFunction(() => !!window.__silmoSketchSnapshot?.());
-  const extruded = await page.evaluate(() => window.__silmoSketchSnapshot());
+  await page.waitForFunction(() => !!window.__silmoSketchSnapshot?.() || (document.getElementById('status')?.textContent || '').includes('Skizze konnte nicht erstellt'));
+  const resultAfterExtrusion = await page.evaluate(() => ({ snapshot: window.__silmoSketchSnapshot?.() || null, status: document.getElementById('status')?.textContent || '', sketchStatus: document.getElementById('sketchStatus')?.textContent || '' }));
+  assert.ok(resultAfterExtrusion.snapshot, 'Extrusion fehlgeschlagen. Status: ' + resultAfterExtrusion.status + ' | Skizze: ' + resultAfterExtrusion.sketchStatus);
+  const extruded = resultAfterExtrusion.snapshot;
   assert.equal(extruded.type, 'rectangle', 'Falscher Skizzentyp wurde extrudiert');
   const normalAxis = faceFrame.normal.reduce((best, value, index, values) =>
     Math.abs(value) > Math.abs(values[best]) ? index : best, 0);
