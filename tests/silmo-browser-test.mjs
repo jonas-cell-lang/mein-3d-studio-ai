@@ -54,7 +54,12 @@ async function showDrawRightSubtab(index) {
 }
 async function showDrawLeftSubtab(index) {
   await page.locator('[data-tab="draw"]').click();
-  await page.locator('#pane-draw-left > .inner-tab-nav button').nth(index).click();
+  const pane = page.locator('#pane-draw-left');
+  await pane.waitFor({ state: 'visible' });
+  const tabs = pane.locator(':scope > .inner-tab-nav button');
+  await tabs.nth(index).waitFor({ state: 'visible' });
+  await tabs.nth(index).click();
+  await pane.locator('.inner-tab-panel').nth(index).waitFor({ state: 'visible' });
 }
 async function waitForSelectedSketchOcct() {
   await page.waitForFunction(() => window.__silmoSketchSnapshot()?.geometryKernel === 'occt-wasm', null, { timeout: 45000 });
