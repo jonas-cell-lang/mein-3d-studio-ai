@@ -724,6 +724,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     Math.abs(visibleDraft.neutralPlane.normal.z - 1) < 1e-9,
     'Ursprung oder Normale der frei eingestellten Neutralebene wurden nicht übernommen');
   await page.locator('[data-tab="project"]').click();
+  await page.locator('#pane-project-left > .inner-tab-nav button').nth(0).click();
   const draftProjectDownloadPromise = page.waitForEvent('download', { timeout: 10000 });
   await page.locator('#saveProjectButton').click();
   const draftProjectDownload = await draftProjectDownloadPromise;
@@ -997,6 +998,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
 
   // OCCT-Projekt-Roundtrip: echten Cut-Körper speichern und in einem frischen Browserkontext rekonstruieren.
   await page.locator('[data-tab="project"]').click();
+  await page.locator('#pane-project-left > .inner-tab-nav button').nth(0).click();
   await page.locator('#saveProjectButton').waitFor({ state: 'visible', timeout: 5000 });
   const occtProjectDownloadPromise = page.waitForEvent('download', { timeout: 10000 });
   await page.locator('#saveProjectButton').click();
@@ -2148,6 +2150,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(25)),true,'Aufgabe 26 kann nicht geöffnet werden');
   assert.equal(await page.locator('#stlDropZone').count(),1,'STL-Ablagefläche fehlt');
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/Downloads-Ordner/,'Aufgabe 26 erklärt den Import aus Downloads nicht');
+  await page.locator('#pane-project-left > .inner-tab-nav button').nth(0).click();
   const saveDownload=page.waitForEvent('download');
   await page.locator('#saveProjectButton').click();
   const savedProjectDownload = await saveDownload;
@@ -2692,6 +2695,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+1,'Verbinden erzeugt nicht genau ein Ergebnisobjekt');
   assert.equal((await page.evaluate(()=>window.__silmoUnionSnapshot())).partCount,2,'Verbundene Form speichert die ursprünglichen Einzelteile nicht');
   await page.locator('[data-tab="project"]').click();
+  await page.locator('#pane-project-left > .inner-tab-nav button').nth(0).click();
   const unionDownloadPromise=page.waitForEvent('download');
   await page.locator('#saveProjectButton').click();
   const unionDownload=await unionDownloadPromise;
@@ -3010,6 +3014,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
 
   // Hohl-Loft-Metadaten müssen Speichern und erneutes Öffnen überstehen.
   await page.locator('[data-tab="project"]').click();
+  await page.locator('#pane-project-left > .inner-tab-nav button').nth(0).click();
   const hollowLoftDownloadPromise=page.waitForEvent('download');
   await page.locator('#saveProjectButton').click();
   const hollowLoftDownload=await hollowLoftDownloadPromise;
@@ -3046,6 +3051,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   ));
   assert.equal(invalidSketchHole.ok,false,'Innenloch ausserhalb der Aussenkontur wurde akzeptiert');
   await sketchHolePage.locator('[data-tab="project"]').click();
+  await sketchHolePage.locator('#pane-project-left > .inner-tab-nav button').nth(0).click();
   const sketchHoleDownloadPromise=sketchHolePage.waitForEvent('download',{timeout:10000});
   await sketchHolePage.locator('#saveProjectButton').click();
   const sketchHoleDownload=await sketchHoleDownloadPromise;
@@ -3190,9 +3196,10 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(advancedImageState.fileName,'fixture-image.png','Image-Studio-Dateiname wurde nicht geladen');
   assert.equal(advancedImageState.rotation,90,'Image-Studio-Drehung wurde nicht geladen');
   assert.equal(advancedImageState.contourCount,1,'Image-Studio-Kontur wurde nicht geladen');
-  // Die Speichern-Funktion liegt im Druck-Reiter. Erst dorthin wechseln,
+  // Die Speichern-Funktion liegt im Projekt-Reiter. Den Projektdatei-Unterreiter öffnen,
   // dann sicherstellen, dass der Button wirklich sichtbar und anklickbar ist.
   await advancedPage.locator('[data-tab="project"]').click();
+  await advancedPage.locator('#pane-project-left > .inner-tab-nav button').nth(0).click();
   await advancedPage.locator('#saveProjectButton').waitFor({state:'visible',timeout:5000});
   // Diagnose the browser's actual handling of the generated download link.
   await advancedPage.evaluate(() => {
