@@ -35,6 +35,8 @@ try {
     assert.equal(await page.locator('#' + id).isVisible(), true, id + ' ist im Expertenbereich nicht erreichbar');
   }
   await page.locator('#expertCenterToggle').click();
+  assert.match(await page.locator('#modeToggle').innerText(), /AUS/, 'Expertenzentrum schliessen setzt den Schalter nicht zurück');
+  assert.equal(await page.locator('#addOcctBox').isVisible(), false, 'Spezialwerkzeug bleibt nach Schliessen des Expertenzentrums sichtbar');
   await page.locator('[data-tab="create"]').click();
   // Der Würfel wird im Bereich Modellieren erstellt; die Flächenauswahl liegt im Bereich Zeichnen.
   
