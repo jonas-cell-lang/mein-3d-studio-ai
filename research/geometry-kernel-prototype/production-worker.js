@@ -23,11 +23,18 @@ function serializeMesh(mesh) {
   if (!mesh || !mesh.positions?.length || !mesh.indices?.length || !mesh.triangleCount) {
     throw new Error("OCCT lieferte kein verwendbares Darstellungsnetz.");
   }
-  return {
-    positions: new Float32Array(mesh.positions),
-    indices: new Uint32Array(mesh.indices),
-    triangleCount: mesh.triangleCount
-  };
+  const positions = new Float32Array(mesh.positions);
+  const indices = new Uint32Array(mesh.indices);
+  const triangleCount = mesh.triangleCount;
+  if (positions.length < 9 || positions.length % 3 !== 0 ||
+      indices.length < 3 || indices.length % 3 !== 0 ||
+      !Number.isInteger(triangleCount) || triangleCount <= 0 ||
+      triangleCount !== indices.length / 3 ||
+      !positions.every(Number.isFinite) ||
+      !indices.every(index => index < positions.length / 3)) {
+    throw new Error("OCCT lieferte ein ungültiges Dreiecksnetz mit fehlerhaften Koordinaten oder Indizes.");
+  }
+  return { positions, indices, triangleCount };
 }
 
 async function execute(method, args) {
@@ -345,7 +352,7 @@ async function execute(method, args) {
     const mesh = serializeMesh(kernel.tessellate(shape));
     const positions = mesh.positions;
     if (positions.length < 9 || positions.length % 3 !== 0 ||
-        !Array.from(positions).every(Number.isFinite)) {
+        !positions.every(Number.isFinite)) {
       throw new Error("OCCT-Körper besitzt keine gültigen 3D-Darstellungskoordinaten.");
     }
     const topologyValues = Object.values(topology);
@@ -496,7 +503,7 @@ async function execute(method, args) {
           positions.length < 9 || positions.length % 3 !== 0 ||
           !Array.from(positions).every(Number.isFinite) ||
           indices.length < 3 || indices.length % 3 !== 0 ||
-          !Array.from(indices).every(index => Number.isInteger(index) && index >= 0 && index < positions.length / 3) ||
+          !indices.every(index => index < positions.length / 3) ||
           mesh.triangleCount !== indices.length / 3) {
         throw new Error("OCCT-Kantenrundung lieferte keinen gültigen Solid mit positivem Volumen und gültigem Dreiecksnetz.");
       }
