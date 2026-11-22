@@ -2533,6 +2533,61 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await showDrawRightSubtab(1);
   assert.equal(await page.locator('#sketchDepthMM').isVisible(), false, 'Kreis zeigt ein unnötiges separates Tiefenfeld');
 
+  // Direkt auf einer ebenen Modellfläche zeichnen und senkrecht zur Fläche extrudieren.
+  await page.locator('#cancelSketch').click();
+  const faceBaseId = await page.evaluate(() => window.__silmoModelingTestSnapshot().selectedId);
+  assert.ok(faceBaseId, 'Kein ausgewählter Körper für den Flächenskizzen-Test vorhanden');
+  const facePickPoint = await page.evaluate(id => window.__silmoFaceSketchTestPoint(id), faceBaseId);
+  assert.ok(facePickPoint, 'Keine sichtbare Seitenfläche für den Flächenskizzen-Test gefunden');
+  await page.locator('#pickFaceSketchPlane').click();
+  await page.mouse.click(facePickPoint.x, facePickPoint.y);
+  await page.waitForFunction(() => window.__silmoFaceSketchFrameSnapshot()?.active === true, null, { timeout: 5000 });
+  const pickedFaceFrame = await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot());
+  const faceFrameChecks = await page.evaluate(() => {
+    const frame = window.__silmoFaceSketchFrameSnapshot();
+    const vector = values => ({ x: values[0], y: values[1], z: values[2] });
+    const dot = (a,b) => a.x*b.x + a.y*b.y + a.z*b.z;
+    const length = a => Math.hypot(a.x,a.y,a.z);
+    const u=vector(frame.u), v=vector(frame.v), normal=vector(frame.normal);
+    return { uLength:length(u), vLength:length(v), normalLength:length(normal), uvDot:dot(u,v), unDot:dot(u,normal), vnDot:dot(v,normal) };
+  });
+  for (const key of ['uLength','vLength','normalLength']) assert.ok(Math.abs(faceFrameChecks[key]-1)<1e-6, 'Flächenkoordinatensystem ist nicht normiert: '+key);
+  for (const key of ['uvDot','unDot','vnDot']) assert.ok(Math.abs(faceFrameChecks[key])<1e-6, 'Flächenkoordinatensystem ist nicht rechtwinklig: '+key);
+  assert.equal(await page.locator('#sketchPlaneSelect').isDisabled(), true, 'Globale Zeichenebene bleibt trotz gewählter Modellfläche änderbar');
+  await showDrawRightSubtab(0);
+  await page.locator('#sketchTool').selectOption('rectangle');
+  await page.locator('#startSketch').click();
+  const faceSketchStart = await page.evaluate(() => window.__silmoFaceSketchScreenPointForTest(-0.2,-0.2));
+  const faceSketchEnd = await page.evaluate(() => window.__silmoFaceSketchScreenPointForTest(0.2,0.2));
+  assert.ok(faceSketchStart && faceSketchEnd, 'Punkte auf der gewählten Modellfläche lassen sich nicht projizieren');
+  await page.mouse.move(faceSketchStart.x,faceSketchStart.y);
+  await page.mouse.down();
+  await page.mouse.move(faceSketchEnd.x,faceSketchEnd.y,{steps:8});
+  await page.mouse.up();
+  assert.equal(await page.locator('#createSketchSolid').isEnabled(), true, 'Rechteck auf Modellfläche wurde nicht als Skizze vorbereitet');
+  await showDrawRightSubtab(1);
+  await page.locator('#sketchWidthMM').fill('2');
+  await page.locator('#sketchDepthMM').fill('2');
+  await page.locator('#sketchHeightMM').fill('2');
+  await page.locator('#createSketchSolid').click();
+  await waitForSelectedSketchOcct();
+  const faceSketchResult = await page.evaluate(() => {
+    const snapshot = window.__silmoSketchSnapshot();
+    const model = window.__silmoModelingTestSnapshot();
+    const frame = window.__silmoFaceSketchFrameSnapshot();
+    const object = model.objects.find(item => item.id === model.selectedId);
+    return { snapshot, position: object?.position || null, origin: frame.origin };
+  });
+  assert.equal(faceSketchResult.snapshot.type, 'rectangle', 'Flächenskizze wurde nicht als Rechteck gespeichert');
+  assert.ok(Math.abs(faceSketchResult.snapshot.extrusionMM-2)<0.01, 'Flächenskizze hat nicht die eingestellte Extrusionshöhe');
+  assert.ok(Math.abs(faceSketchResult.snapshot.occtVolumeMM3-8)<1e-5, 'Flächenskizze wurde nicht mit dem erwarteten Volumen von 8 mm³ extrudiert');
+  assert.ok(faceSketchResult.position && Math.hypot(
+    faceSketchResult.position.x-faceSketchResult.origin[0],
+    faceSketchResult.position.y-faceSketchResult.origin[1],
+    faceSketchResult.position.z-faceSketchResult.origin[2]
+  )<0.02, 'Extrudierter Körper wurde nicht am Ursprung der gewählten Modellfläche platziert');
+  await page.locator('#cancelSketch').click();
+
   // Ellipse: unabhängige Breite und Tiefe sowie Extrusion prüfen.
   await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('ellipse');
