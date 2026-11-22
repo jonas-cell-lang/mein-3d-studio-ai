@@ -1271,6 +1271,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const overlay = window.__silmoOcctEdgeOverlay;
     if (!overlay?.group || !Number.isFinite(clientX) || !Number.isFinite(clientY)) return null;
     overlay.group.updateMatrixWorld(true);
+    // Die Bildschirmprojektion muss denselben aktuellen Kamerastand verwenden
+    // wie die Berechnung des sichtbaren Test-/Klickpunkts. Ohne dieses Update
+    // können nach Kameraänderungen veraltete View-Matrizen verwendet werden.
+    camera.updateMatrixWorld(true);
+    camera.updateProjectionMatrix();
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return null;
     const project = point => {
