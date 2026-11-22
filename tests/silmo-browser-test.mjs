@@ -665,6 +665,15 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.notEqual(draftFaceIndex, null, 'Der Quader besitzt keine auswählbare vertikale Fläche für den Draft-Test');
   await page.locator('#occtFaceList').selectOption(String(draftFaceIndex));
   await page.locator('#occtDraftAngle').fill('5');
+  await page.locator('#occtDraftDirectionX').fill('0.25');
+  await page.locator('#occtDraftDirectionY').fill('0');
+  await page.locator('#occtDraftDirectionZ').fill('1');
+  await page.locator('#occtDraftOriginX').fill('0.5');
+  await page.locator('#occtDraftOriginY').fill('0');
+  await page.locator('#occtDraftOriginZ').fill('0');
+  await page.locator('#occtDraftNormalX').fill('0');
+  await page.locator('#occtDraftNormalY').fill('0');
+  await page.locator('#occtDraftNormalZ').fill('1');
   assert.equal(await page.locator('#applyOcctDraft').isDisabled(), false,
     'Die gültige native Fläche aktiviert das Flächenneigungswerkzeug nicht');
   const draftUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
@@ -679,6 +688,12 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'Sichtbare OCCT-Flächenneigung hat keinen gültigen nativen Solid erzeugt');
   assert.deepEqual(visibleDraft.faceIndices, [draftFaceIndex]);
   assert.equal(visibleDraft.angleDeg, 5);
+  assert.ok(Math.abs(visibleDraft.direction.x - 0.25) < 1e-9 &&
+    Math.abs(visibleDraft.direction.z - 1) < 1e-9,
+    'Die frei eingestellte Zugrichtung wurde nicht an OCCT übergeben');
+  assert.ok(Math.abs(visibleDraft.neutralPlane.origin.x - 0.5) < 1e-9 &&
+    Math.abs(visibleDraft.neutralPlane.normal.z - 1) < 1e-9,
+    'Ursprung oder Normale der frei eingestellten Neutralebene wurden nicht übernommen');
   await page.keyboard.press('Control+z');
   await waitForOcctRestore(draftUndoGeneration);
   const restoredBeforeDraft = await page.evaluate(async () =>
