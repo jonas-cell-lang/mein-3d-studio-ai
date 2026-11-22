@@ -173,3 +173,26 @@ Der Standardarbeitsbereich wird auf den häufigsten SketchUp-Modellierablauf aus
 
 ### Nächste Entwicklungspriorität
 Nach dieser Aufräumrunde geht es nicht um zusätzliche Spezialfunktionen, sondern um den eigentlichen SketchUp-Kern: **auf Flächen zeichnen → Kontur auswählen → Drücken/Ziehen → mit Fangpunkten und numerischen Eingaben präzisieren**.
+
+
+## Verbindliche Fortschrittsmessung – 22. November 2026
+
+Die Prozentanzeige wird bewusst streng und konservativ geführt. Sie ist keine Schätzung, wie viel Code bereits geschrieben wurde, sondern misst den Weg zum vom Projektinhaber definierten Endziel.
+
+**100 % bedeutet erst dann:**
+1. Alle für SILMO vorgesehenen SketchUp-Funktionen sind umgesetzt.
+2. Jede Funktion wurde einzeln getestet.
+3. Die Funktionen funktionieren auch zusammen in vollständigen Modellierabläufen.
+4. Geometrie, Fangverhalten, numerische Eingaben, Undo/Redo sowie Speichern/Wiederöffnen sind zuverlässig geprüft.
+5. Die vollständige Benutzeroberfläche wurde vom Projektinhaber praktisch geprüft und ausdrücklich als zufriedenstellend bestätigt.
+
+**Bewertungsregeln:**
+- Nicht implementierte Funktionen zählen nicht als fertig.
+- Implementierte, aber nicht erfolgreich getestete Funktionen zählen nicht als verifiziert.
+- Fehlgeschlagene oder noch laufende Tests erhöhen den Fortschritt nicht.
+- Eine reine Code-Prüfung ersetzt keinen Funktionstest.
+- Fortschritt wird in kleinen, nachweisbaren Schritten erhöht; bei Regressionen kann er auch sinken.
+- Bei jeder Entwicklungsrückmeldung werden Gesamtfortschritt und aktueller Arbeitsschritt getrennt angezeigt.
+- Die Prozentwerte sind eine konservative Projektmessung anhand der Roadmap, keine Behauptung einer mathematisch exakten Gleichheit mit SketchUp.
+
+**Aktuelle konservative Gesamteinschätzung:** 8 %. Die vorhandenen Grundfunktionen und ersten Interaktionsverbesserungen sind ein Anfang; zentrale SketchUp-Arbeitsabläufe wie zuverlässiges Inferenz-/Fangsystem, vollständiges Flächenzeichnen, Push/Pull, Offset und die umfassende Bedien- und Regressionstest-Abdeckung fehlen noch.
