@@ -142,3 +142,34 @@ SILMO gilt nicht schon dann als SketchUp-ähnlich, wenn die Oberfläche ähnlich
 - Zeichnen direkt auf Objektflächen und Push/Pull sind weiterhin noch nicht implementiert. Der nächste Umsetzungsschritt ist die lokale Zeichenebene auf einer tatsächlich getroffenen ebenen Fläche; erst danach wird die Extrusion entlang der Flächennormalen umgesetzt.
 
 - Der Kurztest wurde anschliessend erweitert, um zusätzlich einen Screenshot genau während der sichtbaren Hover-Kontur zu speichern; diese Screenshot-Erweiterung wartet noch auf einen eigenen CI-Lauf.
+
+
+## Fokuswechsel: SketchUp zuerst, Spezialfunktionen im Hintergrund – 22. November 2026
+
+Der Standardarbeitsbereich wird auf den häufigsten SketchUp-Modellierablauf ausgerichtet. Spezialfunktionen bleiben im Projekt erhalten, sollen aber nicht mehr den Einstieg und die normale Modellierfläche überladen.
+
+### Im Vordergrund
+- **Modellieren:** Grundkörper als Startformen, Objektliste und Duplizieren.
+- **Zeichnen:** Linie, Rechteck, Kreis, Bogen und später direkt auf Modellflächen.
+- **Bearbeiten:** Auswahl, Verschieben, Drehen, Skalieren, Kopieren und später Drücken/Ziehen.
+- **Direkte Interaktion im 3D-Fenster:** Hover-Kontur, Flächen-/Kantenauswahl und intelligentes Fangen.
+- **Präzision:** Masseingabe, Achsenbindung, Fangpunkte und Undo/Redo.
+- **Ansicht:** Orbit, Pan und Zoom müssen beim Modellieren schnell erreichbar sein.
+
+### Im Hintergrund – behalten, nicht löschen
+- Boolesche Vereinigung, Abziehen und Schnittmenge: erweiterte CAD-Formoperationen.
+- Loft, Sweep, Hohlrahmen und spezialisierte Kontur-/Wandfunktionen: Spezialwerkzeuge.
+- OCCT-Diagnose und technische Prüfungen: Expertenzentrum.
+- STL-/STEP-Import und -Export sowie Projektdatei-Funktionen: Projektbereich.
+- Druckbett, Druckvorprüfung und Druckausrichtung: eigener 3D-Druck-Bereich.
+- Bildstudio: eigener separater Bereich.
+- Erweiterte Mess- und Analysefunktionen: Messen & Prüfen.
+
+### Erste konkrete UI-Änderung
+- Der bisherige Hauptreiter **„Erstellen“** heisst jetzt **„Modellieren“**.
+- Die booleschen CAD-Operationen wurden aus dem normalen Modellierbereich in einen aufklappbaren Abschnitt **„Erweiterte CAD-Formoperationen“** im Expertenzentrum verschoben.
+- Die vorhandenen Schaltflächen und Handler bleiben erhalten; es wurde keine Funktion gelöscht.
+- Das ist eine erste, begrenzte Umordnung. Weitere Spezialwerkzeuge werden erst nach Prüfung ihrer Abhängigkeiten verschoben, damit keine bestehenden Arbeitsabläufe kaputtgehen.
+
+### Nächste Entwicklungspriorität
+Nach dieser Aufräumrunde geht es nicht um zusätzliche Spezialfunktionen, sondern um den eigentlichen SketchUp-Kern: **auf Flächen zeichnen → Kontur auswählen → Drücken/Ziehen → mit Fangpunkten und numerischen Eingaben präzisieren**.
