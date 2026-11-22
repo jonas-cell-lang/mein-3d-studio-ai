@@ -14,6 +14,19 @@ try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.locator('[data-tab="create"]').click();
+  assert.equal((await page.locator('[data-tab="create"]').innerText()).trim(), 'Modellieren', 'Hauptreiter ist nicht als Modellieren beschriftet');
+  assert.equal(await page.locator('#booleanUnion').isVisible(), false, 'Boolesche CAD-Funktion ist noch im normalen Modellierbereich sichtbar');
+
+  // Erweiterte CAD-Funktionen bleiben erreichbar, sind aber standardmässig im Expertenbereich.
+  await page.locator('#expertCenterToggle').click();
+  await page.locator('[data-tab="expert"]').waitFor({ state: 'visible' });
+  const advancedCad = page.locator('#pane-expert-left details.advanced-cad-tools');
+  await advancedCad.locator('summary').click();
+  for (const id of ['booleanUnion', 'booleanSubtract', 'booleanIntersect', 'booleanSeparate']) {
+    assert.equal(await page.locator('#' + id).isVisible(), true, id + ' ist im Expertenbereich nicht erreichbar');
+  }
+  await page.locator('#expertCenterToggle').click();
+  await page.locator('[data-tab="create"]').click();
   await page.locator('#pane-create-left > .inner-tab-nav button').first().click();
 
   // 1) Tastenkürzel: L, R und C starten das vorhandene Werkzeug; Escape beendet es.
