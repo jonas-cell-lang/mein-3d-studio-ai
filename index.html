@@ -1227,37 +1227,55 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const attr = line.geometry.getAttribute('position');
       const rect = canvas.getBoundingClientRect();
       if (!attr || attr.count < 2 || !rect.width || !rect.height) return null;
-      const project = index => {
-        const point = new THREE.Vector3().fromBufferAttribute(attr, index)
-          .applyMatrix4(line.matrixWorld).project(camera);
+      const project = (sourceLine, index) => {
+        const point = new THREE.Vector3()
+          .fromBufferAttribute(sourceLine.geometry.getAttribute('position'), index)
+          .applyMatrix4(sourceLine.matrixWorld).project(camera);
         if (point.z < -1 || point.z > 1) return null;
         return {
           x: rect.left + (point.x + 1) * rect.width / 2,
           y: rect.top + (1 - point.y) * rect.height / 2
         };
       };
-      // Für den Browser-Test einen Punkt mit möglichst grossem Abstand zu
-      // anderen projizierten Kanten wählen. So wird nicht eine mehrdeutige
-      // Stelle nahe einer zweiten Kante als vermeintlicher Picker-Fehler getestet.
+      const distanceToLine = (x, y, sourceLine) => {
+        const positions = sourceLine.geometry.getAttribute('position');
+        let best = Infinity;
+        for (let j = 0; j < positions.count - 1; j++) {
+          const a = project(sourceLine, j), b = project(sourceLine, j + 1);
+          if (!a || !b) continue;
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const lengthSquared = dx * dx + dy * dy;
+          const t = lengthSquared > 1e-9
+            ? Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / lengthSquared))
+            : 0;
+          best = Math.min(best, Math.hypot(x - (a.x + t * dx), y - (a.y + t * dy)));
+        }
+        return best;
+      };
       let bestPoint = null;
       let bestClearance = -Infinity;
       for (let i = 0; i < attr.count - 1; i++) {
-        const a = project(i), b = project(i + 1);
+        const a = project(line, i), b = project(line, i + 1);
         if (!a || !b) continue;
-        const length = Math.hypot(b.x - a.x, b.y - a.y);
-        if (length < 8) continue;
+        if (Math.hypot(b.x - a.x, b.y - a.y) < 8) continue;
         for (const t of [0.2, 0.35, 0.5, 0.65, 0.8]) {
           const candidate = {
             x: a.x + (b.x - a.x) * t,
             y: a.y + (b.y - a.y) * t
           };
-          const pick = window.__silmoOcctFindEdgeAtScreenPoint(candidate.x, candidate.y);
-          const ownDistance = pick?.edgeDistances?.find(item => item.edgeIndex === edgeIndex)?.distance;
-          const clearance = Math.min(...(pick?.edgeDistances || [])
-            .filter(item => item.edgeIndex !== edgeIndex)
-            .map(item => item.distance));
-          if (Number.isFinite(ownDistance) && ownDistance <= 1.5 &&
-              Number.isFinite(clearance) && clearance > bestClearance) {
+          // Der echte Test klickt 8 px rechts und 6 px tiefer.
+          // Deshalb muss genau dieser versetzte Punkt eindeutig auf der Zielkante liegen.
+          const clickX = candidate.x + 8;
+          const clickY = candidate.y + 6;
+          const distances = overlay.group.children.map(other => ({
+            edgeIndex: other.userData.occtEdgeIndex,
+            distance: distanceToLine(clickX, clickY, other)
+          }));
+          const own = distances.find(item => item.edgeIndex === edgeIndex)?.distance;
+          const others = distances.filter(item => item.edgeIndex !== edgeIndex).map(item => item.distance);
+          const nearestOther = Math.min(...others);
+          const clearance = nearestOther - own;
+          if (Number.isFinite(own) && own <= 14 && own < nearestOther && clearance > bestClearance) {
             bestPoint = candidate;
             bestClearance = clearance;
           }
