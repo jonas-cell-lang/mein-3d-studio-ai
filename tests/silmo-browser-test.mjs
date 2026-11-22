@@ -2980,12 +2980,14 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   // Allgemeine CAD-Werkzeuge: keine produktgebundene Sonderfunktion, sondern wiederverwendbare Konstruktion.
   await page.locator('[data-tab="create"]').click();
   const createSubtabs=page.locator('#pane-create-left > .inner-tab-nav button');
-  assert.equal(await createSubtabs.count(),3,'v89: Unterreiter Erstellen fehlen');
-  await createSubtabs.nth(1).click();
-  assert.equal(await createSubtabs.nth(1).getAttribute('aria-selected'),'true','v90: Unterreiter Kombinieren wird nicht aktiviert');
-  assert.equal(await page.locator('#pane-create-left .inner-tab-panel').nth(0).isVisible(),false,'v90: Grundformen bleibt trotz anderem Unterreiter sichtbar');
-  assert.equal(await page.locator('#pane-create-left .inner-tab-panel').nth(1).isVisible(),true,'v90: aktiver Bereich Kombinieren ist nicht sichtbar');
-  await createSubtabs.nth(0).click();
+  assert.equal(await createSubtabs.count(),2,'SketchUp-Modellieren muss Grundformen und Objektliste als zwei Unterreiter zeigen');
+  assert.match(await createSubtabs.nth(0).innerText(),/Grundformen/,'Grundformen-Unterreiter fehlt');
+  assert.match(await createSubtabs.nth(1).innerText(),/Objektliste/,'Objektliste-Unterreiter fehlt');
+  assert.equal(await createSubtabs.nth(0).getAttribute('aria-selected'),'true','Grundformen ist beim Öffnen des Modellieren-Bereichs nicht aktiv');
+  assert.equal(await page.locator('#pane-create-left .inner-tab-panel').nth(0).isVisible(),true,'Grundformen-Bereich ist nicht sichtbar');
+  await showExpertBooleanTools();
+  assert.equal(await page.locator('#pane-expert-left details.advanced-cad-tools').isVisible(),true,'Erweiterte Boolean-CAD-Werkzeuge fehlen im Expertenzentrum');
+  await showCreateSubtab(0);
   for (const id of ['addCone','addHexPrism','addTorus']) assert.equal(await page.locator('#'+id).count(),1,`Allgemeines CAD-Grundwerkzeug ${id} fehlt`);
   const primitiveStart = await page.locator('#objects .object-row').count();
   await page.locator('#addCone').click(); await page.locator('#addHexPrism').click(); await page.locator('#addTorus').click();
