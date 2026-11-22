@@ -53,6 +53,37 @@ try {
     quaternionAxis[1] - faceFrame.normal[1],
     quaternionAxis[2] - faceFrame.normal[2]
   ) < 1e-5, 'Extrusionsachse ist nicht korrekt auf die gewählte Fläche ausgerichtet');
+
+  // Vollständiger Mini-Ablauf: Rechteck auf der gewählten Seitenfläche zeichnen
+  // und als Körper extrudieren. Die Dicke muss entlang der Flächennormalen liegen.
+  await page.locator('#sketchTool').selectOption('rectangle');
+  await page.locator('#startSketch').click();
+  await page.waitForTimeout(700);
+  const faceDrag = await page.evaluate(() => {
+    const half = window.SILMOUnits.mmToWorldUnits(10);
+    return {
+      start: window.__silmoFaceSketchScreenPointForTest(-half, -half),
+      end: window.__silmoFaceSketchScreenPointForTest(half, half)
+    };
+  });
+  assert.ok(faceDrag.start && faceDrag.end, 'Zeichenpunkte auf der ausgewählten Modellfläche sind nicht sichtbar');
+  await page.mouse.move(faceDrag.start.x, faceDrag.start.y);
+  await page.mouse.down();
+  await page.mouse.move(faceDrag.end.x, faceDrag.end.y, { steps: 8 });
+  await page.mouse.up();
+  await page.locator('#createSketchSolid').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#createSketchSolid').isDisabled(), false, 'Rechteck-Skizze auf der Seitenfläche wurde nicht abgeschlossen');
+  await page.locator('#createSketchSolid').click();
+  await page.waitForFunction(() => !!window.__silmoSketchSnapshot?.());
+  const extruded = await page.evaluate(() => window.__silmoSketchSnapshot());
+  assert.equal(extruded.type, 'rectangle', 'Falscher Skizzentyp wurde extrudiert');
+  const normalAxis = faceFrame.normal.reduce((best, value, index, values) =>
+    Math.abs(value) > Math.abs(values[best]) ? index : best, 0);
+  const extents = [extruded.actualWidthMM, extruded.actualDepthMM, extruded.actualHeightMM];
+  assert.ok(
+    Math.abs(extents[normalAxis] - extruded.extrusionMM) < 0.8,
+    'Extrusion verläuft nicht entlang der ausgewählten Flächennormalen'
+  );
   await page.locator('[data-tab="create"]').click();
   // Der folgende Escape-Test beendet den Zeichenmodus und setzt die Flächenauswahl zurück.
 
