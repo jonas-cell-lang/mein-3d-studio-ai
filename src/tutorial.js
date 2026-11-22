@@ -135,6 +135,11 @@
   function revealTarget(id){
     if(!id)return;
     const target=$(id);if(!target)return;
+    const hiddenInnerPanel=target.closest('.inner-tab-panel[hidden]');
+    if(hiddenInnerPanel){
+      const innerTab=document.getElementById(hiddenInnerPanel.getAttribute('aria-labelledby')||'');
+      if(innerTab)innerTab.click();
+    }
     let parent=target.parentElement;
     while(parent&&parent!==document.body){if(parent.tagName==='DETAILS')parent.open=true;parent=parent.parentElement;}
     clearHighlight();highlight=target;target.classList.add('tutorial-highlight');
