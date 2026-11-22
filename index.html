@@ -3359,6 +3359,60 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     raycaster.setFromCamera(pointerNDC, camera);
   }
 
+  // SketchUp-orientierte Auswahlhilfe: Nicht ausgewählte Körper werden beim
+  // Darüberfahren dezent blau umrandet. Die Geometrie selbst bleibt unverändert.
+  let hoverObject = null;
+  let hoverOutline = null;
+  function clearHoverOutline() {
+    if (hoverOutline) {
+      scene.remove(hoverOutline);
+      hoverOutline.geometry.dispose();
+      hoverOutline.material.dispose();
+      hoverOutline = null;
+    }
+    hoverObject = null;
+  }
+  function updateHoverOutline(event) {
+    if (event.pointerType !== 'mouse' || sketchMode || dragging) return;
+    setPointerRay(event);
+    const hit = raycaster.intersectObjects(objects, false)
+      .find(entry => entry.object !== selected && !selectedObjects.includes(entry.object));
+    const nextObject = hit?.object || null;
+    if (nextObject !== hoverObject) {
+      clearHoverOutline();
+      if (nextObject) {
+        hoverObject = nextObject;
+        hoverOutline = new THREE.BoxHelper(nextObject, 0x42a5f5);
+        hoverOutline.material.transparent = true;
+        hoverOutline.material.opacity = 0.95;
+        hoverOutline.material.depthTest = false;
+        hoverOutline.material.depthWrite = false;
+        hoverOutline.renderOrder = 1000;
+        scene.add(hoverOutline);
+      }
+    } else if (hoverOutline) {
+      hoverOutline.update();
+    }
+  }
+  canvas.addEventListener('pointermove', updateHoverOutline);
+  canvas.addEventListener('pointerleave', clearHoverOutline);
+  window.__silmoHoverSnapshot = () => ({
+    objectId: hoverObject?.uuid || null,
+    outlineVisible: !!hoverOutline && hoverOutline.visible
+  });
+  window.__silmoHoverTestPoint = () => {
+    const candidate = objects.find(obj => obj !== selected && !selectedObjects.includes(obj));
+    if (!candidate) return null;
+    const center = new THREE.Box3().setFromObject(candidate).getCenter(new THREE.Vector3()).project(camera);
+    const rect = canvas.getBoundingClientRect();
+    if (center.z < -1 || center.z > 1 || !rect.width || !rect.height) return null;
+    return {
+      objectId: candidate.uuid,
+      x: rect.left + (center.x + 1) * rect.width / 2,
+      y: rect.top + (1 - center.y) * rect.height / 2
+    };
+  };
+
   let sketchPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
   function updateSketchPlaneFromUI() {
     const plane = document.getElementById('sketchPlaneSelect')?.value || 'xy';
