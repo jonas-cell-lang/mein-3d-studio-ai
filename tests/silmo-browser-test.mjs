@@ -2105,7 +2105,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await page.evaluate(()=>window.__silmoTutorialShowStepForTest(24)),true,'Aufgabe 25 kann nicht geöffnet werden');
   assert.match(await page.locator('#tutorialTitle').innerText(),/Druckbett einstellen und prüfen/,'Aufgabe 25 hat den falschen Titel');
   assert.equal(await page.locator('#tutorialInstructionList li').count(),8,'Aufgabe 25 enthält nicht acht konkrete Schritte');
-  assert.match(await page.locator('#tutorialInstructionList').innerText(),/Messen & Prüfen/,'Aufgabe 25 nennt den richtigen Reiter für die Druckbettprüfung nicht');
+  assert.match(await page.locator('#tutorialInstructionList').innerText(),/3D-Druck/,'Aufgabe 25 nennt den richtigen Reiter für die Druckbettprüfung nicht');
   await page.locator('[data-tab="print"]').click();
   const bedWidthBefore=Number(await page.locator('#bedWidth').inputValue());
   const bedDepthBefore=Number(await page.locator('#bedDepth').inputValue());
@@ -2113,8 +2113,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const targetBedDepth=Math.min(2000,bedDepthBefore+23);
   await page.locator('#bedWidth').fill(String(targetBedWidth));
   await page.locator('#bedDepth').fill(String(targetBedDepth));
-  // Beim Verlassen der Felder müssen die neuen Werte sofort in der echten 3D-Platte ankommen.
-  await page.locator('[data-tab="measure"]').click();
+  // Die Druckbettprüfung liegt direkt im Druck-Reiter und löst das Übernehmen der Masse aus.
+  
   await page.waitForFunction(({w,d})=>{
     const s=window.__silmoBedSnapshot?.();
     return s && s.widthMM===w && s.depthMM===d && s.outlineWidthMM===w && s.outlineDepthMM===d;
@@ -2130,7 +2130,6 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   // Ungültige Masse dürfen die letzte gültige Platte nicht unbemerkt überschreiben.
   await page.locator('[data-tab="print"]').click();
   await page.locator('#bedWidth').fill('2');
-  await page.locator('[data-tab="measure"]').click();
   await page.locator('#checkBed').click();
   assert.match(await page.locator('#status').innerText(),/Druckbett nicht übernommen/,'Ungültige Druckbettgrösse wird nicht klar abgewiesen');
   const afterInvalidBed=await page.evaluate(()=>window.__silmoBedSnapshot());
