@@ -23,11 +23,15 @@ try {
   assert.equal(await page.locator('#subtractSelected').isVisible(), false, 'Subtraktionswerkzeug ist im Normalmodus sichtbar');
   await page.locator('#modeToggle').click();
   assert.match(await page.locator('#modeToggle').innerText(), /EIN/, 'Schalter zeigt den eingeschalteten Zustand nicht');
-  assert.equal(await page.locator('#addOcctBox').isVisible(), true, 'OCCT-Spezialwerkzeug wird beim Einschalten nicht eingeblendet');
-  assert.equal(await page.locator('#createContourFrame').isVisible(), true, 'Hohlrahmen-Werkzeug wird beim Einschalten nicht eingeblendet');
-  assert.equal(await page.locator('#subtractSelected').isVisible(), true, 'Subtraktionswerkzeug wird beim Einschalten nicht eingeblendet');
+  await page.locator('[data-tab="create"]').click();
+  assert.equal(await page.locator('#addOcctBox').isVisible(), true, 'OCCT-Spezialwerkzeug wird beim Einschalten im Modellieren-Reiter nicht eingeblendet');
+  await page.locator('[data-tab="draw"]').click();
+  assert.equal(await page.locator('#createContourFrame').isVisible(), true, 'Hohlrahmen-Werkzeug wird beim Einschalten im Zeichnen-Reiter nicht eingeblendet');
+  assert.equal(await page.locator('#subtractSelected').isVisible(), true, 'Subtraktionswerkzeug wird beim Einschalten im Zeichnen-Reiter nicht eingeblendet');
   await page.locator('#modeToggle').click();
+  await page.locator('[data-tab="create"]').click();
   assert.equal(await page.locator('#addOcctBox').isVisible(), false, 'OCCT-Spezialwerkzeug wird beim Ausschalten nicht ausgeblendet');
+  await page.locator('[data-tab="draw"]').click();
   assert.equal(await page.locator('#createContourFrame').isVisible(), false, 'Hohlrahmen-Werkzeug bleibt nach Ausschalten sichtbar');
   assert.equal(await page.locator('#subtractSelected').isVisible(), false, 'Subtraktionswerkzeug bleibt nach Ausschalten sichtbar');
 
