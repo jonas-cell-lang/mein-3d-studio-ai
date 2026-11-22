@@ -71,6 +71,11 @@ try {
     return { available: !!gl, version: gl ? gl.getParameter(gl.VERSION) : null };
   });
   assert.equal(webglInfo.available, true, '3D-Arbeitsfläche besitzt keinen aktiven WebGL-Kontext');
+  assert.match(await page.locator('#modeToggle').innerText(), /AUS/, 'Erweiterte Funktionen sind beim Start nicht ausgeschaltet');
+  assert.equal(await page.locator('#occtFilletPanel').isVisible(), false, 'Alte OCCT-Flächen- und Kantenwerkzeuge sind im Normalmodus sichtbar');
+  await page.locator('#modeToggle').click();
+  assert.match(await page.locator('#modeToggle').innerText(), /EIN/, 'Erweiterte Funktionen lassen sich für den vollständigen CAD-Test nicht einschalten');
+  assert.equal(await page.locator('#occtFilletPanel').isVisible(), true, 'OCCT-Flächen- und Kantenwerkzeuge bleiben im Expertenmodus verborgen');
   // SketchUp-orientierte Grundkürzel müssen vorhandene Skizzierwerkzeuge aktivieren.
   await page.keyboard.press('l');
   assert.equal(await page.locator('#sketchTool').inputValue(), 'line2d', 'L aktiviert nicht das Linienwerkzeug');
