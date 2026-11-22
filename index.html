@@ -3459,7 +3459,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       hitObjectId: hit?.object?.uuid || null,
       rootObjectId: hit ? (() => { let root = hit.object; while (root && !objects.includes(root)) root = root.parent; return root?.uuid || null; })() : null,
       selectedObjectId: selected?.uuid || null,
-      selectedObjectIds: selectedObjects.map(object => object.uuid)
+      selectedObjectIds: selectedObjects.map(object => object.uuid),
+      pointerClient: { x: event.clientX, y: event.clientY },
+      pointerNDC: { x: pointerNDC.x, y: pointerNDC.y },
+      cameraPosition: camera.position.toArray(),
+      cameraQuaternion: camera.quaternion.toArray()
     };
     if (nextObject !== hoverObject) {
       clearHoverOutline();
