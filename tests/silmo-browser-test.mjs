@@ -2359,7 +2359,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     await page.waitForFunction(() => window.__silmoHoverSnapshot?.().outlineVisible === true, null, { timeout: 3000 });
   } catch (error) {
     const hoverState = await page.evaluate(() => window.__silmoHoverSnapshot?.());
-    throw new Error('Hover-Kontur nach Mausbewegung nicht sichtbar. Diagnose: ' + JSON.stringify(hoverState) + '. Ursache: ' + error.message);
+    throw new Error('Hover-Kontur nach Mausbewegung nicht sichtbar. Testpunkt: ' + JSON.stringify(hoverPoint) + '. Diagnose: ' + JSON.stringify(hoverState) + '. Ursache: ' + error.message);
   }
   assert.equal((await page.evaluate(() => window.__silmoHoverSnapshot())).objectId, hoverPoint.objectId,
     'Blaue Hover-Kontur gehört nicht zum Objekt unter dem Mauszeiger');
