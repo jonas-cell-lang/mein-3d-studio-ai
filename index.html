@@ -4834,6 +4834,13 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         status.textContent = 'Keine Modellfläche getroffen. Bitte direkt auf eine ebene Modellfläche klicken.';
         return;
       }
+      const vertexNormals = hit.object.geometry?.getAttribute('normal');
+      if (!vertexNormals || [hit.face.a, hit.face.b, hit.face.c].some(index =>
+        new THREE.Vector3().fromBufferAttribute(vertexNormals, index).normalize().dot(hit.face.normal.clone().normalize()) < 0.995
+      )) {
+        status.textContent = 'Diese Fläche ist gekrümmt oder nicht eindeutig eben. Bitte eine flache Modellfläche wählen.';
+        return;
+      }
       hit.object.updateMatrixWorld(true);
       const normalMatrix = new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld);
       const normal = hit.face.normal.clone().applyMatrix3(normalMatrix).normalize();
