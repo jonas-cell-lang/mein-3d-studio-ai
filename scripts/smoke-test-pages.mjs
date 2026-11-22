@@ -6,7 +6,7 @@ const timeoutMs = 20_000;
 const retryCount = 10;
 const retryDelayMs = 5_000;
 
-async function requestWithRetry(relativePath) {
+async function requestWithRetry(relativePath, includeText = false) {
   const url = new URL(relativePath.replace(/^\.\//, ''), baseUrl);
   let lastError;
   for (let attempt = 1; attempt <= retryCount; attempt += 1) {
@@ -25,7 +25,7 @@ async function requestWithRetry(relativePath) {
       if (relativePath !== 'index.html' && contentType.toLowerCase().includes('text/html')) {
         throw new Error('Statt der Datei wurde HTML ausgeliefert (Content-Type: ' + contentType + ').');
       }
-      return { url: url.href, bytes: body.byteLength, contentType };
+      return { url: url.href, bytes: body.byteLength, contentType, ...(includeText ? { text: new TextDecoder().decode(body) } : {}) };
     } catch (error) {
       lastError = error;
       console.log('[Versuch ' + attempt + '/' + retryCount + '] ' + relativePath + ': ' + error.message);
@@ -35,12 +35,8 @@ async function requestWithRetry(relativePath) {
   throw new Error('Pages-Datei nach ' + retryCount + ' Versuchen nicht erreichbar: ' + relativePath + '\n' + lastError?.message);
 }
 
-const index = await requestWithRetry('index.html');
-const htmlResponse = await fetch(new URL('index.html', baseUrl), {
-  cache: 'no-store',
-  signal: AbortSignal.timeout(timeoutMs)
-});
-const html = await htmlResponse.text();
+const index = await requestWithRetry('index.html', true);
+const html = index.text;
 const scriptPaths = [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi)]
   .map(match => match[1])
   .filter(path => !/^https?:\/\//i.test(path));
@@ -52,9 +48,9 @@ const requiredRuntime = [
   'vendor/occt/occt-wasm.wasm'
 ];
 const paths = [...new Set([...scriptPaths, ...requiredRuntime])];
-for (const path of paths) {
-  if (!html.includes(path)) {
-    throw new Error('Erwarteter Runtime-Pfad fehlt in index.html: ' + path);
+for (const path of requiredRuntime.slice(0, 3)) {
+  if (!scriptPaths.some(scriptPath => scriptPath.replace(/^\\.\\//, '') === path)) {
+    throw new Error('Three.js-Datei wird nicht direkt in index.html eingebunden: ' + path);
   }
 }
 console.log('OK index.html: ' + index.bytes + ' Bytes');
