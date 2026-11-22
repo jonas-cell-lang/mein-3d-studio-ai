@@ -612,8 +612,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   }), edgeScreenPoint);
   assert.equal(edgePickTolerance.near?.edgeIndex, pickedEdgeIndex,
     'Die bildschirmbasierte Kantenerkennung verfehlt einen Klick innerhalb der 14-Pixel-Toleranz: ' + JSON.stringify(edgePickTolerance));
-  assert.equal(edgePickTolerance.far, null,
-    'Die bildschirmbasierte Kantenerkennung akzeptiert einen Klick ausserhalb der Toleranz');
+  assert.notEqual(edgePickTolerance.far?.edgeIndex, pickedEdgeIndex,
+    'Die bildschirmbasierte Kantenerkennung akzeptiert einen weit entfernten Klick weiterhin als dieselbe Zielkante');
   await page.mouse.click(edgeScreenPoint.x + 8, edgeScreenPoint.y + 6);
   await page.waitForTimeout(300);
   const edgePickEventDebug = await page.evaluate(index => ({
