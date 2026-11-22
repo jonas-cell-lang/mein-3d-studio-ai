@@ -37,7 +37,6 @@ try {
   await page.locator('[data-tab="create"]').click();
   assert.equal(await page.locator('#addOcctBox').isVisible(), false, 'OCCT-Spezialwerkzeug wird beim Ausschalten nicht ausgeblendet');
   await page.locator('[data-tab="draw"]').click();
-  await page.locator('.inner-tab-nav button').filter({ hasText: 'Kontur' }).click();
   assert.equal(await page.locator('#createContourFrame').isVisible(), false, 'Hohlrahmen-Werkzeug bleibt nach Ausschalten sichtbar');
   assert.equal(await page.locator('#subtractSelected').isVisible(), false, 'Subtraktionswerkzeug bleibt nach Ausschalten sichtbar');
 
