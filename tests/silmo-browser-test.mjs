@@ -346,7 +346,20 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
       } catch (error) {
         chamfered = { error: String(error?.message || error) };
       }
-      const invalidIndexRejected = await client.filletEdges(source.shapeId, [999], 1)
+      const draftFaceIndex = topology.face.find(face =>
+         Math.abs(face.centerMM?.[0] ?? Infinity) < 1e-5 &&
+         Math.abs((face.centerMM?.[2] ?? -Infinity) - 10) < 1e-5)?.index;
+       let drafted = null;
+       if (Number.isInteger(draftFaceIndex)) {
+         try {
+           drafted = await client.draftFaces(source.shapeId, [draftFaceIndex], 5,
+             { x: 0, y: 0, z: 1 },
+             { origin: { x: 0, y: 0, z: 0 }, normal: { x: 0, y: 0, z: 1 } });
+         } catch (error) {
+           drafted = { error: String(error?.message || error) };
+         }
+       }
+       const invalidIndexRejected = await client.filletEdges(source.shapeId, [999], 1)
         .then(() => false, () => true);
       const impossibleChamferRejected = await client.chamferEdges(source.shapeId, [2], 2000)
         .then(() => false, () => true);
@@ -371,14 +384,19 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
         variableRoundedError: variableRounded?.error || null,
         chamferedVolume: chamfered?.volumeMM3 ?? null,
         chamferedWorkerVolume: chamfered?.shapeId ? await client.getVolume(chamfered.shapeId) : null,
-        chamferError: chamfered?.error || null,
+        draftFaceIndex: Number.isInteger(draftFaceIndex) ? draftFaceIndex : null,
+         draftedVolume: drafted?.volumeMM3 ?? null,
+         draftedWorkerVolume: drafted?.shapeId ? await client.getVolume(drafted.shapeId) : null,
+         draftError: drafted?.error || null,
+         chamferError: chamfered?.error || null,
         impossibleChamferRejected,
         invalidIndexRejected
       };
       await client.releaseShape(rounded.shapeId);
       if (multiRounded?.shapeId) await client.releaseShape(multiRounded.shapeId);
       if (variableRounded?.shapeId) await client.releaseShape(variableRounded.shapeId);
-      if (chamfered?.shapeId) await client.releaseShape(chamfered.shapeId);
+      if (drafted?.shapeId) await client.releaseShape(drafted.shapeId);
+       if (chamfered?.shapeId) await client.releaseShape(chamfered.shapeId);
       return result;
     } finally {
       await client.releaseShape(source.shapeId);
@@ -422,7 +440,15 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'Native OCCT-Kantenfase ergab keinen gültigen Solid: ' + String(topologyAndFillet.chamferError));
   assert.ok(Math.abs(topologyAndFillet.chamferedWorkerVolume - topologyAndFillet.chamferedVolume) < 1e-7,
     'Gefaster OCCT-Körper ist im Worker nicht dauerhaft abfragbar');
-  assert.equal(topologyAndFillet.impossibleChamferRejected, true,
+  assert.notEqual(topologyAndFillet.draftFaceIndex, null,
+     'Für die Flächenneigung wurde keine vertikale native Würfelfläche gefunden');
+   assert.ok(Number.isFinite(topologyAndFillet.draftedVolume) &&
+     topologyAndFillet.draftedVolume > 0 &&
+     topologyAndFillet.draftedVolume < topologyAndFillet.sourceVolume,
+     'Native OCCT-Flächenneigung ergab keinen gültigen Solid: ' + String(topologyAndFillet.draftError));
+   assert.ok(Math.abs(topologyAndFillet.draftedWorkerVolume - topologyAndFillet.draftedVolume) < 1e-7,
+     'Geneigter OCCT-Körper ist im Worker nicht dauerhaft abfragbar');
+   assert.equal(topologyAndFillet.impossibleChamferRejected, true,
     'Geometrisch unmögliche Kantenfase muss kontrolliert abgewiesen werden');
 
   const torusResult = await page.evaluate(async () => {
