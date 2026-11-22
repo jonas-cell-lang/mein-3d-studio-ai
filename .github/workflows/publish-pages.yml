@@ -173,3 +173,7 @@ jobs:
       - name: Publish website
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify files on the live GitHub Pages website
+        env:
+          SILMO_PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node scripts/smoke-test-pages.mjs
