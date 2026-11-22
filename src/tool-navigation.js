@@ -537,6 +537,10 @@
       const mode=document.getElementById('modeToggle'); if(mode){mode.textContent='Expertenmodus';mode.setAttribute('aria-pressed','true');}
       selectTab('expert');
     } else {
+      document.body.classList.remove('expert-mode');
+      document.body.classList.add('beginner-mode');
+      const mode=document.getElementById('modeToggle');
+      if(mode){mode.textContent='Erweiterte Funktionen: AUS';mode.setAttribute('aria-pressed','false');}
       selectTab('measure');
     }
   });
