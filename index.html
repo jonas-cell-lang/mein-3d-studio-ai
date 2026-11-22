@@ -3374,11 +3374,15 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
   function updateHoverOutline(event) {
     if (event.pointerType !== 'mouse' || sketchMode || dragging) {
+      hoverDebug = { reason: event.pointerType !== 'mouse' ? 'Kein Maus-Pointer' : sketchMode ? 'Zeichenmodus aktiv' : 'Ziehen aktiv',
+        pointerType: event.pointerType || null, hitObjectId: null };
       clearHoverOutline();
       return;
     }
     setPointerRay(event);
     const hit = raycaster.intersectObjects(objects, false)[0];
+    hoverDebug = { reason: hit ? 'Treffer vorhanden' : 'Kein Objekt getroffen',
+      pointerType: event.pointerType || null, hitObjectId: hit?.object?.uuid || null };
     const nextObject = hit && hit.object !== selected && !selectedObjects.includes(hit.object)
       ? hit.object
       : null;
@@ -3400,9 +3404,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
   canvas.addEventListener('pointermove', updateHoverOutline);
   canvas.addEventListener('pointerleave', clearHoverOutline);
+  let hoverDebug = { reason: 'Noch keine Mausbewegung', pointerType: null, hitObjectId: null };
   window.__silmoHoverSnapshot = () => ({
     objectId: hoverObject?.uuid || null,
-    outlineVisible: !!hoverOutline && hoverOutline.visible
+    outlineVisible: !!hoverOutline && hoverOutline.visible,
+    debug: { ...hoverDebug, sketchMode: !!sketchMode, dragging: !!dragging,
+      canvasRect: (() => { const r = canvas.getBoundingClientRect(); return { x:r.x, y:r.y, width:r.width, height:r.height }; })() }
   });
   window.__silmoHoverTestPoint = () => {
     const rect = canvas.getBoundingClientRect();
