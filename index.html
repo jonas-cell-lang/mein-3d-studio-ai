@@ -3471,6 +3471,39 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   let sketchPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
   let faceSketchPlaneActive = false;
   let faceSketchPlanePickMode = false;
+  const faceSketchFrame = {
+    origin: new THREE.Vector3(),
+    u: new THREE.Vector3(1, 0, 0),
+    v: new THREE.Vector3(0, 1, 0),
+    normal: new THREE.Vector3(0, 0, 1),
+    quaternion: new THREE.Quaternion()
+  };
+  function setFaceSketchFrame(origin, normal) {
+    faceSketchFrame.origin.copy(origin);
+    faceSketchFrame.normal.copy(normal).normalize();
+    const reference = Math.abs(faceSketchFrame.normal.z) < 0.9
+      ? new THREE.Vector3(0, 0, 1)
+      : new THREE.Vector3(0, 1, 0);
+    faceSketchFrame.u.crossVectors(reference, faceSketchFrame.normal).normalize();
+    faceSketchFrame.v.crossVectors(faceSketchFrame.normal, faceSketchFrame.u).normalize();
+    const basis = new THREE.Matrix4().makeBasis(faceSketchFrame.u, faceSketchFrame.v, faceSketchFrame.normal);
+    faceSketchFrame.quaternion.setFromRotationMatrix(basis);
+  }
+  function intersectSketchPlane(event, target) {
+    if (!event || !raycaster.ray.intersectPlane(sketchPlane, target)) return false;
+    if (faceSketchPlaneActive) {
+      const offset = target.clone().sub(faceSketchFrame.origin);
+      target.set(offset.dot(faceSketchFrame.u), offset.dot(faceSketchFrame.v), 0);
+    }
+    return true;
+  }
+  function sketchPointToWorld(point) {
+    if (!faceSketchPlaneActive) return point.clone();
+    return faceSketchFrame.origin.clone()
+      .addScaledVector(faceSketchFrame.u, point.x)
+      .addScaledVector(faceSketchFrame.v, point.y)
+      .addScaledVector(faceSketchFrame.normal, point.z || 0);
+  }
   function updateSketchPlaneFromUI() {
     if (faceSketchPlaneActive) return 'face';
     const plane = document.getElementById('sketchPlaneSelect')?.value || 'xy';
@@ -3634,6 +3667,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       }
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
       sketchPreview = new THREE.LineLoop(geometry, new THREE.LineBasicMaterial({ color: 0x53d8e8, depthTest: false }));
+    }
+    if (faceSketchPlaneActive) {
+      sketchPreview.position.copy(faceSketchFrame.origin);
+      sketchPreview.quaternion.copy(faceSketchFrame.quaternion);
     }
     sketchPreview.renderOrder = 20;
     scene.add(sketchPreview);
@@ -3805,7 +3842,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     if (e) setPointerRay(e);
     const activeTool = document.getElementById('sketchTool').value;
     if (['line3d','line2d','curve2d'].includes(activeTool)) {
-      if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
+      if (e && intersectSketchPlane(e, sketchPoint)) {
         snapSketchPoint(sketchPoint);
         let points = sketchDraft?.type === activeTool ? sketchDraft.points : [sketchStart.clone()];
         if (activeTool === 'line2d') points = [sketchStart.clone(), sketchPoint.clone()];
@@ -4496,6 +4533,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         };
         label = tool === 'circle' ? 'Skizze Kreis' : tool === 'ellipse' ? 'Skizze Ellipse' : tool === 'triangle' ? 'Skizze Dreieck' : tool === 'roundedRectangle' ? 'Abgerundete Rechteck-Skizze' : 'Skizze Rechteck';
       }
+      if (faceSketchPlaneActive) {
+        geometry.applyQuaternion(faceSketchFrame.quaternion);
+        meshPosition.copy(sketchPointToWorld(meshPosition));
+      }
       if (!['line3d','line2d','curve2d'].includes(tool)) {
         const exactX=document.getElementById('sketchPositionXMM')?.value;
         const exactY=document.getElementById('sketchPositionYMM')?.value;
@@ -4760,16 +4801,17 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const hits = raycaster.intersectObjects(objects, true);
       const hit = hits[0];
       if (!hit || !hit.face || !hit.object?.isMesh) {
-        status.textContent = 'Keine Modellfläche getroffen. Bitte direkt auf eine obere Fläche klicken.';
+        status.textContent = 'Keine Modellfläche getroffen. Bitte direkt auf eine ebene Modellfläche klicken.';
         return;
       }
       hit.object.updateMatrixWorld(true);
       const normalMatrix = new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld);
       const normal = hit.face.normal.clone().applyMatrix3(normalMatrix).normalize();
-      if (normal.z < 0.999) {
-        status.textContent = 'Für diesen ersten Schritt bitte eine waagerechte Oberseite wählen. Seitliche und schräge Flächen folgen später.';
+      if (!Number.isFinite(normal.x + normal.y + normal.z) || normal.lengthSq() < 0.99) {
+        status.textContent = 'Die Flächenausrichtung konnte nicht sicher erkannt werden.';
         return;
       }
+      setFaceSketchFrame(hit.point, normal);
       sketchPlane.setFromNormalAndCoplanarPoint(normal, hit.point);
       faceSketchPlaneActive = true;
       faceSketchPlanePickMode = false;
