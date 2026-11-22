@@ -2354,6 +2354,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   }
   const hoverPoint = await page.evaluate(() => window.__silmoHoverTestPoint?.());
   assert.ok(hoverPoint, 'Kein nicht ausgewähltes Testobjekt für die Hover-Auswahlhilfe gefunden');
+  assert.equal(hoverPoint.targetElement, 'CANVAS', 'Hover-Testpunkt liegt nicht auf der 3D-Canvas: ' + JSON.stringify(hoverPoint));
   await page.mouse.move(hoverPoint.x, hoverPoint.y);
   try {
     await page.waitForFunction(() => window.__silmoHoverSnapshot?.().outlineVisible === true, null, { timeout: 3000 });
@@ -2361,8 +2362,12 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     const hoverState = await page.evaluate(() => window.__silmoHoverSnapshot?.());
     throw new Error('Hover-Kontur nach Mausbewegung nicht sichtbar. Testpunkt: ' + JSON.stringify(hoverPoint) + '. Diagnose: ' + JSON.stringify(hoverState) + '. Ursache: ' + error.message);
   }
-  assert.equal((await page.evaluate(() => window.__silmoHoverSnapshot())).objectId, hoverPoint.objectId,
+  const hoverState = await page.evaluate(() => window.__silmoHoverSnapshot());
+  assert.equal(hoverState.objectId, hoverPoint.objectId,
     'Blaue Hover-Kontur gehört nicht zum Objekt unter dem Mauszeiger');
+  assert.ok(Math.abs(hoverState.debug.pointerClient.x - hoverPoint.x) < 1 &&
+    Math.abs(hoverState.debug.pointerClient.y - hoverPoint.y) < 1,
+    'Die 3D-Canvas hat nicht die berechnete Mausposition erhalten: ' + JSON.stringify({ hoverPoint, pointerClient: hoverState.debug.pointerClient }));
   await page.mouse.move(5, 5);
   await page.waitForFunction(() => window.__silmoHoverSnapshot?.().outlineVisible === false, null, { timeout: 3000 });
   await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 5000 });
