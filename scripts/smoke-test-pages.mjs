@@ -49,7 +49,7 @@ const requiredRuntime = [
 ];
 const paths = [...new Set([...scriptPaths, ...requiredRuntime])];
 for (const path of requiredRuntime.slice(0, 3)) {
-  if (!scriptPaths.some(scriptPath => scriptPath.replace(/^\\.\\//, '') === path)) {
+  if (!scriptPaths.some(scriptPath => (scriptPath.startsWith('./') ? scriptPath.slice(2) : scriptPath) === path)) {
     throw new Error('Three.js-Datei wird nicht direkt in index.html eingebunden: ' + path);
   }
 }
