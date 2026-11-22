@@ -3489,7 +3489,13 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   window.__silmoHoverTestPoint = () => {
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return null;
+    // Nach dem Erzeugen eines Testkörpers zuerst alle Weltmatrizen aktualisieren.
+    // Andernfalls kann die projizierte Mitte aus veralteten Raycast-Matrizen stammen.
+    scene.updateMatrixWorld(true);
+    camera.updateMatrixWorld(true);
+    camera.updateProjectionMatrix();
     for (const candidate of objects) {
+      candidate.updateMatrixWorld(true);
       if (candidate === selected || selectedObjects.includes(candidate)) continue;
       const center = new THREE.Box3().setFromObject(candidate).getCenter(new THREE.Vector3()).project(camera);
       if (center.z < -1 || center.z > 1) continue;
