@@ -153,6 +153,9 @@ jobs:
           PY
           touch _site/.nojekyll
 
+      - name: Validate live Pages smoke test script
+        run: node --check scripts/smoke-test-pages.mjs
+
       - name: Upload website artifact
         uses: actions/upload-pages-artifact@v3
         with:
