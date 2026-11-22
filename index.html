@@ -3469,7 +3469,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   };
 
   let sketchPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+  let faceSketchPlaneActive = false;
+  let faceSketchPlanePickMode = false;
   function updateSketchPlaneFromUI() {
+    if (faceSketchPlaneActive) return 'face';
     const plane = document.getElementById('sketchPlaneSelect')?.value || 'xy';
     const normal = plane === 'xz' ? new THREE.Vector3(0,1,0) :
       plane === 'yz' ? new THREE.Vector3(1,0,0) : new THREE.Vector3(0,0,1);
@@ -4737,8 +4740,44 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     return (a*e - b*d) / denom;
   }
 
+  document.getElementById('pickFaceSketchPlane')?.addEventListener('click', () => {
+    faceSketchPlanePickMode = true;
+    sketchMode = false;
+    document.getElementById('pickFaceSketchPlane').textContent = 'Jetzt obere Fläche anklicken …';
+    document.getElementById('sketchStatus').textContent = 'Klicke auf die obere, waagerechte Fläche eines Körpers.';
+    status.textContent = 'Flächenauswahl aktiv.';
+    canvas.style.cursor = 'crosshair';
+  });
+
   canvas.addEventListener('pointerdown', e => {
     clearHoverOutline();
+    if (faceSketchPlanePickMode) {
+      setPointerRay(e);
+      const hits = raycaster.intersectObjects(objects, true);
+      const hit = hits[0];
+      if (!hit || !hit.face || !hit.object?.isMesh) {
+        status.textContent = 'Keine Modellfläche getroffen. Bitte direkt auf eine obere Fläche klicken.';
+        return;
+      }
+      hit.object.updateMatrixWorld(true);
+      const normalMatrix = new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld);
+      const normal = hit.face.normal.clone().applyMatrix3(normalMatrix).normalize();
+      if (normal.z < 0.999) {
+        status.textContent = 'Für diesen ersten Schritt bitte eine waagerechte Oberseite wählen. Seitliche und schräge Flächen folgen später.';
+        return;
+      }
+      sketchPlane.setFromNormalAndCoplanarPoint(normal, hit.point);
+      faceSketchPlaneActive = true;
+      faceSketchPlanePickMode = false;
+      document.getElementById('pickFaceSketchPlane').textContent = '✓ Modellfläche ausgewählt';
+      document.getElementById('sketchPlaneSelect').disabled = true;
+      document.getElementById('sketchStatus').textContent = 'Oberfläche gewählt. Starte jetzt das Zeichnen.';
+      status.textContent = 'Zeichenebene auf Modelloberfläche gesetzt.';
+      canvas.style.cursor = 'default';
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     if (sketchMode && clickContourMode) {
       if (e.cancelable) e.preventDefault();
       e.stopPropagation();
