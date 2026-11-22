@@ -582,7 +582,8 @@ async function execute(method, args) {
         !faceIndices.every(index => Number.isInteger(index) && index >= 0) ||
         new Set(faceIndices).size !== faceIndices.length ||
         !Number.isFinite(angleDeg) || Math.abs(angleDeg) < 0.1 || Math.abs(angleDeg) > 20 ||
-        !validVector(direction) || !validVector(neutralPlane?.origin) ||
+        !validVector(direction) ||
+        !neutralPlane?.origin || ![neutralPlane.origin.x, neutralPlane.origin.y, neutralPlane.origin.z].every(Number.isFinite) ||
         !validVector(neutralPlane?.normal)) {
       throw new Error("Flächenneigung benötigt eindeutige Flächen, einen Winkel von 0,1 bis 20 Grad sowie gültige Richtungs- und Neutralebenenvektoren.");
     }
