@@ -112,3 +112,11 @@ Als Nächstes wird das Inferenz-/Fangsystem vorbereitet. Vor einer Änderung wer
 ## Definition von „fertig“
 
 SILMO gilt nicht schon dann als SketchUp-ähnlich, wenn die Oberfläche ähnlich aussieht. Die wichtigsten Werkzeuge müssen sich im realen Modellierablauf ähnlich bedienen lassen, geometrisch korrekte Ergebnisse erzeugen, numerische Eingaben unterstützen und zuverlässig mit Speichern, Wiederöffnen und Undo/Redo zusammenarbeiten.
+
+## Browser-Test-Fix – 22. November 2026
+
+- Der Browser-Workflow ist beim Hover-Auswahltest fehlgeschlagen: Die blaue Kontur wurde innerhalb des 3-Sekunden-Zeitlimits nicht sichtbar.
+- Die allgemeinen Code-Checks waren erfolgreich; der 24'999-Punkte-Geometrie-Roundtrip war ebenfalls erfolgreich.
+- Ursache noch nicht abschliessend bewiesen. Der Hover-Code deaktiviert die Vorschau absichtlich im Zeichenmodus. Der Browser-Test kann Zustand aus vorangegangenen Tests übernehmen.
+- Testanpassung auf dem Feature-Branch: Vor der Hover-Prüfung wird ein eventuell noch aktiver Zeichenmodus über die normale UI beendet.
+- Diese Anpassung ist noch nicht erneut durch CI bestätigt. Keine Aussage, dass der Browser-Test jetzt bestanden ist.
