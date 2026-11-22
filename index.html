@@ -3471,6 +3471,28 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       y: rect.top + (1 - center.y) * rect.height / 2
     };
   };
+  window.__silmoFaceSketchTestPoint = objectId => {
+    const object = objects.find(item => item.uuid === objectId);
+    if (!object) return null;
+    object.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(object);
+    const center = bounds.getCenter(new THREE.Vector3());
+    const size = bounds.getSize(new THREE.Vector3());
+    const towardCamera = camera.position.clone().sub(center);
+    const axes = [
+      { axis: 'x', amount: size.x, direction: Math.sign(towardCamera.x) },
+      { axis: 'y', amount: size.y, direction: Math.sign(towardCamera.y) }
+    ].filter(item => item.amount > 0.001 && Math.abs(item.direction) > 0);
+    axes.sort((a,b) => Math.abs(towardCamera[b.axis]) - Math.abs(towardCamera[a.axis]));
+    const face = axes[0];
+    if (!face) return null;
+    const world = center.clone();
+    world[face.axis] += face.direction * face.amount * 0.49;
+    const projected = world.project(camera);
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height || projected.z < -1 || projected.z > 1) return null;
+    return { x: rect.left + (projected.x + 1) * rect.width / 2, y: rect.top + (1 - projected.y) * rect.height / 2 };
+  };
 
   let sketchPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
   let faceSketchPlaneActive = false;
@@ -3493,6 +3515,14 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const basis = new THREE.Matrix4().makeBasis(faceSketchFrame.u, faceSketchFrame.v, faceSketchFrame.normal);
     faceSketchFrame.quaternion.setFromRotationMatrix(basis);
   }
+  window.__silmoFaceSketchFrameSnapshot = () => ({
+    active: faceSketchPlaneActive,
+    origin: faceSketchFrame.origin.toArray(),
+    normal: faceSketchFrame.normal.toArray(),
+    u: faceSketchFrame.u.toArray(),
+    v: faceSketchFrame.v.toArray(),
+    quaternion: faceSketchFrame.quaternion.toArray()
+  });
   function intersectSketchPlane(event, target) {
     if (!event || !raycaster.ray.intersectPlane(sketchPlane, target)) return false;
     if (faceSketchPlaneActive) {
@@ -4788,8 +4818,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   document.getElementById('pickFaceSketchPlane')?.addEventListener('click', () => {
     faceSketchPlanePickMode = true;
     sketchMode = false;
-    document.getElementById('pickFaceSketchPlane').textContent = 'Jetzt obere Fläche anklicken …';
-    document.getElementById('sketchStatus').textContent = 'Klicke auf die obere, waagerechte Fläche eines Körpers.';
+    document.getElementById('pickFaceSketchPlane').textContent = 'Jetzt Modellfläche anklicken …';
+    document.getElementById('sketchStatus').textContent = 'Klicke auf eine ebene Fläche eines Körpers.';
     status.textContent = 'Flächenauswahl aktiv.';
     canvas.style.cursor = 'crosshair';
   });
@@ -4817,7 +4847,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       faceSketchPlanePickMode = false;
       document.getElementById('pickFaceSketchPlane').textContent = '✓ Modellfläche ausgewählt';
       document.getElementById('sketchPlaneSelect').disabled = true;
-      document.getElementById('sketchStatus').textContent = 'Oberfläche gewählt. Starte jetzt das Zeichnen.';
+      document.getElementById('sketchStatus').textContent = 'Modellfläche gewählt. Starte jetzt das Zeichnen.';
       status.textContent = 'Zeichenebene auf Modelloberfläche gesetzt.';
       canvas.style.cursor = 'default';
       e.preventDefault();
