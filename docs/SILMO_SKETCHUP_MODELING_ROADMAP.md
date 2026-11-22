@@ -97,9 +97,17 @@ In dieser Reihenfolge entwickeln bzw. vervollständigen:
 - Undo/Redo und Projektformat müssen jede neue Geometrieoperation vollständig erfassen.
 - Fehlgeschlagene Geometrieoperationen dürfen das Originalmodell nicht beschädigen.
 
+## Aktueller Umsetzungsstand auf dem Arbeitszweig
+
+- Die erste sichtbare Auswahlhilfe ist im Viewport-Code ergänzt: Nicht ausgewählte Objekte erhalten beim Darüberfahren mit der Maus eine blaue Kontur.
+- Die Vorschau wird beim Verlassen des Viewports, beim Start einer Auswahl-/Ziehaktion und im Zeichenmodus entfernt.
+- Die Trefferprüfung berücksichtigt nur das tatsächlich vorderste Objekt. Ein dahinterliegendes Objekt darf nicht durch ein ausgewähltes Vordergrundobjekt hindurch hervorgehoben werden.
+- Ein Browser-Regressionstest prüft das Erscheinen, die Objektzuordnung und das Entfernen der Kontur.
+- Der Browser-Test wurde in dieser Entwicklungsumgebung noch nicht ausgeführt. Der Commit-Status meldet derzeit keine CI-Prüfungen; die Änderung gilt daher noch nicht als verifiziert.
+
 ## Nächster konkreter Umsetzungsschritt
 
-Vor dem ersten Werkzeugumbau wird die vorhandene Auswahl- und Zeichenpipeline im Quellcode vollständig kartiert: Pointer-/Raycast-Ereignisse, Objektselektion, OCCT-Subshape-Picking, Skizzenebenen, Einheiten, Undo/Redo und Projektspeicherung. Daraus entsteht ein kleiner vertikaler erster Ausbau: einheitliche Auswahl mit sichtbarer Vorschau und Regressionstests. Erst danach folgen Flächenzeichnen und Push/Pull.
+Als Nächstes wird das Inferenz-/Fangsystem vorbereitet. Vor einer Änderung werden die vorhandenen Skizzenebenen und Fangpunkte kartiert. Der aktuelle Rasterfang arbeitet in globalen X/Y/Z-Koordinaten; das reicht nicht für ein echtes Zeichnen auf beliebig ausgerichteten Modellflächen. Deshalb werden zuerst Fangziele, Bildschirmtoleranzen und die spätere Flächenebene sauber getrennt, bevor die Zeichenwerkzeuge umgebaut werden. Anschließend folgt ein kleiner, testbarer erster Fangtyp (Endpunkt) und danach das Zeichnen auf ebenen Flächen.
 
 ## Definition von „fertig“
 
