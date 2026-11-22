@@ -82,6 +82,7 @@ try {
 
   // Vollständiger Mini-Ablauf: Rechteck auf der gewählten Seitenfläche zeichnen
   // und als Körper extrudieren. Die Dicke muss entlang der Flächennormalen liegen.
+  await page.locator('#pane-draw-left .inner-tab-nav button').filter({ hasText: 'Skizzieren' }).click();
   await page.locator('#pane-draw-right .inner-tab-nav button').filter({ hasText: 'Werkzeug' }).click();
   await page.locator('#sketchTool').selectOption('rectangle');
   await page.locator('#startSketch').click();
