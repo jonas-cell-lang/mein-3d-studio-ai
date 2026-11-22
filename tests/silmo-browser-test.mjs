@@ -618,15 +618,15 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.waitForTimeout(300);
   const edgePickEventDebug = await page.evaluate(index => ({
     event: window.__silmoOcctLastEdgePickEvent || null,
-    selected: document.querySelector(`#occtEdgeList option[value="${pickedEdgeIndex}"]`)?.selected === true
-  }));
+    selected: document.querySelector(`#occtEdgeList option[value="${index}"]`)?.selected === true
+  }), pickedEdgeIndex);
   assert.ok(edgePickEventDebug.selected,
     '3D-Klick hat Kante 1 nicht ausgewählt. Ereignisdiagnose: ' + JSON.stringify(edgePickEventDebug));
-  const viewportEdgePick = await page.evaluate(() => ({
+  const viewportEdgePick = await page.evaluate(index => ({
     selected: Array.from(window.__silmoOcctEdgeOverlay?.selectedIndices || []),
     highlighted: window.__silmoOcctEdgeOverlay?.group.children
-      .find(line => line.userData.occtEdgeIndex === pickedEdgeIndex)?.material.color.getHex()
-  }));
+      .find(line => line.userData.occtEdgeIndex === index)?.material.color.getHex()
+  }), pickedEdgeIndex);
   assert.deepEqual(viewportEdgePick.selected, [pickedEdgeIndex],
     'Ein Klick auf die 3D-Kante hat die native Kante nicht ausgewählt');
   assert.equal(viewportEdgePick.highlighted, 0xffbd4a,
