@@ -16,6 +16,12 @@
     if (!el) continue;
     nodes.set(id, ['bedWidth','bedDepth','color'].includes(id) ? (el.closest('.field') || el) : el);
   }
+  // Erweiterte/ältere Spezialwerkzeuge bleiben erhalten, sind im normalen Modelliermodus aber ausgeblendet.
+  const legacyIds = ['addOcctBox','addOcctCylinder','addOcctSphere','addOcctCone','addOcctTorus','importStepModel','exportStepModel','inspectOcctShape'];
+  legacyIds.forEach(id => {
+    const el = nodes.get(id) || document.getElementById(id);
+    if (el) (el.closest('.field') || el).classList.add('expert-only');
+  });
   const bedNote = document.createElement('p');
   bedNote.className = 'note expert-only';
   bedNote.textContent = 'Stelle Breite und Tiefe passend zu deinem 3D-Drucker ein.';
@@ -107,18 +113,18 @@
   const sketchPositionY=document.createElement('input'); sketchPositionY.id='sketchPositionYMM'; sketchPositionY.type='number'; sketchPositionY.step='0.1'; sketchPositionY.placeholder='Mausposition';
   sketchPositionYWrap.append(sketchPositionYLabel,sketchPositionY);
 
-  const contourToolsHeading=document.createElement('h2');contourToolsHeading.textContent='Kontur- und Wandwerkzeuge';paneMap.draw.left.appendChild(contourToolsHeading);
-  const contourHelp=document.createElement('p');contourHelp.className='note';contourHelp.textContent='Erzeuge aus einer selbst gezeichneten geschlossenen Kontur einen hohlen Rahmen oder Wandkörper. Für Bohrungen und Ausschnitte wählst du den Grundkörper zuerst und den Schneidkörper danach.';paneMap.draw.left.appendChild(contourHelp);
-  const wallThicknessWrap=document.createElement('div');wallThicknessWrap.className='field';
+  const contourToolsHeading=document.createElement('h2');contourToolsHeading.classList.add('expert-only');contourToolsHeading.textContent='Kontur- und Wandwerkzeuge';paneMap.draw.left.appendChild(contourToolsHeading);
+  const contourHelp=document.createElement('p');contourHelp.classList.add('expert-only');contourHelp.className='note';contourHelp.textContent='Erzeuge aus einer selbst gezeichneten geschlossenen Kontur einen hohlen Rahmen oder Wandkörper. Für Bohrungen und Ausschnitte wählst du den Grundkörper zuerst und den Schneidkörper danach.';paneMap.draw.left.appendChild(contourHelp);
+  const wallThicknessWrap=document.createElement('div');wallThicknessWrap.classList.add('expert-only');wallThicknessWrap.className='field';
   const wallThicknessLabel=document.createElement('label');wallThicknessLabel.htmlFor='wallThicknessMM';wallThicknessLabel.textContent='Wandstärke (mm)';
   const wallThickness=document.createElement('input');wallThickness.id='wallThicknessMM';wallThickness.type='number';wallThickness.min='0.2';wallThickness.max='100';wallThickness.step='0.1';wallThickness.value='1.4';
   wallThicknessWrap.append(wallThicknessLabel,wallThickness);paneMap.draw.left.appendChild(wallThicknessWrap);
-  const frameHeightWrap=document.createElement('div');frameHeightWrap.className='field';
+  const frameHeightWrap=document.createElement('div');frameHeightWrap.classList.add('expert-only');frameHeightWrap.className='field';
   const frameHeightLabel=document.createElement('label');frameHeightLabel.htmlFor='frameHeightMM';frameHeightLabel.textContent='Rahmenhöhe (mm)';
   const frameHeight=document.createElement('input');frameHeight.id='frameHeightMM';frameHeight.type='number';frameHeight.min='0.2';frameHeight.max='2000';frameHeight.step='0.1';frameHeight.value='12';
   frameHeightWrap.append(frameHeightLabel,frameHeight);paneMap.draw.left.appendChild(frameHeightWrap);
-  const contourFrameButton=document.createElement('button');contourFrameButton.type='button';contourFrameButton.id='createContourFrame';contourFrameButton.className='wide';contourFrameButton.textContent='▱ Hohlrahmen aus Kontur erzeugen';paneMap.draw.left.appendChild(contourFrameButton);
-  const subtractSelectedButton=document.createElement('button');subtractSelectedButton.type='button';subtractSelectedButton.id='subtractSelected';subtractSelectedButton.className='wide';subtractSelectedButton.textContent='− Auswahl voneinander abziehen';paneMap.draw.left.appendChild(subtractSelectedButton);
+  const contourFrameButton=document.createElement('button');contourFrameButton.classList.add('expert-only');contourFrameButton.type='button';contourFrameButton.id='createContourFrame';contourFrameButton.className='wide';contourFrameButton.textContent='▱ Hohlrahmen aus Kontur erzeugen';paneMap.draw.left.appendChild(contourFrameButton);
+  const subtractSelectedButton=document.createElement('button');subtractSelectedButton.classList.add('expert-only');subtractSelectedButton.type='button';subtractSelectedButton.id='subtractSelected';subtractSelectedButton.className='wide';subtractSelectedButton.textContent='− Auswahl voneinander abziehen';paneMap.draw.left.appendChild(subtractSelectedButton);
   const sketchLockNote=document.createElement('p'); sketchLockNote.id='sketchViewLockNote'; sketchLockNote.className='note'; sketchLockNote.textContent='Während des Zeichnens ist die Kameradrehung gesperrt. Zoomen bleibt möglich.'; paneMap.draw.left.appendChild(sketchLockNote);
   const pickFacePlaneButton=document.createElement('button'); pickFacePlaneButton.type='button'; pickFacePlaneButton.id='pickFaceSketchPlane'; pickFacePlaneButton.className='wide'; pickFacePlaneButton.textContent='▱ Zeichenfläche auf Modell wählen'; paneMap.draw.left.appendChild(pickFacePlaneButton);
   const pickFacePlaneNote=document.createElement('p'); pickFacePlaneNote.className='note'; pickFacePlaneNote.textContent='Erster Schritt: Wähle die obere, waagerechte Fläche eines Körpers. Danach kannst du darauf skizzieren.'; paneMap.draw.left.appendChild(pickFacePlaneNote);
@@ -137,8 +143,9 @@
     ['rectangle','▭','Rechteck'],['roundedRectangle','▢','Rundung'],['circle','○','Kreis'],['ellipse','⬭','Ellipse'],
     ['triangle','△','Dreieck'],['line2d','／','Linie'],['curve2d','〰','Kurve'],['freeform2d','✎','Freiform'],['line3d','⌁','3D-Linie']
   ];
+  const advancedSketchTools = new Set(['roundedRectangle','ellipse','triangle','curve2d','freeform2d','line3d']);
   paletteTools.forEach(([value,glyph,label])=>{
-    const button=document.createElement('button');button.type='button';button.className='cad-tool-button';button.dataset.sketchTool=value;button.setAttribute('aria-pressed',String(sketchTool.value===value));
+    const button=document.createElement('button');button.type='button';button.className='cad-tool-button'+(advancedSketchTools.has(value)?' expert-only':'');button.dataset.sketchTool=value;button.setAttribute('aria-pressed',String(sketchTool.value===value));
     const icon=document.createElement('span');icon.className='cad-tool-icon';icon.textContent=glyph;
     const text=document.createElement('span');text.textContent=label;button.append(icon,text);
     button.addEventListener('click',()=>{sketchTool.value=value;sketchTool.dispatchEvent(new Event('change',{bubbles:true}));});
@@ -382,7 +389,7 @@
   // Erweiterte Boolesche CAD-Operationen bleiben vollständig erhalten,
   // verlassen aber den normalen SketchUp-orientierten Modellierbereich.
   const booleanCadDetails=document.createElement('details');
-  booleanCadDetails.className='advanced-cad-tools';
+  booleanCadDetails.className='advanced-cad-tools expert-only';
   const booleanCadSummary=document.createElement('summary');
   booleanCadSummary.textContent='Erweiterte CAD-Formoperationen';
   booleanCadDetails.appendChild(booleanCadSummary);
