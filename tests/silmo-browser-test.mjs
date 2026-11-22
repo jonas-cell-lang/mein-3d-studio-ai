@@ -2407,7 +2407,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 5000 });
   await page.locator('#tutorialNext').click();
   assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 8 VON/, 'Tutorial kann die zweite CAD-Aufgabe nicht abschliessen');
-  await showCreateSubtab(2); // Objektliste
+  await showCreateSubtab(1); // Objektliste (Grundformen = 0, Objektliste = 1; Kombinieren liegt im Expertenzentrum)
   await page.locator('#objects .object-select').last().click();
   await showCreateSubtab(0); // Grundformen und Duplizieren
   await page.locator('#duplicate').click();
