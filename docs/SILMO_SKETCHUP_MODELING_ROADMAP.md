@@ -128,3 +128,13 @@ SILMO gilt nicht schon dann als SketchUp-ähnlich, wenn die Oberfläche ähnlich
 - Ursache noch nicht abschliessend bewiesen. Der Hover-Code deaktiviert die Vorschau absichtlich im Zeichenmodus. Der Browser-Test kann Zustand aus vorangegangenen Tests übernehmen.
 - Testanpassung auf dem Feature-Branch: Vor der Hover-Prüfung wird ein eventuell noch aktiver Zeichenmodus über die normale UI beendet.
 - Diese Anpassung ist noch nicht erneut durch CI bestätigt. Keine Aussage, dass der Browser-Test jetzt bestanden ist.
+
+
+## Isolierter Modellier-Kurztest – 22. November 2026
+
+- Hover-Erkennung prüft jetzt rekursiv auch Kind-Meshes und ordnet einen Treffer dem obersten SILMO-Szenenobjekt zu. So wird bei Gruppen nicht versehentlich nur ein Unter-Mesh hervorgehoben.
+- Die Testpunkt-Ermittlung verwendet dieselbe rekursive Trefferlogik.
+- Ein eigener Playwright-Kurztest prüft unabhängig vom grossen Browser-Szenario: L/R/C/Escape, blaue Hover-Kontur inklusive korrekter Objektzuordnung und freies Ziehen eines ausgewählten Objekts.
+- Der Kurztest speichert bei Erfolg oder Fehler einen Screenshot als CI-Artefakt.
+- Der Code-Check für den aktuellen Stand ist erfolgreich. Der neue Browser-Kurztest läuft noch; bis zum Abschluss gilt Hover und Drag nicht als verifiziert.
+- Zeichnen direkt auf Objektflächen und Push/Pull sind weiterhin noch nicht implementiert. Der nächste Umsetzungsschritt ist die lokale Zeichenebene auf einer tatsächlich getroffenen ebenen Fläche; erst danach wird die Extrusion entlang der Flächennormalen umgesetzt.
