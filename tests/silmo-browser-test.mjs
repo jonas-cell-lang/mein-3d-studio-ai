@@ -52,6 +52,10 @@ async function showExpertBooleanTools() {
 async function showDrawRightSubtab(index) {
   await page.locator('#pane-draw-right > .inner-tab-nav button').nth(index).click();
 }
+async function showDrawLeftSubtab(index) {
+  await page.locator('[data-tab="draw"]').click();
+  await page.locator('#pane-draw-left > .inner-tab-nav button').nth(index).click();
+}
 async function waitForSelectedSketchOcct() {
   await page.waitForFunction(() => window.__silmoSketchSnapshot()?.geometryKernel === 'occt-wasm', null, { timeout: 45000 });
 }
@@ -2535,7 +2539,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
 
   // Direkt auf einer ebenen Modellfläche zeichnen und senkrecht zur Fläche extrudieren.
   await page.locator('#cancelSketch').click();
-  await showDrawRightSubtab(0);
+  await showDrawLeftSubtab(0); // Flächenwahl liegt im linken Bereich „Skizzieren“.
   const faceBaseId = await page.evaluate(() => window.__silmoModelingTestSnapshot().selectedId);
   assert.ok(faceBaseId, 'Kein ausgewählter Körper für den Flächenskizzen-Test vorhanden');
   const facePickPoint = await page.evaluate(id => window.__silmoFaceSketchTestPoint(id), faceBaseId);
