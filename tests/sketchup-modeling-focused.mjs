@@ -29,7 +29,28 @@ try {
   await page.locator('[data-tab="create"]').click();
   await page.locator('#pane-create-left > .inner-tab-nav button').first().click();
 
-  // 1) Tastenkürzel: L, R und C starten das vorhandene Werkzeug; Escape beendet es.
+  // 1) Zeichenebene auf einer seitlichen Modellfläche ausrichten.
+  await page.locator('#addCube').click();
+  const faceObject = await page.evaluate(() => window.__silmoModelingTestSnapshot().selectedId);
+  const facePoint = await page.evaluate(id => window.__silmoFaceSketchTestPoint?.(id), faceObject);
+  assert.ok(facePoint, 'Keine sichtbare seitliche Würfelfläche für den Flächentest gefunden');
+  await page.locator('#pickFaceSketchPlane').click();
+  await page.mouse.click(facePoint.x, facePoint.y);
+  const faceFrame = await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot?.());
+  assert.equal(faceFrame?.active, true, 'Seitliche Modellfläche wurde nicht als Zeichenebene übernommen');
+  assert.ok(Math.max(Math.abs(faceFrame.normal[0]), Math.abs(faceFrame.normal[1])) > 0.5, 'Flächennormale zeigt nicht auf eine seitliche Fläche');
+  const quaternionAxis = await page.evaluate(() => {
+    const q = new THREE.Quaternion(...window.__silmoFaceSketchFrameSnapshot().quaternion);
+    return new THREE.Vector3(0, 0, 1).applyQuaternion(q).toArray();
+  });
+  assert.ok(Math.hypot(
+    quaternionAxis[0] - faceFrame.normal[0],
+    quaternionAxis[1] - faceFrame.normal[1],
+    quaternionAxis[2] - faceFrame.normal[2]
+  ) < 1e-5, 'Extrusionsachse ist nicht korrekt auf die gewählte Fläche ausgerichtet');
+  await page.locator('#cancelSketch').click();
+
+  // 2) Tastenkürzel: L, R und C starten das vorhandene Werkzeug; Escape beendet es.
   for (const [key, tool] of [['l', 'line2d'], ['r', 'rectangle'], ['c', 'circle']]) {
     await page.keyboard.press(key);
     assert.equal(await page.locator('#sketchTool').inputValue(), tool, key.toUpperCase() + ' wählt das falsche Werkzeug');
