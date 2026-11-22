@@ -967,6 +967,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const toggle = $('toggleOcctFacePick');
     if (toggle) { toggle.disabled = true; toggle.textContent = '⌖ 3D-Flächenauswahl einschalten'; }
     if ($('occtFaceList')) { $('occtFaceList').replaceChildren(); $('occtFaceList').disabled = true; }
+    if ($('applyOcctDraft')) $('applyOcctDraft').disabled = true;
   }
   function updateOcctFaceHighlight() {
     const overlay = window.__silmoOcctFaceOverlay;
@@ -981,6 +982,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     $('occtFaceSummary').textContent = face
       ? 'Fläche ' + (face.index + 1) + ' ausgewählt · ' + face.geometryType + ' · ' + face.areaMM2.toFixed(2) + ' mm².'
       : overlay.faces.length + ' native B-Rep-Flächen geladen. Wähle eine Fläche, um sie im 3D-Modell hervorzuheben.';
+    if ($('applyOcctDraft')) {
+      $('applyOcctDraft').disabled = !face || !['plane', 'cylinder', 'cone'].includes(face.geometryType);
+    }
   }
   function buildOcctFaceOverlay(sourceMesh, faceMeshes, faceInfo) {
     clearOcctFaceOverlay();
@@ -1044,6 +1048,86 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     status.textContent = occtFacePickMode
       ? 'Klicke direkt auf eine Fläche des 3D-Körpers. Die getroffene native Fläche wird orange markiert.'
       : '3D-Flächenauswahl ausgeschaltet.';
+  }
+
+  async function applySelectedOcctDraft() {
+    const button = $('applyOcctDraft');
+    if (!button || button.disabled) return;
+    const sourceMesh = selected;
+    const shapeId = sourceMesh && window.__silmoOcctObjectHandles?.get(sourceMesh);
+    const overlay = window.__silmoOcctFaceOverlay;
+    const face = overlay?.faces?.[overlay.selectedIndex];
+    const angleDeg = Number($('occtDraftAngle').value);
+    const faceIndices = face ? [face.index] : [];
+    const direction = { x: 0, y: 0, z: 1 };
+    const neutralPlane = { origin: { x: 0, y: 0, z: 0 }, normal: { x: 0, y: 0, z: 1 } };
+    if (!sourceMesh || !Number.isInteger(shapeId) || shapeId <= 0) {
+      status.textContent = 'Der ausgewählte Körper besitzt keinen aktiven OCCT-B-Rep-Handle.'; return;
+    }
+    if (!faceIndices.length || !['plane', 'cylinder', 'cone'].includes(face.geometryType)) {
+      status.textContent = 'Bitte eine ebene, zylindrische oder konische native Fläche auswählen.'; return;
+    }
+    if (!Number.isFinite(angleDeg) || Math.abs(angleDeg) < 0.1 || Math.abs(angleDeg) > 20) {
+      status.textContent = 'Der Neigungswinkel muss zwischen −20° und −0,1° oder 0,1° und 20° liegen.'; return;
+    }
+    const baseSource = sourceMesh.userData.occtSource;
+    if (!baseSource || typeof baseSource !== 'object') {
+      status.textContent = 'Für Undo/Redo braucht dieser Körper eine gespeicherte OCCT-Konstruktionsquelle. Importierte oder anderweitig veränderte Körper können hier noch nicht geneigt werden.';
+      return;
+    }
+    button.disabled = true;
+    let result = null;
+    try {
+      status.textContent = 'OCCT neigt die ausgewählte native B-Rep-Fläche …';
+      result = await window.__silmoOcctClient.draftFaces(shapeId, faceIndices, angleDeg, direction, neutralPlane);
+      if (!result?.mesh?.positions?.length || !result.mesh.indices?.length ||
+          !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0) {
+        throw new Error('OCCT lieferte kein gültiges geneigtes Volumen mit Darstellungsnetz.');
+      }
+      if (!objects.includes(sourceMesh) || selected !== sourceMesh ||
+          window.__silmoOcctObjectHandles?.get(sourceMesh) !== shapeId) {
+        throw new Error('Die Auswahl hat sich während der Berechnung geändert. Ergebnis wurde nicht eingesetzt.');
+      }
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      const positions = new Float32Array(result.mesh.positions.length);
+      for (let i = 0; i < positions.length; i++) positions[i] = result.mesh.positions[i] * mmToWorld;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+      const size = new THREE.Vector3(); geometry.boundingBox.getSize(size);
+      if (![size.x, size.y, size.z].every(value => Number.isFinite(value) && value > 0)) {
+        geometry.dispose(); throw new Error('Das geneigte Ergebnis besitzt ungültige Abmessungen.');
+      }
+      const mesh = new THREE.Mesh(geometry, sourceMesh.material.clone());
+      mesh.position.copy(sourceMesh.position); mesh.rotation.copy(sourceMesh.rotation); mesh.scale.copy(sourceMesh.scale);
+      mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
+      mesh.userData.percent = { ...(sourceMesh.userData.percent || { x: 100, y: 100, z: 100 }) };
+      mesh.userData.label = (sourceMesh.userData.label || 'OCCT-Körper') + ' · geneigt';
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      mesh.userData.occtSource = {
+        kind: 'draft', base: JSON.parse(JSON.stringify(baseSource)),
+        faceIndices: faceIndices.slice(), angleDeg, direction, neutralPlane
+      };
+      recordHistory();
+      const oldIndex = objects.indexOf(sourceMesh);
+      clearOcctEdgeOverlay();
+      scene.remove(sourceMesh);
+      if (oldIndex >= 0) objects.splice(oldIndex, 1, mesh); else objects.push(mesh);
+      scene.add(mesh);
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      sourceMesh.geometry.dispose();
+      (Array.isArray(sourceMesh.material) ? sourceMesh.material : [sourceMesh.material]).forEach(material => material.dispose());
+      selectObject(mesh);
+      window.__silmoOcctLastDraft = { shapeId: result.shapeId, volumeMM3: result.volumeMM3, faceIndices, angleDeg };
+      await window.__silmoOcctClient.releaseShape(shapeId).catch(() => {});
+      status.textContent = 'Echte OCCT-Flächenneigung erfolgreich angewendet. Undo/Redo kann den Körper aus seiner Konstruktionsquelle rekonstruieren.';
+    } catch (error) {
+      if (result?.shapeId && window.__silmoOcctClient) await window.__silmoOcctClient.releaseShape(result.shapeId).catch(() => {});
+      status.textContent = 'Flächenneigung fehlgeschlagen: ' + (error.message || 'Unbekannter OCCT-Fehler');
+    } finally { button.disabled = false; }
   }
 
   function clearOcctEdgeOverlay() {
