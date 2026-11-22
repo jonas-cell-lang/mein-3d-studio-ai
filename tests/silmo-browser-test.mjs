@@ -2367,12 +2367,17 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const selectionAfterDeselect = await page.evaluate(() => window.__silmoModelingTestSnapshot?.());
   assert.equal(selectionAfterDeselect?.selectedId, null,
     'Testobjekt konnte vor der Hover-Prüfung nicht abgewählt werden');
+  // Das Tutorial-Panel verdeckt im Browser-Viewport den zentralen 3D-Bereich.
+  // Für den unabhängigen Hover-Test wird es kurz ausgeblendet und danach wiederhergestellt.
+  // Das Tutorial selbst wird anschliessend weiterhin mit sichtbarem Panel geprüft.
+  const tutorialCard = page.locator('#tutorialCard');
+  const tutorialVisibility = await tutorialCard.evaluate(element => element.style.visibility);
+  await tutorialCard.evaluate(element => { element.style.visibility = 'hidden'; });
   const hoverPoint = await page.evaluate(() => window.__silmoHoverTestPoint?.());
   assert.ok(hoverPoint, 'Kein nicht ausgewähltes Testobjekt für die Hover-Auswahlhilfe gefunden. Diagnose: ' +
     JSON.stringify(await page.evaluate(() => ({
       model: window.__silmoModelingTestSnapshot?.(),
       canvas: (() => { const r = document.querySelector('canvas')?.getBoundingClientRect(); return r ? {x:r.x,y:r.y,width:r.width,height:r.height} : null; })(),
-      camera: window.__silmoHoverDebugSnapshot?.() || null,
       tutorial: (() => { const e=document.querySelector('#tutorialCard'); return e ? {display:getComputedStyle(e).display,visibility:getComputedStyle(e).visibility,rect:(()=>{const r=e.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};})()} : null; })()
     }))));
   assert.equal(hoverPoint.targetElement, 'CANVAS', 'Hover-Testpunkt liegt nicht auf der 3D-Canvas: ' + JSON.stringify(hoverPoint));
@@ -2391,6 +2396,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     'Die 3D-Canvas hat nicht die berechnete Mausposition erhalten: ' + JSON.stringify({ hoverPoint, pointerClient: hoverState.debug.pointerClient }));
   await page.mouse.move(5, 5);
   await page.waitForFunction(() => window.__silmoHoverSnapshot?.().outlineVisible === false, null, { timeout: 3000 });
+  await tutorialCard.evaluate((element, visibility) => { element.style.visibility = visibility; }, tutorialVisibility);
   await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 5000 });
   assert.match(await page.locator('#tutorialFeedback').innerText(), /Erfolgskontrolle bestanden/, 'Tutorial erkennt das neu erstellte Objekt nicht');
   assert.equal(await page.locator('#tutorialNext').isDisabled(), false, 'Weiter wird nach erkannter Aufgabe nicht freigeschaltet');
