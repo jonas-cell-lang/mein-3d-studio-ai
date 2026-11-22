@@ -27,13 +27,14 @@ try {
   }
   await page.locator('#expertCenterToggle').click();
   await page.locator('[data-tab="create"]').click();
-  await page.locator('#pane-create-left > .inner-tab-nav button').first().click();
-
+  // Der Würfel wird im Bereich Modellieren erstellt; die Flächenauswahl liegt im Bereich Zeichnen.
+  
   // 1) Zeichenebene auf einer seitlichen Modellfläche ausrichten.
   await page.locator('#addCube').click();
   const faceObject = await page.evaluate(() => window.__silmoModelingTestSnapshot().selectedId);
   const facePoint = await page.evaluate(id => window.__silmoFaceSketchTestPoint?.(id), faceObject);
   assert.ok(facePoint, 'Keine sichtbare seitliche Würfelfläche für den Flächentest gefunden');
+  await page.locator('[data-tab="draw"]').click();
   await page.locator('#pickFaceSketchPlane').click();
   await page.mouse.click(facePoint.x, facePoint.y);
   const faceFrame = await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot?.());
@@ -48,6 +49,7 @@ try {
     quaternionAxis[1] - faceFrame.normal[1],
     quaternionAxis[2] - faceFrame.normal[2]
   ) < 1e-5, 'Extrusionsachse ist nicht korrekt auf die gewählte Fläche ausgerichtet');
+  await page.locator('[data-tab="create"]').click();
   // Der folgende Escape-Test beendet den Zeichenmodus und setzt die Flächenauswahl zurück.
 
   // 2) Tastenkürzel: L, R und C starten das vorhandene Werkzeug; Escape beendet es.
