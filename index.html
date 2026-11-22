@@ -4464,7 +4464,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           holeMetadata.push(holeVectors.map(point => [point.x, point.y]));
         }
         geometry = window.SILMOSketchGeometry.createExtrusionGeometry(shape, { depth: mmToWorldUnits(heightMM), bevelEnabled: false });
-        meshPosition.set(centerX, centerY, 0);
+        meshPosition.set(centerX, centerY, points[0]?.z || 0);
         sketchMetadata = {
           type: 'freeform2d', points: localPoints.length, holes: holeMetadata,
           widthMM: worldUnitsToMm(maxX - minX),
@@ -4486,7 +4486,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const shape = window.SILMOSketchGeometry.createParametricProfile(tool, dims, cornerRadius);
         geometry = window.SILMOSketchGeometry.createExtrusionGeometry(shape, { depth: dims.height, bevelEnabled: false, curveSegments: 64 });
         const profileOutline=shape.getPoints(32);if(profileOutline.length>1&&profileOutline[0].distanceTo(profileOutline[profileOutline.length-1])<window.SILMOTolerances.SKETCH_PROFILE_CLOSURE_WORLD_UNITS)profileOutline.pop();
-        meshPosition.set(sketchDraft.centerX, sketchDraft.centerY, 0);
+        meshPosition.set(sketchDraft.centerX, sketchDraft.centerY, sketchDraft.points?.[0]?.z || 0);
         sketchMetadata = {
           type: tool,
           widthMM: worldUnitsToMm(dims.width),
@@ -4635,6 +4635,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   document.getElementById('subtractSelected').addEventListener('click',()=>runBooleanOperation('subtract'));
   document.getElementById('cancelSketch').addEventListener('click', () => {
     sketchMode = false; sketchDrawing = false; sketchPointerId = null; sketchDraft = null;
+    faceSketchPlaneActive = false;
+    faceSketchPlanePickMode = false;
+    document.getElementById('sketchPlaneSelect').disabled = false;
+    document.getElementById('pickFaceSketchPlane').textContent = '▱ Zeichenfläche auf Modell wählen';
     clickContourMode=false; clickContourHoleMode=false; clickContourPoints=[];
     document.getElementById('clickContourHoleToggle').disabled=true;
     document.getElementById('clickContourToggle').disabled=false;
