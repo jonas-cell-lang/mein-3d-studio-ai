@@ -4576,7 +4576,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       if (faceSketchPlaneActive) {
         // Skizzengeometrie entsteht in lokalen U/V-Koordinaten. Vor dem Einfügen
         // wird sie in die Weltorientierung der gewählten Modellfläche überführt.
-        geometry.applyQuaternion(faceSketchFrame.quaternion);
+        geometry.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(faceSketchFrame.quaternion));
         meshPosition.copy(sketchPointToWorld(meshPosition));
       }
       geometry.computeBoundingBox();
