@@ -773,6 +773,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
       geometry.computeVertexNormals();
+      if (faceSketchPlaneActive) {
+        geometry.applyQuaternion(faceSketchFrame.quaternion);
+        meshPosition.copy(sketchPointToWorld(meshPosition));
+      }
       geometry.computeBoundingBox();
       geometry.computeBoundingSphere();
       const size = geometry.boundingBox.getSize(new THREE.Vector3());
@@ -4532,10 +4536,6 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           outlinePoints: profileOutline.map(point=>[point.x,point.y])
         };
         label = tool === 'circle' ? 'Skizze Kreis' : tool === 'ellipse' ? 'Skizze Ellipse' : tool === 'triangle' ? 'Skizze Dreieck' : tool === 'roundedRectangle' ? 'Abgerundete Rechteck-Skizze' : 'Skizze Rechteck';
-      }
-      if (faceSketchPlaneActive) {
-        geometry.applyQuaternion(faceSketchFrame.quaternion);
-        meshPosition.copy(sketchPointToWorld(meshPosition));
       }
       if (!['line3d','line2d','curve2d'].includes(tool)) {
         const exactX=document.getElementById('sketchPositionXMM')?.value;
