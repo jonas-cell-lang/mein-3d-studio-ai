@@ -9,6 +9,11 @@ on:
       - "manifest.webmanifest"
       - "silmo-icon.svg"
       - "icon-512.png"
+      - "src/**"
+      - "vendor/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/publish-pages.yml"
   workflow_dispatch:
 
@@ -32,6 +37,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install locked runtime dependencies
+        run: npm ci
+
+      - name: Prepare local Three.js runtime
+        run: npm run prepare:runtime
+
 
       - name: Validate inline JavaScript
         shell: bash
@@ -99,6 +110,36 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html manifest.webmanifest silmo-icon.svg icon-512.png _site/
+          cp -R src _site/src
+          cp -R vendor _site/vendor
+          python - <<'PY'
+          from pathlib import Path
+
+          required = (
+              "src/units.js",
+              "src/tolerances.js",
+              "src/csg.js",
+              "src/project-schema.js",
+              "src/project-geometry.js",
+              "src/project-io.js",
+              "src/tutorial.js",
+              "src/developer-diagnostics.js",
+              "src/image-studio.js",
+              "src/tool-navigation.js",
+              "vendor/three/three.min.js",
+              "vendor/three/STLLoader.js",
+              "vendor/three/STLExporter.js",
+              "vendor/three/LICENSE",
+          )
+          for relative in required:
+              source = Path(relative)
+              published = Path("_site") / relative
+              if not source.is_file() or not published.is_file():
+                  raise SystemExit(f"Required source module missing from Pages artifact: {relative}")
+              if source.read_bytes() != published.read_bytes():
+                  raise SystemExit(f"Published source module differs from repository source: {relative}")
+          print("All locally loaded SILMO source modules are present in the Pages artifact.")
+          PY
           touch _site/.nojekyll
 
       - name: Upload website artifact

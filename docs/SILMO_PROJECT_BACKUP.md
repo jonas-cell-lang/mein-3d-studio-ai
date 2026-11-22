@@ -780,36 +780,52 @@ Eine Version gilt erst als veröffentlicht, wenn:
 
 # 16. Aktueller Status und nächste konkrete Schritte
 
-## 16.1 Aktueller Status am 14.11.2026
+## 16.1 Aktueller Status am 18.11.2026
 
-**App:** v90  
-**Letzter App-Code-Commit:** `f1caa90cb246db2bb66b35e24ca91cac0d838fa3`
+**Entwicklungs-App-Metadaten:** v93 (Produktionsstand auf `main` bleibt unverändert)  
+**Entwicklungsbranch:** `phase1/central-units-api`  
+**Aktueller PR:** [PR 69 – Draft, nicht gemergt](https://github.com/jonas-cell-lang/mein-3d-studio-ai/pull/69)  
+**Letzter vollständig erfolgreich geprüfter Stand:** `b3de4af99c30fe5d9d29dfb2ad5dc2bf3923218c` (Code-Checks und Browser-Regression erfolgreich).
 
-Für v90 wurden bestätigt:
-- SILMO code checks: erfolgreich
-- Browser interaction tests: erfolgreich
-- GitHub Pages build/deployment: erfolgreich
+### Technische Fortschritte seit der letzten Sicherung
 
-Die Dokumentationsarbeit nach v90 wurde in diesen Commits veröffentlicht:
-- Masterplan: `63952de963b28518b1b0a23e1a11c4dbde75fa0b`
-- Bestandsaufnahme: `d960c71cb7300b2cef13f163e5c4f7cf1a030579`
+- Zentrale Einheiten-API in `src/units.js`; bestätigte Skala bleibt 1 Three.js-Welteinheit = 10 mm.
+- Die zentrale Einheiten-API wird nun für Längen- und Flächenumrechnungen in den bisherigen direkten Aufrufstellen verwendet: Druckbett/Raster, Skizzenbegrenzung und -vereinfachung, Eingabedimensionen, STL-Import/-Export, Ausrichtung/Abstandsverteilung, Tastaturschritte, Skizzengeometrie und Druckmassenausgabe. Der alte `MM_PER_UNIT`-Alias wurde entfernt.
+- Benannte Toleranz-API in `src/tolerances.js` mit getrennten Werten für CSG, Ausrichtung, Skizzenvereinfachung und Druckbett-/Dreiecksprüfung. Die bisherigen Zahlenwerte wurden dabei nicht verändert.
+- Projektformat v3 besitzt nun einen separaten Geometrievalidator in `src/project-schema.js`.
+- `src/project-geometry.js` kapselt die Geometrie-Serialisierung und den validierten Wiederaufbau von Meshes sowie Union-Formteilen.
+- `src/project-io.js` kapselt Projekt-Speichern und -Öffnen. Es baut neue Objekte vollständig auf und ersetzt das aktuelle Modell erst nach erfolgreicher Vorbereitung.
+- `src/csg.js` kapselt den BSP-Kern für Boolesche Verbindung und Differenz; der Browserlauf prüft beide Operationen. Er prüft vor dem Wiederaufbau unter anderem Positionen mit itemSize 3, Attributlängen, endliche Werte, Indexgrenzen und vollständige Dreiecksgruppen.
+- Repräsentative minimale und erweiterte v3-Fixtures sowie Tests für ungültige Geometriedaten sind vorhanden.
+- Ein zusätzlicher Browser-Regressionstest lädt absichtlich fehlerhafte Positionsdaten und prüft, dass das zuvor geöffnete Projekt vollständig erhalten bleibt.
+- Three.js r128, STLLoader und STLExporter werden nicht mehr von externen CDNs geladen. Die Bibliotheken werden aus der exakt festgelegten npm-Version lokal bereitgestellt.
+- `package.json`, `package-lock.json`, `scripts/prepare-runtime.mjs` und `.gitignore` richten die Runtime ein. Die Three.js-Lizenz wird mit den Laufzeitdateien übernommen.
+- Code- und Browser-CI bereiten die Runtime vor. Der Browser-Test blockiert externe HTTPS-Zugriffe und prüft den lokalen Start sowie STL-Funktionen.
+- `src/developer-diagnostics.js`, `src/tool-navigation.js`, `src/tutorial.js` und `src/image-studio.js` wurden aus selbstständigen Inline-IIFEs ausgelagert; Reihenfolge und bestehende Schnittstellen blieben erhalten.
+- `src/project-geometry.js` wurde als separates Modul für Projektgeometrie ergänzt.
+- `docs/SILMO_MODULE_EXTRACTION_MAP.md` dokumentiert die Modulgrenzen und die Abhängigkeiten für die nächste Projektdatei-I/O-Extraktion.
+- Die CI und der Pages-Build prüfen, dass alle sieben Module im lokalen Seitenpaket vorhanden sind. Die statische Funktionsprüfung durchsucht den ausgelagerten Navigationscode mit.
+- Lokale Startanleitung und Runtime-/Toleranz-/Projektformat-Dokumentation wurden aktualisiert.
 
-Für den aktuellen Dokumentationscommit `d960c71cb7300b2cef13f163e5c4f7cf1a030579` waren Code-Prüfung, Browser-Tests und Pages-Deployment erfolgreich.
+### Nachweisbare Tests
+
+Für den aktuellen Stand `b3de4af99c30fe5d9d29dfb2ad5dc2bf3923218c`:
+- SILMO code checks: erfolgreich.
+- SILMO browser interaction tests: erfolgreich.
+- Der Browserlauf deckt weiterhin die Zeichenwerkzeuge einschliesslich Freiform-Extrusion sowie Projektimport/-export und die sichere Zurückweisung fehlerhafter Geometrie ab.
+
+Für frühere Änderungen an der lokalen Runtime wurden ebenfalls beide Prüfungen erfolgreich abgeschlossen, unter anderem für Commit `5440c78`. Fehlerhafte Zwischenstände bei der neuen Geometrievalidierung wurden anhand der CI-Logs korrigiert; sie sind nicht der aktuelle geprüfte Code-Stand.
+
+Für den aktuellen geprüften Code-Stand `78fe921` sind sowohl Code-Prüfung als auch Browser-Regression erfolgreich. Die sechs ausgelagerten Module sind im Browserlauf enthalten. Es gibt keinen neuen Produktionsdeploy.
 
 ## 16.2 Was als Nächstes getan werden soll
 
-**Nicht sofort neue Werkzeuge in die Oberfläche einbauen.**
-
-Der nächste Arbeitsabschnitt ist eine technische Architektur- und Geometriekern-Studie:
-
-1. Aktuelle Anwendung und Abhängigkeiten noch einmal gegen den neuesten Commit prüfen.
-2. Vollständige Funktions- und Abhängigkeitsmatrix erstellen.
-3. Einheiten-/Toleranzkonzept spezifizieren.
-4. Geometriekern-Kandidaten anhand konkreter Kriterien vergleichen.
-5. Einen isolierten Prototyp für die schwierigsten Geometrieoperationen erstellen.
-6. Testfälle für Boolesche Operationen, Flächen, Kanten, Körper und ungültige Eingaben festlegen.
-7. Erst danach eine fundierte Entscheidung über den langfristigen Geometriekern treffen.
-8. Migration in kleinen Schritten planen, damit v90-Funktionen erhalten bleiben.
+1. CI für den neuesten Dokumentationsstand abschliessen lassen.
+2. Als Nächstes die verbleibenden Geometrie- und Skizzenfunktionen nach Abhängigkeiten modularisieren, ohne Modellzustand, Undo/Redo und bestehende Werkzeuge zu beschädigen.
+3. Dokument-/Projektverwaltung und Import-/Export-Grenzen weiter modularisieren, ohne die bestehende Geometrie- und Undo/Redo-Logik zu beschädigen.
+4. Geometrievalidierung und Toleranzinventar mit zusätzlichen Grenzfalltests vervollständigen.
+5. Phase 1 gegen den Masterplan vollständig abgleichen und alle noch offenen Punkte dokumentiert abarbeiten.
+6. Erst nach ausreichender technischer Basis die isolierte CAD-Kern-Prototypstudie fortsetzen; keine voreilige Integration in die Produktions-App.
 
 ## 16.3 Keine voreilige Entscheidung
 Three.js soll zunächst Darstellung, Kamera und Interaktion weiter übernehmen können. Ob ein WebAssembly-basierter CAD-Kern wie Open CASCADE integriert wird, ist erst nach einem erfolgreichen Prototypenvergleich zu entscheiden.
@@ -845,12 +861,23 @@ Three.js soll zunächst Darstellung, Kamera und Interaktion weiter übernehmen k
 - Masterplan: `docs/SILMO_MASTERPLAN.md`
 - Technische Bestandsaufnahme: `docs/SILMO_CURRENT_STATE_AUDIT.md`
 - Diese vollständige Sicherung: `docs/SILMO_PROJECT_BACKUP.md`
+- Runtime-Abhängigkeitsprüfung: `docs/SILMO_RUNTIME_DEPENDENCY_AUDIT.md`
+- Einheiten- und Toleranzspezifikation: `docs/SILMO_UNITS_TOLERANCE_SPEC.md`
+- Projektformat v3: `docs/SILMO_PROJECT_FORMAT_V3.md`
+- Lokaler Start: `docs/LOCAL_START.md`
+- Zentrale Einheiten-API: `src/units.js`
+- Zentrale Toleranz-API: `src/tolerances.js`
+- Projekt-/Geometrievalidierung: `src/project-schema.js`
+- Geometrievalidierungstests: `tests/project-schema.test.cjs`
 
 ## Bestätigte Commits
 - v77 Smooth Sketch: `b7016db585e5bf5f237ff89866c5e093e983c911`
 - v90 App-Code: `f1caa90cb246db2bb66b35e24ca91cac0d838fa3`
 - Masterplan-Dokument: `63952de963b28518b1b0a23e1a11c4dbde75fa0b`
 - Technische Bestandsaufnahme: `d960c71cb7300b2cef13f163e5c4f7cf1a030579`
+- Lokale Runtime / CDN-freier Browserlauf: `5440c78f2bddef1b1d9f4f9f648df5ff660be77b`
+- Zentrale Toleranzen: `2abc639121673ef39877d16847fb7a9bfe4a4d0a`
+- Geometrievalidierung und sicherer Fehlerfall im Browser: `d131d4ec23fe0c30349f548205dd819e759f3ec8`
 
 ---
 

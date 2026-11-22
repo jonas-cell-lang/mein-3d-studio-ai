@@ -32,6 +32,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+      - name: Install locked runtime dependencies
+        run: npm ci
+
+      - name: Prepare local Three.js runtime
+        run: npm run prepare:runtime
+
+      - name: Test unit and project schema APIs
+        run: node --test tests/*.test.cjs
       - name: Check inline JavaScript syntax
         shell: bash
         run: |
@@ -63,6 +71,11 @@ jobs:
                       self.current = None
 
           html = Path("index.html").read_text(encoding="utf-8")
+          if "cdnjs.cloudflare.com/ajax/libs/three.js" in html or "cdn.jsdelivr.net/npm/three@" in html:
+              raise SystemExit("Three.js runtime must not be loaded from a CDN.")
+          for relative in ("./vendor/three/three.min.js", "./vendor/three/STLLoader.js", "./vendor/three/STLExporter.js"):
+              if relative not in html:
+                  raise SystemExit(f"Missing local Three.js runtime reference: {relative}")
           parser = ScriptExtractor()
           parser.feed(html)
           if not parser.scripts:
@@ -84,13 +97,19 @@ jobs:
           from pathlib import Path
 
           html = Path("index.html").read_text(encoding="utf-8")
+          source = "\n".join([
+              html,
+              Path("src/tool-navigation.js").read_text(encoding="utf-8"),
+              Path("src/project-geometry.js").read_text(encoding="utf-8"),
+              Path("src/project-io.js").read_text(encoding="utf-8"),
+          ])
           manifest = json.loads(Path("manifest.webmanifest").read_text(encoding="utf-8"))
           assert manifest.get("name") == "SILMO 3D Studio AI"
           ids = re.findall(r'\bid=["\']([^"\']+)["\']', html)
           duplicates = [value for value, count in Counter(ids).items() if count > 1]
           if duplicates:
               raise SystemExit("Doppelte HTML-IDs: " + ", ".join(duplicates))
-          for asset in ("silmo-icon.svg", "icon-512.png", "manifest.webmanifest"):
+          for asset in ("silmo-icon.svg", "icon-512.png", "manifest.webmanifest", "src/units.js", "src/tolerances.js", "src/csg.js", "src/project-schema.js", "src/project-geometry.js", "src/project-io.js", "src/tutorial.js", "src/developer-diagnostics.js", "src/image-studio.js", "src/tool-navigation.js", "vendor/three/three.min.js", "vendor/three/STLLoader.js", "vendor/three/STLExporter.js", "vendor/three/LICENSE"):
               if not Path(asset).is_file():
                   raise SystemExit(f"Fehlende App-Datei: {asset}")
           required_group_move = [
@@ -99,16 +118,7 @@ jobs:
               "dragTargets.forEach((obj, index)",
               "targets.forEach(obj => { obj.position.x += dx; obj.position.y += dy; notifyPositionChanged(obj); });",
           ]
-          missing = [item for item in required_group_move if item not in html]
-          if missing:
-              raise SystemExit("Gruppenverschiebung unvollständig: " + ", ".join(missing))
-          required_group_move = [
-              "function getSelectedTargets()",
-              "function getSelectionCenter(",
-              "dragTargets.forEach((obj, index)",
-              "targets.forEach(obj => { obj.position.x += dx; obj.position.y += dy; notifyPositionChanged(obj); });",
-          ]
-          missing = [item for item in required_group_move if item not in html]
+          missing = [item for item in required_group_move if item not in source]
           if missing:
               raise SystemExit("Gruppenverschiebung unvollständig: " + ", ".join(missing))
           required_lock_features = [
@@ -118,7 +128,7 @@ jobs:
               "Gesperrte Objekte können nicht gelöscht werden",
               "Objekt ist gesperrt. Zum Verschieben zuerst entsperren.",
           ]
-          missing = [item for item in required_lock_features if item not in html]
+          missing = [item for item in required_lock_features if item not in source]
           if missing:
               raise SystemExit("Objektsperre unvollständig: " + ", ".join(missing))
 
@@ -135,7 +145,7 @@ jobs:
               "unionParts: Array.isArray(obj.userData.unionParts) ? obj.userData.unionParts : null",
               "b.id='mirror'+axis.toUpperCase()",
           ]
-          missing = [item for item in required_group_mirror if item not in html]
+          missing = [item for item in required_group_mirror if item not in source]
           if missing:
               raise SystemExit("Gruppen/Spiegel-Funktionen unvollständig: " + ", ".join(missing))
           required_individual_group_edit = [
@@ -145,7 +155,7 @@ jobs:
               "Änderungen betreffen nur dieses Gruppenobjekt",
               "individualGroupEdit = false;",
           ]
-          missing = [item for item in required_individual_group_edit if item not in html]
+          missing = [item for item in required_individual_group_edit if item not in source]
           if missing:
               raise SystemExit("Einzelbearbeitung in Gruppen unvollständig: " + ", ".join(missing))
           if "id='createPhoneCase'" in html or "function createPhoneCase(spec)" in html:
@@ -197,10 +207,50 @@ jobs:
               "new THREE.TorusGeometry",
               "new THREE.CylinderGeometry(0.85, 0.85, 1.5, 6)",
           ]
-          missing = [item for item in required_general_cad if item not in html]
+          missing = [item for item in required_general_cad if item not in source]
           if missing:
               raise SystemExit("Allgemeine CAD-Werkzeuge unvollständig: " + ", ".join(missing))
           if "Eigene Hüllen-Konstruktion" in html or "createCaseWallFrame" in html:
               raise SystemExit("Produktgebundene Sonderfunktionen sind noch vorhanden.")
           print("Manifest, App-Symbole, HTML-IDs, Gruppenbewegung, Objektsperre, Gruppen, Spiegeln, Verbindung lösen und allgemeine CAD-Werkzeuge sind statisch geprüft.")
+          PY
+
+      - name: Test local Pages package without deploying
+        run: |
+          mkdir -p /tmp/silmo-pages-test
+          cp index.html manifest.webmanifest silmo-icon.svg icon-512.png /tmp/silmo-pages-test/
+          cp -R src /tmp/silmo-pages-test/src
+          cp -R vendor /tmp/silmo-pages-test/vendor
+          python - <<'PY'
+          from pathlib import Path
+
+          root = Path("/tmp/silmo-pages-test")
+          packaged_files = (
+              "src/units.js",
+              "src/tolerances.js",
+              "src/csg.js",
+              "src/project-schema.js",
+              "src/project-geometry.js",
+              "src/project-io.js",
+              "src/tutorial.js",
+              "src/developer-diagnostics.js",
+              "src/image-studio.js",
+              "src/tool-navigation.js",
+              "vendor/three/three.min.js",
+              "vendor/three/STLLoader.js",
+              "vendor/three/STLExporter.js",
+              "vendor/three/LICENSE",
+          )
+          for relative in packaged_files:
+              source = Path(relative)
+              packaged = root / relative
+              if not packaged.is_file():
+                  raise SystemExit(f"Missing file in local Pages package: {relative}")
+              if source.read_bytes() != packaged.read_bytes():
+                  raise SystemExit(f"Packaged file differs from generated source: {relative}")
+          html = (root / "index.html").read_text(encoding="utf-8")
+          for relative in ("./src/units.js", "./src/tolerances.js", "./src/csg.js", "./src/project-schema.js", "./src/project-geometry.js", "./src/project-io.js", "./src/tutorial.js", "./src/developer-diagnostics.js", "./src/image-studio.js", "./src/tool-navigation.js", "./vendor/three/three.min.js", "./vendor/three/STLLoader.js", "./vendor/three/STLExporter.js"):
+              if relative not in html:
+                  raise SystemExit(f"HTML does not reference expected local module: {relative}")
+          print("Local Pages package contains every referenced SILMO module; no deployment performed.")
           PY

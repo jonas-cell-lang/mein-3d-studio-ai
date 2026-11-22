@@ -19,13 +19,13 @@
 
 Am 14.11.2026 wurde der aktuelle Hauptstand geprüft.
 
-- Die Anwendung liegt derzeit im Wesentlichen in einer einzelnen `index.html` mit rund 5'600 Zeilen und eingebettetem CSS/JavaScript.
-- Die 3D-Darstellung basiert auf Three.js r128, das aktuell über externe CDN-Skripte geladen wird.
-- Interne Modellkoordinaten verwenden derzeit den Faktor **1 Three.js-Einheit = 10 mm (der Code teilt Millimeterwerte durch 10, um interne Koordinaten zu erhalten)**; diese Umrechnung ist an mehreren Stellen in der Anwendung verankert.
+- Die Anwendung liegt weiterhin im Wesentlichen in einer einzelnen `index.html` (aktuell rund 3'800 Zeilen) mit eingebettetem CSS/JavaScript; mehrere unabhängige Bereiche sind bereits in `src/`-Module ausgelagert.
+- Die 3D-Darstellung basiert weiterhin auf Three.js r128. Die Laufzeitbibliothek sowie STLLoader/STLExporter werden inzwischen aus der exakt festgelegten npm-Version lokal vorbereitet und nicht mehr von CDNs geladen.
+- Interne Modellkoordinaten verwenden weiterhin **1 Three.js-Einheit = 10 mm**. Die zentrale Einheiten-API ist implementiert; eine aktuelle Quellcodesuche findet in `index.html` keine verbliebenen Verwendungen von `MM_PER_UNIT`.
 - Es gibt bereits Grundkörper, Objekttransformationen, Auswahl, Mehrfachauswahl, Gruppierung, Undo/Redo, Projektdateien, STL-Import, STL-Export, 2D-Skizzen, Extrusion, Kontur- und Wandwerkzeuge, eigene BSP-basierte Boolesche Operationen, Loft/Sweep, Skizzenbeziehungen und Bildkontur-Erkennung.
 - Die Oberfläche besitzt Hauptbereiche und fokussierte Unterreiter.
 - Browser- und GitHub-Actions-Tests sind vorhanden.
-- Ein `package.json` ist im Repository-Root derzeit nicht vorhanden; die aktuelle Struktur ist damit noch kein modernes, modular gebautes Entwicklungsprojekt.
+- Ein Root-`package.json` und eine Lockdatei sind inzwischen vorhanden. Der reproduzierbare Build-/Modulumbau ist aber noch nicht abgeschlossen; die Anwendung besteht weiterhin überwiegend aus einer grossen `index.html`.
 
 ### Konsequenz
 
@@ -173,8 +173,63 @@ Die Anwendung wird schrittweise in klar getrennte Module aufgeteilt. Die genaue 
 
 ## 6. Nächster konkreter Arbeitsschritt
 
-Die Funktions-/Abhängigkeitsmatrix und die Einheiten-/Toleranzspezifikation liegen vor. Ein erster isolierter Smoke-Test des öffentlich verfügbaren OCCT-WASM-Kandidaten (occt-wasm 5.17.2 / OCCT 8.0.1) besteht auf Node.js 24 sowie in einem Chromium-Web-Worker. Das ist nur eine erste technische Eignungsprobe, keine Kernel-Freigabe.
+Phase 1 – technisches Fundament – wird auf einem separaten Implementierungsbranch umgesetzt. Die ersten beiden Bausteine sind implementiert und auf dem aktuellen Stand v93 geprüft:
 
-Als Nächstes wird derselbe Testkatalog um schwierige Boolesche Fälle, tangierende/koplanare Flächen, dünne Wände, ungültige Eingaben, Topologiehistorie, Speicherwachstum und Worker-Abbruch erweitert. Danach folgen Vergleichsläufe mit Replicad, moket-io/occt-wasm und OpenGeometry sowie Browserprüfungen in Safari/WebKit und Firefox. Erst nach einem reproduzierbaren Vergleich und Lizenzprüfung wird eine Architekturentscheidung getroffen. Bis dahin bleibt der bestehende SILMO-Geometriecode unverändert.
+### 6.1 Zentrale Einheiten-API
+- `src/units.js` definiert die bestehende Skala: 1 Three.js-Welteinheit = 10 mm.
+- Die API enthält getrennte Umrechnungen für Länge, Fläche und Volumen.
+- Die Längen- und Flächenkonvertierungen im CAD-Hauptskript wurden auf die API umgestellt: Druckbett/Raster, Skizzenbegrenzung und -vereinfachung, Eingabedimensionen, STL-Import/-Export, Ausrichtung/Abstandsverteilung, Tastaturschritte, Skizzengeometrie und Druckmassenausgabe.
+- Der alte `MM_PER_UNIT`-Kompatibilitätsalias wurde entfernt; es gibt keine verbleibenden Verwendungen in `index.html`.
+- Unit-Tests und Browserprüfungen sichern die Referenzumrechnungen.
+
+### 6.2 Projektformat v3 und Geometrievalidierung
+- `src/project-schema.js` validiert App-Kennung, ganzzahlige Versionsnummer und Objektliste.
+- `src/project-geometry.js` kapselt Serialisierung und Wiederaufbau von BufferGeometry sowie Union-Formteilen; es erhält Three.js und das Schema über eine explizite Factory-Schnittstelle.
+- `src/project-io.js` kapselt das Speichern und Öffnen von Projektdateien. Der Hauptcode übergibt App-Zustand und Commit-Änderungen über explizite Callbacks.
+- `validateSerializedGeometry` prüft zusätzlich Positionen mit itemSize 3, Attributlängen und -anzahlen, endliche Werte, Indexgrenzen und vollständige Dreiecksgruppen.
+- `restoreGeometry` ruft die Validierung vor dem Wiederaufbau der typisierten Arrays auf.
+- Der Browser-Regressionslauf prüft auch fehlerhafte Positionsdaten: Das zuvor geöffnete Projekt muss erhalten bleiben.
+- Speichern schreibt weiterhin Formatversion 3; unbekannte ältere und neuere Versionen werden abgelehnt.
+- Die Spezifikation steht in `docs/SILMO_PROJECT_FORMAT_V3.md`.
+
+### 6.3 Lokale Runtime und reproduzierbare Abhängigkeiten
+- `package.json` und `package-lock.json` pinnen Three.js auf Version 0.128.0.
+- `npm ci` installiert die festgelegte Version; `scripts/prepare-runtime.mjs` stellt Three.js r128, STLLoader, STLExporter und die Lizenzdatei lokal bereit.
+- `index.html` lädt die Runtime aus `vendor/three/`; externe CDN-Script-Referenzen wurden entfernt.
+- Code- und Browser-CI erzeugen die Runtime vor den Tests. Der Browser-Test blockiert externe HTTPS-Zugriffe und prüft, dass SILMO trotzdem startet.
+- Der Pages-Build kopiert die lokal erzeugten Runtime-Dateien in sein Artefakt. Das Produktionsdeployment bleibt bis zur Freigabe des PR gesperrt.
+
+### 6.4 Benannte Toleranzen
+- `src/tolerances.js` enthält die zuerst inventarisierten Werte mit klarer Dimension und Funktion: CSG, Ausrichtungs-/Änderungsschwellen, Skizzenvereinfachung, Skizzen-Druckbettgrenze und Druckprüfung.
+- Die Werte wurden nicht vereinheitlicht oder numerisch verändert. Die API macht die Bedeutung sichtbar.
+- `tests/tolerances.test.cjs` sichert Werte und Unveränderlichkeit.
+- Das Inventar und die offenen Zuordnungen stehen in `docs/SILMO_UNITS_TOLERANCE_SPEC.md`.
+
+### 6.7 BSP-CSG-Kern
+- Der polygonbasierte BSP-Kern wurde in `src/csg.js` ausgelagert und erhält Three.js sowie die CSG-Toleranz über eine explizite Factory-Schnittstelle.
+- `runBooleanOperation` bleibt im Hauptskript, weil es Auswahl, Undo-History, Szene und UI aktualisiert. Die reine Geometrieberechnung wird über `window.SILMOCSG.combineMeshes` ausgeführt.
+- Der Browser-Regressionslauf prüft sowohl Boolesche Verbindung als auch Differenz; bestehende Union-Teile bleiben speicher- und wiederherstellbar.
+### 6.6 Erste schrittweise Modularisierung
+- `src/developer-diagnostics.js` enthält das Diagnosefenster als eigenständige Datei.
+- `src/tool-navigation.js` enthält Hauptnavigation, Werkzeugbereiche und Unterreiter.
+- `src/tutorial.js` enthält den geführten Lernkurs.
+- `src/image-studio.js` enthält den Bildbereich, die Konturerkennung und die CAD-Übergabe.
+- `src/project-geometry.js` kapselt Geometrie-Serialisierung und -Wiederaufbau.
+- `src/project-io.js` kapselt Speichern und Öffnen von Projektdateien über eine explizite Callback-Schnittstelle.
+- Die Module werden in dokumentierter Reihenfolge geladen; statische Prüfungen und Browser-Regressionen beziehen die ausgelagerten Module ein.
+- Das CAD-Hauptskript enthält weiterhin den zentralen Laufzeitzustand, die Modellierungswerkzeuge und eng gekoppelte Interaktionen. Weitere Extraktionen erfolgen erst nach dokumentierter Abhängigkeitsanalyse.
+
+### 6.7 Aktueller Stand und nächste Schritte
+- Die zentrale Einheiten-API ist in `index.html` eingebunden; eine aktuelle Quellcodesuche findet dort keine Verwendung des alten Namens `MM_PER_UNIT`.
+- Die lokale Three.js-Runtime ist fest gepinnt und wird für Browser-Tests und Pages-Artefakte vorbereitet.
+- Projektformat v3 und Geometrievalidierung sind implementiert. Einfache und erweiterte Projekt-Fixtures sowie negative Importtests sind Teil der Browser-Regression.
+- Die benannten Toleranzen sind dokumentiert. Zusätzlich wurden Kontur-Hohlrahmen, editierte Skizzenkonturen, Pfadrichtungen und Profilumfang mit getrennten Konstanten versehen; die numerischen Altwerte blieben unverändert. Das vollständige Toleranzinventar und Grenzfalltests für alle Klassen bleiben offen.
+- Projektdatei-I/O ist aus dem Hauptskript ausgelagert. Der atomare Wechsel auf das neue Modell wird durch Browser-Regressionen abgesichert.
+- Der aktuelle Entwicklungsbranch ist `phase1/central-units-api`; PR 69 bleibt Draft und ungemergt. Es erfolgt kein Produktionsdeployment vor der ausdrücklichen Fertigstellung und Freigabe.
+- Für Code-Commit `78fe9212433d4101f2b85732524788316b130b41` waren Code-Checks und Browser-Tests erfolgreich; spätere reine Dokumentationsänderungen werden separat geprüft.
+
+**Nächste Schritte:** Zuerst die noch offenen Einheiten-/Toleranz-Aufrufstellen anhand des Quellcodes inventarisieren und fachlich getrennt migrieren. Danach weitere kritische Import-/Export- und Projektdatei-Grenzfälle ergänzen. Anschliessend die nächste Modulgrenze aus der Abhängigkeitsmatrix auswählen und mit kleinem Diff extrahieren. Phase 1 gilt erst als abgeschlossen, wenn alle festgelegten Abnahmekriterien nachweisbar erfüllt sind.
+
+Die Kernel-Forschung bleibt davon getrennt: Kein OCCT-/Replicad-/OpenGeometry-Paket wird in die Produktionsanwendung eingebunden, bevor die offenen technischen und rechtlichen Abnahmepunkte geklärt sind.
 
 **Erfolg bedeutet nicht möglichst viele Werkzeuge. Erfolg bedeutet, dass SILMO komplexe 3D-Aufgaben präzise, stabil und verständlich erledigt.**

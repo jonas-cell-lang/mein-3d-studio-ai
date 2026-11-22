@@ -1,12 +1,41 @@
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
+import { readFileSync, statSync } from 'node:fs';
 
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-gl=swiftshader'] });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 const pageErrors = [];
 async function showCreateSubtab(index) {
   await page.locator('[data-tab="create"]').click();
-  await page.locator('#pane-create-left > .inner-tab-nav button').nth(index).click();
+  const tabs = page.locator('#pane-create-left > .inner-tab-nav button');
+  await tabs.nth(index).click();
+  const state = await page.locator('#addCube').evaluate(el => {
+    const ancestors = [];
+    for (let node = el; node; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      ancestors.push({
+        tag: node.tagName,
+        id: node.id || null,
+        className: typeof node.className === 'string' ? node.className : null,
+        hidden: node.hidden,
+        display: style.display,
+        visibility: style.visibility
+      });
+    }
+    return {
+      visible: el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden',
+      selectedTab: document.querySelector('[data-tab="create"]')?.getAttribute('aria-selected'),
+      selectedSubtab: tabsState(),
+      ancestors
+    };
+    function tabsState() {
+      return [...document.querySelectorAll('#pane-create-left > .inner-tab-nav button')]
+        .map(button => ({label: button.textContent, selected: button.getAttribute('aria-selected')}));
+    }
+  });
+  if (index === 0 && !state.visible) {
+    throw new Error('Grundformen-Unterreiter wurde aktiviert, aber Würfel-Button bleibt unsichtbar: ' + JSON.stringify(state));
+  }
 }
 async function showDrawRightSubtab(index) {
   await page.locator('#pane-draw-right > .inner-tab-nav button').nth(index).click();
@@ -16,11 +45,31 @@ page.on('console', message => {
   if (message.type() === 'error') pageErrors.push('console: ' + message.text());
 });
 
+// Die Kernanwendung muss auch dann starten, wenn externe HTTPS-Zugriffe blockiert sind.
+await page.route('https://**/*', route => route.abort());
+
 try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
+  const runtimeInfo = await page.evaluate(() => ({
+    revision: window.THREE?.REVISION,
+    loader: typeof window.THREE?.STLLoader,
+    exporter: typeof window.THREE?.STLExporter
+  }));
+  assert.deepEqual(runtimeInfo, { revision: '128', loader: 'function', exporter: 'function' }, 'Lokale Three.js r128 Runtime oder STL-Erweiterungen fehlen');
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
-  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v90/, 'Build-Metadaten zeigen nicht v82');
+  assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v93/, 'Build-Metadaten zeigen nicht v93');
+  assert.equal(await page.evaluate(() => window.SILMOUnits?.mmToWorldUnits(10)), 1, 'Zentrale Einheiten-API ist im Browser nicht verfügbar');
+  assert.equal(await page.evaluate(() => window.SILMOUnits?.worldUnitsToMm(1)), 10, 'Zentrale Einheiten-API liefert falsche Millimeterwerte');
+  assert.equal(await page.evaluate(() => window.SILMOTolerances?.CSG_GEOMETRY_WORLD_UNITS), 1e-5, 'Zentrale Toleranz-API ist nicht verfügbar oder hat den falschen CSG-Wert');
+  assert.equal(await page.evaluate(() => window.SILMOTolerances?.PRINT_BED_BOUNDS_WORLD_UNITS), 1e-4, 'Druckbett-Toleranz hat sich unerwartet geändert');
+  assert.equal(await page.evaluate(() => window.SILMOProjectSchema?.CURRENT_PROJECT_VERSION), 3, 'Projektformat-Version 3 ist nicht registriert');
+assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.serializeGeometry), 'function', 'Projektgeometrie-Serialisierung ist nicht verfügbar');
+assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.restoreGeometry), 'function', 'Projektgeometrie-Wiederaufbau ist nicht verfügbar');
+assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.serializeObjectForUnion), 'function', 'Union-Serialisierung ist nicht verfügbar');
+assert.equal(await page.evaluate(() => typeof window.SILMOProjectGeometry?.restoreObjectForUnion), 'function', 'Union-Wiederherstellung ist nicht verfügbar');
+assert.equal(await page.evaluate(() => typeof window.SILMOProjectIO?.createProjectIO), 'function', 'Projektdatei-I/O-Modul ist nicht verfügbar');
+assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), 'function', 'BSP-CSG-Modul ist nicht verfügbar');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Linie/, 'Visuelle Übersicht zeigt keine 2D-Linie');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /2D-Kurve/, 'Visuelle Übersicht zeigt keine 2D-Kurve');
   assert.match(await page.locator('#tutorialQuickGuide').evaluate(el => el.textContent), /Freiform/, 'Visuelle Übersicht zeigt keine Freiform');
@@ -314,7 +363,10 @@ try {
   assert.match(await page.locator('#tutorialInstructionList').innerText(),/Downloads-Ordner/,'Aufgabe 26 erklärt den Import aus Downloads nicht');
   const saveDownload=page.waitForEvent('download');
   await page.locator('#saveProjectButton').click();
-  await saveDownload;
+  const savedProjectDownload = await saveDownload;
+  const savedProjectPath = await savedProjectDownload.path();
+  const savedProject = JSON.parse(readFileSync(savedProjectPath, 'utf8'));
+  assert.equal(savedProject.version, 3, 'Gespeicherte Projekte verwenden nicht mehr Formatversion 3');
   const exportDownload=page.waitForEvent('download');
   await page.locator('#exportModel').click();
   await exportDownload;
@@ -586,9 +638,22 @@ try {
   for (const point of freeformPoints.slice(1)) await page.mouse.move(point.x, point.y, { steps: 4 });
   await page.mouse.up();
   assert.equal(await page.locator('#createSketchSolid').isEnabled(), true, 'Freiform wurde nicht als geschlossene Skizze vorbereitet');
+  const freeformBeforeCreate = await page.evaluate(() => ({
+    tool: document.getElementById('sketchTool').value,
+    draft: window.__silmoSketchDraftSnapshot(),
+    status: document.getElementById('sketchStatus').textContent
+  }));
+  assert.equal(freeformBeforeCreate.tool, 'freeform2d', 'Skizzenwerkzeug wechselte vor der Freiform-Extrusion: ' + JSON.stringify(freeformBeforeCreate));
+  assert.equal(freeformBeforeCreate.draft?.type, 'freeform2d', 'Freiform-Zeichenpunkte gingen vor der Extrusion verloren: ' + JSON.stringify(freeformBeforeCreate));
   await page.locator('#createSketchSolid').click();
-  const freeformSnapshot = await page.evaluate(() => window.__silmoSketchSnapshot());
-  assert.equal(freeformSnapshot.type, 'freeform2d', 'Freiform wurde nicht als Freiformkörper gespeichert');
+  const freeformAfterCreate = await page.evaluate(() => ({
+    snapshot: window.__silmoSketchSnapshot(),
+    status: document.getElementById('status')?.textContent,
+    sketchStatus: document.getElementById('sketchStatus')?.textContent,
+    tool: document.getElementById('sketchTool')?.value
+  }));
+  const freeformSnapshot = freeformAfterCreate.snapshot;
+  assert.equal(freeformSnapshot.type, 'freeform2d', 'Freiform wurde nicht als Freiformkörper gespeichert: ' + JSON.stringify(freeformAfterCreate));
   assert.ok(freeformSnapshot.points >= 3, 'Freiform enthält zu wenige Konturpunkte');
   assert.ok(freeformSnapshot.areaMM2 > 0, 'Freiform hat keine gültige Fläche');
   assert.ok(freeformSnapshot.perimeterMM > 0, 'Freiform hat keinen Umfang');
@@ -696,6 +761,25 @@ try {
   assert.equal((await page.evaluate(()=>window.__silmoUnionSnapshot())).partCount,2,'Rückgängig verliert die gespeicherten Einzelteile');
   await page.locator('#booleanSeparate').click();
   assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+2,'Verbindung kann nach Rückgängig nicht erneut gelöst werden');
+
+  // Boolesche Differenz muss den zweiten Körper aus dem ersten ausschneiden.
+  const subtractStartCount = await page.locator('#objects .object-row').count();
+  await showCreateSubtab(0);
+  await page.locator('#addCube').click();
+  await page.locator('#addSphere').click();
+  await page.locator('[data-tab="edit"]').click();
+  await page.locator('#multiSelectToggle').click();
+  await showCreateSubtab(2);
+  // Die Kugel ist nach dem Erstellen bereits ausgewählt; nur den Würfel ergänzen.
+  await page.locator('#objects .object-select').nth(subtractStartCount).click();
+  assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 2, 'Differenz-Test konnte nicht beide Formen auswählen');
+  await showCreateSubtab(1);
+  await page.locator('#booleanSubtract').click();
+  assert.equal(await page.locator('#objects .object-row').count(), subtractStartCount + 1, 'Differenz erzeugt nicht genau ein Ergebnisobjekt');
+  assert.match(await page.locator('#status').innerText(), /Ausschnitt erfolgreich berechnet/, 'Boolesche Differenz wurde nicht erfolgreich ausgeführt');
+  // Den Mehrfachauswahlmodus für die nachfolgenden, unabhängigen Regressionen zurücksetzen.
+  await page.locator('[data-tab="edit"]').click();
+  await page.locator('#multiSelectToggle').click();
 
   // Die App kann bereits ein Startobjekt enthalten. Nur die beiden neu erstellten prüfen.
   const initialCount = await page.locator('#objects .object-row').count();
@@ -992,6 +1076,139 @@ try {
   assert.match(await page.locator('#imageStudioStatus').innerText(),/3D-Körper erstellt/,'Bildkontur wird nicht in einen vorhandenen CAD-Körper übertragen');
   assert.equal(await page.locator('#imageStudioWorkspace').isVisible(),false,'Image Studio schliesst nach erfolgreicher CAD-Übertragung nicht');
   assert.ok((await page.locator('#objects .object-row').count())>0,'CAD-Übergabe hat kein Objekt erstellt');
+
+  // Projektformat v3: echtes Fixture laden und unbekannte Version atomar ablehnen.
+  const validationPage = await browser.newPage({viewport:{width:1280,height:900}});
+  const validationPageErrors = [];
+  validationPage.on('pageerror', error => validationPageErrors.push(error.message));
+  await validationPage.goto('http://127.0.0.1:4173', {waitUntil:'domcontentloaded'});
+  await validationPage.waitForSelector('#viewport canvas', {timeout:20000});
+  const projectFixture = readFileSync(new URL('./fixtures/project-v3-minimal.json', import.meta.url));
+  await validationPage.locator('#projectFileInput').setInputFiles({name:'project-v3-minimal.json',mimeType:'application/json',buffer:projectFixture});
+  await validationPage.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Projekt geöffnet (1 Objekt(e))'), null, {timeout:5000});
+  assert.equal(await validationPage.locator('#objects .object-row').count(),1,'Projektformat-v3-Fixture wurde nicht korrekt geladen');
+  assert.match(await validationPage.locator('#objects').innerText(),/Fixture Würfel v3/,'Projektformat-v3-Fixture hat den falschen Objektinhalt');
+  const unsupportedProject = JSON.parse(projectFixture.toString('utf8'));
+  unsupportedProject.version = 4;
+  await validationPage.locator('#projectFileInput').setInputFiles({name:'unsupported-project-v4.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(unsupportedProject))});
+  await validationPage.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Nicht unterstützte Projektversion 4'), null, {timeout:5000});
+  assert.equal(await validationPage.locator('#objects .object-row').count(),1,'Ungültige Projektversion hat das bestehende Projekt verändert');
+  assert.match(await validationPage.locator('#objects').innerText(),/Fixture Würfel v3/,'Ungültige Projektversion hat das geladene v3-Projekt ersetzt');
+  assert.deepEqual(validationPageErrors,[],'Projektformat-v3-Fixture löst Browserfehler aus');
+  await validationPage.close();
+
+  // Erweitertes v3-Fixture: Gruppen, Boolesche Ursprungsformen, Skizzenkontur,
+  // Konturrahmen und gespeicherte Image-Studio-Vorlage müssen erhalten bleiben.
+  // Dieser isolierte Browserkontext muss Downloads explizit erlauben.
+  // Die übrigen Tests bleiben unverändert; der Download wird weiterhin vollständig geprüft.
+  const advancedContext = await browser.newContext({viewport:{width:1280,height:900},acceptDownloads:true});
+  const advancedPage = await advancedContext.newPage();
+  const advancedErrors = [];
+  advancedPage.on('pageerror', error => advancedErrors.push(error.message));
+  advancedPage.on('console', message => { if(message.type()==='error') advancedErrors.push('console: '+message.text()); });
+  await advancedPage.goto('http://127.0.0.1:4173', {waitUntil:'domcontentloaded'});
+  await advancedPage.waitForSelector('#viewport canvas', {timeout:20000});
+  const advancedFixture = readFileSync(new URL('./fixtures/project-v3-advanced.json', import.meta.url));
+  await advancedPage.locator('#projectFileInput').setInputFiles({name:'project-v3-advanced.json',mimeType:'application/json',buffer:advancedFixture});
+  await advancedPage.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Projekt geöffnet (3 Objekt(e))'), null, {timeout:10000});
+  await advancedPage.waitForFunction(() => window.__silmoImageStudioSnapshot?.().loaded === true, null, {timeout:10000});
+  assert.equal(await advancedPage.locator('#objects .object-row').count(),3,'Erweitertes v3-Fixture hat nicht alle drei Objekte geladen');
+  const advancedImageState = await advancedPage.evaluate(() => window.__silmoImageStudioSnapshot());
+  assert.equal(advancedImageState.fileName,'fixture-image.png','Image-Studio-Dateiname wurde nicht geladen');
+  assert.equal(advancedImageState.rotation,90,'Image-Studio-Drehung wurde nicht geladen');
+  assert.equal(advancedImageState.contourCount,1,'Image-Studio-Kontur wurde nicht geladen');
+  // Die Speichern-Funktion liegt im Druck-Reiter. Erst dorthin wechseln,
+  // dann sicherstellen, dass der Button wirklich sichtbar und anklickbar ist.
+  await advancedPage.locator('[data-tab="print"]').click();
+  await advancedPage.locator('#saveProjectButton').waitFor({state:'visible',timeout:5000});
+  // Diagnose the browser's actual handling of the generated download link.
+  await advancedPage.evaluate(() => {
+    window.__silmoDownloadClicks = [];
+    document.addEventListener('click', event => {
+      const link = event.target instanceof Element ? event.target.closest('a[download]') : null;
+      if (!link) return;
+      const record = { href: link.href, download: link.download, trusted: event.isTrusted };
+      queueMicrotask(() => {
+        record.defaultPrevented = event.defaultPrevented;
+        window.__silmoDownloadClicks.push(record);
+      });
+    }, true);
+  });
+  const advancedSavePromise = advancedPage.waitForEvent('download', {timeout:10000}).catch(() => null);
+  await advancedPage.locator('#saveProjectButton').click();
+  await advancedPage.waitForFunction(() => {
+    const text = document.querySelector('#status')?.textContent || '';
+    return /Vollständiges Projekt gespeichert|Projekt konnte nicht gespeichert werden/.test(text);
+  }, null, {timeout:10000});
+  const advancedSaveStatus = await advancedPage.locator('#status').innerText();
+  assert.equal(advancedSaveStatus, 'Vollständiges Projekt gespeichert',
+    'Erweitertes Projekt konnte nicht gespeichert werden: ' + advancedSaveStatus +
+    (advancedErrors.length ? ' | Browserfehler: ' + advancedErrors.join(' ; ') : ''));
+  const advancedSave = await advancedSavePromise;
+  if (!advancedSave) {
+    const downloadDiagnostics = await advancedPage.evaluate(() => ({
+      clicks: window.__silmoDownloadClicks || [],
+      remainingDownloadLinks: Array.from(document.querySelectorAll('a[download]')).map(link => ({
+        href: link.href, download: link.download
+      }))
+    }));
+    assert.ok(advancedSave, 'Kein Browser-Download trotz erfolgreicher Statusmeldung. Download-Diagnose: ' + JSON.stringify(downloadDiagnostics));
+  }
+  const advancedSavedPath = await advancedSave.path();
+  assert.ok(advancedSavedPath && statSync(advancedSavedPath).size > 1000,'Erweitertes Projekt wurde nicht vollständig gespeichert');
+  const advancedSavedProject = JSON.parse(readFileSync(advancedSavedPath,'utf8'));
+  assert.deepEqual(advancedSavedProject.objects.slice(0,2).map(item => item.groupId),['fixture-gruppe-01','fixture-gruppe-01'],'Gruppenzugehörigkeit ging beim Speichern verloren');
+  assert.equal(advancedSavedProject.objects[2].unionParts.length,2,'Ursprüngliche Teile der verbundenen Form gingen verloren');
+  assert.equal(advancedSavedProject.objects[2].sketchOutline.length,4,'Skizzenkontur ging beim Speichern verloren');
+  assert.deepEqual(advancedSavedProject.objects[2].contourFrame,{wallThicknessMM:1.2,wallHeightMM:12},'Konturrahmen-Metadaten gingen beim Speichern verloren');
+  assert.equal(advancedSavedProject.imageStudio.fileName,'fixture-image.png','Image-Studio-Datei ging beim Speichern verloren');
+  assert.equal(advancedSavedProject.imageStudio.rotation,90,'Image-Studio-Drehung ging beim Speichern verloren');
+  assert.equal(advancedSavedProject.imageStudio.contours.length,1,'Image-Studio-Kontur ging beim Speichern verloren');
+  assert.deepEqual(advancedErrors,[],'Erweitertes v3-Fixture löst Browserfehler aus');
+  await advancedContext.close();
+
+  // Vertikaler Referenzablauf: gespeichertes Projekt erneut öffnen und als STL exportieren.
+  assert.ok(savedProject.objects.length > 0,'Referenzprojekt enthält keine Modellobjekte');
+  const roundTripPage = await browser.newPage({viewport:{width:1280,height:900}});
+  const roundTripErrors = [];
+  roundTripPage.on('pageerror', error => roundTripErrors.push(error.message));
+  roundTripPage.on('console', message => {
+    if(message.type()==='error' && !message.text().includes('Positionsdaten müssen das itemSize 3 haben')) {
+      roundTripErrors.push('console: '+message.text());
+    }
+  });
+  await roundTripPage.goto('http://127.0.0.1:4173', {waitUntil:'domcontentloaded'});
+  await roundTripPage.waitForSelector('#viewport canvas', {timeout:20000});
+  await roundTripPage.locator('#projectFileInput').setInputFiles(savedProjectPath);
+  await roundTripPage.waitForFunction(() => /^Projekt geöffnet/.test(document.querySelector('#status')?.textContent || ''), null, {timeout:10000});
+  assert.equal(await roundTripPage.locator('#objects .object-row').count(),savedProject.objects.length,'Gespeichertes Projekt wurde nicht vollständig wiederhergestellt');
+
+  // Ungültige Geometriedaten dürfen das bereits geöffnete Projekt nicht ersetzen.
+  const invalidGeometryProject = structuredClone(savedProject);
+  invalidGeometryProject.objects[0].geometry.attributes.position.itemSize = 2;
+  await roundTripPage.locator('#projectFileInput').setInputFiles({
+    name: 'invalid-geometry.silmo.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(invalidGeometryProject))
+  });
+  await roundTripPage.waitForFunction(() => /Projekt konnte nicht geöffnet werden/.test(document.querySelector('#status')?.textContent || ''), null, {timeout:10000});
+  assert.match(await roundTripPage.locator('#status').innerText(),/Positionsdaten müssen das itemSize 3 haben/,'Ungültige Positionsdaten werden nicht mit einer klaren Meldung abgewiesen');
+  assert.equal(await roundTripPage.locator('#objects .object-row').count(),savedProject.objects.length,'Ungültige Geometriedaten haben das zuvor geöffnete Projekt verändert');
+
+  await roundTripPage.locator('[data-tab="print"]').click();
+  await roundTripPage.waitForFunction(() => typeof window.THREE?.STLExporter === 'function', null, {timeout:15000});
+  const roundTripExportPromise = roundTripPage.waitForEvent('download',{timeout:5000}).catch(() => null);
+  await roundTripPage.locator('#exportModel').click();
+  await roundTripPage.waitForFunction(() => /STL exportiert|STL-Export fehlgeschlagen|STL-Export konnte nicht geladen werden|Es gibt keine Objekte/.test(document.querySelector('#status')?.textContent || ''), null, {timeout:5000});
+  const roundTripExportStatus = await roundTripPage.locator('#status').innerText();
+  assert.match(roundTripExportStatus,/STL exportiert/,'STL-Export nach Projekt-Wiederöffnung fehlgeschlagen: '+roundTripExportStatus);
+  const roundTripStl = await roundTripExportPromise;
+  assert.ok(roundTripStl,'STL-Export meldet Erfolg, aber der Browser hat keinen Download erhalten');
+  assert.match(roundTripStl.suggestedFilename(),/\.stl$/i,'STL-Export erzeugt keine STL-Datei');
+  const roundTripStlPath = await roundTripStl.path();
+  assert.ok(roundTripStlPath && statSync(roundTripStlPath).size > 84,'STL-Export enthält keine nutzbaren Geometriedaten');
+  assert.deepEqual(roundTripErrors,[],'Projekt-Wiederöffnung oder STL-Export löst Browserfehler aus');
+  await roundTripPage.close();
 
   assert.deepEqual(pageErrors, [], 'Browser meldet JavaScript- oder Konsolenfehler');
   console.log('BESTANDEN: 3D-Start, CAD-Zeichenarbeitsplatz, Werkzeugpalette, exakte Skizzenposition, Skizzenbearbeitung, Konturpunkt-Editor, Kantenbearbeitung, Loft, Sweep, Parallel/Senkrecht, Tangential/Konzentrisch, Pfadlänge und Objektabstand, Zeichnen, allgemeine CAD-Konstruktion, Verbinden und Trennen von Formen, Undo, Mehrfachauswahl, Ausrichten, Gruppieren, Spiegeln, Gruppierung aufheben, Gradzahl direkt am Würfel, Moduswechsel und Drehring.');
