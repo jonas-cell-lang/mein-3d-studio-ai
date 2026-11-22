@@ -105,6 +105,14 @@ In dieser Reihenfolge entwickeln bzw. vervollständigen:
 - Ein Browser-Regressionstest prüft das Erscheinen, die Objektzuordnung und das Entfernen der Kontur.
 - Der Browser-Test wurde in dieser Entwicklungsumgebung noch nicht ausgeführt. Der Commit-Status meldet derzeit keine CI-Prüfungen; die Änderung gilt daher noch nicht als verifiziert.
 
+## Neue Umsetzung: Modellier-Kürzel
+
+- Die vorhandenen Skizzierwerkzeuge sind jetzt direkt über die SketchUp-orientierten Tasten erreichbar: **L** Linie, **R** Rechteck, **C** Kreis.
+- Die Kürzel aktivieren den Zeichenmodus automatisch. Ein Werkzeugwechsel während des Zeichnens startet die Skizze nicht erneut.
+- **Escape** beendet den aktiven Zeichenmodus.
+- Es werden vorhandene Skizzierwerkzeuge verwendet; keine bestehende CAD-Funktion wurde entfernt.
+- Browser-Regressionstests prüfen alle drei Kürzel sowie Escape. Der neue Testlauf muss noch erfolgreich abgeschlossen werden.
+
 ## Nächster konkreter Umsetzungsschritt
 
 Als Nächstes wird das Inferenz-/Fangsystem vorbereitet. Vor einer Änderung werden die vorhandenen Skizzenebenen und Fangpunkte kartiert. Der aktuelle Rasterfang arbeitet in globalen X/Y/Z-Koordinaten; das reicht nicht für ein echtes Zeichnen auf beliebig ausgerichteten Modellflächen. Deshalb werden zuerst Fangziele, Bildschirmtoleranzen und die spätere Flächenebene sauber getrennt, bevor die Zeichenwerkzeuge umgebaut werden. Anschließend folgt ein kleiner, testbarer erster Fangtyp (Endpunkt) und danach das Zeichnen auf ebenen Flächen.
