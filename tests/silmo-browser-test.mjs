@@ -2589,6 +2589,10 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await page.locator('#sketchPlaneSelect').isDisabled(), true, 'Globale Zeichenebene bleibt trotz gewählter Modellfläche änderbar');
   await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('rectangle');
+  // Vorherige Präzisionskoordinaten aus dem separaten XY-Test dürfen die lokale
+  // Position auf der ausgewählten Modellfläche nicht verschieben.
+  await page.locator('#sketchPositionXMM').fill('');
+  await page.locator('#sketchPositionYMM').fill('');
   await page.locator('#startSketch').click();
   const faceSketchStart = await page.evaluate(() => window.__silmoFaceSketchScreenPointForTest(-0.2,-0.2));
   const faceSketchEnd = await page.evaluate(() => window.__silmoFaceSketchScreenPointForTest(0.2,0.2));
