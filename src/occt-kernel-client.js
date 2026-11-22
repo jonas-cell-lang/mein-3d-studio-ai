@@ -308,6 +308,35 @@
         }
         return result;
       },
+      async draftFaces(shapeId, faceIndices, angleDeg, direction, neutralPlane) {
+        const validVector = value => value && [value.x, value.y, value.z].every(Number.isFinite) &&
+          Math.hypot(value.x, value.y, value.z) > 1e-9;
+        if (!Number.isInteger(shapeId) || shapeId <= 0 ||
+            !Array.isArray(faceIndices) || faceIndices.length < 1 || faceIndices.length > 12 ||
+            !faceIndices.every(index => Number.isInteger(index) && index >= 0) ||
+            new Set(faceIndices).size !== faceIndices.length ||
+            !Number.isFinite(angleDeg) || Math.abs(angleDeg) < 0.1 || Math.abs(angleDeg) > 20 ||
+            !validVector(direction) ||
+            !neutralPlane?.origin || ![neutralPlane.origin.x, neutralPlane.origin.y, neutralPlane.origin.z].every(Number.isFinite) ||
+            !validVector(neutralPlane?.normal)) {
+          throw new Error("Flächenneigung benötigt eindeutige Flächen, einen Winkel von 0,1 bis 20 Grad sowie gültige Richtungs- und Neutralebenenvektoren.");
+        }
+        await initialize();
+        const result = await send("draftFaces", { shapeId, faceIndices, angleDeg, direction, neutralPlane });
+        const mesh = result?.mesh;
+        if (!Number.isInteger(result?.shapeId) || result.shapeId <= 0 ||
+            !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0 ||
+            !mesh || !(mesh.positions instanceof Float32Array) ||
+            !(mesh.indices instanceof Uint32Array) ||
+            mesh.positions.length < 9 || mesh.positions.length % 3 !== 0 ||
+            mesh.indices.length < 3 || mesh.indices.length % 3 !== 0 ||
+            !mesh.positions.every(Number.isFinite) ||
+            !mesh.indices.every(index => index < mesh.positions.length / 3) ||
+            mesh.triangleCount !== mesh.indices.length / 3) {
+          throw new Error("OCCT lieferte ein ungültiges Ergebnis der Flächenneigung.");
+        }
+        return result;
+      },
       async getVolume(shapeId) {
         await initialize();
         const result = await send("getVolume", { shapeId });
