@@ -1,8 +1,12 @@
-import { chromium } from 'playwright';
+import { chromium, webkit } from 'playwright';
 import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
 
-const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-gl=swiftshader'] });
+const browserType = process.env.SILMO_BROWSER === 'webkit' ? webkit : chromium;
+const browser = await browserType.launch({
+  headless: true,
+  ...(browserType === chromium ? { args: ['--no-sandbox', '--use-gl=swiftshader'] } : {})
+});
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 const pageErrors = [];
 let allowExpectedConsoleError = false;
