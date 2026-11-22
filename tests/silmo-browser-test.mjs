@@ -799,7 +799,6 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const beforeStepImportCount = await page.locator('#objects .object-row').count();
   await page.locator('#pane-project-left > .inner-tab-nav button').nth(1).click();
   await page.locator('#stepFileInput').setInputFiles({
-    await page.locator('#pane-project-left > .inner-tab-nav button').nth(1).click();
     name: 'silmo-roundtrip.step',
     mimeType: 'application/step',
     buffer: Buffer.from(exportedStepText)
@@ -2113,8 +2112,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const targetBedDepth=Math.min(2000,bedDepthBefore+23);
   await page.locator('#bedWidth').fill(String(targetBedWidth));
   await page.locator('#bedDepth').fill(String(targetBedDepth));
-  // Die Druckbettprüfung liegt direkt im Druck-Reiter und löst das Übernehmen der Masse aus.
-  
+  await page.locator('#applyBedSize').click();
+  // Die Druckbettprüfung liegt direkt im Druck-Reiter.
   await page.waitForFunction(({w,d})=>{
     const s=window.__silmoBedSnapshot?.();
     return s && s.widthMM===w && s.depthMM===d && s.outlineWidthMM===w && s.outlineDepthMM===d;
