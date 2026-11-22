@@ -71,6 +71,18 @@ try {
     return { available: !!gl, version: gl ? gl.getParameter(gl.VERSION) : null };
   });
   assert.equal(webglInfo.available, true, '3D-Arbeitsfläche besitzt keinen aktiven WebGL-Kontext');
+  // SketchUp-orientierte Grundkürzel müssen vorhandene Skizzierwerkzeuge aktivieren.
+  await page.keyboard.press('l');
+  assert.equal(await page.locator('#sketchTool').inputValue(), 'line2d', 'L aktiviert nicht das Linienwerkzeug');
+  assert.equal(await page.locator('#cancelSketch').isDisabled(), false, 'L startet den Zeichenmodus nicht');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#cancelSketch').isDisabled(), true, 'Escape beendet den Zeichenmodus nicht');
+  await page.keyboard.press('r');
+  assert.equal(await page.locator('#sketchTool').inputValue(), 'rectangle', 'R aktiviert nicht das Rechteckwerkzeug');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('c');
+  assert.equal(await page.locator('#sketchTool').inputValue(), 'circle', 'C aktiviert nicht das Kreiswerkzeug');
+  await page.keyboard.press('Escape');
   const runtimeInfo = await page.evaluate(() => ({
     revision: window.THREE?.REVISION,
     loader: typeof window.THREE?.STLLoader,
