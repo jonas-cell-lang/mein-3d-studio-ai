@@ -200,7 +200,8 @@
           entries.every((entry, index) => entry && entry.index === index &&
             typeof entry.geometryType === "string" && entry.geometryType.length > 0 &&
             (type === "face"
-              ? Number.isFinite(entry.areaMM2) && entry.areaMM2 > 0
+              ? Number.isFinite(entry.areaMM2) && entry.areaMM2 > 0 &&
+                Array.isArray(entry.centerMM) && entry.centerMM.length === 3 && entry.centerMM.every(Number.isFinite)
               : Number.isFinite(entry.lengthMM) && entry.lengthMM > 0));
         if (!result || !validEntries(result.face, "face") || !validEntries(result.edge, "edge")) {
           throw new Error("OCCT lieferte ungültige native Flächen- oder Kantendaten.");
