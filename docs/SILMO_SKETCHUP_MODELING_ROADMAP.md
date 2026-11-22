@@ -136,5 +136,9 @@ SILMO gilt nicht schon dann als SketchUp-ähnlich, wenn die Oberfläche ähnlich
 - Die Testpunkt-Ermittlung verwendet dieselbe rekursive Trefferlogik.
 - Ein eigener Playwright-Kurztest prüft unabhängig vom grossen Browser-Szenario: L/R/C/Escape, blaue Hover-Kontur inklusive korrekter Objektzuordnung und freies Ziehen eines ausgewählten Objekts.
 - Der Kurztest speichert bei Erfolg oder Fehler einen Screenshot als CI-Artefakt.
-- Der Code-Check für den aktuellen Stand ist erfolgreich. Der neue Browser-Kurztest läuft noch; bis zum Abschluss gilt Hover und Drag nicht als verifiziert.
+- Allgemeine Code-Checks: erfolgreich.
+- Der isolierte Browser-Kurztest ist erfolgreich durchgelaufen: L/R/C/Escape, blaue Hover-Kontur mit korrekter Objektzuordnung und freies Objektziehen bestanden.
+- Der grosse Browser-Workflow stoppt weiterhin an einem bereits vorher vorhandenen Test zur OCCT-Kantenerkennung (14-Pixel-Bildschirmtoleranz, Testzeile 598); der neue Kurztest läuft davor erfolgreich. WebKit wird wegen dieses vorherigen Chromium-Fehlers in diesem Workflow nicht mehr gestartet.
 - Zeichnen direkt auf Objektflächen und Push/Pull sind weiterhin noch nicht implementiert. Der nächste Umsetzungsschritt ist die lokale Zeichenebene auf einer tatsächlich getroffenen ebenen Fläche; erst danach wird die Extrusion entlang der Flächennormalen umgesetzt.
+
+- Der Kurztest wurde anschliessend erweitert, um zusätzlich einen Screenshot genau während der sichtbaren Hover-Kontur zu speichern; diese Screenshot-Erweiterung wartet noch auf einen eigenen CI-Lauf.
