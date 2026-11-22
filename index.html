@@ -1287,6 +1287,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       };
     };
     let nearest = null;
+    const edgeDistances = [];
     for (const line of overlay.group.children) {
       const attribute = line.geometry.getAttribute('position');
       if (!attribute || attribute.count < 2) continue;
@@ -1304,11 +1305,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const distance = Math.hypot(clientX - (a.x + t * dx), clientY - (a.y + t * dy));
         if (distance < bestDistance) bestDistance = distance;
       }
+      edgeDistances.push({ edgeIndex: line.userData.occtEdgeIndex, distance: bestDistance });
       if (bestDistance <= 14 && (!nearest || bestDistance < nearest.distance)) {
         nearest = { edgeIndex: line.userData.occtEdgeIndex, distance: bestDistance };
       }
     }
-    return nearest;
+    return nearest ? { ...nearest, edgeDistances } : null;
   }
   window.__silmoOcctFindEdgeAtScreenPoint = findOcctEdgeAtScreenPoint;
   window.__silmoOcctEdgePickReady = () => ({
