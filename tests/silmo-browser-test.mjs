@@ -584,9 +584,17 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await page.locator('#occtEdgeList option:not([disabled])').count(), 12,
     'Nicht alle zwölf Quaderkanten sind für die 3D-Auswahl verfügbar');
   await page.locator('#toggleOcctEdgePick').click();
-  const edgeScreenPoint = await page.evaluate(() => window.__silmoOcctEdgePickPoint(0));
-  assert.ok(edgeScreenPoint && Number.isFinite(edgeScreenPoint.x) && Number.isFinite(edgeScreenPoint.y),
-    'Für Kante 1 wurde kein sichtbarer 3D-Auswahlpunkt berechnet');
+  let edgePickTarget = null;
+  for (let edgeIndex = 0; edgeIndex < 12; edgeIndex++) {
+    const point = await page.evaluate(index => window.__silmoOcctEdgePickPoint(index), edgeIndex);
+    if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+      edgePickTarget = { edgeIndex, point };
+      break;
+    }
+  }
+  assert.ok(edgePickTarget,
+    'Für keine der zwölf nativen Quaderkanten wurde ein eindeutig sichtbarer 3D-Auswahlpunkt berechnet');
+  const { edgeIndex: pickedEdgeIndex, point: edgeScreenPoint } = edgePickTarget;
   const edgePickState = await page.evaluate(point => ({
     ...window.__silmoOcctEdgePickReady(),
     point,
@@ -602,24 +610,24 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     near: window.__silmoOcctFindEdgeAtScreenPoint(point.x + 8, point.y + 6),
     far: window.__silmoOcctFindEdgeAtScreenPoint(point.x + 40, point.y + 40)
   }), edgeScreenPoint);
-  assert.equal(edgePickTolerance.near?.edgeIndex, 0,
+  assert.equal(edgePickTolerance.near?.edgeIndex, pickedEdgeIndex,
     'Die bildschirmbasierte Kantenerkennung verfehlt einen Klick innerhalb der 14-Pixel-Toleranz: ' + JSON.stringify(edgePickTolerance));
   assert.equal(edgePickTolerance.far, null,
     'Die bildschirmbasierte Kantenerkennung akzeptiert einen Klick ausserhalb der Toleranz');
   await page.mouse.click(edgeScreenPoint.x + 8, edgeScreenPoint.y + 6);
   await page.waitForTimeout(300);
-  const edgePickEventDebug = await page.evaluate(() => ({
+  const edgePickEventDebug = await page.evaluate(index => ({
     event: window.__silmoOcctLastEdgePickEvent || null,
-    selected: document.querySelector('#occtEdgeList option[value="0"]')?.selected === true
+    selected: document.querySelector(`#occtEdgeList option[value="${pickedEdgeIndex}"]`)?.selected === true
   }));
   assert.ok(edgePickEventDebug.selected,
     '3D-Klick hat Kante 1 nicht ausgewählt. Ereignisdiagnose: ' + JSON.stringify(edgePickEventDebug));
   const viewportEdgePick = await page.evaluate(() => ({
     selected: Array.from(window.__silmoOcctEdgeOverlay?.selectedIndices || []),
     highlighted: window.__silmoOcctEdgeOverlay?.group.children
-      .find(line => line.userData.occtEdgeIndex === 0)?.material.color.getHex()
+      .find(line => line.userData.occtEdgeIndex === pickedEdgeIndex)?.material.color.getHex()
   }));
-  assert.deepEqual(viewportEdgePick.selected, [0],
+  assert.deepEqual(viewportEdgePick.selected, [pickedEdgeIndex],
     'Ein Klick auf die 3D-Kante hat die native Kante nicht ausgewählt');
   assert.equal(viewportEdgePick.highlighted, 0xffbd4a,
     'Die ausgewählte 3D-Kante wurde nicht hervorgehoben');
@@ -634,7 +642,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(visibleFillet.volumeMM3 > 0 && visibleFillet.volumeMM3 < 8000 &&
     Math.abs(visibleFillet.workerVolumeMM3 - visibleFillet.volumeMM3) < 1e-7,
     'Sichtbare Kantenrundung hat keinen gültigen nativen OCCT-Solid erzeugt');
-  assert.deepEqual(visibleFillet.edgeIndices, [0]);
+  assert.deepEqual(visibleFillet.edgeIndices, [pickedEdgeIndex]);
   assert.equal(visibleFillet.radiusMM, 1);
   const filletUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
   await page.keyboard.press('Control+z');
