@@ -135,10 +135,14 @@ try {
   await page.locator('#duplicate').click();
   const hoverPoint = await page.evaluate(() => window.__silmoHoverTestPoint?.());
   assert.ok(hoverPoint, 'Kein sichtbares, nicht ausgewähltes Testobjekt für die Hover-Kontur gefunden');
+  assert.equal(hoverPoint.targetElement, 'CANVAS', 'Der berechnete Hover-Punkt liegt nicht direkt auf der 3D-Canvas: ' + JSON.stringify(hoverPoint));
   await page.mouse.move(hoverPoint.x, hoverPoint.y);
   await page.waitForFunction(() => window.__silmoHoverSnapshot?.().outlineVisible === true, null, { timeout: 5000 });
   const hoverState = await page.evaluate(() => window.__silmoHoverSnapshot());
   assert.equal(hoverState.objectId, hoverPoint.objectId, 'Die blaue Kontur gehört nicht zum Objekt unter dem Mauszeiger');
+  assert.ok(Math.abs(hoverState.debug.pointerClient.x - hoverPoint.x) < 1 &&
+    Math.abs(hoverState.debug.pointerClient.y - hoverPoint.y) < 1,
+    'Die 3D-Canvas hat nicht die berechnete Mausposition erhalten: ' + JSON.stringify({ hoverPoint, pointerClient: hoverState.debug.pointerClient }));
   await page.screenshot({ path: 'test-results/sketchup-hover-preview.png', fullPage: true });
   await page.mouse.move(2, 2);
   await page.waitForFunction(() => window.__silmoHoverSnapshot?.().outlineVisible === false, null, { timeout: 3000 });
