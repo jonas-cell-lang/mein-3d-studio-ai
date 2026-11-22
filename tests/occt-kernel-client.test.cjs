@@ -60,6 +60,11 @@ class FakeWorker {
           mesh: { vertexCount: 8, triangleCount: 12, indexCount: 36 },
           boundingBoxMM: { min: [0, 0, 0], max: [20, 20, 20], size: [20, 20, 20], center: [10, 10, 10], source: "native-brep" }
         } } });
+      } else if (message.method === "draftFaces") {
+        this.onmessage({ data: { id: message.id, ok: true, result: {
+          shapeId: 24, volumeMM3: 7900,
+          mesh: { positions: new Float32Array([0,0,0, 1,0,0, 0,1,0]), indices: new Uint32Array([0,1,2]), triangleCount: 1 }
+        } } });
       } else if (message.method === "getVolume") {
         this.onmessage({ data: { id: message.id, ok: true, result: { volumeMM3: 8000 } } });
       } else if (message.method === "createExtrusion") {
@@ -303,6 +308,30 @@ test("OCCT client rejects invalid fillet parameters before contacting the worker
   await assert.rejects(client.chamferEdges(7, [0, 0], 1), /Kantenfase benötigt/);
   await assert.rejects(client.chamferEdges(7, [0], 2001), /Kantenfase benötigt/);
   assert.equal(worker.messages.length, 0, "Ungültige Rundungs-/Fasenparameter dürfen keinen Worker-Aufruf auslösen");
+  await client.dispose();
+});
+
+
+test("OCCT client validates and sends selected-face draft operations", async () => {
+  let worker;
+  const client = createClient({
+    WorkerClass: class extends FakeWorker { constructor(url, options) { super(url, options); worker = this; } }
+  });
+  await client.createBox(20, 20, 20);
+  worker.messages.length = 0;
+  const direction = { x: 0, y: 0, z: 1 };
+  const neutralPlane = { origin: { x: 0, y: 0, z: 0 }, normal: { x: 0, y: 0, z: 1 } };
+  await assert.rejects(client.draftFaces(7, [], 5, direction, neutralPlane), /Flächenneigung benötigt/);
+  await assert.rejects(client.draftFaces(7, [0, 0], 5, direction, neutralPlane), /Flächenneigung benötigt/);
+  await assert.rejects(client.draftFaces(7, [0], 0, direction, neutralPlane), /Flächenneigung benötigt/);
+  await assert.rejects(client.draftFaces(7, [0], 25, direction, neutralPlane), /Flächenneigung benötigt/);
+  await assert.rejects(client.draftFaces(7, [0], 5, { x: 0, y: 0, z: 0 }, neutralPlane), /Flächenneigung benötigt/);
+  assert.equal(worker.messages.length, 0, "Ungültige Flächenneigung darf keinen Worker-Aufruf auslösen");
+  const result = await client.draftFaces(7, [1], 5, direction, neutralPlane);
+  assert.equal(result.shapeId, 24);
+  assert.equal(result.mesh.triangleCount, 1);
+  assert.deepEqual(worker.messages.find(message => message.method === "draftFaces").args,
+    { shapeId: 7, faceIndices: [1], angleDeg: 5, direction, neutralPlane });
   await client.dispose();
 });
 
