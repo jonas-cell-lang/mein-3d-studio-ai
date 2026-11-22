@@ -2328,7 +2328,12 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const hoverPoint = await page.evaluate(() => window.__silmoHoverTestPoint?.());
   assert.ok(hoverPoint, 'Kein nicht ausgewähltes Testobjekt für die Hover-Auswahlhilfe gefunden');
   await page.mouse.move(hoverPoint.x, hoverPoint.y);
-  await page.waitForFunction(() => window.__silmoHoverSnapshot?.().outlineVisible === true, null, { timeout: 3000 });
+  try {
+    await page.waitForFunction(() => window.__silmoHoverSnapshot?.().outlineVisible === true, null, { timeout: 3000 });
+  } catch (error) {
+    const hoverState = await page.evaluate(() => window.__silmoHoverSnapshot?.());
+    throw new Error('Hover-Kontur nach Mausbewegung nicht sichtbar. Diagnose: ' + JSON.stringify(hoverState) + '. Ursache: ' + error.message);
+  }
   assert.equal((await page.evaluate(() => window.__silmoHoverSnapshot())).objectId, hoverPoint.objectId,
     'Blaue Hover-Kontur gehört nicht zum Objekt unter dem Mauszeiger');
   await page.mouse.move(5, 5);
