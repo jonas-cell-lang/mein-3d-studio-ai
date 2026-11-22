@@ -5,7 +5,7 @@
   const left = document.querySelector('.left-panel');
   const right = document.querySelector('.right-panel');
   const ids = [
-    'addCube','addOcctBox','addOcctCylinder','addOcctSphere','addOcctCone','addOcctTorus','addSphere','addCylinder','addCone','addHexPrism','addTorus','duplicate','booleanUnion','booleanSubtract','booleanIntersect','importModel','exportModel',
+    'addCube','addOcctBox','addOcctCylinder','addOcctSphere','addOcctCone','addOcctTorus','addSphere','addCylinder','addCone','addHexPrism','addTorus','duplicate','booleanUnion','booleanSubtract','booleanIntersect','importModel','exportModel','importStepModel','exportStepModel','stepFileInput',
     'saveProjectButton','openProjectButton','fileInput','projectFileInput','delete',
     'dropToBed','checkBed','fitView','bedWidth','bedDepth','applyBedSize','objects',
     'status','positionFields','scaleLock','sizeFields','percentFields','color','expertCenterToggle'
@@ -27,7 +27,7 @@
   const rightContainer = document.createElement('div'); rightContainer.className = 'tab-content';
   const paneMap = {};
   const tabDefs = [
-    ['create','Erstellen'],['draw','Zeichnen'],['edit','Bearbeiten'],['measure','Messen & Prüfen'],['print','3D-Druck'],['expert','Expertenzentrum']
+    ['create','Erstellen'],['draw','Zeichnen'],['edit','Bearbeiten'],['measure','Messen & Prüfen'],['project','Projekt'],['print','3D-Druck'],['expert','Expertenzentrum']
   ];
   for (const [key] of tabDefs) {
     paneMap[key] = {};
@@ -322,35 +322,43 @@
   // Einheitliche Skalierung ist ebenfalls im normalen Mess-/Prüfbereich erreichbar.
   put(paneMap.measure.right,'scaleLock');
 
-  heading(paneMap.print.left,'3D-Druck');
-  ['importModel','exportModel','saveProjectButton','openProjectButton','fileInput','projectFileInput'].forEach(id=>put(paneMap.print.left,id));
+  heading(paneMap.project.left,'Projektdatei');
+  const projectIntro=document.createElement('p');projectIntro.className='note';projectIntro.textContent='Speichere dein bearbeitbares SILMO-Projekt oder öffne ein früher gespeichertes Projekt. Die Projektdatei enthält mehr Informationen als eine reine STL-Datei.';paneMap.project.left.appendChild(projectIntro);
+  ['saveProjectButton','openProjectButton','projectFileInput'].forEach(id=>put(paneMap.project.left,id));
+  heading(paneMap.project.left,'Modelle importieren');
+  const importIntro=document.createElement('p');importIntro.className='note';importIntro.textContent='Importiere fertige 3D-Modelle. STL eignet sich für den 3D-Druck; STEP erhält bei unterstützten Modellen die präzise CAD-Geometrie.';paneMap.project.left.appendChild(importIntro);
+  ['importModel','importStepModel','fileInput','stepFileInput'].forEach(id=>put(paneMap.project.left,id));
   const stlDropZone=document.createElement('div');
   stlDropZone.id='stlDropZone';
   stlDropZone.setAttribute('role','region');
   stlDropZone.setAttribute('aria-label','STL-Modelle importieren');
   stlDropZone.innerHTML='<strong>⬇ STL-Datei hier hineinziehen</strong><p>Ziehe eine oder mehrere STL-Dateien aus deinen Downloads hierher – oder wähle sie direkt aus.</p><button type="button" class="wide" id="stlChooseFile">Datei auswählen …</button>';
-  paneMap.print.left.appendChild(stlDropZone);
+  paneMap.project.left.appendChild(stlDropZone);
+  heading(paneMap.project.left,'Modelle exportieren');
+  const exportIntro=document.createElement('p');exportIntro.className='note';exportIntro.textContent='Exportiere die ausgewählten Modelle als STL für den Slicer oder als STEP für andere CAD-Programme.';paneMap.project.left.appendChild(exportIntro);
+  ['exportModel','exportStepModel'].forEach(id=>put(paneMap.project.left,id));
 
   heading(paneMap.print.left,'Druckbettgrösse (mm)');
   ['bedWidth','bedDepth','applyBedSize'].forEach(id=>put(paneMap.print.left,id));
   paneMap.print.left.appendChild(bedNote);
-
-  heading(paneMap.expert.left,'Expertenzentrum');
-  heading(paneMap.expert.left,'3D-Druck-Prüfung');
+  heading(paneMap.print.left,'Druckmodell prüfen');
   const printCheckButton = document.createElement('button');
   printCheckButton.type = 'button';
   printCheckButton.id = 'runPrintCheck';
   printCheckButton.className = 'wide primary';
   printCheckButton.textContent = '✓ Modell auf Druckfehler prüfen';
-  paneMap.expert.left.appendChild(printCheckButton);
+  paneMap.print.left.appendChild(printCheckButton);
   const printCheckReport = document.createElement('div');
   printCheckReport.id = 'printCheckReport';
   printCheckReport.className = 'note';
   printCheckReport.setAttribute('role','status');
   printCheckReport.setAttribute('aria-live','polite');
   printCheckReport.textContent = 'Prüft Dreiecke, offene Kanten, nicht-manifold Kanten, Abmessungen und Druckbettlage. Dies ist eine automatische Vorprüfung, keine Garantie für druckbare Geometrie.';
-  paneMap.expert.left.appendChild(printCheckReport);
-  
+  paneMap.print.left.appendChild(printCheckReport);
+
+  heading(paneMap.expert.left,'Expertenzentrum');
+  const expertIntro=document.createElement('p');expertIntro.className='note';expertIntro.textContent='Erweiterte Funktionen und technische Diagnose für die Fehlersuche.';paneMap.expert.left.appendChild(expertIntro);
+  const diagnosticsButton=document.createElement('button');diagnosticsButton.type='button';diagnosticsButton.className='wide';diagnosticsButton.textContent='🛠 Technische Diagnose öffnen';diagnosticsButton.addEventListener('click',()=>window.SILMO_DIAG?.open());paneMap.expert.left.appendChild(diagnosticsButton);
   heading(paneMap.expert.right,'Erweiterte Hinweise','expert-only');
   paneMap.expert.right.appendChild(sizeNote);
 
@@ -420,6 +428,8 @@
   addSectionTabs(paneMap.create.left,createHeadings.map((h,i)=>({label:['Grundformen','Kombinieren','Objektliste'][i]||h.textContent,target:h})),'Unterbereiche Erstellen',true);
   const drawHeadings=directHeadings(paneMap.draw.left);
   addSectionTabs(paneMap.draw.left,drawHeadings.map((h,i)=>({label:['Skizzieren','Kontur','Aktionen'][i]||h.textContent,target:h})),'Unterbereiche Zeichnen',true);
+  const projectHeadings=directHeadings(paneMap.project.left);
+  addSectionTabs(paneMap.project.left,projectHeadings.map((h,i)=>({label:['Projektdatei','Import','Export'][i]||h.textContent,target:h})),'Unterbereiche Projekt',true);
   const drawRightGroups=[...paneMap.draw.right.querySelectorAll(':scope > details')];
   addSectionTabs(paneMap.draw.right,drawRightGroups.map((d,i)=>({label:['Werkzeug','Masse','Raster','Kontur','Profi'][i]||d.querySelector('summary')?.textContent||'Optionen',target:d})),'Unterbereiche Zeichen-Eigenschaften');
   const imageTools=document.querySelector('#imageStudioWorkspace .isw-tools');
