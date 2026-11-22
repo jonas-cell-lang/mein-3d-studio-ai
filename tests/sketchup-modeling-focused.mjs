@@ -21,12 +21,14 @@ try {
   assert.equal(await page.locator('#addOcctBox').isVisible(), false, 'OCCT-Spezialwerkzeug ist im Normalmodus sichtbar');
   assert.equal(await page.locator('#createContourFrame').isVisible(), false, 'Hohlrahmen-Werkzeug ist im Normalmodus sichtbar');
   assert.equal(await page.locator('#subtractSelected').isVisible(), false, 'Subtraktionswerkzeug ist im Normalmodus sichtbar');
+  assert.equal(await page.locator('#occtFilletPanel').isVisible(), false, 'Alte OCCT-Flächen- und Kantenbearbeitung ist im Normalmodus sichtbar');
   await page.locator('#modeToggle').click();
   assert.match(await page.locator('#modeToggle').innerText(), /EIN/, 'Schalter zeigt den eingeschalteten Zustand nicht');
   await page.locator('[data-tab="create"]').click();
   const occtState = await page.locator('#addOcctBox').evaluate(el => ({ elementClass: el.className, bodyClass: document.body.className, display: getComputedStyle(el).display, visibility: getComputedStyle(el).visibility, paneClass: el.closest('.tab-pane')?.className, parentClass: el.parentElement?.className }));
   console.log('OCCT-SCHALTER-DIAGNOSE', JSON.stringify(occtState));
   assert.equal(await page.locator('#addOcctBox').isVisible(), true, 'OCCT-Spezialwerkzeug wird beim Einschalten im Modellieren-Reiter nicht eingeblendet: ' + JSON.stringify(occtState));
+  assert.equal(await page.locator('#occtFilletPanel').isVisible(), true, 'OCCT-Flächen- und Kantenbearbeitung wird beim Einschalten nicht eingeblendet');
   await page.locator('[data-tab="draw"]').click();
   await page.locator('#pane-draw-right .inner-tab-nav button').filter({ hasText: 'Kontur' }).click();
   const wallGroup = page.locator('#pane-draw-right details.cad-group').filter({ hasText: 'Wand und Kontur bearbeiten' });
@@ -36,6 +38,7 @@ try {
   await page.locator('#modeToggle').click();
   await page.locator('[data-tab="create"]').click();
   assert.equal(await page.locator('#addOcctBox').isVisible(), false, 'OCCT-Spezialwerkzeug wird beim Ausschalten nicht ausgeblendet');
+  assert.equal(await page.locator('#occtFilletPanel').isVisible(), false, 'OCCT-Flächen- und Kantenbearbeitung bleibt nach Ausschalten sichtbar');
   await page.locator('[data-tab="draw"]').click();
   assert.equal(await page.locator('#createContourFrame').isVisible(), false, 'Hohlrahmen-Werkzeug bleibt nach Ausschalten sichtbar');
   assert.equal(await page.locator('#subtractSelected').isVisible(), false, 'Subtraktionswerkzeug bleibt nach Ausschalten sichtbar');
