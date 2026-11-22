@@ -2535,6 +2535,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
 
   // Direkt auf einer ebenen Modellfläche zeichnen und senkrecht zur Fläche extrudieren.
   await page.locator('#cancelSketch').click();
+  await showDrawRightSubtab(0);
   const faceBaseId = await page.evaluate(() => window.__silmoModelingTestSnapshot().selectedId);
   assert.ok(faceBaseId, 'Kein ausgewählter Körper für den Flächenskizzen-Test vorhanden');
   const facePickPoint = await page.evaluate(id => window.__silmoFaceSketchTestPoint(id), faceBaseId);
