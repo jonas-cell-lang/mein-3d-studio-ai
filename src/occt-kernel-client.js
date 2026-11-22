@@ -301,8 +301,8 @@
             !(mesh.indices instanceof Uint32Array) ||
             mesh.positions.length < 9 || mesh.positions.length % 3 !== 0 ||
             mesh.indices.length < 3 || mesh.indices.length % 3 !== 0 ||
-            !Array.from(mesh.positions).every(Number.isFinite) ||
-            !Array.from(mesh.indices).every(index => index < mesh.positions.length / 3) ||
+            !mesh.positions.every(Number.isFinite) ||
+            !mesh.indices.every(index => index < mesh.positions.length / 3) ||
             mesh.triangleCount !== mesh.indices.length / 3) {
           throw new Error("OCCT lieferte ein ungültiges Ergebnis der Kantenfase.");
         }
