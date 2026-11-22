@@ -66,6 +66,11 @@ await page.route('https://**/*', route => route.abort());
 try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
+  const webglInfo = await page.locator('#viewport canvas').evaluate(canvas => {
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    return { available: !!gl, version: gl ? gl.getParameter(gl.VERSION) : null };
+  });
+  assert.equal(webglInfo.available, true, '3D-Arbeitsfläche besitzt keinen aktiven WebGL-Kontext');
   const runtimeInfo = await page.evaluate(() => ({
     revision: window.THREE?.REVISION,
     loader: typeof window.THREE?.STLLoader,
@@ -88,7 +93,8 @@ try {
   await page.locator('[data-tab="print"]').click();
   for (const id of ['bedWidth','bedDepth','applyBedSize','runPrintCheck']) assert.equal(await page.locator('#'+id).isVisible(), true, id+' fehlt im 3D-Druck-Reiter');
   await page.locator('#runPrintCheck').click();
-  assert.match(await page.locator('#printCheckReport').innerText(), /Keine Modelle vorhanden/, 'Druckprüfung behandelt eine leere Szene nicht korrekt');
+  assert.match(await page.locator('#printCheckReport').innerText(), /Würfel:/, 'Druckprüfung analysiert das beim Start vorhandene Beispielmodell nicht');
+  assert.match(await page.locator('#status').innerText(), /3D-Druck-Vorprüfung beendet/, 'Druckprüfung meldet keinen Abschluss');
   await page.locator('[data-tab="create"]').click();
   assert.equal(await page.evaluate(() => window.SILMOUnits?.mmToWorldUnits(10)), 1, 'Zentrale Einheiten-API ist im Browser nicht verfügbar');
   assert.equal(await page.evaluate(() => window.SILMOUnits?.worldUnitsToMm(1)), 10, 'Zentrale Einheiten-API liefert falsche Millimeterwerte');
