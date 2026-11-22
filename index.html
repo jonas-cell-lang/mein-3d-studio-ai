@@ -3380,15 +3380,20 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       return;
     }
     setPointerRay(event);
-    const hit = raycaster.intersectObjects(objects, false)[0];
-    hoverDebug = { reason: hit ? 'Treffer vorhanden' : 'Kein Objekt getroffen',
-      pointerType: event.pointerType || null, hitObjectId: hit?.object?.uuid || null };
-    const hitIsSelected = !!hit && (hit.object === selected || selectedObjects.includes(hit.object));
-    const nextObject = hit && !hitIsSelected ? hit.object : null;
+    // Rekursiv treffen, damit auch Unter-Meshes von Gruppen zuverlässig erkannt
+    // werden. Für die Auswahlkontur wird der Treffer wieder auf das eigentliche
+    // oberste SILMO-Objekt zurückgeführt.
+    const hit = raycaster.intersectObjects(objects, true)[0] || null;
+    let nextObject = hit?.object || null;
+    while (nextObject && !objects.includes(nextObject)) nextObject = nextObject.parent;
+    if (!objects.includes(nextObject)) nextObject = null;
+    const hitIsSelected = !!nextObject && (nextObject === selected || selectedObjects.includes(nextObject));
+    if (hitIsSelected) nextObject = null;
     hoverDebug = {
-      reason: !hit ? 'Kein Objekt getroffen' : hitIsSelected ? 'Vorderstes Objekt ist bereits ausgewählt' : 'Nicht ausgewähltes Objekt erkannt',
+      reason: !hit ? 'Kein Objekt getroffen' : !nextObject && hitIsSelected ? 'Vorderstes Objekt ist bereits ausgewählt' : nextObject ? 'Nicht ausgewähltes Objekt erkannt' : 'Treffer gehört zu keinem Szenenobjekt',
       pointerType: event.pointerType || null,
       hitObjectId: hit?.object?.uuid || null,
+      rootObjectId: hit ? (() => { let root = hit.object; while (root && !objects.includes(root)) root = root.parent; return root?.uuid || null; })() : null,
       selectedObjectId: selected?.uuid || null,
       selectedObjectIds: selectedObjects.map(object => object.uuid)
     };
@@ -3426,8 +3431,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       if (center.z < -1 || center.z > 1) continue;
       pointerNDC.set(center.x, center.y);
       raycaster.setFromCamera(pointerNDC, camera);
-      const visibleHit = raycaster.intersectObjects(objects, false)[0];
-      if (visibleHit?.object !== candidate) continue;
+      const visibleHit = raycaster.intersectObjects(objects, true)[0];
+      let visibleRoot = visibleHit?.object || null;
+      while (visibleRoot && !objects.includes(visibleRoot)) visibleRoot = visibleRoot.parent;
+      if (visibleRoot !== candidate) continue;
       return {
         objectId: candidate.uuid,
         x: rect.left + (center.x + 1) * rect.width / 2,
@@ -3435,6 +3442,30 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       };
     }
     return null;
+  };
+
+  // Eng begrenzte Browser-Testhilfen für die isolierte Modellierprüfung.
+  // Sie lesen den Zustand aus, verändern aber keine Geometrie.
+  window.__silmoModelingTestSnapshot = () => ({
+    selectedId: selected?.uuid || null,
+    sketchMode: !!sketchMode,
+    objects: objects.map(object => ({
+      id: object.uuid,
+      label: object.userData.label || object.name || 'Objekt',
+      position: { x: object.position.x, y: object.position.y, z: object.position.z }
+    }))
+  });
+  window.__silmoModelingTestPoint = objectId => {
+    const object = objects.find(item => item.uuid === objectId);
+    if (!object) return null;
+    object.updateMatrixWorld(true);
+    const center = new THREE.Box3().setFromObject(object).getCenter(new THREE.Vector3()).project(camera);
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height || center.z < -1 || center.z > 1) return null;
+    return {
+      x: rect.left + (center.x + 1) * rect.width / 2,
+      y: rect.top + (1 - center.y) * rect.height / 2
+    };
   };
 
   let sketchPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
