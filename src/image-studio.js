@@ -1,6 +1,8 @@
 
 /* SILMO Image Studio Phase 1 – isolierter 2D-Arbeitsbereich */
 (() => {
+  const tolerances = window.SILMOTolerances;
+  if (!tolerances) throw new Error('SILMO Image Studio benötigt die Toleranz-API.');
   const $ = id => document.getElementById(id);
   const workspace = $('imageStudioWorkspace');
   const canvas = $('imageStudioCanvas');
@@ -100,29 +102,29 @@
     for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){
       const a=polygon[i],b=polygon[j];
       if(((a[1]>point[1])!==(b[1]>point[1])) &&
-        point[0]<(b[0]-a[0])*(point[1]-a[1])/(b[1]-a[1]||1e-12)+a[0]) inside=!inside;
+        point[0]<(b[0]-a[0])*(point[1]-a[1])/(b[1]-a[1]||tolerances.IMAGE_POLYGON_RAY_DENOMINATOR_FALLBACK_MM)+a[0]) inside=!inside;
     }
     return inside;
   }
 
   function segmentDistance(a,b,c,d) {
     const orient=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);
-    const on=(p,q,r)=>Math.min(p[0],q[0])-1e-8<=r[0]&&r[0]<=Math.max(p[0],q[0])+1e-8&&Math.min(p[1],q[1])-1e-8<=r[1]&&r[1]<=Math.max(p[1],q[1])+1e-8;
+    const on=(p,q,r)=>Math.min(p[0],q[0])-tolerances.IMAGE_SEGMENT_BOUNDS_EPSILON_MM<=r[0]&&r[0]<=Math.max(p[0],q[0]) + tolerances.IMAGE_SEGMENT_BOUNDS_EPSILON_MM&&Math.min(p[1],q[1])-tolerances.IMAGE_SEGMENT_BOUNDS_EPSILON_MM<=r[1]&&r[1]<=Math.max(p[1],q[1]) + tolerances.IMAGE_SEGMENT_BOUNDS_EPSILON_MM;
     const o1=orient(a,b,c),o2=orient(a,b,d),o3=orient(c,d,a),o4=orient(c,d,b);
-    if((o1*o2<0&&o3*o4<0)||(Math.abs(o1)<1e-8&&on(a,b,c))||(Math.abs(o2)<1e-8&&on(a,b,d))||(Math.abs(o3)<1e-8&&on(c,d,a))||(Math.abs(o4)<1e-8&&on(c,d,b)))return 0;
+    if((o1*o2<0&&o3*o4<0)||(Math.abs(o1)<tolerances.IMAGE_SEGMENT_ORIENTATION_EPSILON_MM2&&on(a,b,c))||(Math.abs(o2)<tolerances.IMAGE_SEGMENT_ORIENTATION_EPSILON_MM2&&on(a,b,d))||(Math.abs(o3)<tolerances.IMAGE_SEGMENT_ORIENTATION_EPSILON_MM2&&on(c,d,a))||(Math.abs(o4)<tolerances.IMAGE_SEGMENT_ORIENTATION_EPSILON_MM2&&on(c,d,b)))return 0;
     const pointDistance=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]);
     const pointSegment=(p,x,y)=>{const dx=y[0]-x[0],dy=y[1]-x[1],t=Math.max(0,Math.min(1,((p[0]-x[0])*dx+(p[1]-x[1])*dy)/(dx*dx+dy*dy||1)));return Math.hypot(p[0]-x[0]-t*dx,p[1]-x[1]-t*dy);};
     return Math.min(pointSegment(a,c,d),pointSegment(b,c,d),pointSegment(c,a,b),pointSegment(d,a,b),pointDistance(a,c),pointDistance(a,d),pointDistance(b,c),pointDistance(b,d));
   }
   function polygonIsSimple(poly) {
-    if(!Array.isArray(poly)||poly.length<3||polygonArea(poly)<0.01)return false;
+    if(!Array.isArray(poly)||poly.length<3||polygonArea(poly)+tolerances.IMAGE_MIN_AREA_COMPARISON_EPSILON_MM2<tolerances.IMAGE_MIN_SIMPLE_POLYGON_AREA_MM2)return false;
     const n=poly.length;
     for(let i=0;i<n;i++){
       const a=poly[i],b=poly[(i+1)%n];
-      if(Math.hypot(a[0]-b[0],a[1]-b[1])<1e-5)return false;
+      if(Math.hypot(a[0]-b[0],a[1]-b[1])<tolerances.IMAGE_POLYGON_MIN_EDGE_MM)return false;
       for(let j=i+1;j<n;j++){
         if(j===i||j===(i+1)%n||i===(j+1)%n)continue;
-        if(segmentDistance(a,b,poly[j],poly[(j+1)%n])<1e-7)return false;
+        if(segmentDistance(a,b,poly[j],poly[(j+1)%n])<tolerances.IMAGE_POLYGON_MIN_NONADJACENT_GAP_MM)return false;
       }
     }
     return true;
@@ -135,15 +137,15 @@
     }
     return gap;
   }
-  function validatePrintableContours(outer,candidates,minWallMM=0.8) {
+  function validatePrintableContours(outer,candidates,minWallMM=tolerances.IMAGE_MIN_WALL_THICKNESS_MM) {
     const accepted=[],rejected=[];
     if(!polygonIsSimple(outer))return {ok:false,holes:[],rejected:candidates.length,reason:'Die Aussenkontur ist nicht eindeutig geschlossen oder schneidet sich selbst.'};
     for(const hole of candidates){
       if(!polygonIsSimple(hole)){rejected.push('ungültige Kontur');continue;}
       const samples=hole.flatMap((p,i)=>{const q=hole[(i+1)%hole.length];return [p,[(p[0]+q[0])/2,(p[1]+q[1])/2]];});
       if(!samples.every(p=>pointInPolygon(p,outer))){rejected.push('ausserhalb der Aussenkontur');continue;}
-      if(minimumPolygonGap(outer,hole)<minWallMM-1e-6){rejected.push('Wand zur Aussenkante zu dünn');continue;}
-      if(accepted.some(other=>minimumPolygonGap(other,hole)<minWallMM-1e-6||pointInPolygon(hole[0],other)||pointInPolygon(other[0],hole))){rejected.push('Innenlöcher überlappen oder liegen zu nahe');continue;}
+      if(minimumPolygonGap(outer,hole)<minWallMM-tolerances.IMAGE_MIN_WALL_COMPARISON_EPSILON_MM){rejected.push('Wand zur Aussenkante zu dünn');continue;}
+      if(accepted.some(other=>minimumPolygonGap(other,hole)<minWallMM-tolerances.IMAGE_MIN_WALL_COMPARISON_EPSILON_MM||pointInPolygon(hole[0],other)||pointInPolygon(other[0],hole))){rejected.push('Innenlöcher überlappen oder liegen zu nahe');continue;}
       accepted.push(hole);
     }
     return {ok:true,holes:accepted,rejected:rejected.length,reasons:rejected,minWallMM};
@@ -187,7 +189,7 @@
       }
       components.push(component);
     }
-    const minComponentPixels=Math.max(4,Math.floor(w*h*0.000025));
+    const minComponentPixels=Math.max(tolerances.IMAGE_MIN_COMPONENT_PIXEL_COUNT,Math.floor(w*h*tolerances.IMAGE_MIN_COMPONENT_AREA_FRACTION));
     const backgroundIds=new Set(components.filter(c=>c.touchesBorder).map(c=>c.id));
     for(const component of components){
       if(component.touchesBorder)continue;
@@ -256,7 +258,7 @@
           const left=simplify(pts.slice(0,index+1),epsilon),right=simplify(pts.slice(index),epsilon);
           return left.slice(0,-1).concat(right);
         };
-        let reduced=simplify(open,1.1).slice(0,-1);
+        let reduced=simplify(open,tolerances.IMAGE_CONTOUR_SIMPLIFICATION_TOLERANCE_PIXELS).slice(0,-1);
         if(reduced.length>240){const step=Math.ceil(reduced.length/240);reduced=reduced.filter((p,i)=>i%step===0);}
         if(reduced.length>=3)result.push({area,points:reduced.map(([x,y])=>[x/scale,y/scale])});
       }
@@ -485,7 +487,7 @@
   window.__silmoImageStudioAutoTraceTest = dataUrl => new Promise((resolve,reject)=>{
     const probe=new Image();probe.onload=()=>{try{resolve(autoTraceContour(probe));}catch(e){reject(e);}};probe.onerror=()=>reject(new Error('Testbild konnte nicht geladen werden.'));probe.src=dataUrl;
   });
-  window.__silmoImageStudioValidateForPrintTest = (outer,holes,minWallMM=0.8) => validatePrintableContours(outer,holes,minWallMM);
+  window.__silmoImageStudioValidateForPrintTest = (outer,holes,minWallMM=tolerances.IMAGE_MIN_WALL_THICKNESS_MM) => validatePrintableContours(outer,holes,minWallMM);
   window.__silmoImageStudioAutoTraceAllTest = (dataUrl,sensitivity=55) => new Promise((resolve,reject)=>{
     const probe=new Image();probe.onload=()=>{try{resolve(autoTraceContours(probe,sensitivity));}catch(e){reject(e);}};probe.onerror=()=>reject(new Error('Testbild konnte nicht geladen werden.'));probe.src=dataUrl;
   });
@@ -516,7 +518,7 @@
   const endPointer = () => {
     if(drawing&&drawMode){
       drawing=false;
-      if(currentContour.length>=3&&polygonArea(currentContour)>0.5){state.contours.push(currentContour.slice(0,5000));status('Kontur gespeichert ('+currentContour.length+' Punkte).');}
+      if(currentContour.length>=3&&polygonArea(currentContour)>tolerances.IMAGE_MIN_DRAWN_CONTOUR_AREA_PIXELS2){state.contours.push(currentContour.slice(0,5000));status('Kontur gespeichert ('+currentContour.length+' Punkte).');}
       else status('Die Kontur braucht mindestens drei Punkte und eine Fläche.');
       currentContour=[];
     }
@@ -541,7 +543,7 @@
       else if(rotation===270){u=y;v=image.naturalWidth-x;}
       return [u/rotated.width*widthMM-widthMM/2,heightMM/2-v/rotated.height*heightMM];
     }).filter(point=>point.every(Number.isFinite));
-    const mapped=state.contours.map(mapContour).filter(points=>points.length>=3&&polygonArea(points)>=0.01);
+    const mapped=state.contours.map(mapContour).filter(points=>points.length>=3&&polygonArea(points)+tolerances.IMAGE_MIN_AREA_COMPARISON_EPSILON_MM2>=tolerances.IMAGE_MIN_PRINT_CONTOUR_AREA_MM2);
     if(!mapped.length){status('Es wurde keine gültige geschlossene Kontur gefunden.');return;}
     let outerIndex=0;
     for(let i=1;i<mapped.length;i++)if(polygonArea(mapped[i])>polygonArea(mapped[outerIndex]))outerIndex=i;
@@ -549,12 +551,12 @@
     for(let i=0;i<mapped.length;i++){
       if(i===outerIndex)continue;
       const candidate=mapped[i],area=polygonArea(candidate);
-      if(area<0.01||area>=polygonArea(points)*0.8)continue;
+      if(area+tolerances.IMAGE_MIN_AREA_COMPARISON_EPSILON_MM2<tolerances.IMAGE_MIN_PRINT_CONTOUR_AREA_MM2||area>=polygonArea(points)*0.8)continue;
       candidates.push(candidate);
     }
     // Druckbarkeit: keine selbstschneidenden Konturen und mindestens 0,8 mm
     // Material zwischen Aussparungen sowie zwischen Loch und Aussenkante.
-    const printCheck=validatePrintableContours(points,candidates,0.8);
+    const printCheck=validatePrintableContours(points,candidates,tolerances.IMAGE_MIN_WALL_THICKNESS_MM);
     if(!printCheck.ok){status(printCheck.reason+' Bitte Kontur manuell korrigieren.');return;}
     const holes=printCheck.holes;
     const result=window.__silmoImageStudioCreateFromPoints?.(points,extrusionMM,holes);

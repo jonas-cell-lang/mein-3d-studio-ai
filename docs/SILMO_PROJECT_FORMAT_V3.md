@@ -22,7 +22,7 @@
 
 Jedes Modellobjekt speichert mindestens Geometrieattribute, Position, Drehung, Skalierung, Farbe und Grundabmessungen. Zusätzliche Metadaten umfassen unter anderem Sperrstatus, Gruppenzugehörigkeit, Skizzenkontur, Konturrahmen und gegebenenfalls die Ursprungsobjekte einer verbundenen Form.
 
-Geometrieattribute werden als typisierte Zahlenarrays mit Typname, Elementgrösse und Normalisierungsstatus gespeichert. Indizes werden separat gespeichert. Der Loader prüft die zulässigen Arraytypen, Wertebereiche, Attributgrössen und Indexgrenzen.
+Geometrieattribute werden als typisierte Zahlenarrays mit Typname, Elementgrösse und Normalisierungsstatus gespeichert. Indizes werden separat gespeichert. Der Loader prüft die zulässigen Arraytypen, Wertebereiche, Attributgrössen und Indexgrenzen. Das optionale `normalized`-Flag muss, wenn vorhanden, boolesch sein; fehlende Flags bleiben für ältere v3-Dateien kompatibel.
 
 ## Einheiten
 
@@ -43,6 +43,9 @@ Eine Änderung dieser Semantik erfordert eine neue Projektformatversion und eine
 - Alle Geometrieattribute müssen dieselbe Punktanzahl besitzen; Attributtypen, Arraylängen, endliche Werte und Grössenlimits werden geprüft.
 - Indizes müssen einen unterstützten Integer-Typ, gültige Vertex-Verweise und vollständige Dreiergruppen für Dreiecke enthalten.
 - Nicht-indizierte Mesh-Geometrie muss ebenfalls aus vollständigen Dreiecken bestehen.
+- Konturrahmen-Metadaten werden auf die tatsächlich unterstützten Eingabebereiche begrenzt: Wandstärke 0,2–100 mm und Rahmenhöhe 0,2–2000 mm. Der frühere Feldname `caseWallFrame` wird dabei ebenfalls geprüft.
+- Vorhandene Positions-, Drehungs- und Skalierungsarrays werden bereits in der Dokumentvalidierung auf mindestens drei endliche Komponenten und dieselben Grenzen wie der Laufzeit-Loader geprüft (Position/Drehung maximal 10'000; Skalierung maximal 1'000 und keine Nullkomponente). Die Prüfung gilt rekursiv auch für ursprüngliche CSG-Quellteile in `unionParts`, bevor deren Geometrien wiederhergestellt werden. Fehlende oder nicht-arrayförmige Alt-Metadaten behalten die bisherigen Loader-Defaults.
+- Ein fehlgeschlagener Geometrie-Wiederaufbau gibt bereits angelegte `BufferGeometry`-Ressourcen frei.
 - Fehlende oder unbekannte Versionen werden mit einer verständlichen Meldung abgelehnt.
 - Bei einer nicht unterstützten Version bleibt das aktuell geöffnete Projekt unverändert.
 - Das Speichern schreibt weiterhin Version 3.
@@ -55,3 +58,21 @@ Eine Änderung dieser Semantik erfordert eine neue Projektformatversion und eine
 - Weitere reale Fixtures aus bestehenden Benutzerprojekten ergänzen; die repräsentativen Metadatenfälle sind nun durch das erweiterte synthetische Fixture abgedeckt. Das Fixture ist kein Ersatz für eine breite Sammlung echter Benutzerprojekte.
 - Explizite Migrationsregeln erst dann ergänzen, wenn ein konkretes älteres Format samt Testfixture vorliegt.
 - Vertikalen Referenzablauf Erstellen → Bearbeiten → Speichern → Öffnen → STL-Export über echte Projekte absichern.
+
+
+## OCCT-Konstruktionsrezepte in Version 3
+
+Version 3 kann bei Modellobjekten optional ein Feld `occtSource` enthalten. Es beschreibt die reproduzierbare Konstruktion eines unterstützten OCCT-Körpers, nicht dessen internen nativen Speicherzustand.
+
+Unterstützte Rezeptfamilien:
+- Quader mit Abmessungen in Millimetern;
+- unterstützte Skizzenextrusionen mit Aussen- und Innenkonturen sowie Extrusionshöhe;
+- Boolesche Ergebnisse mit Operation, zwei Ausgangsrezepten und zwei vollständigen 3×4-Affinmatrizen in Millimetern.
+
+Neue Boolean-Rezepte speichern `transformsMM` als zwei zeilenweise angeordnete 3×4-Matrizen. Damit werden Rotation, Skalierung und Verschiebung gemeinsam und reproduzierbar auf die echten OCCT-B-Rep-Operandenkörper angewendet. Das bisherige Feld `translationsMM` bleibt enthalten und wird für ältere v3-Dateien ohne `transformsMM` weiterhin unterstützt.
+
+Die Schema-Prüfung validiert Rezepttyp, Abmessungen, Konturen, Boolean-Operation, Operandenzahl, Matrixwerte, nicht entartete Transformationen und Rekursionstiefe vor dem Aufbau der Szene. Bestehende v3-Dateien ohne `occtSource` sowie ältere Boolean-Rezepte nur mit `translationsMM` bleiben gültig. Die Versionsnummer bleibt 3, weil die neuen Felder optional und rückwärtskompatibel sind.
+
+Beim Öffnen baut SILMO die unterstützten OCCT-Formen im Worker aus den Rezepten neu auf. Die gespeicherte triangulierte Geometrie dient weiterhin der Darstellung. Die Projektdatei enthält keine rohe OCCT-B-Rep-Datei.
+
+**Grenzen:** Nicht alle Geometrietypen besitzen bereits ein OCCT-Rezept. Beliebige Meshes, mehrere Operanden in einer einzelnen UI-Operation und die vollständige Migration aller Werkzeuge sind noch nicht abgedeckt. Für nicht unterstützte Fälle bleibt der bisherige Mesh-/BSP-Pfad relevant.

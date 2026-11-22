@@ -5,7 +5,8 @@
   "description": "SILMO – 3D Studio AI",
   "scripts": {
     "prepare:runtime": "node scripts/prepare-runtime.mjs",
-    "test:unit": "node --test tests/*.test.cjs"
+    "test:unit": "node --test tests/*.test.cjs",
+    "benchmark:history": "node --expose-gc scripts/benchmark-history.mjs"
   },
   "dependencies": {
     "three": "0.128.0"

@@ -5,7 +5,7 @@
   const left = document.querySelector('.left-panel');
   const right = document.querySelector('.right-panel');
   const ids = [
-    'addCube','addSphere','addCylinder','addCone','addHexPrism','addTorus','duplicate','booleanUnion','booleanSubtract','importModel','exportModel',
+    'addCube','addOcctBox','addOcctCylinder','addOcctSphere','addOcctCone','addOcctTorus','addSphere','addCylinder','addCone','addHexPrism','addTorus','duplicate','booleanUnion','booleanSubtract','booleanIntersect','importModel','exportModel',
     'saveProjectButton','openProjectButton','fileInput','projectFileInput','delete',
     'dropToBed','checkBed','fitView','bedWidth','bedDepth','applyBedSize','objects',
     'status','positionFields','scaleLock','sizeFields','percentFields','color','expertCenterToggle'
@@ -44,11 +44,11 @@
   const put = (pane, id) => { const n=nodes.get(id); if(n) pane.appendChild(n); };
 
   heading(paneMap.create.left,'Objekte');
-  ['addCube','addSphere','addCylinder','addCone','addHexPrism','addTorus','duplicate'].forEach(id=>put(paneMap.create.left,id));
+  ['addCube','addOcctBox','addOcctCylinder','addOcctSphere','addOcctCone','addOcctTorus','addSphere','addCylinder','addCone','addHexPrism','addTorus','duplicate'].forEach(id=>put(paneMap.create.left,id));
   heading(paneMap.create.left,'Formen kombinieren');
   const booleanHelp=document.createElement('p'); booleanHelp.className='note'; booleanHelp.textContent='Wähle mindestens zwei Objekte in der Objektliste. Mit Strg-Klick kannst du mehrere auswählen. Das erste ausgewählte Objekt ist die Grundform.'; paneMap.create.left.appendChild(booleanHelp);
-  ['booleanUnion','booleanSubtract'].forEach(id=>put(paneMap.create.left,id));
-  const booleanNote=document.createElement('p'); booleanNote.className='note'; booleanNote.textContent='Beim Abziehen bleibt die erste Form erhalten; alle weiteren ausgewählten Formen schneiden sie aus. Verbundene Formen kannst du später wieder trennen.'; paneMap.create.left.appendChild(booleanNote);
+  ['booleanUnion','booleanSubtract','booleanIntersect'].forEach(id=>put(paneMap.create.left,id));
+  const booleanNote=document.createElement('p'); booleanNote.className='note'; booleanNote.textContent='Beim Abziehen bleibt die erste Form erhalten; alle weiteren ausgewählten Formen schneiden sie aus. Die Schnittmenge benötigt zwei unveränderte OCCT-B-Rep-Körper.'; paneMap.create.left.appendChild(booleanNote);
   const booleanSeparateButton=document.createElement('button'); booleanSeparateButton.type='button'; booleanSeparateButton.id='booleanSeparate'; booleanSeparateButton.className='wide'; booleanSeparateButton.textContent='↗ Verbindung lösen'; paneMap.create.left.appendChild(booleanSeparateButton);
   const booleanSeparateNote=document.createElement('p'); booleanSeparateNote.className='note'; booleanSeparateNote.textContent='Stellt die ursprünglichen Einzelobjekte einer verbundenen Form wieder her – auch nach dem Speichern und Öffnen.'; paneMap.create.left.appendChild(booleanSeparateNote);
   heading(paneMap.create.left,'Objektliste'); put(paneMap.create.left,'objects');
@@ -148,15 +148,16 @@
   const clickContourPanel=document.createElement('div');clickContourPanel.className='cad-group-body';clickContourPanel.id='clickContourPanel';
   clickContourPanel.style.cssText='margin:10px 0;padding:12px;border:1px solid #365575;border-radius:12px;background:#10243a';
   const clickContourTitle=document.createElement('strong');clickContourTitle.textContent='Einfach zeichnen – Punkt für Punkt';
-  const clickContourHelp=document.createElement('p');clickContourHelp.className='note';clickContourHelp.textContent='Aktiviere den Punktmodus und setze die Ecken deiner Form mit einzelnen Klicks. Du musst die Maus nicht gedrückt halten.';
+  const clickContourHelp=document.createElement('p');clickContourHelp.className='note';clickContourHelp.textContent='Zeichne zuerst die Aussenkontur. Danach kannst du mit „Innenloch“ weitere geschlossene Konturen in derselben Skizze hinzufügen. Ungültige, überlappende oder ausserhalb liegende Löcher werden abgewiesen.';
   const clickContourToggle=document.createElement('button');clickContourToggle.type='button';clickContourToggle.id='clickContourToggle';clickContourToggle.className='wide';clickContourToggle.textContent='＋ Punktmodus einschalten';clickContourToggle.setAttribute('aria-pressed','false');
   const clickContourUndo=document.createElement('button');clickContourUndo.type='button';clickContourUndo.id='clickContourUndo';clickContourUndo.className='wide';clickContourUndo.textContent='↶ Letzten Punkt entfernen';clickContourUndo.disabled=true;
   const clickContourFinish=document.createElement('button');clickContourFinish.type='button';clickContourFinish.id='clickContourFinish';clickContourFinish.className='wide primary';clickContourFinish.textContent='✓ Kontur abschliessen';clickContourFinish.disabled=true;
+  const clickContourHoleToggle=document.createElement('button');clickContourHoleToggle.type='button';clickContourHoleToggle.id='clickContourHoleToggle';clickContourHoleToggle.className='wide';clickContourHoleToggle.textContent='＋ Innenloch in dieser Skizze zeichnen';clickContourHoleToggle.disabled=true;clickContourHoleToggle.setAttribute('aria-pressed','false');
   const clickContourStraightLabel=document.createElement('label');clickContourStraightLabel.style.cssText='display:flex;align-items:center;gap:8px;margin:8px 0;color:#dcecff';
   const clickContourStraight=document.createElement('input');clickContourStraight.type='checkbox';clickContourStraight.id='clickContourStraight';clickContourStraight.checked=true;
   clickContourStraightLabel.append(clickContourStraight,document.createTextNode('Linien begradigen (45°-Raster)'));
   const clickContourStraightHelp=document.createElement('small');clickContourStraightHelp.textContent='Neue Kanten werden waagrecht, senkrecht oder diagonal ausgerichtet.';
-  clickContourPanel.append(clickContourTitle,clickContourHelp,clickContourStraightLabel,clickContourStraightHelp,clickContourToggle,clickContourUndo,clickContourFinish);
+  clickContourPanel.append(clickContourTitle,clickContourHelp,clickContourStraightLabel,clickContourStraightHelp,clickContourToggle,clickContourHoleToggle,clickContourUndo,clickContourFinish);
   paneMap.draw.left.insertBefore(clickContourPanel,startSketchButton);
 
   const createGroup=(parent,title,open=false)=>{
@@ -217,7 +218,11 @@
   const editNote=document.createElement('p');editNote.className='cad-pro-note';editNote.textContent='Wähle einen zuvor extrudierten Skizzenkörper. Die Geometrie wird angepasst; Position und Drehung bleiben erhalten.';proGroup.appendChild(editNote);
   const pointDivider=document.createElement('div');pointDivider.className='cad-pro-divider';proGroup.appendChild(pointDivider);
   const pointHeading=document.createElement('h3');pointHeading.textContent='Einzelne Skizzenpunkte bearbeiten';proGroup.appendChild(pointHeading);
-  const pointHelp=document.createElement('p');pointHelp.className='cad-pro-note';pointHelp.textContent='Lade die Kontur eines ausgewählten Skizzenkörpers. Wähle einen Punkt und ändere seine X-/Y-Koordinate millimetergenau. Die Extrusion wird danach neu aufgebaut.';proGroup.appendChild(pointHelp);
+  const pointHelp=document.createElement('p');pointHelp.className='cad-pro-note';pointHelp.textContent='Lade die Aussenkontur oder eines der Innenlöcher eines ausgewählten Skizzenkörpers. Wähle einen Punkt und ändere seine X-/Y-Koordinate millimetergenau. Alle übrigen Konturen bleiben erhalten.';proGroup.appendChild(pointHelp);
+  const contourSelectWrap=document.createElement('div');contourSelectWrap.className='field';
+  const contourSelectLabel=document.createElement('label');contourSelectLabel.htmlFor='sketchContourIndex';contourSelectLabel.textContent='Kontur';
+  const contourSelect=document.createElement('select');contourSelect.id='sketchContourIndex';contourSelect.innerHTML='<option value="0">Aussenkontur</option>';
+  contourSelectWrap.append(contourSelectLabel,contourSelect);proGroup.appendChild(contourSelectWrap);
   const pointSelectWrap=document.createElement('div');pointSelectWrap.className='field';
   const pointSelectLabel=document.createElement('label');pointSelectLabel.htmlFor='sketchPointIndex';pointSelectLabel.textContent='Konturpunkt';
   const pointSelect=document.createElement('select');pointSelect.id='sketchPointIndex';pointSelect.innerHTML='<option value="0">Punkt 1</option>';
@@ -229,6 +234,11 @@
   const loadPointButton=document.createElement('button');loadPointButton.type='button';loadPointButton.id='loadSketchPoints';loadPointButton.textContent='Konturpunkte laden';
   const applyPointButton=document.createElement('button');applyPointButton.type='button';applyPointButton.id='applySketchPoint';applyPointButton.className='primary';applyPointButton.textContent='Punkt übernehmen';
   pointActions.append(loadPointButton,applyPointButton);proGroup.appendChild(pointActions);
+  const vertexActions=document.createElement('div');vertexActions.className='cad-pro-actions';
+  const insertPointButton=document.createElement('button');insertPointButton.type='button';insertPointButton.id='insertSketchPoint';insertPointButton.textContent='＋ Punkt einfügen';
+  const deletePointButton=document.createElement('button');deletePointButton.type='button';deletePointButton.id='deleteSketchPoint';deletePointButton.textContent='− Punkt entfernen';
+  vertexActions.append(insertPointButton,deletePointButton);proGroup.appendChild(vertexActions);
+  const removeContourButton=document.createElement('button');removeContourButton.type='button';removeContourButton.id='removeSketchHole';removeContourButton.className='wide';removeContourButton.textContent='× Ganzes Innenloch entfernen';proGroup.appendChild(removeContourButton);
   const pointNote=document.createElement('p');pointNote.className='cad-pro-note';pointNote.textContent='Hinweis: Das ist ein direkter Kontur-Editor. Er löst noch keine vollständigen parametrischen Abhängigkeiten zwischen mehreren Linien.';proGroup.appendChild(pointNote);
   const proDivider2=document.createElement('div');proDivider2.className='cad-pro-divider';proGroup.appendChild(proDivider2);
   const edgeHeading=document.createElement('h3');edgeHeading.textContent='Kanten abrunden oder abfasen';proGroup.appendChild(edgeHeading);
@@ -244,7 +254,8 @@
   const loftButton=document.createElement('button');loftButton.type='button';loftButton.id='createLoft';loftButton.textContent='⤢ Loft zwischen Profilen';
   const sweepButton=document.createElement('button');sweepButton.type='button';sweepButton.id='createSweep';sweepButton.textContent='〰 Profil entlang Pfad';
   formActions.append(loftButton,sweepButton);proGroup.appendChild(formActions);
-  const formNote=document.createElement('p');formNote.className='cad-pro-note';formNote.textContent='Loft: Wähle zwei geschlossene Skizzenprofile. Sweep: Wähle zuerst ein geschlossenes Profil und danach eine gezeichnete 2D-/3D-Linie oder Kurve als Pfad.';proGroup.appendChild(formNote);
+  const updateLoftButton=document.createElement('button');updateLoftButton.type='button';updateLoftButton.id='updateLoftFromSources';updateLoftButton.className='wide';updateLoftButton.textContent='↻ Aus Quellprofilen aktualisieren';proGroup.appendChild(updateLoftButton);
+  const formNote=document.createElement('p');formNote.className='cad-pro-note';formNote.textContent='Loft: Wähle zuerst Aussenprofil A und B. Für jedes Innenloch folgen danach zwei passende Konturen (A und B), also 4, 6, 8 … Profile insgesamt. Ein ausgewähltes Loft lässt sich später aus seinen gespeicherten Quellprofilen neu aufbauen. Sweep: Wähle zuerst ein geschlossenes Profil und danach eine gezeichnete 2D-/3D-Linie oder Kurve als Pfad.';proGroup.appendChild(formNote);
   // Start-/Abschlussaktionen gehören direkt zum Skizzieren und bleiben dort sichtbar.
   const actionWrap=document.createElement('div');actionWrap.className='cad-draw-actions';actionWrap.append(startSketchButton,createSketchButton,cancelSketchButton);
   paneMap.draw.left.insertBefore(clickContourPanel,contourToolsHeading);

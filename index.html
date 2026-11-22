@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SILMO 3D Studio AI – v93 – Volume Unit API</title>
+<title>SILMO 3D Studio AI – v94 – Volume Unit API</title>
 <link rel="icon" type="image/svg+xml" href="./silmo-icon.svg">
 <link rel="apple-touch-icon" href="./icon-512.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#081525">
-<meta name="silmo-build" content="v93 – Volume Unit API">
+<meta name="silmo-build" content="v94 – Volume Unit API">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SILMO 3D Studio">
@@ -397,7 +397,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     <div class="brand-mark">⬡</div>
     <div><h1>SILMO 3D Studio AI</h1><div class="subtitle">Einfach bauen. Präzise modellieren.</div></div>
   </div>
-  <div class="header-actions"><button id="imageStudioLaunch" type="button">▧ Image Studio</button><button id="tutorialLaunch" type="button">✦ Tutorial</button><button id="modeToggle" type="button" aria-pressed="false" title="Zwischen Anfänger- und Expertenmodus wechseln">Anfängermodus</button><button id="expandToggle" type="button" aria-pressed="false">3D maximieren</button><div class="top-status"><span class="status-dot"></span><span>3D-Arbeitsplatz bereit</span></div></div>
+  <div class="header-actions"><button id="imageStudioLaunch" type="button">▧ Image Studio</button><button id="inspectOcctShape" type="button" title="Prüft Volumen und Abmessungen des ausgewählten nativen OCCT-Körpers">⌕ Körper prüfen</button><button id="tutorialLaunch" type="button">✦ Tutorial</button><button id="modeToggle" type="button" aria-pressed="false" title="Zwischen Anfänger- und Expertenmodus wechseln">Anfängermodus</button><button id="expandToggle" type="button" aria-pressed="false">3D maximieren</button><div class="top-status"><span class="status-dot"></span><span>3D-Arbeitsplatz bereit</span></div></div>
 </header>
 <nav class="tool-tabs" role="tablist" aria-label="Werkzeugbereiche">
   <button class="tool-tab" type="button" role="tab" data-tab="create" aria-selected="true">Erstellen</button>
@@ -410,6 +410,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   <aside class="left-panel" aria-label="Werkzeuge und Objektliste">
     <h2>Objekte</h2>
     <button class="wide" id="addCube">＋ Würfel</button>
+  <button class="wide" id="addOcctBox" title="Erzeugt einen exakten OCCT-B-Rep-Körper im Hintergrundkern">＋ OCCT-B-Rep-Quader</button>
+  <button class="wide" id="addOcctCylinder" title="Erzeugt einen analytischen OCCT-B-Rep-Zylinder">＋ OCCT-B-Rep-Zylinder</button>
+  <button class="wide" id="addOcctSphere" title="Erzeugt eine analytische OCCT-B-Rep-Kugel">＋ OCCT-B-Rep-Kugel</button>
+  <button class="wide" id="addOcctCone" title="Erzeugt einen analytischen OCCT-B-Rep-Kegel">＋ OCCT-B-Rep-Kegel</button>
+  <button class="wide" id="addOcctTorus" title="Erzeugt einen analytischen OCCT-B-Rep-Torus">＋ OCCT-B-Rep-Torus</button>
     <button class="wide" id="addSphere">＋ Kugel</button>
     <button class="wide" id="addCylinder">＋ Zylinder</button>
      <button class="wide" id="addCone">＋ Kegel</button>
@@ -421,12 +426,16 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     <p class="note">Wähle mindestens zwei Objekte in der Objektliste. Mit Strg-Klick kannst du mehrere auswählen. Das erste ausgewählte Objekt ist die Grundform.</p>
     <button class="wide" id="booleanUnion">＋ Formen verbinden</button>
     <button class="wide" id="booleanSubtract">− Löcher / Form abziehen</button>
-    <p class="note">Beim Abziehen bleibt die erste Form erhalten; alle weiteren ausgewählten Formen schneiden sie aus.</p>
+    <button class="wide" id="booleanIntersect">∩ Schnittmenge behalten (OCCT)</button>
+    <p class="note">Beim Abziehen bleibt die erste Form erhalten. Fuse, Cut und Common unterstützen zwei oder mehr unveränderte OCCT-B-Rep-Körper.</p>
     <button class="wide" id="importModel">⬆ STL importieren</button>
     <button class="wide" id="exportModel">⬇ STL exportieren</button>
+    <button class="wide" id="importStepModel">⬆ STEP importieren (OCCT)</button>
+    <button class="wide" id="exportStepModel">⬇ STEP exportieren (OCCT)</button>
     <button class="wide" id="saveProjectButton">💾 Projekt speichern</button>
     <button class="wide" id="openProjectButton">📂 Projekt öffnen</button>
     <input id="fileInput" type="file" accept=".stl,model/stl" hidden>
+    <input id="stepFileInput" type="file" accept=".step,.stp,application/step" hidden>
     <input id="projectFileInput" type="file" accept=".json,application/json" hidden>
     <button class="wide" id="delete">🗑 Löschen</button>
     <button class="wide" id="dropToBed">⬇ Auf Arbeitsplatte stellen</button>
@@ -504,14 +513,19 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 
 <script src="./src/tool-navigation.js"></script>
 <script src="./vendor/three/three.min.js"></script>
+<script src="./src/primitive-geometry.js"></script>
 <script src="./vendor/three/STLLoader.js"></script>
 <script src="./vendor/three/STLExporter.js"></script>
 <script src="./src/units.js"></script>
 <script src="./src/tolerances.js"></script>
+<script src="./src/sketch-geometry.js"></script>
 <script src="./src/csg.js"></script>
+<script src="./src/occt-kernel-client.js"></script>
 <script src="./src/project-schema.js"></script>
 <script src="./src/project-geometry.js"></script>
 <script src="./src/project-io.js"></script>
+<script src="./src/history.js"></script>
+<script src="./src/stl-io.js"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -590,10 +604,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const step = mmToWorldUnits(visualStepMM);
     const vertices = [];
     const halfW = w / 2, halfD = d / 2;
-    for (let x = -Math.floor(halfW / step) * step; x <= halfW + 1e-8; x += step) {
+    for (let x = -Math.floor(halfW / step) * step; x <= halfW + window.SILMOTolerances.GRID_BOUNDARY_EPSILON_WORLD_UNITS; x += step) {
       vertices.push(x, -halfD, 0.003, x, halfD, 0.003);
     }
-    for (let y = -Math.floor(halfD / step) * step; y <= halfD + 1e-8; y += step) {
+    for (let y = -Math.floor(halfD / step) * step; y <= halfD + window.SILMOTolerances.GRID_BOUNDARY_EPSILON_WORLD_UNITS; y += step) {
       vertices.push(-halfW, y, 0.003, halfW, y, 0.003);
     }
     const gridGeometry = new THREE.BufferGeometry();
@@ -667,6 +681,154 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
 
   const CSG_EPSILON = window.SILMOTolerances.CSG_GEOMETRY_WORLD_UNITS;
+
+  function getOcctSourceDescriptor(obj) {
+    if (['box', 'sphere', 'cylinder', 'cone', 'torus', 'boolean', 'step', 'fillet', 'chamfer', 'draft'].includes(obj.userData.occtSource?.kind)) {
+      return JSON.parse(JSON.stringify(obj.userData.occtSource));
+    }
+    if (obj.userData.sketch?.outlinePoints) {
+      return { kind: 'sketch', sketch: JSON.parse(JSON.stringify(obj.userData.sketch)) };
+    }
+    return null;
+  }
+
+  async function runOcctBooleanOperation(operation, targets, shapeIds) {
+    const buttonIds = ['booleanUnion', 'booleanSubtract', 'booleanIntersect'];
+    buttonIds.forEach(id => { const button = $(id); if (button) button.disabled = true; });
+    status.textContent = 'OCCT berechnet die echte B-Rep-Boolean-Operation …';
+    let result = null;
+    let geometry = null;
+    try {
+      const transformsMM = targets.map(obj => {
+        const positionMM = new THREE.Vector3(
+          worldUnitsToMm(obj.position.x),
+          worldUnitsToMm(obj.position.y),
+          worldUnitsToMm(obj.position.z)
+        );
+        const matrix = new THREE.Matrix4().compose(positionMM, obj.quaternion, obj.scale);
+        const e = matrix.elements;
+        return [
+          e[0], e[4], e[8], e[12],
+          e[1], e[5], e[9], e[13],
+          e[2], e[6], e[10], e[14]
+        ];
+      });
+      const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
+      const occtOperation = ({ union: 'fuse', subtract: 'cut', intersect: 'common' })[operation];
+      if (!occtOperation) throw new Error('Unbekannte OCCT-Boolean-Operation.');
+
+      const sourceOperands = targets.map(getOcctSourceDescriptor);
+      let sourceRecipe = null;
+      result = await window.__silmoOcctClient.booleanOperation(
+        occtOperation, shapeIds.slice(0, 2), transformsMM.slice(0, 2)
+      );
+      if (sourceOperands[0] && sourceOperands[1]) {
+        sourceRecipe = {
+          kind: 'boolean',
+          operation: occtOperation,
+          operands: sourceOperands.slice(0, 2),
+          translationsMM: transformsMM.slice(0, 2).map(matrix => [matrix[3], matrix[7], matrix[11]]),
+          transformsMM: transformsMM.slice(0, 2).map(matrix => matrix.slice())
+        };
+      }
+
+      // Weitere Körper werden nacheinander mit dem bisherigen echten B-Rep-Ergebnis
+      // verrechnet. Das Zwischenresultat liegt bereits im Weltkoordinatensystem.
+      for (let index = 2; index < targets.length; index++) {
+        const previousResult = result;
+        const nextResult = await window.__silmoOcctClient.booleanOperation(
+          occtOperation,
+          [previousResult.shapeId, shapeIds[index]],
+          [identity, transformsMM[index]]
+        );
+        result = nextResult;
+        await window.__silmoOcctClient.releaseShape(previousResult.shapeId);
+        if (sourceRecipe && sourceOperands[index]) {
+          sourceRecipe = {
+            kind: 'boolean',
+            operation: occtOperation,
+            operands: [sourceRecipe, sourceOperands[index]],
+            translationsMM: [[0, 0, 0], [transformsMM[index][3], transformsMM[index][7], transformsMM[index][11]]],
+            transformsMM: [identity.slice(), transformsMM[index].slice()]
+          };
+        } else {
+          sourceRecipe = null;
+        }
+      }
+
+      if (!result || !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0 ||
+          !result.mesh?.positions?.length || !result.mesh?.indices?.length ||
+          result.mesh.positions.length % 3 !== 0 || result.mesh.indices.length % 3 !== 0) {
+        throw new Error('OCCT lieferte keinen gültigen B-Rep-Körper mit Darstellungsnetz.');
+      }
+      const positions = new Float32Array(result.mesh.positions.length);
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      for (let i = 0; i < positions.length; i++) {
+        const value = result.mesh.positions[i] * mmToWorld;
+        if (!Number.isFinite(value)) throw new Error('OCCT-Mesh enthält ungültige Koordinaten.');
+        positions[i] = value;
+      }
+      geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      const size = geometry.boundingBox.getSize(new THREE.Vector3());
+      if (![size.x, size.y, size.z].every(value => Number.isFinite(value) && value > CSG_EPSILON)) {
+        throw new Error('OCCT-Boolean-Ergebnis hat ungültige oder leere Abmessungen.');
+      }
+
+      const base = targets[0];
+      recordHistory();
+      targets.forEach(obj => {
+        releaseOcctObjectHandle(obj);
+        scene.remove(obj);
+        const index = objects.indexOf(obj);
+        if (index >= 0) objects.splice(index, 1);
+      });
+      const mesh = new THREE.Mesh(geometry, base.material.clone());
+      geometry = null;
+      mesh.position.set(0, 0, 0);
+      mesh.rotation.set(0, 0, 0);
+      mesh.scale.set(1, 1, 1);
+      mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
+      mesh.userData.percent = { x: 100, y: 100, z: 100 };
+      mesh.userData.label = ({ union: 'OCCT-Verbund', subtract: 'OCCT-Ausschnitt', intersect: 'OCCT-Schnittmenge' })[operation];
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtShapeId = result.shapeId;
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      if (sourceRecipe) mesh.userData.occtSource = sourceRecipe;
+      scene.add(mesh);
+      objects.push(mesh);
+      selected = mesh;
+      selectedObjects = [mesh];
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      window.__silmoOcctLastBoolean = {
+        operation: occtOperation,
+        shapeId: result.shapeId,
+        volumeMM3: result.volumeMM3,
+        triangleCount: result.mesh.triangleCount,
+        operandCount: targets.length
+      };
+      updateObjects();
+      showProperties();
+      updateMoveGizmo();
+      const operationLabel = ({ union: 'Formen echt vereinigt', subtract: 'Ausschnitt echt berechnet', intersect: 'Schnittmenge echt berechnet' })[operation];
+      status.textContent = 'OCCT: ' + operationLabel + ' (' + targets.length + ' Körper). Volumen: ' + result.volumeMM3.toFixed(2) + ' mm³.';
+    } catch (error) {
+      if (geometry) geometry.dispose();
+      if (result?.shapeId && window.__silmoOcctClient) {
+        window.__silmoOcctClient.releaseShape(result.shapeId).catch(() => {});
+      }
+      console.error('OCCT-Boolean-Operation fehlgeschlagen:', error);
+      status.textContent = 'OCCT-Boolean fehlgeschlagen: ' + (error.message || 'Geometrie prüfen.');
+    } finally {
+      buttonIds.forEach(id => { const button = $(id); if (button) button.disabled = false; });
+    }
+  }
+
   function runBooleanOperation(operation) {
     const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
     if (targets.some(obj => obj.userData.locked === true)) {
@@ -678,13 +840,28 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       return;
     }
     if (targets.some(obj => !objects.includes(obj))) return;
+    if (['union', 'subtract', 'intersect'].includes(operation) &&
+        window.__silmoOcctObjectHandles && window.__silmoOcctClient) {
+      const shapeIds = targets.map(obj => window.__silmoOcctObjectHandles.get(obj));
+      if (shapeIds.every(id => Number.isInteger(id) && id > 0)) {
+        runOcctBooleanOperation(operation, targets, shapeIds);
+        return;
+      }
+    }
+    if (operation === 'intersect') {
+      status.textContent = 'Die Schnittmenge benötigt mindestens zwei unveränderte OCCT-B-Rep-Körper.';
+      return;
+    }
+    let tempBase = null;
+    let resultMaterial = null;
+    let committed = false;
     try {
       // Alle Geometrieoperationen erst vollständig berechnen, bevor die Szene verändert wird.
       let base = targets[0];
       const unionParts = operation === 'union' ? targets.flatMap(obj => Array.isArray(obj.userData.unionParts) ? obj.userData.unionParts.map(part => JSON.parse(JSON.stringify(part))) : [serializeObjectForUnion(obj)]) : null;
       if (unionParts && (unionParts.length < 2 || unionParts.length > 100)) throw new Error('Zu viele ursprüngliche Formteile für eine trennbare Verbindung.');
       let resultGeometry = base.geometry.clone();
-      const tempBase = new THREE.Mesh(resultGeometry, base.material);
+      tempBase = new THREE.Mesh(resultGeometry, base.material);
       tempBase.position.copy(base.position); tempBase.rotation.copy(base.rotation); tempBase.scale.copy(base.scale);
       tempBase.updateMatrixWorld(true);
       for (const tool of targets.slice(1)) {
@@ -700,54 +877,38 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       recordHistory();
       const removed = targets.slice();
       removed.forEach(obj => { scene.remove(obj); const idx = objects.indexOf(obj); if (idx >= 0) objects.splice(idx,1); });
-      const mesh = new THREE.Mesh(resultGeometry, base.material.clone());
+      resultMaterial = base.material.clone();
+      const mesh = new THREE.Mesh(resultGeometry, resultMaterial);
       mesh.position.copy(base.position); mesh.rotation.set(0,0,0); mesh.scale.set(1,1,1);
       mesh.userData.baseDimensions = {x:size.x,y:size.y,z:size.z};
       mesh.userData.percent = {x:100,y:100,z:100};
       mesh.userData.label = operation === 'union' ? 'Verbundene Form' : 'Ausgeschnittene Form';
       if (unionParts) mesh.userData.unionParts = unionParts;
       scene.add(mesh); objects.push(mesh); selected = mesh; selectedObjects = [mesh];
+      committed = true;
       // Alte Geometrien/Materialien erst nach erfolgreichem Einsetzen freigeben.
       removed.forEach(obj => { obj.geometry.dispose(); if (Array.isArray(obj.material)) obj.material.forEach(m=>m.dispose()); else obj.material.dispose(); });
       updateObjects(); showProperties(); updateMoveGizmo();
       status.textContent = operation === 'union' ? 'Formen erfolgreich verbunden.' : 'Ausschnitt erfolgreich berechnet.';
     } catch (error) {
+      if (!committed) {
+        // Temporäre BSP-Ergebnisse gehören der Operation, nicht der Szene.
+        // Bei einem Fehler müssen sie freigegeben werden; die Originalobjekte
+        // bleiben bis zum erfolgreichen Commit unangetastet.
+        if (tempBase?.geometry) tempBase.geometry.dispose();
+        if (resultMaterial) {
+          if (Array.isArray(resultMaterial)) resultMaterial.forEach(material => material.dispose());
+          else resultMaterial.dispose();
+        }
+      }
       console.error('CSG-Operation fehlgeschlagen:', error);
       status.textContent = 'Formen konnten nicht kombiniert werden: ' + (error.message || 'Geometrie prüfen.');
     }
   }
 
-  function addRoundedRectPath(path,width,height,radius,offsetX=0,offsetY=0,reverse=false){
-    const hw=width/2,hh=height/2,r=Math.min(Math.max(0.01,radius),hw,hh);
-    if(!reverse){
-      path.moveTo(offsetX-hw+r,offsetY-hh);path.lineTo(offsetX+hw-r,offsetY-hh);path.quadraticCurveTo(offsetX+hw,offsetY-hh,offsetX+hw,offsetY-hh+r);
-      path.lineTo(offsetX+hw,offsetY+hh-r);path.quadraticCurveTo(offsetX+hw,offsetY+hh,offsetX+hw-r,offsetY+hh);
-      path.lineTo(offsetX-hw+r,offsetY+hh);path.quadraticCurveTo(offsetX-hw,offsetY+hh,offsetX-hw,offsetY+hh-r);
-      path.lineTo(offsetX-hw,offsetY-hh+r);path.quadraticCurveTo(offsetX-hw,offsetY-hh,offsetX-hw+r,offsetY-hh);
-    }else{
-      path.moveTo(offsetX-hw+r,offsetY-hh);path.quadraticCurveTo(offsetX-hw,offsetY-hh,offsetX-hw,offsetY-hh+r);
-      path.lineTo(offsetX-hw,offsetY+hh-r);path.quadraticCurveTo(offsetX-hw,offsetY+hh,offsetX-hw+r,offsetY+hh);
-      path.lineTo(offsetX+hw-r,offsetY+hh);path.quadraticCurveTo(offsetX+hw,offsetY+hh,offsetX+hw,offsetY+hh-r);
-      path.lineTo(offsetX+hw,offsetY-hh+r);path.quadraticCurveTo(offsetX+hw,offsetY-hh,offsetX+hw-r,offsetY-hh);
-      path.lineTo(offsetX-hw+r,offsetY-hh);
-    }
-  }
-
   function createObject(type) {
     recordHistory();
-    let geometry;
-    if (type === 'Würfel') geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
-    else if (type === 'Kugel') geometry = new THREE.SphereGeometry(0.8, 32, 24);
-    else if (type === 'Zylinder') geometry = new THREE.CylinderGeometry(0.7, 0.7, 1.5, 32);
-    else if (type === 'Kegel') geometry = new THREE.ConeGeometry(0.8, 1.5, 48);
-    else if (type === 'Sechskant-Prisma') geometry = new THREE.CylinderGeometry(0.85, 0.85, 1.5, 6);
-    else if (type === 'Ring / Torus') geometry = new THREE.TorusGeometry(0.65, 0.18, 16, 48);
-    else geometry = new THREE.BoxGeometry(1, 1, 1);
-
-    // Three.js-Standardformen haben ihre Höhe entlang Y. Wir drehen sie,
-    // damit die Höhe in dieser App entlang Z verläuft.
-    if (type !== 'Ring / Torus') geometry.rotateX(Math.PI / 2);
-    geometry.computeBoundingBox();
+    const geometry = window.SILMOPrimitiveGeometry.createPrimitiveGeometry(type);
 
     const material = new THREE.MeshStandardMaterial({
       color: new THREE.Color().setHSL(Math.random(), 0.65, 0.55),
@@ -769,19 +930,1187 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
 
 
+  async function inspectSelectedOcctShape() {
+    const button = $('inspectOcctShape');
+    if (button.disabled) return;
+    const sourceMesh = selected;
+    if (!sourceMesh) { status.textContent = 'Bitte zuerst einen OCCT-Körper auswählen.'; return; }
+    const shapeId = window.__silmoOcctObjectHandles?.get(sourceMesh);
+    if (!Number.isInteger(shapeId) || shapeId <= 0 || !window.__silmoOcctClient) {
+      status.textContent = 'Das ausgewählte Objekt besitzt keinen aktiven nativen OCCT-Körper. Gewöhnliche Meshes können hier noch nicht geprüft werden.';
+      return;
+    }
+    button.disabled = true;
+    status.textContent = 'OCCT-Körper wird geprüft …';
+    try {
+      const result = await window.__silmoOcctClient.inspectShape(shapeId);
+      const size = result.boundingBoxMM.size.map(value => value.toFixed(2));
+      window.__silmoOcctLastInspection = result;
+      const topology = result.topology;
+      status.textContent = 'OCCT-Analyse: Volumen ' + result.volumeMM3.toFixed(2) + ' mm³; Oberfläche ' + result.surfaceAreaMM2.toFixed(2) + ' mm²; Abmessungen ' + size.join(' × ') + ' mm; ' + topology.face + ' Flächen, ' + topology.edge + ' Kanten, ' + topology.vertex + ' Eckpunkte; ' + result.mesh.triangleCount + ' Dreiecke.';
+    } catch (error) {
+      status.textContent = 'OCCT-Körperprüfung fehlgeschlagen: ' + (error.message || 'Unbekannter Fehler');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  let occtEdgePickMode = false;
+  let occtFacePickMode = false;
+
+  function clearOcctFaceOverlay() {
+    const overlay = window.__silmoOcctFaceOverlay;
+    if (overlay?.group?.parent) overlay.group.parent.remove(overlay.group);
+    if (overlay?.group) overlay.group.children.forEach(mesh => { mesh.geometry?.dispose(); mesh.material?.dispose(); });
+    window.__silmoOcctFaceOverlay = null;
+    occtFacePickMode = false;
+    const toggle = $('toggleOcctFacePick');
+    if (toggle) { toggle.disabled = true; toggle.textContent = '⌖ 3D-Flächenauswahl einschalten'; }
+    if ($('occtFaceList')) { $('occtFaceList').replaceChildren(); $('occtFaceList').disabled = true; }
+    if ($('applyOcctDraft')) $('applyOcctDraft').disabled = true;
+  }
+  function updateOcctFaceHighlight() {
+    const overlay = window.__silmoOcctFaceOverlay;
+    if (!overlay) return;
+    for (const mesh of overlay.group.children) {
+      const active = mesh.userData.occtFaceIndex === overlay.selectedIndex;
+      mesh.material.color.set(active ? 0xffbd4a : 0x48a9e8);
+      mesh.material.opacity = active ? 0.58 : 0.16;
+    }
+    $('occtFaceList').value = overlay.selectedIndex === null ? '' : String(overlay.selectedIndex);
+    const face = overlay.faces[overlay.selectedIndex];
+    $('occtFaceSummary').textContent = face
+      ? 'Fläche ' + (face.index + 1) + ' ausgewählt · ' + face.geometryType + ' · ' + face.areaMM2.toFixed(2) + ' mm².'
+      : overlay.faces.length + ' native B-Rep-Flächen geladen. Wähle eine Fläche, um sie im 3D-Modell hervorzuheben.';
+    if ($('applyOcctDraft')) {
+      $('applyOcctDraft').disabled = !face || !['plane', 'cylinder', 'cone'].includes(face.geometryType);
+    }
+  }
+  function buildOcctFaceOverlay(sourceMesh, faceMeshes, faceInfo) {
+    clearOcctFaceOverlay();
+    if (faceMeshes.faces.length !== faceInfo.length) throw new Error('Flächen-Netze stimmen nicht mit der nativen B-Rep-Topologie überein.');
+    const group = new THREE.Group();
+    group.name = 'SILMO OCCT native face overlay';
+    for (const entry of faceMeshes.faces) {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(entry.mesh.positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(entry.mesh.indices, 1));
+      geometry.computeVertexNormals();
+      const material = new THREE.MeshBasicMaterial({
+        color: 0x48a9e8, transparent: true, opacity: 0.16, depthTest: true, depthWrite: false,
+        side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.userData.occtFaceIndex = entry.index;
+      mesh.frustumCulled = false;
+      group.add(mesh);
+    }
+    sourceMesh.add(group);
+    window.__silmoOcctFaceOverlay = { sourceMesh, group, faces: faceInfo.map(face => ({...face})), selectedIndex: null };
+    const list = $('occtFaceList');
+    list.replaceChildren();
+    faceInfo.forEach(face => {
+      const option = document.createElement('option');
+      option.value = String(face.index);
+      option.textContent = 'Fläche ' + (face.index + 1) + ' · ' + face.geometryType + ' · ' + face.areaMM2.toFixed(2) + ' mm²';
+      list.appendChild(option);
+    });
+    list.disabled = false;
+    $('toggleOcctFacePick').disabled = group.children.length === 0;
+    updateOcctFaceHighlight();
+    window.__silmoOcctFacePickPoint = () => {
+      const bounds = new THREE.Box3().setFromObject(sourceMesh);
+      const point = bounds.getCenter(new THREE.Vector3()).project(camera);
+      const rect = canvas.getBoundingClientRect();
+      if (point.z < -1 || point.z > 1 || !rect.width || !rect.height) return null;
+      return { x: rect.left + (point.x + 1) * rect.width / 2,
+        y: rect.top + (1 - point.y) * rect.height / 2 };
+    };
+  }
+  function selectOcctFaceFromList() {
+    const overlay = window.__silmoOcctFaceOverlay;
+    if (!overlay) return;
+    const value = $('occtFaceList').value;
+    overlay.selectedIndex = value === '' ? null : Number(value);
+    updateOcctFaceHighlight();
+  }
+  function toggleOcctFacePickMode() {
+    if (!window.__silmoOcctFaceOverlay) return;
+    occtFacePickMode = !occtFacePickMode;
+    if (occtFacePickMode) {
+      occtEdgePickMode = false;
+      $('toggleOcctEdgePick').textContent = '⌖ 3D-Kantenauswahl einschalten';
+    }
+    $('toggleOcctFacePick').textContent = occtFacePickMode
+      ? '✓ 3D-Flächenauswahl aktiv'
+      : '⌖ 3D-Flächenauswahl einschalten';
+    canvas.style.cursor = occtFacePickMode ? 'crosshair' : 'default';
+    status.textContent = occtFacePickMode
+      ? 'Klicke direkt auf eine Fläche des 3D-Körpers. Die getroffene native Fläche wird orange markiert.'
+      : '3D-Flächenauswahl ausgeschaltet.';
+  }
+
+  async function applySelectedOcctDraft() {
+    const button = $('applyOcctDraft');
+    if (!button || button.disabled) return;
+    const sourceMesh = selected;
+    const shapeId = sourceMesh && window.__silmoOcctObjectHandles?.get(sourceMesh);
+    const overlay = window.__silmoOcctFaceOverlay;
+    const face = overlay?.faces?.[overlay.selectedIndex];
+    const angleDeg = Number($('occtDraftAngle').value);
+    const faceIndices = face ? [face.index] : [];
+    const readVector = prefix => ({
+      x: Number($(prefix + 'X').value),
+      y: Number($(prefix + 'Y').value),
+      z: Number($(prefix + 'Z').value)
+    });
+    const direction = readVector('occtDraftDirection');
+    const planeOrigin = readVector('occtDraftOrigin');
+    const planeNormal = readVector('occtDraftNormal');
+    const isValidVector = value => [value.x, value.y, value.z].every(Number.isFinite) &&
+      Math.hypot(value.x, value.y, value.z) > 1e-9;
+    const neutralPlane = { origin: planeOrigin, normal: planeNormal };
+    if (!sourceMesh || !Number.isInteger(shapeId) || shapeId <= 0) {
+      status.textContent = 'Der ausgewählte Körper besitzt keinen aktiven OCCT-B-Rep-Handle.'; return;
+    }
+    if (!faceIndices.length || !['plane', 'cylinder', 'cone'].includes(face.geometryType)) {
+      status.textContent = 'Bitte eine ebene, zylindrische oder konische native Fläche auswählen.'; return;
+    }
+    if (!Number.isFinite(angleDeg) || Math.abs(angleDeg) < 0.1 || Math.abs(angleDeg) > 20) {
+      status.textContent = 'Der Neigungswinkel muss zwischen −20° und −0,1° oder 0,1° und 20° liegen.'; return;
+    }
+    if (!isValidVector(direction) || !isValidVector(planeNormal) ||
+        ![planeOrigin.x, planeOrigin.y, planeOrigin.z].every(Number.isFinite)) {
+      status.textContent = 'Zugrichtung und Normalenvektor müssen gültige, von null verschiedene Vektoren sein. Der Ursprung der Neutralebene muss aus gültigen Zahlen bestehen.'; return;
+    }
+    const baseSource = sourceMesh.userData.occtSource;
+    if (!baseSource || typeof baseSource !== 'object') {
+      status.textContent = 'Für Undo/Redo braucht dieser Körper eine gespeicherte OCCT-Konstruktionsquelle. Importierte oder anderweitig veränderte Körper können hier noch nicht geneigt werden.';
+      return;
+    }
+    button.disabled = true;
+    let result = null;
+    try {
+      status.textContent = 'OCCT neigt die ausgewählte native B-Rep-Fläche …';
+      result = await window.__silmoOcctClient.draftFaces(shapeId, faceIndices, angleDeg, direction, neutralPlane);
+      if (!result?.mesh?.positions?.length || !result.mesh.indices?.length ||
+          !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0) {
+        throw new Error('OCCT lieferte kein gültiges geneigtes Volumen mit Darstellungsnetz.');
+      }
+      if (!objects.includes(sourceMesh) || selected !== sourceMesh ||
+          window.__silmoOcctObjectHandles?.get(sourceMesh) !== shapeId) {
+        throw new Error('Die Auswahl hat sich während der Berechnung geändert. Ergebnis wurde nicht eingesetzt.');
+      }
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      const positions = new Float32Array(result.mesh.positions.length);
+      for (let i = 0; i < positions.length; i++) positions[i] = result.mesh.positions[i] * mmToWorld;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+      const size = new THREE.Vector3(); geometry.boundingBox.getSize(size);
+      if (![size.x, size.y, size.z].every(value => Number.isFinite(value) && value > 0)) {
+        geometry.dispose(); throw new Error('Das geneigte Ergebnis besitzt ungültige Abmessungen.');
+      }
+      const mesh = new THREE.Mesh(geometry, sourceMesh.material.clone());
+      mesh.position.copy(sourceMesh.position); mesh.rotation.copy(sourceMesh.rotation); mesh.scale.copy(sourceMesh.scale);
+      mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
+      mesh.userData.percent = { ...(sourceMesh.userData.percent || { x: 100, y: 100, z: 100 }) };
+      mesh.userData.label = (sourceMesh.userData.label || 'OCCT-Körper') + ' · geneigt';
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      mesh.userData.occtSource = {
+        kind: 'draft', base: JSON.parse(JSON.stringify(baseSource)),
+        faceIndices: faceIndices.slice(), angleDeg, direction, neutralPlane
+      };
+      recordHistory();
+      const oldIndex = objects.indexOf(sourceMesh);
+      clearOcctEdgeOverlay();
+      scene.remove(sourceMesh);
+      if (oldIndex >= 0) objects.splice(oldIndex, 1, mesh); else objects.push(mesh);
+      scene.add(mesh);
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      sourceMesh.geometry.dispose();
+      (Array.isArray(sourceMesh.material) ? sourceMesh.material : [sourceMesh.material]).forEach(material => material.dispose());
+      selectObject(mesh);
+      window.__silmoOcctLastDraft = { shapeId: result.shapeId, volumeMM3: result.volumeMM3, faceIndices, angleDeg, direction, neutralPlane };
+      await window.__silmoOcctClient.releaseShape(shapeId).catch(() => {});
+      status.textContent = 'Echte OCCT-Flächenneigung erfolgreich angewendet. Undo/Redo kann den Körper aus seiner Konstruktionsquelle rekonstruieren.';
+    } catch (error) {
+      if (result?.shapeId && window.__silmoOcctClient) await window.__silmoOcctClient.releaseShape(result.shapeId).catch(() => {});
+      status.textContent = 'Flächenneigung fehlgeschlagen: ' + (error.message || 'Unbekannter OCCT-Fehler');
+    } finally { button.disabled = false; }
+  }
+
+  function clearOcctEdgeOverlay() {
+    clearOcctFaceOverlay();
+    const overlay = window.__silmoOcctEdgeOverlay;
+    if (overlay?.group?.parent) overlay.group.parent.remove(overlay.group);
+    if (overlay?.group) {
+      overlay.group.children.forEach(line => {
+        line.geometry?.dispose();
+        line.material?.dispose();
+      });
+    }
+    window.__silmoOcctEdgeOverlay = null;
+    occtEdgePickMode = false;
+    const toggle = $('toggleOcctEdgePick');
+    if (toggle) { toggle.disabled = true; toggle.textContent = '⌖ 3D-Kantenauswahl einschalten'; }
+    if ($('occtEdgeList')) {
+      $('occtEdgeList').replaceChildren();
+      $('occtEdgeList').disabled = true;
+    }
+    if ($('applyOcctFillet')) $('applyOcctFillet').disabled = true;
+    if ($('applyOcctChamfer')) $('applyOcctChamfer').disabled = true;
+  }
+
+  function updateOcctEdgeHighlight() {
+    const overlay = window.__silmoOcctEdgeOverlay;
+    if (!overlay) return;
+    for (const line of overlay.group.children) {
+      const active = overlay.selectedIndices.has(line.userData.occtEdgeIndex);
+      line.material.color.set(active ? 0xffbd4a : 0x48a9e8);
+      line.material.opacity = active ? 1 : 0.82;
+    }
+    for (const option of $('occtEdgeList').options) {
+      option.selected = overlay.selectedIndices.has(Number(option.value));
+    }
+    $('applyOcctFillet').disabled = overlay.selectedIndices.size === 0;
+    if ($('applyOcctChamfer')) $('applyOcctChamfer').disabled = overlay.selectedIndices.size === 0;
+    $('occtTopologySummary').textContent =
+      overlay.selectedIndices.size + ' Kante(n) ausgewählt. Klicke weitere Kanten im 3D-Modell oder in der Liste an.';
+  }
+
+  function buildOcctEdgeOverlay(sourceMesh, wireframe) {
+    clearOcctEdgeOverlay();
+    const group = new THREE.Group();
+    group.name = 'SILMO OCCT native edge overlay';
+    const visibleIndices = new Set();
+    for (let i = 0; i < wireframe.edgeGroups.length; i += 3) {
+      const start = wireframe.edgeGroups[i];
+      const count = wireframe.edgeGroups[i + 1];
+      const edgeIndex = wireframe.edgeGroups[i + 2];
+      if (!Number.isInteger(edgeIndex) || edgeIndex < 0 || start < 0 ||
+          count < 6 || start + count > wireframe.points.length) continue;
+      const positions = new Float32Array(count);
+      for (let p = 0; p < count; p++) {
+        positions[p] = wireframe.points[start + p] * window.SILMOUnits.mmToWorldUnits(1);
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const material = new THREE.LineBasicMaterial({
+        color: 0x48a9e8, transparent: true, opacity: 0.82,
+        depthTest: true, depthWrite: false
+      });
+      const line = new THREE.Line(geometry, material);
+      line.userData.occtEdgeIndex = edgeIndex;
+      line.frustumCulled = false;
+      group.add(line);
+      visibleIndices.add(edgeIndex);
+    }
+    if (!group.children.length) throw new Error('OCCT lieferte keine darstellbaren Kanten-Polylinien.');
+    sourceMesh.add(group);
+    window.__silmoOcctEdgeOverlay = { sourceMesh, group, visibleIndices, selectedIndices: new Set() };
+    window.__silmoOcctEdgePickPoint = edgeIndex => {
+      const overlay = window.__silmoOcctEdgeOverlay;
+      const line = overlay?.group.children.find(item => item.userData.occtEdgeIndex === edgeIndex);
+      if (!line) return null;
+      overlay.group.updateMatrixWorld(true);
+      const attr = line.geometry.getAttribute('position');
+      const point = new THREE.Vector3().fromBufferAttribute(attr, Math.floor(attr.count / 2));
+      point.applyMatrix4(line.matrixWorld).project(camera);
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: rect.left + (point.x + 1) * rect.width / 2,
+        y: rect.top + (1 - point.y) * rect.height / 2
+      };
+    };
+    $('toggleOcctEdgePick').disabled = false;
+    $('toggleOcctEdgePick').textContent = '⌖ 3D-Kantenauswahl einschalten';
+    updateOcctEdgeHighlight();
+    return visibleIndices;
+  }
+
+  function findOcctEdgeAtScreenPoint(clientX, clientY) {
+    const overlay = window.__silmoOcctEdgeOverlay;
+    if (!overlay?.group || !Number.isFinite(clientX) || !Number.isFinite(clientY)) return null;
+    overlay.group.updateMatrixWorld(true);
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    const project = point => {
+      const projected = point.clone().project(camera);
+      return {
+        x: rect.left + (projected.x + 1) * rect.width / 2,
+        y: rect.top + (1 - projected.y) * rect.height / 2,
+        z: projected.z
+      };
+    };
+    let nearest = null;
+    for (const line of overlay.group.children) {
+      const attribute = line.geometry.getAttribute('position');
+      if (!attribute || attribute.count < 2) continue;
+      line.updateMatrixWorld(true);
+      let bestDistance = Infinity;
+      for (let i = 0; i < attribute.count - 1; i++) {
+        const a = project(new THREE.Vector3().fromBufferAttribute(attribute, i).applyMatrix4(line.matrixWorld));
+        const b = project(new THREE.Vector3().fromBufferAttribute(attribute, i + 1).applyMatrix4(line.matrixWorld));
+        if (a.z < -1 || a.z > 1 || b.z < -1 || b.z > 1) continue;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const lengthSquared = dx * dx + dy * dy;
+        const t = lengthSquared > 1e-9
+          ? Math.max(0, Math.min(1, ((clientX - a.x) * dx + (clientY - a.y) * dy) / lengthSquared))
+          : 0;
+        const distance = Math.hypot(clientX - (a.x + t * dx), clientY - (a.y + t * dy));
+        if (distance < bestDistance) bestDistance = distance;
+      }
+      if (bestDistance <= 14 && (!nearest || bestDistance < nearest.distance)) {
+        nearest = { edgeIndex: line.userData.occtEdgeIndex, distance: bestDistance };
+      }
+    }
+    return nearest;
+  }
+  window.__silmoOcctFindEdgeAtScreenPoint = findOcctEdgeAtScreenPoint;
+  window.__silmoOcctEdgePickReady = () => ({
+    enabled: occtEdgePickMode,
+    overlayExists: Boolean(window.__silmoOcctEdgeOverlay),
+    sourceMatchesSelected: Boolean(window.__silmoOcctEdgeOverlay?.sourceMesh === selected),
+    canvas: (() => { const r = canvas.getBoundingClientRect(); return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}; })()
+  });
+
+  function syncOcctEdgeSelectionFromList() {
+    const overlay = window.__silmoOcctEdgeOverlay;
+    if (!overlay) return;
+    overlay.selectedIndices = new Set(Array.from($('occtEdgeList').selectedOptions, option => Number(option.value)));
+    updateOcctEdgeHighlight();
+  }
+
+  function toggleOcctEdgePickMode() {
+    const overlay = window.__silmoOcctEdgeOverlay;
+    if (!overlay) return;
+    occtEdgePickMode = !occtEdgePickMode;
+    if (occtEdgePickMode) {
+      occtFacePickMode = false;
+      $('toggleOcctFacePick').textContent = '⌖ 3D-Flächenauswahl einschalten';
+    }
+    $('toggleOcctEdgePick').textContent = occtEdgePickMode
+      ? '✓ 3D-Kantenauswahl aktiv'
+      : '⌖ 3D-Kantenauswahl einschalten';
+    canvas.style.cursor = occtEdgePickMode ? 'crosshair' : 'default';
+    status.textContent = occtEdgePickMode
+      ? 'Klicke direkt auf blaue Kanten im 3D-Modell. Ausgewählte Kanten werden orange markiert.'
+      : '3D-Kantenauswahl ausgeschaltet.';
+  }
+
+  async function loadSelectedOcctEdges() {
+    const button = $('loadOcctEdges');
+    const list = $('occtEdgeList');
+    const apply = $('applyOcctFillet');
+    const applyChamfer = $('applyOcctChamfer');
+    if (button.disabled) return;
+    const sourceMesh = selected;
+    if (!sourceMesh) { status.textContent = 'Bitte zuerst einen OCCT-Körper auswählen.'; return; }
+    const shapeId = window.__silmoOcctObjectHandles?.get(sourceMesh);
+    if (!Number.isInteger(shapeId) || shapeId <= 0 || !window.__silmoOcctClient) {
+      status.textContent = 'Bitte einen nativen OCCT-B-Rep-Körper auswählen. Normale STL-/Mesh-Objekte haben keine editierbaren B-Rep-Kanten.';
+      return;
+    }
+    button.disabled = true; apply.disabled = true; if (applyChamfer) applyChamfer.disabled = true; list.replaceChildren();
+    $('occtTopologySummary').textContent = 'Native Flächen und Kanten werden eingelesen …';
+    try {
+      const result = await window.__silmoOcctClient.listSubShapes(shapeId);
+      if (!Array.isArray(result.edge) || !Array.isArray(result.face)) throw new Error('OCCT lieferte keine gültige Topologie.');
+      const wireframe = await window.__silmoOcctClient.getWireframe(shapeId);
+      if (selected !== sourceMesh || window.__silmoOcctObjectHandles?.get(sourceMesh) !== shapeId) {
+        throw new Error('Der ausgewählte Körper hat sich während des Ladens geändert.');
+      }
+      const visibleIndices = buildOcctEdgeOverlay(sourceMesh, wireframe);
+      result.edge.forEach(edge => {
+        const option = document.createElement('option');
+        option.value = String(edge.index);
+        option.textContent = 'Kante ' + (edge.index + 1) + ' · ' + edge.geometryType + ' · ' + Number(edge.lengthMM).toFixed(2) + ' mm';
+        option.disabled = !visibleIndices.has(edge.index);
+        if (option.disabled) option.textContent += ' · nicht darstellbar';
+        list.appendChild(option);
+      });
+      list.disabled = result.edge.length === 0;
+      apply.disabled = true;
+      $('toggleOcctEdgePick').disabled = visibleIndices.size === 0;
+      const totalFaceAreaMM2 = result.face.reduce((sum, face) => sum + face.areaMM2, 0);
+      $('occtTopologySummary').textContent = result.face.length + ' echte B-Rep-Flächen und ' + result.edge.length +
+        ' echte B-Rep-Kanten; ' + visibleIndices.size + ' davon direkt auswählbar. Gesamtfläche: ' +
+        totalFaceAreaMM2.toFixed(2) + ' mm².';
+      const faceMeshes = await window.__silmoOcctClient.getFaceMeshes(shapeId);
+       if (selected !== sourceMesh || window.__silmoOcctObjectHandles?.get(sourceMesh) !== shapeId) {
+         throw new Error('Der ausgewählte Körper hat sich während des Flächenladens geändert.');
+       }
+       buildOcctFaceOverlay(sourceMesh, faceMeshes, result.face);
+       window.__silmoOcctLastSubShapes = result;
+      window.__silmoOcctLastWireframe = wireframe;
+      status.textContent = 'Topologie geladen. Aktiviere die 3D-Kantenauswahl und klicke direkt auf eine Kante – alternativ kannst du die Liste verwenden.';
+    } catch (error) {
+      $('occtTopologySummary').textContent = 'Kanten konnten nicht geladen werden.';
+      status.textContent = 'OCCT-Kantenauswahl fehlgeschlagen: ' + (error.message || 'Unbekannter Fehler');
+    } finally { button.disabled = false; }
+  }
+
+  async function applySelectedOcctFillet() {
+    const button = $('applyOcctFillet');
+    if (button.disabled) return;
+    const sourceMesh = selected;
+    const shapeId = sourceMesh && window.__silmoOcctObjectHandles?.get(sourceMesh);
+    const edgeIndices = Array.from($('occtEdgeList').selectedOptions, option => Number(option.value));
+    const radiusMM = Number($('occtFilletRadius').value);
+    if (!sourceMesh || !Number.isInteger(shapeId) || shapeId <= 0) {
+      status.textContent = 'Der ausgewählte Körper besitzt keinen aktiven OCCT-B-Rep-Handle.'; return;
+    }
+    if (!edgeIndices.length || edgeIndices.some(index => !Number.isInteger(index) || index < 0)) {
+      status.textContent = 'Bitte mindestens eine native Kante auswählen.'; return;
+    }
+    if (!Number.isFinite(radiusMM) || radiusMM < 0.01 || radiusMM > 2000) {
+      status.textContent = 'Der Rundungsradius muss zwischen 0,01 und 2000 mm liegen.'; return;
+    }
+    const baseSource = sourceMesh.userData.occtSource;
+    if (!baseSource || typeof baseSource !== 'object') {
+      status.textContent = 'Für Undo/Redo braucht dieser Körper eine gespeicherte OCCT-Konstruktionsquelle. Dieser importierte oder veränderte Körper kann hier noch nicht abgerundet werden.';
+      return;
+    }
+    button.disabled = true;
+    let result = null;
+    try {
+      status.textContent = 'OCCT berechnet die exakte B-Rep-Kantenrundung …';
+      result = await window.__silmoOcctClient.filletEdges(shapeId, edgeIndices, radiusMM);
+      if (!result?.mesh?.positions?.length || !result.mesh.indices?.length ||
+          !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0) {
+        throw new Error('OCCT lieferte kein gültiges gerundetes Volumen mit Darstellungsnetz.');
+      }
+      if (!objects.includes(sourceMesh) || selected !== sourceMesh ||
+          window.__silmoOcctObjectHandles?.get(sourceMesh) !== shapeId) {
+        throw new Error('Die Auswahl hat sich während der Berechnung geändert. Ergebnis wurde nicht eingesetzt.');
+      }
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      const positions = new Float32Array(result.mesh.positions.length);
+      for (let i = 0; i < positions.length; i++) positions[i] = result.mesh.positions[i] * mmToWorld;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+      const size = new THREE.Vector3(); geometry.boundingBox.getSize(size);
+      if (![size.x,size.y,size.z].every(value => Number.isFinite(value) && value > 0)) {
+        geometry.dispose(); throw new Error('Das gerundete Ergebnis besitzt ungültige Abmessungen.');
+      }
+      const mesh = new THREE.Mesh(geometry, sourceMesh.material.clone());
+      mesh.position.copy(sourceMesh.position); mesh.rotation.copy(sourceMesh.rotation); mesh.scale.copy(sourceMesh.scale);
+      mesh.userData.baseDimensions = {x:size.x,y:size.y,z:size.z};
+      mesh.userData.percent = {...(sourceMesh.userData.percent || {x:100,y:100,z:100})};
+      mesh.userData.label = (sourceMesh.userData.label || 'OCCT-Körper') + ' · gerundet';
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      mesh.userData.occtSource = {
+        kind: 'fillet', base: JSON.parse(JSON.stringify(baseSource)),
+        edgeIndices: edgeIndices.slice(), radiusMM
+      };
+      recordHistory();
+      const oldIndex = objects.indexOf(sourceMesh);
+      clearOcctEdgeOverlay();
+      scene.remove(sourceMesh);
+      if (oldIndex >= 0) objects.splice(oldIndex, 1, mesh); else objects.push(mesh);
+      scene.add(mesh);
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      sourceMesh.geometry.dispose();
+      (Array.isArray(sourceMesh.material) ? sourceMesh.material : [sourceMesh.material]).forEach(material => material.dispose());
+      selectObject(mesh);
+      window.__silmoOcctLastFillet = {
+        shapeId: result.shapeId, volumeMM3: result.volumeMM3,
+        edgeIndices: edgeIndices.slice(), radiusMM
+      };
+      if (window.__silmoOcctObjectHandles?.get(sourceMesh)) {
+        // Der alte Körper wird erst nach dem erfolgreichen Szenenwechsel freigegeben.
+        await window.__silmoOcctClient.releaseShape(shapeId).catch(() => {});
+      }
+      $('occtTopologySummary').textContent = edgeIndices.length + ' Kante(n) mit ' + radiusMM + ' mm gerundet. Neues Volumen: ' + result.volumeMM3.toFixed(2) + ' mm³.';
+      status.textContent = 'Echte OCCT-Kantenrundung erfolgreich angewendet. Undo/Redo kann den Körper aus seiner Konstruktionsquelle rekonstruieren.';
+      $('occtEdgeList').replaceChildren(); $('occtEdgeList').disabled = true; $('applyOcctFillet').disabled = true;
+    } catch (error) {
+      if (result?.shapeId && window.__silmoOcctClient) await window.__silmoOcctClient.releaseShape(result.shapeId).catch(() => {});
+      status.textContent = 'Kantenrundung fehlgeschlagen: ' + (error.message || 'Unbekannter OCCT-Fehler');
+    } finally { button.disabled = false; }
+  }
+
+
+  async function applySelectedOcctChamfer() {
+    const button = $('applyOcctChamfer');
+    if (button.disabled) return;
+    const sourceMesh = selected;
+    const shapeId = sourceMesh && window.__silmoOcctObjectHandles?.get(sourceMesh);
+    const edgeIndices = Array.from($('occtEdgeList').selectedOptions, option => Number(option.value));
+    const distanceMM = Number($('occtChamferDistance').value);
+    if (!sourceMesh || !Number.isInteger(shapeId) || shapeId <= 0) {
+      status.textContent = 'Der ausgewählte Körper besitzt keinen aktiven OCCT-B-Rep-Handle.'; return;
+    }
+    if (!edgeIndices.length || edgeIndices.some(index => !Number.isInteger(index) || index < 0)) {
+      status.textContent = 'Bitte mindestens eine native Kante auswählen.'; return;
+    }
+    if (!Number.isFinite(distanceMM) || distanceMM < 0.01 || distanceMM > 2000) {
+      status.textContent = 'Der Fasenabstand muss zwischen 0,01 und 2000 mm liegen.'; return;
+    }
+    const baseSource = sourceMesh.userData.occtSource;
+    if (!baseSource || typeof baseSource !== 'object') {
+      status.textContent = 'Für Undo/Redo braucht dieser Körper eine gespeicherte OCCT-Konstruktionsquelle. Dieser importierte oder veränderte Körper kann hier noch nicht abgefast werden.';
+      return;
+    }
+    button.disabled = true;
+    let result = null;
+    try {
+      status.textContent = 'OCCT berechnet die exakte B-Rep-Kantenfase …';
+      result = await window.__silmoOcctClient.chamferEdges(shapeId, edgeIndices, distanceMM);
+      if (!result?.mesh?.positions?.length || !result.mesh.indices?.length ||
+          !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0) {
+        throw new Error('OCCT lieferte kein gültiges gefastes Volumen mit Darstellungsnetz.');
+      }
+      if (!objects.includes(sourceMesh) || selected !== sourceMesh ||
+          window.__silmoOcctObjectHandles?.get(sourceMesh) !== shapeId) {
+        throw new Error('Die Auswahl hat sich während der Berechnung geändert. Ergebnis wurde nicht eingesetzt.');
+      }
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      const positions = new Float32Array(result.mesh.positions.length);
+      for (let i = 0; i < positions.length; i++) positions[i] = result.mesh.positions[i] * mmToWorld;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+      const size = new THREE.Vector3(); geometry.boundingBox.getSize(size);
+      if (![size.x,size.y,size.z].every(value => Number.isFinite(value) && value > 0)) {
+        geometry.dispose(); throw new Error('Das gefasten Ergebnis besitzt ungültige Abmessungen.');
+      }
+      const mesh = new THREE.Mesh(geometry, sourceMesh.material.clone());
+      mesh.position.copy(sourceMesh.position); mesh.rotation.copy(sourceMesh.rotation); mesh.scale.copy(sourceMesh.scale);
+      mesh.userData.baseDimensions = {x:size.x,y:size.y,z:size.z};
+      mesh.userData.percent = {...(sourceMesh.userData.percent || {x:100,y:100,z:100})};
+      mesh.userData.label = (sourceMesh.userData.label || 'OCCT-Körper') + ' · gefast';
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      mesh.userData.occtSource = {
+        kind: 'chamfer', base: JSON.parse(JSON.stringify(baseSource)),
+        edgeIndices: edgeIndices.slice(), distanceMM
+      };
+      recordHistory();
+      const oldIndex = objects.indexOf(sourceMesh);
+      clearOcctEdgeOverlay();
+      scene.remove(sourceMesh);
+      if (oldIndex >= 0) objects.splice(oldIndex, 1, mesh); else objects.push(mesh);
+      scene.add(mesh);
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      sourceMesh.geometry.dispose();
+      (Array.isArray(sourceMesh.material) ? sourceMesh.material : [sourceMesh.material]).forEach(material => material.dispose());
+      selectObject(mesh);
+      window.__silmoOcctLastChamfer = {
+        shapeId: result.shapeId, volumeMM3: result.volumeMM3,
+        edgeIndices: edgeIndices.slice(), distanceMM
+      };
+      if (window.__silmoOcctObjectHandles?.get(sourceMesh)) {
+        // Der alte Körper wird erst nach dem erfolgreichen Szenenwechsel freigegeben.
+        await window.__silmoOcctClient.releaseShape(shapeId).catch(() => {});
+      }
+      $('occtTopologySummary').textContent = edgeIndices.length + ' Kante(n) mit ' + distanceMM + ' mm gefast. Neues Volumen: ' + result.volumeMM3.toFixed(2) + ' mm³.';
+      status.textContent = 'Echte OCCT-Kantenfase erfolgreich angewendet. Undo/Redo kann den Körper aus seiner Konstruktionsquelle rekonstruieren.';
+      $('occtEdgeList').replaceChildren(); $('occtEdgeList').disabled = true; $('applyOcctChamfer').disabled = true;
+    } catch (error) {
+      if (result?.shapeId && window.__silmoOcctClient) await window.__silmoOcctClient.releaseShape(result.shapeId).catch(() => {});
+      status.textContent = 'Kantenfase fehlgeschlagen: ' + (error.message || 'Unbekannter OCCT-Fehler');
+    } finally { button.disabled = false; }
+  }
+
+  async function createOcctBox() {
+    const button = $('addOcctBox');
+    if (button.disabled) return;
+    button.disabled = true;
+    status.textContent = 'OCCT-Kern wird im Hintergrund geladen …';
+    try {
+      if (!window.__silmoOcctClient) {
+        window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+      }
+      const result = await window.__silmoOcctClient.createBox(20, 20, 20);
+      if (!result || !Number.isFinite(result.volumeMM3) || !result.mesh?.positions?.length || !result.mesh?.indices?.length) {
+        throw new Error('OCCT lieferte keinen vollständigen Körper und kein Darstellungsnetz.');
+      }
+      const positions = new Float32Array(result.mesh.positions.length);
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      for (let i = 0; i < positions.length; i++) positions[i] = result.mesh.positions[i] * mmToWorld;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      const size = new THREE.Vector3();
+      geometry.boundingBox.getSize(size);
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
+        color: '#50b8c9', roughness: 0.42, metalness: 0.12
+      }));
+      mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
+      mesh.userData.percent = { x: 100, y: 100, z: 100 };
+      mesh.userData.label = 'OCCT-B-Rep-Quader';
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtSource = { kind: 'box', widthMM: 20, depthMM: 20, heightMM: 20 };
+      recordHistory();
+      scene.add(mesh);
+      objects.push(mesh);
+      selectObject(mesh);
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      window.__silmoOcctLastCreated = {
+        shapeId: result.shapeId, volumeMM3: result.volumeMM3,
+        triangleCount: result.mesh.triangleCount, dimensionsMM: [20, 20, 20]
+      };
+      status.textContent = 'OCCT-B-Rep-Quader erstellt: 20 × 20 × 20 mm; Volumen ' + result.volumeMM3.toFixed(2) + ' mm³.';
+    } catch (error) {
+      status.textContent = 'OCCT-Kern konnte keinen Körper erstellen: ' + (error.message || 'Unbekannter Fehler');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function createOcctCylinder() {
+    const button = $('addOcctCylinder');
+    if (button.disabled) return;
+    button.disabled = true;
+    let result = null;
+    try {
+      if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+      result = await window.__silmoOcctClient.createCylinder(10, 30);
+      if (!result || !Number.isFinite(result.volumeMM3) || !result.mesh?.positions?.length || !result.mesh?.indices?.length) {
+        throw new Error('OCCT lieferte keinen vollständigen Zylinder und kein Darstellungsnetz.');
+      }
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      const positions = new Float32Array(result.mesh.positions.length);
+      for (let i = 0; i < positions.length; i++) positions[i] = result.mesh.positions[i] * mmToWorld;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+      const size = new THREE.Vector3(); geometry.boundingBox.getSize(size);
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
+        color: '#50b8c9', roughness: 0.42, metalness: 0.12
+      }));
+      mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
+      mesh.userData.percent = { x: 100, y: 100, z: 100 };
+      mesh.userData.label = 'OCCT-B-Rep-Zylinder';
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtSource = { kind: 'cylinder', radiusMM: 10, heightMM: 30 };
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      recordHistory(); scene.add(mesh); objects.push(mesh); selectObject(mesh);
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      window.__silmoOcctLastCreated = {
+        shapeId: result.shapeId, volumeMM3: result.volumeMM3,
+        triangleCount: result.mesh.triangleCount, dimensionsMM: [20, 20, 30]
+      };
+      status.textContent = 'OCCT-B-Rep-Zylinder erstellt: Ø 20 × 30 mm; Volumen ' + result.volumeMM3.toFixed(2) + ' mm³.';
+    } catch (error) {
+      if (result?.shapeId && window.__silmoOcctClient) {
+        await window.__silmoOcctClient.releaseShape(result.shapeId).catch(() => {});
+      }
+      status.textContent = 'OCCT-Zylinder konnte nicht erstellt werden: ' + (error.message || 'Unbekannter Fehler');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+
+  async function createOcctTorus() {
+    const button = $('addOcctTorus');
+    if (button.disabled) return;
+    button.disabled = true;
+    let result = null;
+    try {
+      if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+      result = await window.__silmoOcctClient.createTorus(20, 5);
+      if (!result || !Number.isFinite(result.volumeMM3) || !result.mesh?.positions?.length || !result.mesh?.indices?.length) {
+        throw new Error('OCCT lieferte keinen vollständigen Torus und kein Darstellungsnetz.');
+      }
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      const positions = new Float32Array(result.mesh.positions.length);
+      for (let i = 0; i < positions.length; i++) positions[i] = result.mesh.positions[i] * mmToWorld;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+      const size = new THREE.Vector3(); geometry.boundingBox.getSize(size);
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
+        color: '#50b8c9', roughness: 0.42, metalness: 0.12
+      }));
+      mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
+      mesh.userData.percent = { x: 100, y: 100, z: 100 };
+      mesh.userData.label = 'OCCT-B-Rep-Torus';
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtSource = { kind: 'torus', majorRadiusMM: 20, minorRadiusMM: 5 };
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      recordHistory(); scene.add(mesh); objects.push(mesh); selectObject(mesh);
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      window.__silmoOcctLastCreated = {
+        shapeId: result.shapeId, volumeMM3: result.volumeMM3,
+        triangleCount: result.mesh.triangleCount, dimensionsMM: [50, 50, 10]
+      };
+      status.textContent = 'OCCT-B-Rep-Torus erstellt: R 20 mm, r 5 mm; Volumen ' + result.volumeMM3.toFixed(2) + ' mm³.';
+    } catch (error) {
+      if (result?.shapeId && window.__silmoOcctClient) {
+        await window.__silmoOcctClient.releaseShape(result.shapeId).catch(() => {});
+      }
+      status.textContent = 'OCCT-Torus konnte nicht erstellt werden: ' + (error.message || 'Unbekannter Fehler');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function createOcctCone() {
+    const button = $('addOcctCone');
+    if (button.disabled) return;
+    button.disabled = true;
+    let result = null;
+    try {
+      if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+      result = await window.__silmoOcctClient.createCone(10, 30);
+      if (!result || !Number.isFinite(result.volumeMM3) || !result.mesh?.positions?.length || !result.mesh?.indices?.length) {
+        throw new Error('OCCT lieferte keinen vollständigen Kegel und kein Darstellungsnetz.');
+      }
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      const positions = new Float32Array(result.mesh.positions.length);
+      for (let i = 0; i < positions.length; i++) positions[i] = result.mesh.positions[i] * mmToWorld;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+      const size = new THREE.Vector3(); geometry.boundingBox.getSize(size);
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
+        color: '#50b8c9', roughness: 0.42, metalness: 0.12
+      }));
+      mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
+      mesh.userData.percent = { x: 100, y: 100, z: 100 };
+      mesh.userData.label = 'OCCT-B-Rep-Kegel';
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtSource = { kind: 'cone', radiusMM: 10, heightMM: 30 };
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      recordHistory(); scene.add(mesh); objects.push(mesh); selectObject(mesh);
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      window.__silmoOcctLastCreated = {
+        shapeId: result.shapeId, volumeMM3: result.volumeMM3,
+        triangleCount: result.mesh.triangleCount, dimensionsMM: [20, 20, 30]
+      };
+      status.textContent = 'OCCT-B-Rep-Kegel erstellt: Ø 20 mm × 30 mm; Volumen ' + result.volumeMM3.toFixed(2) + ' mm³.';
+    } catch (error) {
+      if (result?.shapeId && window.__silmoOcctClient) {
+        await window.__silmoOcctClient.releaseShape(result.shapeId).catch(() => {});
+      }
+      status.textContent = 'OCCT-Kegel konnte nicht erstellt werden: ' + (error.message || 'Unbekannter Fehler');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function createOcctSphere() {
+    const button = $('addOcctSphere');
+    if (button.disabled) return;
+    button.disabled = true;
+    let result = null;
+    try {
+      if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+      result = await window.__silmoOcctClient.createSphere(10);
+      if (!result || !Number.isFinite(result.volumeMM3) || !result.mesh?.positions?.length || !result.mesh?.indices?.length) {
+        throw new Error('OCCT lieferte keinen vollständige Kugel und kein Darstellungsnetz.');
+      }
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      const positions = new Float32Array(result.mesh.positions.length);
+      for (let i = 0; i < positions.length; i++) positions[i] = result.mesh.positions[i] * mmToWorld;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+      const size = new THREE.Vector3(); geometry.boundingBox.getSize(size);
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
+        color: '#50b8c9', roughness: 0.42, metalness: 0.12
+      }));
+      mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
+      mesh.userData.percent = { x: 100, y: 100, z: 100 };
+      mesh.userData.label = 'OCCT-B-Rep-Kugel';
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtSource = { kind: 'sphere', radiusMM: 10 };
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      recordHistory(); scene.add(mesh); objects.push(mesh); selectObject(mesh);
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      window.__silmoOcctLastCreated = {
+        shapeId: result.shapeId, volumeMM3: result.volumeMM3,
+        triangleCount: result.mesh.triangleCount, dimensionsMM: [20, 20, 20]
+      };
+      status.textContent = 'OCCT-B-Rep-Kugel erstellt: Ø 20 mm; Volumen ' + result.volumeMM3.toFixed(2) + ' mm³.';
+    } catch (error) {
+      if (result?.shapeId && window.__silmoOcctClient) {
+        await window.__silmoOcctClient.releaseShape(result.shapeId).catch(() => {});
+      }
+      status.textContent = 'OCCT-Kugel konnte nicht erstellt werden: ' + (error.message || 'Unbekannter Fehler');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function importSTEPFile(file) {
+    if (!file) return;
+    if (!/\.(?:step|stp)$/i.test(file.name || '') || file.size > 10 * 1024 * 1024) {
+      status.textContent = 'STEP-Import benötigt eine .step/.stp-Datei mit höchstens 10 MB.';
+      return;
+    }
+    let result = null;
+    let geometry = null;
+    try {
+      status.textContent = 'STEP-Datei wird mit dem OCCT-Kern importiert …';
+      const stepText = await file.text();
+      if (!window.__silmoOcctClient) {
+        window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+      }
+      result = await window.__silmoOcctClient.importStep(stepText);
+      if (!result || !Number.isFinite(result.volumeMM3) || result.volumeMM3 <= 0 ||
+          !result.mesh?.positions?.length || !result.mesh?.indices?.length ||
+          result.mesh.positions.length % 3 !== 0 || result.mesh.indices.length % 3 !== 0) {
+        throw new Error('Die STEP-Datei enthält keinen gültigen Körper mit Darstellungsnetz.');
+      }
+      const positions = new Float32Array(result.mesh.positions.length);
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      for (let i = 0; i < positions.length; i++) {
+        const value = result.mesh.positions[i] * mmToWorld;
+        if (!Number.isFinite(value)) throw new Error('STEP-Geometrie enthält ungültige Koordinaten.');
+        positions[i] = value;
+      }
+      geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      const size = geometry.boundingBox.getSize(new THREE.Vector3());
+      if (![size.x, size.y, size.z].every(value => Number.isFinite(value) && value > CSG_EPSILON)) {
+        throw new Error('STEP-Datei hat ungültige oder leere Abmessungen.');
+      }
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
+        color: '#50b8c9', roughness: 0.42, metalness: 0.12
+      }));
+      geometry = null;
+      mesh.userData.baseDimensions = { x: size.x, y: size.y, z: size.z };
+      mesh.userData.percent = { x: 100, y: 100, z: 100 };
+      mesh.userData.label = (file.name || 'STEP-Modell').replace(/\.(?:step|stp)$/i, '');
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtSource = { kind: 'step', stepText };
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      recordHistory();
+      scene.add(mesh);
+      objects.push(mesh);
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      selectObject(mesh);
+      window.__silmoOcctLastCreated = {
+        shapeId: result.shapeId, volumeMM3: result.volumeMM3,
+        triangleCount: result.mesh.triangleCount, importedFormat: 'STEP'
+      };
+      result = null;
+      status.textContent = 'STEP-Modell importiert. OCCT-Volumen: ' +
+        mesh.userData.occtVolumeMM3.toFixed(2) + ' mm³.';
+    } catch (error) {
+      if (geometry) geometry.dispose();
+      if (result?.shapeId && window.__silmoOcctClient) {
+        await window.__silmoOcctClient.releaseShape(result.shapeId).catch(() => {});
+      }
+      status.textContent = 'STEP-Import fehlgeschlagen: ' + (error.message || 'Datei prüfen.');
+    }
+  }
+
+  async function exportSelectedSTEP() {
+    const targets = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
+    if (targets.length !== 1) {
+      status.textContent = 'Für den STEP-Export bitte genau einen OCCT-Körper auswählen.';
+      return;
+    }
+    const shapeId = window.__silmoOcctObjectHandles?.get(targets[0]);
+    if (!Number.isInteger(shapeId) || shapeId <= 0 || !window.__silmoOcctClient) {
+      status.textContent = 'STEP-Export benötigt einen echten OCCT-B-Rep-Körper. STL-Meshes zuerst in OCCT erstellen oder importieren.';
+      return;
+    }
+    try {
+      status.textContent = 'STEP-Datei wird aus dem OCCT-B-Rep erzeugt …';
+      const stepText = await window.__silmoOcctClient.exportStep(shapeId);
+      const blob = new Blob([stepText], { type: 'application/step' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const baseName = String(targets[0].userData.label || 'silmo-modell')
+        .replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '') || 'silmo-modell';
+      link.href = url;
+      link.download = baseName + '.step';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      status.textContent = 'STEP-Datei exportiert (AP242, Millimeter).';
+    } catch (error) {
+      status.textContent = 'STEP-Export fehlgeschlagen: ' + (error.message || 'Körper prüfen.');
+    }
+  }
+
+  async function createOcctShapeFromSource(source, ownedHandles) {
+    if (!source || typeof source !== 'object') {
+      throw new Error('Ungültige gespeicherte OCCT-Konstruktionsquelle.');
+    }
+    if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+    if (source.kind === 'torus') {
+      const result = await window.__silmoOcctClient.createTorus(source.majorRadiusMM, source.minorRadiusMM);
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
+    if (source.kind === 'cone') {
+      const result = await window.__silmoOcctClient.createCone(source.radiusMM, source.heightMM);
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
+    if (source.kind === 'sphere') {
+      const result = await window.__silmoOcctClient.createSphere(source.radiusMM);
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
+    if (source.kind === 'cylinder') {
+      const result = await window.__silmoOcctClient.createCylinder(source.radiusMM, source.heightMM);
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
+    if (source.kind === 'box') {
+      const result = await window.__silmoOcctClient.createBox(
+        source.widthMM, source.depthMM, source.heightMM
+      );
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
+    if (source.kind === 'step') {
+      const result = await window.__silmoOcctClient.importStep(source.stepText);
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
+    if (source.kind === 'sketch' && source.sketch?.outlinePoints) {
+      const rings = [source.sketch.outlinePoints,
+        ...(Array.isArray(source.sketch.holes) ? source.sketch.holes : [])];
+      const loops = rings.map(ring => ring.map(point => [
+        worldUnitsToMm(point[0]), worldUnitsToMm(point[1])
+      ]));
+      const result = await window.__silmoOcctClient.createExtrusion(loops, source.sketch.extrusionMM);
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
+    if (source.kind === 'boolean' && ['fuse', 'cut', 'common'].includes(source.operation) &&
+        Array.isArray(source.operands) && source.operands.length === 2) {
+      const operands = [];
+      for (const operand of source.operands) {
+        operands.push(await createOcctShapeFromSource(operand, ownedHandles));
+      }
+      const result = await window.__silmoOcctClient.booleanOperation(
+        source.operation, operands.map(item => item.shapeId), source.transformsMM ?? source.translationsMM
+      );
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
+    if (source.kind === 'fillet' && source.base &&
+        Array.isArray(source.edgeIndices) && source.edgeIndices.length > 0 &&
+        (Number.isFinite(source.radiusMM) ||
+          (Array.isArray(source.radiusMM) && source.radiusMM.length === source.edgeIndices.length))) {
+      const base = await createOcctShapeFromSource(source.base, ownedHandles);
+      const result = await window.__silmoOcctClient.filletEdges(
+        base.shapeId, source.edgeIndices, source.radiusMM
+      );
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
+    if (source.kind === 'chamfer' && source.base &&
+        Array.isArray(source.edgeIndices) && source.edgeIndices.length > 0 &&
+        Number.isFinite(source.distanceMM)) {
+      const base = await createOcctShapeFromSource(source.base, ownedHandles);
+      const result = await window.__silmoOcctClient.chamferEdges(
+        base.shapeId, source.edgeIndices, source.distanceMM
+      );
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
+    if (source.kind === 'draft' && source.base &&
+        Array.isArray(source.faceIndices) && source.faceIndices.length === 1 &&
+        Number.isFinite(source.angleDeg) && source.direction && source.neutralPlane) {
+      const base = await createOcctShapeFromSource(source.base, ownedHandles);
+      const result = await window.__silmoOcctClient.draftFaces(
+        base.shapeId, source.faceIndices, source.angleDeg, source.direction, source.neutralPlane
+      );
+      ownedHandles.push(result.shapeId);
+      return result;
+    }
+    throw new Error('Gespeicherte OCCT-Konstruktionsquelle kann nicht rekonstruiert werden.');
+  }
+
+  async function rebuildOcctObjectHandle(mesh) {
+    if (!objects.includes(mesh)) return;
+    if (mesh.userData.sketch?.outlinePoints) {
+      await upgradeSketchMeshToOcct(mesh, mesh.userData.sketch);
+      return;
+    }
+    const source = mesh.userData.occtSource;
+    if (source?.kind === 'boolean' || source?.kind === 'fillet' || source?.kind === 'chamfer' || source?.kind === 'draft') {
+      const createdHandles = [];
+      let rebuiltResult = null;
+      try {
+        if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+        rebuiltResult = await createOcctShapeFromSource(source, createdHandles);
+        if (!objects.includes(mesh)) {
+          await window.__silmoOcctClient.releaseShape(rebuiltResult.shapeId);
+          return;
+        }
+        await Promise.all(createdHandles.filter(shapeId => shapeId !== rebuiltResult.shapeId).map(shapeId =>
+          window.__silmoOcctClient.releaseShape(shapeId)
+        ));
+        window.__silmoOcctObjectHandles ||= new WeakMap();
+        window.__silmoOcctObjectHandles.set(mesh, rebuiltResult.shapeId);
+        mesh.userData.geometryKernel = 'occt-wasm';
+        mesh.userData.occtShapeId = rebuiltResult.shapeId;
+        mesh.userData.occtVolumeMM3 = rebuiltResult.volumeMM3;
+        window.__silmoOcctLastRestored = {
+          shapeId: rebuiltResult.shapeId, volumeMM3: rebuiltResult.volumeMM3
+        };
+      } catch (error) {
+        await Promise.all(createdHandles.map(shapeId =>
+          window.__silmoOcctClient.releaseShape(shapeId).catch(() => {})
+        ));
+        if (rebuiltResult?.shapeId) {
+          await window.__silmoOcctClient.releaseShape(rebuiltResult.shapeId).catch(() => {});
+        }
+        mesh.userData.geometryKernel = 'three-mesh-fallback';
+        status.textContent = 'OCCT-Körper konnte nach Undo/Redo nicht wiederhergestellt werden: ' +
+          (error.message || 'Unbekannter Kernel-Fehler');
+      }
+      return;
+    }
+    if (!['box', 'sphere', 'cylinder', 'cone', 'torus', 'step'].includes(source?.kind)) return;
+    let result = null;
+    try {
+      if (!window.__silmoOcctClient) window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+      result = source.kind === 'step'
+        ? await window.__silmoOcctClient.importStep(source.stepText)
+        : source.kind === 'torus'
+          ? await window.__silmoOcctClient.createTorus(source.majorRadiusMM, source.minorRadiusMM)
+          : source.kind === 'sphere'
+            ? await window.__silmoOcctClient.createSphere(source.radiusMM)
+            : source.kind === 'cylinder'
+              ? await window.__silmoOcctClient.createCylinder(source.radiusMM, source.heightMM)
+              : source.kind === 'cone'
+                ? await window.__silmoOcctClient.createCone(source.radiusMM, source.heightMM)
+                : await window.__silmoOcctClient.createBox(source.widthMM, source.depthMM, source.heightMM);
+      if (!objects.includes(mesh)) {
+        await window.__silmoOcctClient.releaseShape(result.shapeId);
+        return;
+      }
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtShapeId = result.shapeId;
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      window.__silmoOcctLastRestored = { shapeId: result.shapeId, volumeMM3: result.volumeMM3 };
+    } catch (error) {
+      mesh.userData.geometryKernel = 'three-mesh-fallback';
+      status.textContent = 'OCCT-Körper konnte nach Undo/Redo nicht wiederhergestellt werden: ' +
+        (error.message || 'Unbekannter Kernel-Fehler');
+    }
+  }
+
+  async function upgradeSketchMeshToOcct(mesh, sketchMetadata) {
+    const outline = sketchMetadata?.outlinePoints;
+    if (!Array.isArray(outline) || outline.length < 3 ||
+        !Number.isFinite(sketchMetadata.extrusionMM) || sketchMetadata.extrusionMM < 0.1) return;
+    const sourceRings = [outline, ...(Array.isArray(sketchMetadata.holes) ? sketchMetadata.holes : [])];
+    const loops = sourceRings.map(ring => ring.map(point => [
+      worldUnitsToMm(point[0]), worldUnitsToMm(point[1])
+    ]));
+    let result = null;
+    try {
+      if (!window.__silmoOcctClient) {
+        window.__silmoOcctClient = window.SILMOOCCTClient.createClient();
+      }
+      result = await window.__silmoOcctClient.createExtrusion(loops, sketchMetadata.extrusionMM);
+      if (!objects.includes(mesh) || mesh.userData.sketch !== sketchMetadata) {
+        await window.__silmoOcctClient.releaseShape(result.shapeId);
+        return;
+      }
+      if (result.shapeType !== 'solid' || !Number.isFinite(result.volumeMM3) ||
+          !result.mesh?.positions?.length || !result.mesh?.indices?.length ||
+          result.mesh.positions.length % 3 !== 0 || result.mesh.indices.length % 3 !== 0) {
+        throw new Error('OCCT lieferte keinen vollständigen Solid mit Darstellungsnetz.');
+      }
+      const positions = new Float32Array(result.mesh.positions.length);
+      const mmToWorld = window.SILMOUnits.mmToWorldUnits(1);
+      for (let i = 0; i < positions.length; i++) {
+        const value = result.mesh.positions[i] * mmToWorld;
+        if (!Number.isFinite(value)) throw new Error('OCCT-Mesh enthält ungültige Koordinaten.');
+        positions[i] = value;
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      const nextSize = geometry.boundingBox.getSize(new THREE.Vector3());
+      mesh.geometry.computeBoundingBox();
+      const previousSize = mesh.geometry.boundingBox.getSize(new THREE.Vector3());
+      const sizeDifferenceMM = Math.max(
+        Math.abs(worldUnitsToMm(nextSize.x - previousSize.x)),
+        Math.abs(worldUnitsToMm(nextSize.y - previousSize.y)),
+        Math.abs(worldUnitsToMm(nextSize.z - previousSize.z))
+      );
+      if (![nextSize.x, nextSize.y, nextSize.z].every(value => Number.isFinite(value) && value > 0) ||
+          sizeDifferenceMM > 0.02) {
+        geometry.dispose();
+        throw new Error('OCCT-Darstellung stimmt nicht mit den Abmessungen der bisherigen Skizze überein.');
+      }
+      const previousGeometry = mesh.geometry;
+      mesh.geometry = geometry;
+      previousGeometry.dispose();
+      mesh.userData.baseDimensions = { x: nextSize.x, y: nextSize.y, z: nextSize.z };
+      mesh.userData.geometryKernel = 'occt-wasm';
+      mesh.userData.occtShapeId = result.shapeId;
+      mesh.userData.occtVolumeMM3 = result.volumeMM3;
+      window.__silmoOcctObjectHandles ||= new WeakMap();
+      window.__silmoOcctObjectHandles.set(mesh, result.shapeId);
+      if (selected === mesh || selectedObjects.includes(mesh)) {
+        updateObjects();
+        showProperties();
+      }
+      status.textContent = 'Skizzenkörper als exakter OCCT-B-Rep erstellt. Volumen: ' +
+        result.volumeMM3.toFixed(2) + ' mm³.';
+    } catch (error) {
+      if (result?.shapeId) {
+        try { await window.__silmoOcctClient?.releaseShape(result.shapeId); } catch { /* best effort cleanup */ }
+      }
+      if (objects.includes(mesh)) {
+        mesh.userData.geometryKernel = 'three-mesh-fallback';
+        status.textContent = 'OCCT-Extrusion nicht verfügbar; die bisherige Skizzengeometrie bleibt erhalten. ' +
+          (error.message || 'Unbekannter Kernel-Fehler');
+      }
+    }
+  }
+
   // Tastenkürzel, Auswahl mehrerer Objekte und einfacher Änderungsverlauf
   let selectedObjects = [];
   let multiSelectMode = false;
   let individualGroupEdit = false;
   let clipboardObjects = [];
-  const undoStack = [];
-  const redoStack = [];
   let restoringHistory = false;
 
   function captureState() {
     return objects.map(obj => ({
       geometry: obj.geometry.clone(),
-      material: obj.material.clone(),
+      material: Array.isArray(obj.material) ? obj.material.map(material => material.clone()) : obj.material.clone(),
       position: obj.position.clone(),
       rotation: obj.rotation.clone(),
       scale: obj.scale.clone(),
@@ -789,55 +2118,103 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }));
   }
   function disposeState(state) {
-    state.forEach(item => { item.geometry.dispose(); item.material.dispose(); });
-  }
-  function recordHistory() {
-    if (restoringHistory) return;
-    undoStack.push(captureState());
-    if (undoStack.length > 40) disposeState(undoStack.shift());
-    redoStack.forEach(disposeState);
-    redoStack.length = 0;
+    state.forEach(item => {
+      item.geometry.dispose();
+      (Array.isArray(item.material) ? item.material : [item.material]).forEach(material => material.dispose());
+    });
   }
   function restoreState(state) {
     restoringHistory = true;
-    objects.slice().forEach(obj => {
-      scene.remove(obj);
-      obj.geometry.dispose();
-      if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
-      else obj.material.dispose();
-    });
-    objects.length = 0;
-    state.forEach(item => {
-      const mesh = new THREE.Mesh(item.geometry.clone(), item.material.clone());
-      mesh.position.copy(item.position);
-      mesh.rotation.copy(item.rotation);
-      mesh.scale.copy(item.scale);
-      mesh.userData = JSON.parse(JSON.stringify(item.userData));
-      scene.add(mesh);
-      objects.push(mesh);
-    });
-    selectedObjects = [];
-    individualGroupEdit = false;
-    selected = objects.length ? objects[objects.length - 1] : null;
-    updateObjects();
-    showProperties();
-    updateMoveGizmo();
-    restoringHistory = false;
+    const restoredObjects = [];
+    let committed = false;
+    try {
+      state.forEach(item => {
+        const geometry = item.geometry.clone();
+        let material;
+        try {
+          material = Array.isArray(item.material) ? item.material.map(entry => entry.clone()) : item.material.clone();
+        } catch (error) {
+          geometry.dispose();
+          throw error;
+        }
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.copy(item.position);
+        mesh.rotation.copy(item.rotation);
+        mesh.scale.copy(item.scale);
+        mesh.userData = JSON.parse(JSON.stringify(item.userData));
+        restoredObjects.push(mesh);
+      });
+
+      // Wiederhergestellte Three.js-Snapshots besitzen zunächst keine Worker-Handles.
+      restoredObjects.forEach(obj => {
+        delete obj.userData.occtShapeId;
+        delete obj.userData.occtVolumeMM3;
+        if (obj.userData.geometryKernel === 'occt-wasm') obj.userData.geometryKernel = 'three-mesh-fallback';
+      });
+      const previousObjects = objects.slice();
+      previousObjects.forEach(obj => scene.remove(obj));
+      objects.length = 0;
+      try {
+        restoredObjects.forEach(obj => { scene.add(obj); objects.push(obj); });
+      } catch (error) {
+        restoredObjects.forEach(obj => scene.remove(obj));
+        objects.length = 0;
+        previousObjects.forEach(obj => { scene.add(obj); objects.push(obj); });
+        throw error;
+      }
+      committed = true;
+      previousObjects.forEach(obj => {
+        releaseOcctObjectHandle(obj);
+        obj.geometry.dispose();
+        (Array.isArray(obj.material) ? obj.material : [obj.material]).forEach(material => material.dispose());
+      });
+
+      selectedObjects = [];
+      individualGroupEdit = false;
+      selected = objects.length ? objects[objects.length - 1] : null;
+      updateObjects();
+      showProperties();
+      updateMoveGizmo();
+      // Alle OCCT-Körper einer Undo/Redo-Wiederherstellung gemeinsam nachverfolgbar machen.
+      // So können Tests und spätere Abläufe warten, bis wirklich jeder Worker-Handle bereit ist.
+      const restoreGeneration = (window.__silmoOcctRestoreGeneration || 0) + 1;
+      window.__silmoOcctRestoreGeneration = restoreGeneration;
+      window.__silmoOcctLastRestored = null;
+      window.__silmoOcctRestorePromise = Promise.all(restoredObjects.map(obj => {
+        if (obj.userData.sketch?.outlinePoints ||
+            ['box', 'sphere', 'cylinder', 'cone', 'torus', 'step', 'boolean', 'fillet', 'chamfer', 'draft'].includes(obj.userData.occtSource?.kind)) {
+          return rebuildOcctObjectHandle(obj);
+        }
+        return null;
+      }));
+    } catch (error) {
+      if (!committed) {
+        restoredObjects.forEach(obj => {
+          obj.geometry.dispose();
+          (Array.isArray(obj.material) ? obj.material : [obj.material]).forEach(material => material.dispose());
+        });
+      }
+      throw error;
+    } finally {
+      restoringHistory = false;
+    }
+  }
+  const history = window.SILMOHistory.createHistory({
+    captureState,
+    restoreState,
+    disposeState,
+    limit: 40
+  });
+  function recordHistory() {
+    if (restoringHistory) return;
+    history.record();
   }
   function undo() {
-    if (!undoStack.length) { status.textContent = 'Nichts zum Rückgängigmachen.'; return; }
-    redoStack.push(captureState());
-    const state = undoStack.pop();
-    restoreState(state);
-    disposeState(state);
+    if (!history.undo()) { status.textContent = 'Nichts zum Rückgängigmachen.'; return; }
     status.textContent = 'Letzte Änderung rückgängig gemacht';
   }
   function redo() {
-    if (!redoStack.length) { status.textContent = 'Nichts zum Wiederholen.'; return; }
-    undoStack.push(captureState());
-    const state = redoStack.pop();
-    restoreState(state);
-    disposeState(state);
+    if (!history.redo()) { status.textContent = 'Nichts zum Wiederholen.'; return; }
     status.textContent = 'Änderung wiederhergestellt';
   }
   function cloneObject(source, offset = 0.3) {
@@ -848,6 +2225,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     copy.scale.copy(source.scale);
     copy.userData = JSON.parse(JSON.stringify(source.userData));
     delete copy.userData.groupId;
+    // Ein Three.js-Klon ist noch kein zweiter OCCT-B-Rep-Körper.
+    delete copy.userData.occtShapeId;
+    delete copy.userData.occtVolumeMM3;
+    delete copy.userData.occtSource;
+    if (copy.userData.geometryKernel === 'occt-wasm') copy.userData.geometryKernel = 'three-mesh-fallback';
     copy.userData.label = source.userData.label || 'Objekt';
     scene.add(copy); objects.push(copy);
     return copy;
@@ -889,6 +2271,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     commitProject: (project, newObjects) => {
       recordHistory();
       objects.slice().forEach(obj => {
+        releaseOcctObjectHandle(obj);
         scene.remove(obj);
         obj.geometry.dispose();
         if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
@@ -912,6 +2295,24 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       updateObjects();
       showProperties();
       updateMoveGizmo();
+
+      // Gespeicherte OCCT-Rezepte nach dem atomaren Projektimport wieder als echte B-Reps aufbauen.
+      const projectRestoreGeneration = (window.__silmoOcctProjectRestoreGeneration || 0) + 1;
+      window.__silmoOcctProjectRestoreGeneration = projectRestoreGeneration;
+      window.__silmoOcctProjectRestorePromise = Promise.all(objects.map(obj => {
+        if (obj.userData.sketch?.outlinePoints ||
+            ['box', 'sphere', 'cylinder', 'cone', 'torus', 'step', 'boolean', 'fillet', 'chamfer', 'draft'].includes(obj.userData.occtSource?.kind)) {
+          return rebuildOcctObjectHandle(obj);
+        }
+        return null;
+      })).then(() => {
+        window.__silmoOcctProjectRestoreSummary = objects.map(obj => ({
+          label: obj.userData.label || 'Objekt',
+          geometryKernel: obj.userData.geometryKernel || 'three-mesh-fallback',
+          occtSource: obj.userData.occtSource || null,
+          shapeId: window.__silmoOcctObjectHandles?.get(obj) || null
+        }));
+      });
     }
   });
   const { saveProject, openProjectFile } = projectIO;
@@ -921,6 +2322,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   $('projectFileInput').addEventListener('change', event => openProjectFile(event.target.files && event.target.files[0]));
 
   function selectObject(obj) {
+    if (window.__silmoOcctEdgeOverlay && window.__silmoOcctEdgeOverlay.sourceMesh !== obj) {
+      clearOcctEdgeOverlay();
+    }
     individualGroupEdit = false;
     activeRotationAxis = null;
     setRotationGuideAxis(null);
@@ -1331,7 +2735,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
 
   function applyGroupRotation(axis, delta, targets = getSelectedTargets()) {
-    if (!targets.length || !Number.isFinite(delta) || Math.abs(delta) < 1e-12) return;
+    if (!targets.length || !Number.isFinite(delta) || Math.abs(delta) < window.SILMOTolerances.GROUP_ROTATION_MIN_RADIANS) return;
     const direction = axis === 'x' ? new THREE.Vector3(1,0,0) : axis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
     const center = getSelectionCenter(targets);
     const deltaRotation = new THREE.Quaternion().setFromAxisAngle(direction, delta);
@@ -1696,6 +3100,52 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   });
 
   $('addCube').onclick = () => createObject('Würfel');
+  $('addOcctBox').onclick = createOcctBox;
+  $('addOcctCylinder').onclick = createOcctCylinder;
+  $('addOcctSphere').onclick = createOcctSphere;
+  $('addOcctCone').onclick = createOcctCone;
+  $('addOcctTorus').onclick = createOcctTorus;
+  $('inspectOcctShape').onclick = inspectSelectedOcctShape;
+  // Das Topologie-Werkzeug wird direkt in die bestehende Objektleiste eingesetzt.
+  // Dynamisches Einfügen stellt sicher, dass die Steuerelemente vor dem Binden
+  // der Events im aktiven DOM vorhanden sind.
+  const occtFilletPanel = document.createElement('div');
+  occtFilletPanel.id = 'occtFilletPanel';
+  occtFilletPanel.innerHTML = `
+    <div class="panel-rule"></div>
+    <h2>OCCT-Flächenauswahl</h2>
+    <p class="note">Wähle eine native B-Rep-Fläche aus der Liste. Die Fläche wird direkt am 3D-Körper hervorgehoben; die Kennzahl stammt aus OCCT.</p>
+    <button class="wide" id="toggleOcctFacePick" type="button" disabled>⌖ 3D-Flächenauswahl einschalten</button>
+    <div class="field"><label for="occtFaceList">Native Flächen</label><select id="occtFaceList" size="5" disabled style="width:100%;min-height:96px;padding:7px;background:#0b1422;color:#edf4ff;border:1px solid #2b405a;border-radius:8px"></select></div>
+    <p class="note" id="occtFaceSummary">Lade zuerst die Topologie eines OCCT-Körpers.</p>
+    <div class="field"><label for="occtDraftAngle">Neigungswinkel (Grad)</label><input id="occtDraftAngle" type="number" min="-20" max="20" step="0.5" value="5"></div>
+    <p class="note">Alle Vektoren beziehen sich auf die lokalen Modellkoordinaten in mm. Zugrichtung bestimmt die Neigungsrichtung. Die Neutralebene wird durch ihren Ursprung und ihre Normale festgelegt.</p>
+    <div class="field"><label>Zugrichtung (X / Y / Z)</label><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px"><input id="occtDraftDirectionX" aria-label="Zugrichtung X" type="number" step="0.1" value="0"><input id="occtDraftDirectionY" aria-label="Zugrichtung Y" type="number" step="0.1" value="0"><input id="occtDraftDirectionZ" aria-label="Zugrichtung Z" type="number" step="0.1" value="1"></div></div>
+    <div class="field"><label>Neutralebenen-Ursprung (X / Y / Z, mm)</label><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px"><input id="occtDraftOriginX" aria-label="Neutralebenen-Ursprung X" type="number" step="0.1" value="0"><input id="occtDraftOriginY" aria-label="Neutralebenen-Ursprung Y" type="number" step="0.1" value="0"><input id="occtDraftOriginZ" aria-label="Neutralebenen-Ursprung Z" type="number" step="0.1" value="0"></div></div>
+    <div class="field"><label>Neutralebenen-Normale (X / Y / Z)</label><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px"><input id="occtDraftNormalX" aria-label="Neutralebenen-Normale X" type="number" step="0.1" value="0"><input id="occtDraftNormalY" aria-label="Neutralebenen-Normale Y" type="number" step="0.1" value="0"><input id="occtDraftNormalZ" aria-label="Neutralebenen-Normale Z" type="number" step="0.1" value="1"></div></div>
+    <button class="wide primary" id="applyOcctDraft" type="button" disabled>↗ Ausgewählte Fläche neigen</button>
+    <div class="panel-rule"></div>
+    <h2>OCCT-Kantenbearbeitung</h2>
+    <p class="note">Wähle einen nativen OCCT-Körper aus. Lade seine echten B-Rep-Kanten und markiere eine oder mehrere Kanten für Rundungen oder Fasen.</p>
+    <button class="wide" id="loadOcctEdges" type="button">↻ Kanten des Körpers laden</button>
+    <button class="wide" id="toggleOcctEdgePick" type="button" disabled>⌖ 3D-Kantenauswahl einschalten</button>
+    <div class="field"><label for="occtEdgeList">Native Kanten (Mehrfachauswahl oder 3D-Klick)</label><select id="occtEdgeList" multiple size="6" disabled style="width:100%;min-height:112px;padding:7px;background:#0b1422;color:#edf4ff;border:1px solid #2b405a;border-radius:8px"></select></div>
+    <div class="field"><label for="occtFilletRadius">Rundungsradius (mm)</label><input id="occtFilletRadius" type="number" min="0.01" max="2000" step="0.1" value="1"></div>
+    <button class="wide primary" id="applyOcctFillet" type="button" disabled>◒ Ausgewählte Kanten abrunden</button>
+    <div class="field"><label for="occtChamferDistance">Fasenabstand (mm)</label><input id="occtChamferDistance" type="number" min="0.01" max="2000" step="0.1" value="1"></div>
+    <button class="wide" id="applyOcctChamfer" type="button" disabled>◇ Ausgewählte Kanten fasen</button>
+    <p class="note" id="occtTopologySummary">Noch keine Kanten geladen.</p>`;
+  const occtTorusButton = $('addOcctTorus');
+  if (!occtTorusButton) throw new Error('OCCT-Werkzeugleiste konnte nicht gefunden werden.');
+  occtTorusButton.insertAdjacentElement('afterend', occtFilletPanel);
+  $('loadOcctEdges').onclick = loadSelectedOcctEdges;
+  $('occtFaceList').onchange = selectOcctFaceFromList;
+  $('toggleOcctFacePick').onclick = toggleOcctFacePickMode;
+  $('applyOcctDraft').onclick = applySelectedOcctDraft;
+  $('toggleOcctEdgePick').onclick = toggleOcctEdgePickMode;
+  $('occtEdgeList').onchange = syncOcctEdgeSelectionFromList;
+  $('applyOcctFillet').onclick = applySelectedOcctFillet;
+   $('applyOcctChamfer').onclick = applySelectedOcctChamfer;
   $('addSphere').onclick = () => createObject('Kugel');
   $('addCylinder').onclick = () => createObject('Zylinder');
   $('addCone').onclick = () => createObject('Kegel');
@@ -1723,65 +3173,24 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     status.textContent = 'Objekt dupliziert';
   };
 
-  function importSTLFile(file) {
-    if (!file) return;
-    if (typeof THREE.STLLoader === 'undefined') {
-      status.textContent = 'STL-Import konnte nicht geladen werden. Bitte Internetverbindung prüfen.';
-      return;
-    }
-    if (!/\.stl$/i.test(file.name || '') && file.type !== 'model/stl' && file.type !== 'application/sla') {
-      status.textContent = 'Bitte eine STL-Datei auswählen oder in die Ablage ziehen.';
-      return;
-    }
-    if (file.size > 50 * 1024 * 1024) {
-      status.textContent = 'STL-Datei ist zu gross (maximal 50 MB).';
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      let geometry=null;
-      try {
-        const loader = new THREE.STLLoader();
-        geometry = loader.parse(reader.result);
-        geometry.computeVertexNormals();
-        geometry.computeBoundingBox();
-        if (!geometry.boundingBox || geometry.boundingBox.isEmpty()) throw new Error('Die STL-Datei enthält keine gültige Geometrie.');
-        // STL-Dateien werden als Millimeter eingelesen und in die App-Einheiten umgerechnet.
-        geometry.scale(mmToWorldUnits(1), mmToWorldUnits(1), mmToWorldUnits(1));
-        geometry.computeBoundingBox();
-        const material = new THREE.MeshStandardMaterial({color:0x4b91ed,roughness:0.5,metalness:0.05});
-        const mesh = new THREE.Mesh(geometry, material);
-        const size = new THREE.Vector3();
-        geometry.boundingBox.getSize(size);
-        mesh.userData.baseDimensions = {x:size.x,y:size.y,z:size.z};
-        mesh.userData.percent = {x:100,y:100,z:100};
-        mesh.userData.label = file.name.replace(/\.stl$/i,'') || 'STL-Modell';
-        // Modell auf der Arbeitsplatte zentrieren, ohne vorhandene Objekte zu verändern.
-        geometry.translate(
-          -(geometry.boundingBox.min.x+geometry.boundingBox.max.x)/2,
-          -(geometry.boundingBox.min.y+geometry.boundingBox.max.y)/2,
-          -geometry.boundingBox.min.z
-        );
-        mesh.position.set(0,0,0);
-        scene.add(mesh);objects.push(mesh);selectObject(mesh);
-        window.__silmoImportRevision=(window.__silmoImportRevision||0)+1;
-        status.textContent='STL-Modell importiert: '+mesh.userData.label+' (mm). Vorhandene Modelle bleiben erhalten.';
-      } catch (error) {
-        if (geometry && !objects.some(obj=>obj.geometry===geometry)) geometry.dispose();
-        console.error(error);
-        status.textContent='STL-Datei konnte nicht gelesen werden: '+(error.message||'Datei prüfen.');
-      }
-    };
-    reader.onerror=()=>{status.textContent='STL-Datei konnte nicht gelesen werden.';};
-    reader.readAsArrayBuffer(file);
-  }
+  const stlIO = window.SILMOSTLIO.createSTLIO({
+    getObjects: () => objects,
+    addObject: mesh => { scene.add(mesh); objects.push(mesh); },
+    selectObject,
+    setStatus: message => { status.textContent = message; },
+    onImported: () => { window.__silmoImportRevision = (window.__silmoImportRevision || 0) + 1; },
+    onExported: () => { window.__silmoExportRevision = (window.__silmoExportRevision || 0) + 1; }
+  });
+  const importSTLFile = stlIO.importSTLFile;
   $('importModel').onclick=()=> $('fileInput').click();
-  $('stlChooseFile').onclick=()=> $('fileInput').click();
+  const stlChooseFile = $('stlChooseFile');
+  if (stlChooseFile) stlChooseFile.onclick=()=> $('fileInput').click();
   $('fileInput').addEventListener('change',event=>{
     Array.from(event.target.files||[]).forEach(importSTLFile);
     event.target.value='';
   });
   const stlDropZone=$('stlDropZone');
+  if (stlDropZone) {
   ['dragenter','dragover'].forEach(type=>stlDropZone.addEventListener(type,event=>{
     event.preventDefault();event.stopPropagation();
     if(event.dataTransfer)event.dataTransfer.dropEffect='copy';
@@ -1821,6 +3230,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     if(url){importDroppedWebLink(url);return;}
     status.textContent='Kein Dateiinhalt oder Web-Link erkannt. Ziehe den Download-Link hierher oder nutze „Datei auswählen“.';
   });
+  }
   // Verhindert, dass eine ausserhalb der Ablage fallengelassene Datei den Browser ersetzt.
   window.addEventListener('dragover',event=>{
     if(Array.from(event.dataTransfer?.items||[]).some(item=>item.kind==='file'))event.preventDefault();
@@ -1829,60 +3239,42 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     if(Array.from(event.dataTransfer?.files||[]).length)event.preventDefault();
   });
 
-  $('exportModel').onclick = () => {
-    if (typeof THREE.STLExporter === 'undefined') {
-      status.textContent = 'STL-Export konnte nicht geladen werden. Internet prüfen.';
-      return;
-    }
-    if (!objects.length) {
-      status.textContent = 'Es gibt keine Objekte zum Exportieren.';
-      return;
-    }
-    try {
-      const exportScene = new THREE.Scene();
-      objects.forEach((obj, index) => {
-        // Export a private geometry copy: never modify the model currently shown in the editor.
-        const exportGeometry = obj.geometry.clone();
-        // The editor uses 10 mm per Three.js unit. STL coordinates must be in millimetres,
-        // so convert vertices as well as object translations (not just the translations).
-        exportGeometry.scale(worldUnitsToMm(1), worldUnitsToMm(1), worldUnitsToMm(1));
-        exportGeometry.computeBoundingBox();
-        exportGeometry.computeBoundingSphere();
-
-        const clone = new THREE.Mesh(exportGeometry, obj.material);
-        clone.position.set(worldUnitsToMm(obj.position.x), worldUnitsToMm(obj.position.y), worldUnitsToMm(obj.position.z));
-        clone.rotation.copy(obj.rotation);
-        // Object scale is dimensionless and is applied after converting geometry to mm.
-        clone.scale.copy(obj.scale);
-        clone.updateMatrix();
-        if (![clone.position.x, clone.position.y, clone.position.z,
-              clone.scale.x, clone.scale.y, clone.scale.z].every(Number.isFinite)) {
-          exportGeometry.dispose();
-          throw new Error('Ungültige Position oder Skalierung bei Objekt ' + (index + 1));
-        }
-        exportScene.add(clone);
-      });
-      const exporter = new THREE.STLExporter();
-      const stlText = exporter.parse(exportScene, { binary: false });
-      if (typeof stlText !== 'string' || !stlText.trim().startsWith('solid') || !stlText.includes('endsolid')) {
-        throw new Error('Der STL-Exporter hat keine gültige ASCII-STL-Datei erzeugt.');
-      }
-      const blob = new Blob([stlText], { type: 'model/stl' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'silmo-3d-modell.stl';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
-      status.textContent = 'STL exportiert: alle Modelle in Millimetern';
-      window.__silmoExportRevision=(window.__silmoExportRevision||0)+1;
-    } catch (error) {
-      console.error(error);
-      status.textContent = 'STL-Export fehlgeschlagen.';
-    }
-  };
+  $('exportModel').onclick = stlIO.exportSTL;
+  // Defensive fallback: keep STEP controls available if a host/editor strips
+  // non-standard file inputs while rebuilding the tool panel.
+  let importStepButton = $('importStepModel');
+  if (!importStepButton) {
+    importStepButton = document.createElement('button');
+    importStepButton.type = 'button';
+    importStepButton.id = 'importStepModel';
+    importStepButton.className = 'wide';
+    importStepButton.textContent = '⬆ STEP importieren (OCCT)';
+    document.querySelector('.left-panel')?.appendChild(importStepButton);
+  }
+  let exportStepButton = $('exportStepModel');
+  if (!exportStepButton) {
+    exportStepButton = document.createElement('button');
+    exportStepButton.type = 'button';
+    exportStepButton.id = 'exportStepModel';
+    exportStepButton.className = 'wide';
+    exportStepButton.textContent = '⬇ STEP exportieren (OCCT)';
+    document.querySelector('.left-panel')?.appendChild(exportStepButton);
+  }
+  let stepFileInput = $('stepFileInput');
+  if (!stepFileInput) {
+    stepFileInput = document.createElement('input');
+    stepFileInput.type = 'file';
+    stepFileInput.id = 'stepFileInput';
+    stepFileInput.accept = '.step,.stp,application/step';
+    stepFileInput.hidden = true;
+    document.body.appendChild(stepFileInput);
+  }
+  importStepButton.onclick = () => stepFileInput.click();
+  stepFileInput.addEventListener('change', event => {
+    Array.from(event.target.files || []).forEach(importSTEPFile);
+    event.target.value = '';
+  });
+  exportStepButton.onclick = exportSelectedSTEP;
 
   $('dropToBed').onclick = () => {
     const requested = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
@@ -1909,7 +3301,19 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 
   $('booleanUnion').addEventListener('click', () => runBooleanOperation('union'));
   $('booleanSubtract').addEventListener('click', () => runBooleanOperation('subtract'));
-  $('booleanSeparate').addEventListener('click', splitBooleanUnion);
+  $('booleanIntersect').addEventListener('click', () => runBooleanOperation('intersect'));
+  // Die Navigationsleiste erzeugt diese Schaltfläche dynamisch. Ein Fallback verhindert,
+  // dass ein fehlendes Navigationselement die restliche App-Initialisierung abbricht.
+  let booleanSeparateButton = $('booleanSeparate');
+  if (!booleanSeparateButton) {
+    booleanSeparateButton = document.createElement('button');
+    booleanSeparateButton.type = 'button';
+    booleanSeparateButton.id = 'booleanSeparate';
+    booleanSeparateButton.className = 'wide';
+    booleanSeparateButton.textContent = '↗ Verbindung lösen';
+    (document.querySelector('#pane-create-left') || document.querySelector('.left-panel'))?.appendChild(booleanSeparateButton);
+  }
+  booleanSeparateButton?.addEventListener('click', splitBooleanUnion);
 
   $('delete').onclick = deleteSelectedObjects;
 
@@ -1967,6 +3371,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   let sketchDrawing = false, sketchPointerId = null;
   let sketchDraft = null, sketchPreview = null;
   let clickContourMode = false;
+  let clickContourHoleMode = false;
   let clickContourPoints = [];
 
   function clearSketchPreview() {
@@ -1996,7 +3401,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const previous = clickContourPoints[clickContourPoints.length - 1];
     const dx = point.x - previous.x, dy = point.y - previous.y;
     const distance = Math.hypot(dx,dy);
-    if (distance < 0.0001) return point;
+    if (distance < window.SILMOTolerances.CLICK_CONTOUR_STRAIGHTEN_MIN_DISTANCE_WORLD_UNITS) return point;
     const step = Math.PI / 4;
     const angle = Math.atan2(dy,dx);
     const fixedAngle = Math.round(angle / step) * step;
@@ -2004,7 +3409,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     point.y = previous.y + Math.sin(fixedAngle) * distance;
     return clampSketchPoint(point, sketchDrawingMarginMM());
   }
-  function simplifySketchPolyline(points, toleranceMM = 0.5) {
+  function simplifySketchPolyline(points, toleranceMM = window.SILMOTolerances.SKETCH_POLYLINE_SIMPLIFICATION_TOLERANCE_MM) {
     if (!Array.isArray(points) || points.length < 3) return (points || []).map(point => point.clone());
     const tolerance = Math.max(mmToWorldUnits(window.SILMOTolerances.SKETCH_SIMPLIFICATION_MIN_MM), mmToWorldUnits(toleranceMM));
     const toleranceSq = tolerance * tolerance;
@@ -2019,7 +3424,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       let maxDistanceSq = toleranceSq, splitIndex = -1;
       for (let i = first + 1; i < last; i++) {
         const p = points[i];
-        const t = lengthSq > 1e-12 ? Math.max(0, Math.min(1, ((p.x-a.x)*dx + (p.y-a.y)*dy) / lengthSq)) : 0;
+        const t = lengthSq > window.SILMOTolerances.SKETCH_POLYLINE_DEGENERATE_LENGTH_SQUARED_WORLD_UNITS2 ? Math.max(0, Math.min(1, ((p.x-a.x)*dx + (p.y-a.y)*dy) / lengthSq)) : 0;
         const px = a.x + t * dx, py = a.y + t * dy;
         const ex = p.x - px, ey = p.y - py;
         const distanceSq = ex * ex + ey * ey;
@@ -2063,14 +3468,24 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     clearSketchPreview();
     if (['line3d','line2d','curve2d'].includes(sketchDraft.type)) {
       if (!Array.isArray(sketchDraft.points) || sketchDraft.points.length < 2) return;
-      const points = sketchDraft.points.map(point => new THREE.Vector3(point.x, point.y, point.z + (sketchDraft.type === 'line3d' ? 0 : 0.025)));
+      const points = sketchDraft.points.map(point => new THREE.Vector3(point.x, point.y, point.z + (sketchDraft.type === 'line3d' ? 0 : window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS)));
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
       sketchPreview = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: sketchDraft.type === 'line3d' ? 0xffd166 : 0x53d8e8, depthTest: false }));
     } else if (sketchDraft.type === 'freeform2d') {
       if (!Array.isArray(sketchDraft.points) || sketchDraft.points.length < 3) return;
-      const points = sketchDraft.points.map(point => new THREE.Vector3(point.x, point.y, 0.025));
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      sketchPreview = new THREE.LineLoop(geometry, new THREE.LineBasicMaterial({ color: 0x53d8e8, depthTest: false }));
+      const loops = [sketchDraft.points, ...(Array.isArray(sketchDraft.holes) ? sketchDraft.holes : [])];
+      if (clickContourHoleMode && clickContourPoints.length >= 2) loops.push(clickContourPoints);
+      const vertices = [];
+      loops.forEach(loop => {
+        for (let i = 0; i < loop.length; i++) {
+          const a = loop[i], b = loop[(i + 1) % loop.length];
+          vertices.push(a.x,a.y,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS,
+            b.x,b.y,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS);
+        }
+      });
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices,3));
+      sketchPreview = new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ color: 0x53d8e8, depthTest: false }));
     } else {
       let points = [];
       const activeTool = document.getElementById('sketchTool')?.value;
@@ -2082,26 +3497,26 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           points.push(new THREE.Vector3(
             sketchDraft.centerX + Math.cos(angle) * radiusX,
             sketchDraft.centerY + Math.sin(angle) * radiusY,
-            0.025
+            window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS
           ));
         }
       } else if(activeTool==='roundedRectangle') {
         const path=new THREE.Shape();
         const radiusMM=Number(document.getElementById('sketchCornerRadiusMM').value);
         const radius=Math.max(0,Math.min(mmToWorldUnits(radiusMM),sketchDraft.width/2,sketchDraft.depth/2));
-        addRoundedRectPath(path,sketchDraft.width,sketchDraft.depth,radius,sketchDraft.centerX,sketchDraft.centerY);
-        points=path.getPoints(10).map(point=>new THREE.Vector3(point.x,point.y,0.025));
+        window.SILMOSketchGeometry.addRoundedRectPath(path,sketchDraft.width,sketchDraft.depth,radius,sketchDraft.centerX,sketchDraft.centerY);
+        points=path.getPoints(10).map(point=>new THREE.Vector3(point.x,point.y,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS));
       } else {
         const halfW = sketchDraft.width / 2, halfD = sketchDraft.depth / 2;
         points = activeTool === 'triangle' ? [
-          new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY-halfD,0.025),
-          new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY-halfD,0.025),
-          new THREE.Vector3(sketchDraft.centerX,sketchDraft.centerY+halfD,0.025)
+          new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY-halfD,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS),
+          new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY-halfD,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS),
+          new THREE.Vector3(sketchDraft.centerX,sketchDraft.centerY+halfD,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS)
         ] : [
-          new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY-halfD,0.025),
-          new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY-halfD,0.025),
-          new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY+halfD,0.025),
-          new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY+halfD,0.025)
+          new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY-halfD,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS),
+          new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY-halfD,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS),
+          new THREE.Vector3(sketchDraft.centerX+halfW,sketchDraft.centerY+halfD,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS),
+          new THREE.Vector3(sketchDraft.centerX-halfW,sketchDraft.centerY+halfD,window.SILMOTolerances.SKETCH_PREVIEW_OFFSET_WORLD_UNITS)
         ];
       }
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -2151,6 +3566,34 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       document.getElementById('sketchStatus').textContent = error.message;
     }
   }
+  function validateSketchHole(outer, hole, existingHoles = []) {
+    const valid = ring => Array.isArray(ring) && ring.length >= 3 &&
+      ring.every(point => point && Number.isFinite(point.x) && Number.isFinite(point.y));
+    if (!valid(outer) || !valid(hole) || hole.length > 1000) throw new Error('Innenkonturen brauchen 3 bis 1000 gültige Punkte.');
+    const area = ring => ring.reduce((sum,p,i) => { const q=ring[(i+1)%ring.length]; return sum+p.x*q.y-q.x*p.y; },0)/2;
+    if (hole.some((point,index)=>Math.hypot(point.x-hole[(index+1)%hole.length].x,point.y-hole[(index+1)%hole.length].y)<window.SILMOTolerances.SKETCH_FREEFORM_MIN_POINT_SPACING_WORLD_UNITS)) throw new Error('Innenloch-Punkte liegen zu nahe beieinander.');
+    if (Math.abs(area(hole)) < window.SILMOTolerances.FREEFORM_MIN_AREA_WORLD_UNITS2) throw new Error('Das Innenloch ist zu klein.');
+    const orient=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
+    const boundsEpsilon=window.SILMOTolerances.SKETCH_FREEFORM_BOUNDS_EPSILON_WORLD_UNITS;
+    const orientationEpsilon=window.SILMOTolerances.SKETCH_FREEFORM_ORIENTATION_EPSILON_WORLD_UNITS2;
+    const onSegment=(a,b,p)=>Math.min(a.x,b.x)-boundsEpsilon<=p.x&&p.x<=Math.max(a.x,b.x)+boundsEpsilon&&Math.min(a.y,b.y)-boundsEpsilon<=p.y&&p.y<=Math.max(a.y,b.y)+boundsEpsilon;
+    const intersects=(a,b,c,d)=>{
+      const o1=orient(a,b,c),o2=orient(a,b,d),o3=orient(c,d,a),o4=orient(c,d,b);
+      if (((o1>orientationEpsilon&&o2< -orientationEpsilon)||(o1< -orientationEpsilon&&o2>orientationEpsilon))&&((o3>orientationEpsilon&&o4< -orientationEpsilon)||(o3< -orientationEpsilon&&o4>orientationEpsilon))) return true;
+      return (Math.abs(o1)<=orientationEpsilon&&onSegment(a,b,c))||(Math.abs(o2)<=orientationEpsilon&&onSegment(a,b,d))||(Math.abs(o3)<=orientationEpsilon&&onSegment(c,d,a))||(Math.abs(o4)<=orientationEpsilon&&onSegment(c,d,b));
+    };
+    const inside=(p,ring)=>{let result=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){const a=ring[i],b=ring[j];if(((a.y>p.y)!==(b.y>p.y))&&(p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x))result=!result;}return result;};
+    const selfCrosses=ring=>{for(let i=0;i<ring.length;i++)for(let j=i+1;j<ring.length;j++){if(j===i+1||(i===0&&j===ring.length-1))continue;if(intersects(ring[i],ring[(i+1)%ring.length],ring[j],ring[(j+1)%ring.length]))return true;}return false;};
+    if(selfCrosses(hole))throw new Error('Das Innenloch überschneidet sich selbst.');
+    if(!hole.every(point=>inside(point,outer)))throw new Error('Das Innenloch muss vollständig innerhalb der Aussenkontur liegen.');
+    for(let i=0;i<hole.length;i++)for(let j=0;j<outer.length;j++)if(intersects(hole[i],hole[(i+1)%hole.length],outer[j],outer[(j+1)%outer.length]))throw new Error('Das Innenloch darf die Aussenkontur nicht berühren oder schneiden.');
+    for(const other of existingHoles){
+      if(hole.some(point=>inside(point,other))||other.some(point=>inside(point,hole)))throw new Error('Innenlöcher dürfen sich nicht überlappen oder ineinander liegen.');
+      for(let i=0;i<hole.length;i++)for(let j=0;j<other.length;j++)if(intersects(hole[i],hole[(i+1)%hole.length],other[j],other[(j+1)%other.length]))throw new Error('Innenlöcher dürfen sich nicht berühren oder schneiden.');
+    }
+    return true;
+  }
+
   document.getElementById('clickContourToggle').addEventListener('click', () => {
     if (!sketchMode) {
       document.getElementById('sketchStatus').textContent = 'Bitte zuerst „Zeichnen starten“ wählen.';
@@ -2158,8 +3601,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
     const enabled = !clickContourMode;
     clickContourMode = enabled;
+    clickContourHoleMode = false;
     clickContourPoints = [];
     sketchDraft = null;
+    document.getElementById('clickContourHoleToggle').disabled = true;
+    document.getElementById('clickContourHoleToggle').setAttribute('aria-pressed','false');
     clearSketchPreview();
     document.getElementById('clickContourToggle').setAttribute('aria-pressed',String(enabled));
     document.getElementById('clickContourToggle').textContent = enabled ? '■ Punktmodus ausschalten' : '＋ Punktmodus einschalten';
@@ -2171,28 +3617,74 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       ? 'Punktmodus aktiv: Klicke nacheinander auf mindestens drei Ecken. Ein Klick nahe beim Startpunkt schliesst die Kontur.'
       : 'Punktmodus ausgeschaltet. Du kannst wieder wie gewohnt ziehen.';
   });
+  document.getElementById('clickContourHoleToggle').addEventListener('click', () => {
+    if (!sketchMode || sketchDraft?.type !== 'freeform2d' || sketchDraft.points?.length < 3) {
+      document.getElementById('sketchStatus').textContent = 'Erstelle zuerst eine geschlossene Aussenkontur.';
+      return;
+    }
+    if (clickContourHoleMode) {
+      clickContourMode=false; clickContourHoleMode=false; clickContourPoints=[];
+      document.getElementById('clickContourToggle').disabled=false;
+      document.getElementById('clickContourHoleToggle').setAttribute('aria-pressed','false');
+      document.getElementById('clickContourHoleToggle').textContent='＋ Weiteres Innenloch zeichnen';
+      document.getElementById('clickContourUndo').disabled=true;
+      document.getElementById('clickContourFinish').disabled=true;
+      updateSketchPreview();
+      document.getElementById('sketchStatus').textContent='Innenloch-Zeichnung abgebrochen. Fertige Konturen bleiben erhalten.';
+      return;
+    }
+    clickContourMode=true; clickContourHoleMode=true; clickContourPoints=[];
+    document.getElementById('clickContourToggle').disabled=true;
+    document.getElementById('clickContourHoleToggle').setAttribute('aria-pressed','true');
+    document.getElementById('clickContourHoleToggle').textContent='■ Innenloch-Zeichnung abbrechen';
+    document.getElementById('clickContourUndo').disabled=true;
+    document.getElementById('clickContourFinish').disabled=true;
+    document.getElementById('sketchStatus').textContent='Innenloch aktiv: Klicke mindestens drei Punkte innerhalb der Aussenkontur. Schliesse den Ring mit einem Klick nahe beim Startpunkt.';
+  });
   document.getElementById('clickContourUndo').addEventListener('click', () => {
     if (!clickContourPoints.length) return;
     clickContourPoints.pop();
     document.getElementById('clickContourUndo').disabled = clickContourPoints.length === 0;
     document.getElementById('clickContourFinish').disabled = clickContourPoints.length < 3;
     if (clickContourPoints.length >= 3) {
-      sketchDraft = {type:'freeform2d',points:clickContourPoints.map(p=>p.clone())};
+      if (!clickContourHoleMode) sketchDraft = {type:'freeform2d',points:clickContourPoints.map(p=>p.clone()),holes:[]};
       updateSketchPreview();
-    } else { sketchDraft = null; clearSketchPreview(); }
+    } else if (clickContourHoleMode) { updateSketchPreview(); }
+    else { sketchDraft = null; clearSketchPreview(); }
     document.getElementById('sketchStatus').textContent = clickContourPoints.length + ' Konturpunkte vorhanden.';
   });
   document.getElementById('clickContourFinish').addEventListener('click', () => {
     if (clickContourPoints.length < 3) return;
-    sketchDraft = {type:'freeform2d',points:clickContourPoints.map(p=>p.clone())};
+    if (clickContourHoleMode) {
+      try {
+        const hole=clickContourPoints.map(point=>point.clone());
+        const existing=Array.isArray(sketchDraft.holes)?sketchDraft.holes:[];
+        validateSketchHole(sketchDraft.points,hole,existing);
+        sketchDraft.holes=[...existing,hole];
+        clickContourHoleMode=false; clickContourMode=false; clickContourPoints=[];
+        document.getElementById('clickContourToggle').disabled=false;
+        document.getElementById('clickContourHoleToggle').setAttribute('aria-pressed','false');
+        document.getElementById('clickContourHoleToggle').textContent='＋ Weiteres Innenloch zeichnen';
+        document.getElementById('clickContourUndo').disabled=true;
+        document.getElementById('clickContourFinish').disabled=true;
+        updateSketchPreview();
+        document.getElementById('createSketchSolid').disabled=false;
+        document.getElementById('sketchStatus').textContent='Innenloch hinzugefügt. '+sketchDraft.holes.length+' echte Öffnung(en) vorbereitet.';
+      } catch(error) {
+        document.getElementById('sketchStatus').textContent='Innenloch abgelehnt: '+error.message;
+      }
+      return;
+    }
+    sketchDraft = {type:'freeform2d',points:clickContourPoints.map(p=>p.clone()),holes:[]};
     updateSketchPreview();
     document.getElementById('createSketchSolid').disabled = false;
     document.getElementById('cancelSketch').disabled = false;
     document.getElementById('clickContourFinish').disabled = true;
-    document.getElementById('sketchStatus').textContent = 'Kontur fertig: '+clickContourPoints.length+' Punkte. Du kannst sie jetzt als 3D-Körper erstellen oder weiter bearbeiten.';
+    document.getElementById('clickContourHoleToggle').disabled = false;
+    document.getElementById('sketchStatus').textContent = 'Aussenkontur fertig. Jetzt kannst du Innenlöcher direkt in derselben Skizze hinzufügen.';
     clickContourMode = false;
     document.getElementById('clickContourToggle').setAttribute('aria-pressed','false');
-    document.getElementById('clickContourToggle').textContent = '＋ Neue Punktkontur zeichnen';
+    document.getElementById('clickContourToggle').textContent = '＋ Neue Aussenkontur zeichnen';
   });
 
   function finishSketchPointer(e) {
@@ -2204,10 +3696,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         snapSketchPoint(sketchPoint);
         let points = sketchDraft?.type === activeTool ? sketchDraft.points : [sketchStart.clone()];
         if (activeTool === 'line2d') points = [sketchStart.clone(), sketchPoint.clone()];
-        else if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > 0.015) points.push(sketchPoint.clone());
+        else if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > window.SILMOTolerances.SKETCH_POLYLINE_SAMPLE_MIN_DISTANCE_WORLD_UNITS) points.push(sketchPoint.clone());
         sketchDraft = { type: activeTool, points };
       }
-      if (sketchDraft?.type === activeTool && sketchDraft.points.length >= 2 && sketchDraft.points[0].distanceTo(sketchDraft.points[sketchDraft.points.length - 1]) > 0.02) {
+      if (sketchDraft?.type === activeTool && sketchDraft.points.length >= 2 && sketchDraft.points[0].distanceTo(sketchDraft.points[sketchDraft.points.length - 1]) > window.SILMOTolerances.SKETCH_POLYLINE_MIN_LENGTH_WORLD_UNITS) {
         updateSketchInputsFromDraft();
         updateSketchPreview();
       } else {
@@ -2218,20 +3710,21 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       if (e && raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) {
         snapSketchPoint(sketchPoint);
         const points = sketchDraft?.type === 'freeform2d' ? sketchDraft.points : [sketchStart.clone()];
-        if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > 0.015) points.push(sketchPoint.clone());
+        if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > window.SILMOTolerances.SKETCH_POLYLINE_SAMPLE_MIN_DISTANCE_WORLD_UNITS) points.push(sketchPoint.clone());
         if (points.length > 500) points.splice(1, points.length - 500);
         sketchDraft = { type: 'freeform2d', points };
       }
       const points = sketchDraft?.type === 'freeform2d' ? sketchDraft.points : [];
       if (points.length >= 3) {
-        const distinct = points.filter((point, index) => index === 0 || point.distanceTo(points[index - 1]) > 0.005);
+        const distinct = points.filter((point, index) => index === 0 || point.distanceTo(points[index - 1]) > window.SILMOTolerances.SKETCH_FREEFORM_MIN_POINT_SPACING_WORLD_UNITS);
         if (distinct.length >= 3) {
           const cleaned = document.getElementById('sketchSmoothEnabled')?.checked
-            ? simplifySketchPolyline(distinct, 0.5)
+            ? simplifySketchPolyline(distinct, window.SILMOTolerances.SKETCH_POLYLINE_SIMPLIFICATION_TOLERANCE_MM)
             : distinct.map(point => point.clone());
           const finalPoints = cleaned.length >= 3 ? cleaned : distinct.map(point => point.clone());
-          sketchDraft = { type: 'freeform2d', points: finalPoints };
+          sketchDraft = { type: 'freeform2d', points: finalPoints, holes: [] };
           updateSketchPreview();
+          document.getElementById('clickContourHoleToggle').disabled = false;
           document.getElementById('createSketchSolid').disabled = false;
           document.getElementById('cancelSketch').disabled = false;
           document.getElementById('sketchStatus').textContent = 'Freiform bereit: ' + finalPoints.length + ' Konturpunkte' + (cleaned.length < distinct.length ? ' (beruhigt)' : '') + '. Die Kontur wird beim Extrudieren geschlossen.';
@@ -2248,7 +3741,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const size = tool === 'circle' ? Math.min(width, depth) : null;
       const actualWidth = tool === 'circle' ? size : width;
       const actualDepth = tool === 'circle' ? size : depth;
-      if (actualWidth >= 0.01 && actualDepth >= 0.01) {
+      if (actualWidth >= window.SILMOTolerances.SKETCH_DRAW_MIN_DIMENSION_WORLD_UNITS && actualDepth >= window.SILMOTolerances.SKETCH_DRAW_MIN_DIMENSION_WORLD_UNITS) {
         sketchDraft = {
           centerX: (sketchStart.x + sketchPoint.x) / 2,
           centerY: (sketchStart.y + sketchPoint.y) / 2,
@@ -2292,42 +3785,14 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       status.textContent='Wandstärke muss 0,2–100 mm und Rahmenhöhe 0,2–2000 mm betragen.';return;
     }
     const outline=base.userData.sketchOutline||base.userData.caseOutline;
-    const outer=outline.map(point=>new THREE.Vector2(point[0],point[1]));
-    if(outer.length>240){status.textContent='Die Kontur hat zu viele Punkte. Zeichne sie etwas einfacher neu.';return;}
-    const signedArea=points=>points.reduce((sum,p,i)=>{const n=points[(i+1)%points.length];return sum+p.x*n.y-n.x*p.y;},0)/2;
-    const area=signedArea(outer);
-    if(!Number.isFinite(area)||Math.abs(area)<window.SILMOTolerances.CONTOUR_FRAME_MIN_AREA_WORLD_UNITS2){status.textContent='Die Rückwand-Kontur ist zu klein oder ungültig.';return;}
-    const ccw=area>0,offset=mmToWorldUnits(thicknessMM),inner=[];
-    const cross=(a,b)=>a.x*b.y-a.y*b.x;
-    for(let i=0;i<outer.length;i++){
-      const prev=outer[(i+outer.length-1)%outer.length],p=outer[i],next=outer[(i+1)%outer.length];
-      const e1=new THREE.Vector2(p.x-prev.x,p.y-prev.y),e2=new THREE.Vector2(next.x-p.x,next.y-p.y);
-      if(e1.length()<window.SILMOTolerances.CONTOUR_FRAME_MIN_EDGE_WORLD_UNITS||e2.length()<window.SILMOTolerances.CONTOUR_FRAME_MIN_EDGE_WORLD_UNITS)continue;
-      e1.normalize();e2.normalize();
-      const n1=ccw?new THREE.Vector2(-e1.y,e1.x):new THREE.Vector2(e1.y,-e1.x);
-      const n2=ccw?new THREE.Vector2(-e2.y,e2.x):new THREE.Vector2(e2.y,-e2.x);
-      const q1=p.clone().addScaledVector(n1,offset),q2=p.clone().addScaledVector(n2,offset),den=cross(e1,e2);
-      let hit;
-      if(Math.abs(den)<window.SILMOTolerances.CONTOUR_FRAME_PARALLEL_CROSS_MIN){
-        const normal=n1.clone().add(n2);
-        if(normal.length()<window.SILMOTolerances.CONTOUR_FRAME_MIN_NORMAL_WORLD_UNITS)throw new Error('Kontur enthält einen ungültigen Knick.');
-        hit=p.clone().addScaledVector(normal.normalize(),offset);
-      }else{
-        const u=cross(new THREE.Vector2(q2.x-q1.x,q2.y-q1.y),e2)/den;
-        hit=q1.clone().addScaledVector(e1,u);
-      }
-      if(hit.distanceTo(p)>offset*8+0.02)throw new Error('Die Kontur ist für diese Wandstärke zu eng. Verringere die Wandstärke.');
-      inner.push(hit);
-    }
-    const innerArea=signedArea(inner);
-    if(inner.length<3||Math.abs(innerArea)<window.SILMOTolerances.CONTOUR_FRAME_MIN_AREA_WORLD_UNITS2||Math.sign(innerArea)!==Math.sign(area))
-      throw new Error('Innenkontur ist zu eng oder überschneidet sich. Verringere die Wandstärke oder glätte die gezeichnete Kontur.');
-    const shape=new THREE.Shape();
-    shape.moveTo(outer[0].x,outer[0].y);outer.slice(1).forEach(p=>shape.lineTo(p.x,p.y));shape.closePath();
-    const hole=new THREE.Path(),reversed=inner.slice().reverse();
-    hole.moveTo(reversed[0].x,reversed[0].y);reversed.slice(1).forEach(p=>hole.lineTo(p.x,p.y));hole.closePath();shape.holes.push(hole);
-    const geometry=new THREE.ExtrudeGeometry(shape,{depth:mmToWorldUnits(heightMM),bevelEnabled:false,curveSegments:16});
-    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    if(outline.length>240){status.textContent='Die Kontur hat zu viele Punkte. Zeichne sie etwas einfacher neu.';return;}
+    const geometry=window.SILMOSketchGeometry.createContourFrameGeometry(
+      outline,
+      mmToWorldUnits(thicknessMM),
+      mmToWorldUnits(heightMM),
+      window.SILMOTolerances,
+      CSG_EPSILON
+    );
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
     if(![size.x,size.y,size.z].every(v=>Number.isFinite(v)&&v>CSG_EPSILON)){geometry.dispose();throw new Error('Hohlrahmen hat ungültige Abmessungen.');}
     recordHistory();
@@ -2414,18 +3879,75 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     selectedObjects=[p1];selected=p1;
     document.getElementById('editSketchWidthMM').value='30';document.getElementById('editSketchDepthMM').value='25';document.getElementById('editSketchHeightMM').value='4';
     applySelectedSketchDimensions();
-    const dimensionOK=Math.abs(worldUnitsToMm(p1.geometry.boundingBox.getSize(new THREE.Vector3()).x)-30)<0.01;
+    p1.geometry.computeBoundingBox();
+    const dimensionSize=p1.geometry.boundingBox.getSize(new THREE.Vector3());
+    const dimensionsMM={x:worldUnitsToMm(dimensionSize.x),y:worldUnitsToMm(dimensionSize.y),z:worldUnitsToMm(dimensionSize.z)};
+    const dimensionOK=Math.abs(dimensionsMM.x-30)<0.01&&Math.abs(dimensionsMM.y-25)<0.01&&Math.abs(dimensionsMM.z-4)<0.01;
     document.getElementById('edgeTreatmentMM').value='0.5';createEdgeTreatment('fillet');
     const filletOK=p1.userData.edgeTreatment?.type==='fillet'&&p1.geometry.attributes.position.count>0;
     selectedObjects=[p1,p2];selected=p2;createLoftFromSelection();
     const loft=objects[objects.length-1],loftOK=loft.userData.loft?.sections===2&&loft.geometry.attributes.position.count>0;
+    const holeA=makeProfile('Test-Innenprofil A',-1,0,0,0.35,0.35,0.2);
+    const holeB=makeProfile('Test-Innenprofil B',1,0,1,0.25,0.25,0.2);
+    selectedObjects=[p1,p2,holeA,holeB];selected=holeB;createLoftFromSelection();
+    const hollowLoft=objects[objects.length-1];
+    const hollowLoftOK=hollowLoft.userData.loft?.innerContourCount===1&&
+      hollowLoft.userData.loft?.sourceHoles?.length===1&&hollowLoft.geometry.attributes.position.count>0;
     const pathGeometry=new THREE.BoxGeometry(0.08,0.08,2);
     const path=new THREE.Mesh(pathGeometry,new THREE.MeshStandardMaterial({color:'#53d8e8'}));path.userData={label:'Testpfad',sketch:{type:'line3d',pathPoints:[[0,0,0],[0,0,1],[0.4,0,2]]}};
     scene.add(path);objects.push(path);selectedObjects=[p2,path];selected=path;createSweepFromSelection();
     const sweep=objects[objects.length-1],sweepOK=!!sweep.userData.sweep&&sweep.geometry.attributes.position.count>0;
     selectedObjects=[p2];selected=p2;document.getElementById('edgeTreatmentMM').value='0.3';createEdgeTreatment('chamfer');
     const chamferOK=p2.userData.edgeTreatment?.type==='chamfer'&&p2.geometry.attributes.position.count>0;
-    return {dimensionOK,filletOK,chamferOK,loftOK,sweepOK,objectDelta:objects.length-before,loftVertices:loft.geometry.attributes.position.count,sweepVertices:sweep.geometry.attributes.position.count};
+    return {dimensionOK,dimensionsMM,filletOK,chamferOK,loftOK,hollowLoftOK,sweepOK,objectDelta:objects.length-before,loftVertices:loft.geometry.attributes.position.count,hollowLoftVertices:hollowLoft.geometry.attributes.position.count,sweepVertices:sweep.geometry.attributes.position.count};
+  };
+  window.__silmoTestRemoveSketchHole=()=>{
+    const result=window.__silmoImageStudioCreateFromPoints([[0,0],[40,0],[40,30],[0,30]],10,[[[10,10],[10,20],[20,20],[20,10]]]);
+    if(!result.ok)throw new Error(result.message);
+    const obj=selected;loadSelectedSketchPoints();document.getElementById('sketchContourIndex').value='1';loadSelectedSketchPoints();
+    removeSelectedSketchContour();
+    return {holeCount:obj.userData.sketch.holes.length,outerPointCount:obj.userData.sketchOutline.length,vertices:obj.geometry.attributes.position.count};
+  };
+  window.__silmoTestInsertDeleteSketchContourPoint=()=>{
+    const result=window.__silmoImageStudioCreateFromPoints([[0,0],[40,0],[40,30],[0,30]],10,[[[10,10],[10,20],[20,20],[20,10]]]);
+    if(!result.ok)throw new Error(result.message);
+    const obj=selected;loadSelectedSketchPoints();document.getElementById('sketchContourIndex').value='1';loadSelectedSketchPoints();
+    document.getElementById('sketchPointIndex').value='0';insertSelectedSketchPoint();
+    const afterInsert=obj.userData.sketch.holes[0].length;
+    deleteSelectedSketchPoint();
+    return {afterInsert,afterDelete:obj.userData.sketch.holes[0].length,holeCount:obj.userData.sketch.holes.length,vertices:obj.geometry.attributes.position.count};
+  };
+  window.__silmoTestUpdateLoftFromSources=()=>{
+    const make=(label,x,z,size)=>{const shape=new THREE.Shape();shape.moveTo(-size,-size);shape.lineTo(size,-size);shape.lineTo(size,size);shape.lineTo(-size,size);shape.closePath();const outline=shape.getPoints(16).slice(0,-1).map(point=>[point.x,point.y]);const geometry=new THREE.ExtrudeGeometry(shape,{depth:0.2,bevelEnabled:false});const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:'#4b91ed'}));mesh.position.set(x,0,z);mesh.userData={label,baseDimensions:{x:size*2,y:size*2,z:0.2},percent:{x:100,y:100,z:100},sketch:{type:'rectangle',outlinePoints:outline,extrusionMM:2},sketchOutline:outline};scene.add(mesh);objects.push(mesh);return mesh;};
+    const a=make('Loft-Quelle A',-1,0,0.8),b=make('Loft-Quelle B',1,1,0.5);
+    selectedObjects=[a,b];selected=b;createLoftFromSelection();
+    const loft=selected,before=loft.geometry.boundingBox.max.z;
+    b.position.z=2;b.updateMatrixWorld(true);
+    updateSelectedLoftFromSources();
+    const after=loft.geometry.boundingBox.max.z;
+    return {sourceA:loft.userData.loft.sourceA,sourceB:loft.userData.loft.sourceB,sourceReferencesResolve:objects.some(obj=>obj.uuid===loft.userData.loft.sourceA)&&objects.some(obj=>obj.uuid===loft.userData.loft.sourceB),beforeMaxZ:before,afterMaxZ:after,vertices:loft.geometry.attributes.position.count};
+  };
+  window.__silmoTestEditSketchHolePoint=()=>{
+    const result=window.__silmoImageStudioCreateFromPoints([[0,0],[40,0],[40,30],[0,30]],10,[[[10,10],[10,20],[20,20],[20,10]]]);
+    if(!result.ok)throw new Error(result.message);
+    const obj=selected;
+    document.getElementById('editSketchWidthMM').value='80';
+    document.getElementById('editSketchDepthMM').value='60';
+    document.getElementById('editSketchHeightMM').value='20';
+    applySelectedSketchDimensions();
+    const oldHolePoint=obj.userData.sketch.holes[0][0].slice();
+    loadSelectedSketchPoints();
+    document.getElementById('sketchContourIndex').value='1';loadSelectedSketchPoints();
+    document.getElementById('sketchPointIndex').value='0';
+    document.getElementById('sketchPointXMM').value=String(worldUnitsToMm(oldHolePoint[0])-1);
+    document.getElementById('sketchPointYMM').value=String(worldUnitsToMm(oldHolePoint[1]));
+    applySelectedSketchPoint();
+    document.getElementById('sketchContourIndex').value='0';loadSelectedSketchPoints();
+    document.getElementById('sketchPointIndex').value='0';
+    document.getElementById('sketchPointXMM').value=String(worldUnitsToMm(obj.userData.sketchOutline[0][0])-1);
+    document.getElementById('sketchPointYMM').value=String(worldUnitsToMm(obj.userData.sketchOutline[0][1]));
+    applySelectedSketchPoint();
+    return {holeCount:obj.userData.sketch.holes.length,pointXMM:worldUnitsToMm(obj.userData.sketch.holes[0][0][0]),outerPointXMM:worldUnitsToMm(obj.userData.sketchOutline[0][0]),outerPointCount:obj.userData.sketchOutline.length,vertices:obj.geometry.attributes.position.count};
   };
   window.__silmoTestCreateContourFrame=()=>{
     const points=[[-1,-1],[1,-1],[1,1],[-1,1]];
@@ -2444,8 +3966,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   function cadPathCurve(obj){
     const data=obj?.userData?.sketch;
     if(!data||!Array.isArray(data.pathPoints)||data.pathPoints.length<2)throw new Error('Auswahl braucht eine gespeicherte Linien- oder Kurvenbahn.');
-    const points=data.pathPoints.map(p=>new THREE.Vector3(p[0],p[1],p[2]));
-    return data.type==='line2d'?new THREE.LineCurve3(points[0],points[points.length-1]):new THREE.CatmullRomCurve3(points);
+    return window.SILMOSketchGeometry.createPathCurve(data.pathPoints,data.type);
   }
   function cadPathWorldPoints(obj){
     const data=obj?.userData?.sketch;
@@ -2495,13 +4016,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const target=Number(document.getElementById('editPathLengthMM').value);
     if(!Number.isFinite(target)||target<0.1||target>20000)throw new Error('Pfadlänge muss zwischen 0,1 und 20000 mm liegen.');
     const curve=cadPathCurve(obj),current=worldUnitsToMm(curve.getLength());
-    if(current<0.001)throw new Error('Pfad ist zu kurz.');
+    if(current<window.SILMOTolerances.PATH_LENGTH_MIN_CURRENT_MM)throw new Error('Pfad ist zu kurz.');
     const factor=target/current,scaled=data.pathPoints.map(p=>p.map(v=>v*factor));
-    const points=scaled.map(p=>new THREE.Vector3(p[0],p[1],p[2]));
-    const nextCurve=data.type==='line2d'?new THREE.LineCurve3(points[0],points[points.length-1]):new THREE.CatmullRomCurve3(points);
     const diameter=Number(data.diameterMM||1.2);
-    const geometry=new THREE.TubeGeometry(nextCurve,data.type==='line2d'?24:Math.max(24,Math.min(300,points.length*12)),mmToWorldUnits(diameter)/2,8,false);
-    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    const pathResult=window.SILMOSketchGeometry.createPathTubeGeometry(scaled,data.type,mmToWorldUnits(diameter)/2,data.type==='line2d'?24:Math.max(24,Math.min(300,scaled.length*12)),8);
+    const geometry=pathResult.geometry;
     recordHistory();obj.geometry.dispose();obj.geometry=geometry;data.pathPoints=scaled;data.lengthMM=target;
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);obj.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
     updateObjects();showProperties();updateMoveGizmo();status.textContent='Pfadlänge exakt auf '+target.toFixed(1)+' mm gesetzt.';
@@ -2534,52 +4053,124 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const values=['editSketchWidthMM','editSketchDepthMM','editSketchHeightMM'].map(id=>Number(document.getElementById(id).value));
     if(values.some(v=>!Number.isFinite(v)||v<0.1||v>2000))throw new Error('Breite, Tiefe und Höhe müssen zwischen 0,1 und 2000 mm liegen.');
     obj.geometry.computeBoundingBox();const old=obj.geometry.boundingBox.getSize(new THREE.Vector3());
-    if(old.x<1e-6||old.y<1e-6||old.z<1e-6)throw new Error('Diese Skizze besitzt keine skalierbare Fläche oder Extrusionshöhe.');
+    if(old.x<window.SILMOTolerances.PROFILE_MIN_SOURCE_DIMENSION_WORLD_UNITS||old.y<window.SILMOTolerances.PROFILE_MIN_SOURCE_DIMENSION_WORLD_UNITS||old.z<window.SILMOTolerances.PROFILE_MIN_SOURCE_DIMENSION_WORLD_UNITS)throw new Error('Diese Skizze besitzt keine skalierbare Fläche oder Extrusionshöhe.');
     const factors=[values[0]/(worldUnitsToMm(old.x*Math.abs(obj.scale.x))),values[1]/(worldUnitsToMm(old.y*Math.abs(obj.scale.y))),values[2]/(worldUnitsToMm(old.z*Math.abs(obj.scale.z)))];
     if(factors.some(v=>!Number.isFinite(v)||v<=0||v>20000))throw new Error('Die gewünschte Skalierung ist ausserhalb des gültigen Bereichs.');
     recordHistory();obj.geometry.scale(...factors);obj.geometry.computeVertexNormals();obj.geometry.computeBoundingBox();obj.geometry.computeBoundingSphere();
+    const scaleStoredRing=ring=>Array.isArray(ring)?ring.map(point=>[point[0]*factors[0],point[1]*factors[1]]):ring;
+    if(Array.isArray(obj.userData.sketchOutline))obj.userData.sketchOutline=scaleStoredRing(obj.userData.sketchOutline);
+    if(Array.isArray(obj.userData.sketch.outlinePoints))obj.userData.sketch.outlinePoints=scaleStoredRing(obj.userData.sketch.outlinePoints);
+    if(Array.isArray(obj.userData.sketch.holes))obj.userData.sketch.holes=obj.userData.sketch.holes.map(scaleStoredRing);
     obj.userData.baseDimensions={x:mmToWorldUnits(values[0]),y:mmToWorldUnits(values[1]),z:mmToWorldUnits(values[2])};
     obj.userData.sketch.widthMM=values[0];obj.userData.sketch.depthMM=values[1];obj.userData.sketch.extrusionMM=values[2];
     updateObjects();showProperties();updateMoveGizmo();status.textContent='Skizzenmasse aktualisiert: '+values.map(v=>v.toFixed(1)).join(' × ')+' mm.';
   }
+  function selectedSketchContourRings(obj) {
+    const outer=obj.userData.sketchOutline||obj.userData.sketch?.outlinePoints;
+    if(!Array.isArray(outer)||outer.length<3)throw new Error('Bitte einen extrudierten 2D-Skizzenkörper mit gespeicherter Kontur auswählen.');
+    const holes=Array.isArray(obj.userData.sketch?.holes)?obj.userData.sketch.holes:[];
+    return [outer,...holes];
+  }
   function loadSelectedSketchPoints(){
-    const obj=selectedCadObject(),outline=obj.userData.sketchOutline||obj.userData.sketch?.outlinePoints;
-    if(!obj.userData.sketch||!Array.isArray(outline)||outline.length<3)throw new Error('Bitte einen extrudierten 2D-Skizzenkörper mit gespeicherter Kontur auswählen.');
+    const obj=selectedCadObject();
+    if(!obj.userData.sketch)throw new Error('Die Auswahl ist keine bearbeitbare Skizzen-Extrusion.');
+    const rings=selectedSketchContourRings(obj),contourSelect=document.getElementById('sketchContourIndex');
+    const previousContour=Number(contourSelect.value)||0;
+    contourSelect.innerHTML=rings.map((ring,index)=>'<option value="'+index+'">'+(index===0?'Aussenkontur':'Innenloch '+index)+' ('+ring.length+' Punkte)</option>').join('');
+    contourSelect.value=String(Math.min(previousContour,rings.length-1));
     const select=document.getElementById('sketchPointIndex'),current=Number(select.value)||0;
-    select.innerHTML=outline.map((point,index)=>'<option value="'+index+'">Punkt '+(index+1)+'</option>').join('');
-    select.value=String(Math.min(current,outline.length-1));loadSelectedSketchPoint();
-    status.textContent=outline.length+' Konturpunkte geladen. Wähle einen Punkt und ändere seine Koordinaten.';
+    const activeRing=rings[Number(contourSelect.value)||0];
+    select.innerHTML=activeRing.map((point,index)=>'<option value="'+index+'">Punkt '+(index+1)+'</option>').join('');
+    select.value=String(Math.min(current,activeRing.length-1));loadSelectedSketchPoint();
+    status.textContent=rings.length+' Kontur(en) geladen. Du kannst Aussenkontur oder Innenlöcher einzeln bearbeiten.';
   }
   function loadSelectedSketchPoint(){
-    const obj=selectedCadObject(),outline=obj.userData.sketchOutline||obj.userData.sketch?.outlinePoints;
-    if(!obj.userData.sketch||!Array.isArray(outline)||outline.length<3)throw new Error('Bitte zuerst die Konturpunkte laden.');
+    const obj=selectedCadObject(),rings=selectedSketchContourRings(obj);
+    const ringIndex=Number(document.getElementById('sketchContourIndex').value)||0;
+    const outline=rings[ringIndex];
+    if(!outline)throw new Error('Ungültige Konturauswahl.');
     const index=Number(document.getElementById('sketchPointIndex').value);
     if(!Number.isInteger(index)||index<0||index>=outline.length)throw new Error('Ungültiger Konturpunkt.');
     document.getElementById('sketchPointXMM').value=(worldUnitsToMm(outline[index][0])).toFixed(2);
     document.getElementById('sketchPointYMM').value=(worldUnitsToMm(outline[index][1])).toFixed(2);
   }
-  function applySelectedSketchPoint(){
-    const obj=selectedCadObject(),meta=obj.userData.sketch,outline=obj.userData.sketchOutline||meta?.outlinePoints;
-    if(!meta||!Array.isArray(outline)||outline.length<3||!Number.isFinite(meta.extrusionMM))throw new Error('Bitte einen extrudierten 2D-Skizzenkörper mit Kontur auswählen.');
-    const index=Number(document.getElementById('sketchPointIndex').value),xMM=Number(document.getElementById('sketchPointXMM').value),yMM=Number(document.getElementById('sketchPointYMM').value);
-    if(!Number.isInteger(index)||index<0||index>=outline.length)throw new Error('Ungültiger Konturpunkt.');
-    if(!Number.isFinite(xMM)||!Number.isFinite(yMM)||Math.abs(xMM)>2000||Math.abs(yMM)>2000)throw new Error('Punktkoordinaten müssen zwischen −2000 und 2000 mm liegen.');
-    const updated=outline.map(point=>[point[0],point[1]]);updated[index]=[mmToWorldUnits(xMM),mmToWorldUnits(yMM)];
-    const points=updated.map(point=>new THREE.Vector2(point[0],point[1]));
-    let area=0;for(let i=0;i<points.length;i++){const a=points[i],b=points[(i+1)%points.length];area+=a.x*b.y-b.x*a.y;}
-    if(Math.abs(area)<window.SILMOTolerances.SKETCH_OUTLINE_MIN_AREA2_WORLD_UNITS2)throw new Error('Die Kontur wäre entartet. Wähle andere Punktkoordinaten.');
-    for(let i=0;i<points.length;i++)if(points[i].distanceTo(points[(i+1)%points.length])<window.SILMOTolerances.SKETCH_OUTLINE_MIN_EDGE_WORLD_UNITS)throw new Error('Zwei benachbarte Konturpunkte liegen zu nahe beieinander.');
-    const shape=new THREE.Shape();shape.moveTo(points[0].x,points[0].y);points.slice(1).forEach(point=>shape.lineTo(point.x,point.y));shape.closePath();
-    const geometry=new THREE.ExtrudeGeometry(shape,{depth:mmToWorldUnits(meta.extrusionMM),bevelEnabled:false,curveSegments:32});
+  function rebuildSelectedSketchContours(obj,updatedRings,ringIndex,pointIndex,actionLabel='Kontur geändert'){
+    const meta=obj.userData.sketch;
+    if(!Array.isArray(updatedRings[0])||updatedRings[0].length<3||updatedRings.some(ring=>ring.length<3||ring.length>1000))throw new Error('Jede Kontur braucht 3 bis 1000 Punkte.');
+    const vectors=updatedRings.map(ring=>ring.map(point=>new THREE.Vector2(point[0],point[1])));
+    for(const ring of vectors){
+      let area=0;for(let i=0;i<ring.length;i++){const a=ring[i],b=ring[(i+1)%ring.length];area+=a.x*b.y-b.x*a.y;}
+      if(Math.abs(area)<window.SILMOTolerances.SKETCH_OUTLINE_MIN_AREA2_WORLD_UNITS2)throw new Error('Die geänderte Kontur wäre entartet.');
+      for(let i=0;i<ring.length;i++)if(ring[i].distanceTo(ring[(i+1)%ring.length])<window.SILMOTolerances.SKETCH_OUTLINE_MIN_EDGE_WORLD_UNITS)throw new Error('Zwei benachbarte Konturpunkte liegen zu nahe beieinander.');
+    }
+    if(vectors.length>1){
+      const asPoints=ring=>ring.map(point=>({x:point.x,y:point.y}));
+      const outer=asPoints(vectors[0]),holes=vectors.slice(1).map(asPoints);
+      holes.forEach((hole,holeIndex)=>validateSketchHole(outer,hole,holes.filter((_,i)=>i!==holeIndex)));
+    }
+    const shape=new THREE.Shape();shape.moveTo(vectors[0][0].x,vectors[0][0].y);vectors[0].slice(1).forEach(point=>shape.lineTo(point.x,point.y));shape.closePath();
+    vectors.slice(1).forEach(ring=>{const path=new THREE.Path();path.moveTo(ring[0].x,ring[0].y);ring.slice(1).forEach(point=>path.lineTo(point.x,point.y));path.closePath();shape.holes.push(path);});
+    const localExtrusionMM=meta.extrusionMM/Math.max(Math.abs(obj.scale.z),window.SILMOTolerances.SKETCH_EXTRUSION_SCALE_DENOMINATOR_MIN);
+    const geometry=window.SILMOSketchGeometry.createExtrusionGeometry(shape,{depth:mmToWorldUnits(localExtrusionMM),bevelEnabled:false,curveSegments:32});
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
-    if(![size.x,size.y,size.z].every(value=>Number.isFinite(value)&&value>CSG_EPSILON)){geometry.dispose();throw new Error('Die geänderte Kontur erzeugt keine gültige 3D-Geometrie.');}
-    recordHistory();obj.geometry.dispose();obj.geometry=geometry;obj.userData.sketchOutline=updated;meta.outlinePoints=updated;
-    meta.widthMM=worldUnitsToMm(size.x);meta.depthMM=worldUnitsToMm(size.y);meta.areaMM2=worldUnits2ToMm2(Math.abs(area)/2);
-    meta.perimeterMM=points.reduce((sum,point,i)=>sum+worldUnitsToMm(point.distanceTo(points[(i+1)%points.length])),0);
+    if(![size.x,size.y,size.z].every(value=>Number.isFinite(value)&&value>CSG_EPSILON)){geometry.dispose();throw new Error('Die geänderten Konturen erzeugen keine gültige 3D-Geometrie.');}
+    recordHistory();obj.geometry.dispose();obj.geometry=geometry;
+    obj.userData.sketchOutline=updatedRings[0].map(point=>point.slice());meta.outlinePoints=updatedRings[0].map(point=>point.slice());
+    meta.holes=updatedRings.slice(1).map(ring=>ring.map(point=>point.slice()));
+    meta.widthMM=worldUnitsToMm(size.x*Math.abs(obj.scale.x));meta.depthMM=worldUnitsToMm(size.y*Math.abs(obj.scale.y));
+    const ringArea=ring=>Math.abs(ring.reduce((sum,point,i)=>sum+point.x*ring[(i+1)%ring.length].y-ring[(i+1)%ring.length].x*point.y,0))/2;
+    meta.areaMM2=worldUnits2ToMm2((ringArea(vectors[0])-vectors.slice(1).reduce((sum,ring)=>sum+ringArea(ring),0))*Math.abs(obj.scale.x*obj.scale.y));
+    meta.perimeterMM=vectors[0].reduce((sum,point,i)=>{const next=vectors[0][(i+1)%vectors[0].length];return sum+worldUnitsToMm(Math.hypot((next.x-point.x)*obj.scale.x,(next.y-point.y)*obj.scale.y));},0);
     obj.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
-    updateObjects();showProperties();updateMoveGizmo();status.textContent='Konturpunkt '+(index+1)+' geändert. Die Skizzenfläche wurde neu aufgebaut.';
+    updateObjects();showProperties();updateMoveGizmo();status.textContent=actionLabel+'. Alle '+(vectors.length-1)+' Innenöffnung(en) bleiben erhalten.';
     loadSelectedSketchPoints();
+    document.getElementById('sketchContourIndex').value=String(ringIndex);
+    loadSelectedSketchPoints();
+    document.getElementById('sketchPointIndex').value=String(Math.min(pointIndex,updatedRings[ringIndex].length-1));
+    loadSelectedSketchPoint();
+  }
+  function applySelectedSketchPoint(){
+    const obj=selectedCadObject(),meta=obj.userData.sketch;
+    if(!meta||!Number.isFinite(meta.extrusionMM))throw new Error('Bitte einen extrudierten 2D-Skizzenkörper mit Kontur auswählen.');
+    if(obj.userData.edgeTreatment)throw new Error('Die Kontur eines bereits abgerundeten oder abgefasten Körpers kann mit diesem Editor noch nicht bearbeitet werden.');
+    const rings=selectedSketchContourRings(obj),ringIndex=Number(document.getElementById('sketchContourIndex').value)||0;
+    const index=Number(document.getElementById('sketchPointIndex').value),xMM=Number(document.getElementById('sketchPointXMM').value),yMM=Number(document.getElementById('sketchPointYMM').value);
+    if(!Number.isInteger(ringIndex)||ringIndex<0||ringIndex>=rings.length||!Number.isInteger(index)||index<0||index>=rings[ringIndex].length)throw new Error('Ungültige Kontur- oder Punkt-Auswahl.');
+    if(!Number.isFinite(xMM)||!Number.isFinite(yMM)||Math.abs(xMM)>2000||Math.abs(yMM)>2000)throw new Error('Punktkoordinaten müssen zwischen −2000 und 2000 mm liegen.');
+    const updatedRings=rings.map(ring=>ring.map(point=>[point[0],point[1]]));
+    updatedRings[ringIndex][index]=[mmToWorldUnits(xMM),mmToWorldUnits(yMM)];
+    rebuildSelectedSketchContours(obj,updatedRings,ringIndex,index,'Konturpunkt '+(index+1)+' geändert');
+  }
+  function insertSelectedSketchPoint(){
+    const obj=selectedCadObject();
+    if(!obj.userData.sketch||obj.userData.edgeTreatment)throw new Error('Punkte können nur an einer unveränderten Skizzenextrusion eingefügt werden.');
+    const rings=selectedSketchContourRings(obj).map(ring=>ring.map(point=>point.slice()));
+    const ringIndex=Number(document.getElementById('sketchContourIndex').value)||0,index=Number(document.getElementById('sketchPointIndex').value);
+    if(!rings[ringIndex]||!Number.isInteger(index)||index<0||index>=rings[ringIndex].length)throw new Error('Ungültige Kontur- oder Punkt-Auswahl.');
+    if(rings[ringIndex].length>=1000)throw new Error('Diese Kontur hat bereits die maximal erlaubten 1000 Punkte.');
+    const current=rings[ringIndex][index],next=rings[ringIndex][(index+1)%rings[ringIndex].length];
+    rings[ringIndex].splice(index+1,0,[(current[0]+next[0])/2,(current[1]+next[1])/2]);
+    rebuildSelectedSketchContours(obj,rings,ringIndex,index+1,'Neuer Konturpunkt eingefügt');
+  }
+  function removeSelectedSketchContour(){
+    const obj=selectedCadObject();
+    if(!obj.userData.sketch||obj.userData.edgeTreatment)throw new Error('Konturen können nur an einer unveränderten Skizzenextrusion entfernt werden.');
+    const rings=selectedSketchContourRings(obj).map(ring=>ring.map(point=>point.slice()));
+    const ringIndex=Number(document.getElementById('sketchContourIndex').value)||0;
+    if(!Number.isInteger(ringIndex)||ringIndex<=0||ringIndex>=rings.length)throw new Error('Wähle zuerst ein Innenloch aus. Die Aussenkontur kann nicht entfernt werden.');
+    rings.splice(ringIndex,1);
+    rebuildSelectedSketchContours(obj,rings,Math.min(ringIndex,rings.length-1),0,'Innenloch entfernt');
+  }
+  function deleteSelectedSketchPoint(){
+    const obj=selectedCadObject();
+    if(!obj.userData.sketch||obj.userData.edgeTreatment)throw new Error('Punkte können nur an einer unveränderten Skizzenextrusion entfernt werden.');
+    const rings=selectedSketchContourRings(obj).map(ring=>ring.map(point=>point.slice()));
+    const ringIndex=Number(document.getElementById('sketchContourIndex').value)||0,index=Number(document.getElementById('sketchPointIndex').value);
+    if(!rings[ringIndex]||!Number.isInteger(index)||index<0||index>=rings[ringIndex].length)throw new Error('Ungültige Kontur- oder Punkt-Auswahl.');
+    if(rings[ringIndex].length<=3)throw new Error('Eine geschlossene Kontur muss mindestens drei Punkte behalten.');
+    rings[ringIndex].splice(index,1);
+    rebuildSelectedSketchContours(obj,rings,ringIndex,Math.min(index,rings[ringIndex].length-1),'Konturpunkt entfernt');
   }
   function createEdgeTreatment(mode){
     const obj=selectedCadObject(),outline=obj.userData.sketchOutline,meta=obj.userData.sketch;
@@ -2588,62 +4179,103 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     if(!Number.isFinite(radiusMM)||radiusMM<0.1||radiusMM>20)throw new Error('Radius/Fasenbreite muss zwischen 0,1 und 20 mm liegen.');
     const maxAllowed=Math.min(meta.widthMM||2000,meta.depthMM||2000,meta.extrusionMM)/2;
     if(radiusMM>=maxAllowed)throw new Error('Der Wert ist zu gross für diese Skizze. Verwende weniger als '+maxAllowed.toFixed(1)+' mm.');
-    const shape=new THREE.Shape();shape.moveTo(outline[0][0],outline[0][1]);outline.slice(1).forEach(p=>shape.lineTo(p[0],p[1]));shape.closePath();
     const bevel=mmToWorldUnits(radiusMM);
-    const geometry=new THREE.ExtrudeGeometry(shape,{depth:mmToWorldUnits(meta.extrusionMM),bevelEnabled:true,bevelSegments:mode==='fillet'?8:1,bevelSize:bevel,bevelThickness:bevel,curveSegments:32});
-    geometry.translate(0,0,bevel);geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    const geometry=window.SILMOSketchGeometry.createEdgeTreatmentGeometry(
+      outline,mmToWorldUnits(meta.extrusionMM),bevel,mode
+    );
     recordHistory();obj.geometry.dispose();obj.geometry=geometry;
     const size=new THREE.Vector3();geometry.boundingBox.getSize(size);obj.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
     obj.userData.edgeTreatment={type:mode,radiusMM};obj.userData.label=(obj.userData.label||'Skizze')+(mode==='fillet'?' – abgerundet':' – abgefast');
     updateObjects();showProperties();updateMoveGizmo();
     status.textContent=(mode==='fillet'?'Kanten abgerundet':'Kanten abgefast')+' – '+radiusMM.toFixed(1)+' mm. Dies betrifft die Kanten der extrudierten Skizze.';
   }
-  function resampleCadOutline(points,count=64){
-    const pts=points.map(p=>new THREE.Vector2(p[0],p[1]));const lengths=[];let total=0;
-    for(let i=0;i<pts.length;i++){const len=pts[i].distanceTo(pts[(i+1)%pts.length]);lengths.push(len);total+=len;}
-    if(total<window.SILMOTolerances.PROFILE_MIN_PERIMETER_WORLD_UNITS)throw new Error('Profilkontur ist ungültig.');
-    const out=[];
-    for(let k=0;k<count;k++){let target=total*k/count,seg=0;while(seg<lengths.length-1&&target>lengths[seg]){target-=lengths[seg];seg++;}
-      const a=pts[seg],b=pts[(seg+1)%pts.length],t=lengths[seg]>0?target/lengths[seg]:0;out.push(a.clone().lerp(b,t));}
-    return out;
-  }
-  function appendCadTriangle(out,a,b,c){out.push(a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z);}
   function createLoftFromSelection(){
-    const pair=selectedObjects.length===2?selectedObjects.slice():(selected?[selected]:[]);
-    if(pair.length!==2)throw new Error('Für Loft müssen genau zwei Skizzenprofile ausgewählt sein.');
-    const [a,b]=pair;
-    if(!Array.isArray(a.userData.sketchOutline)||!Array.isArray(b.userData.sketchOutline))throw new Error('Beide ausgewählten Objekte brauchen eine gespeicherte geschlossene Skizzenkontur.');
-    a.updateMatrixWorld(true);b.updateMatrixWorld(true);
-    const ra=resampleCadOutline(a.userData.sketchOutline,64).map(p=>a.localToWorld(new THREE.Vector3(p.x,p.y,0)));
-    const rb=resampleCadOutline(b.userData.sketchOutline,64).map(p=>b.localToWorld(new THREE.Vector3(p.x,p.y,0)));
-    const vertices=[];
-    for(let i=0;i<64;i++){const n=(i+1)%64;appendCadTriangle(vertices,ra[i],ra[n],rb[i]);appendCadTriangle(vertices,ra[n],rb[n],rb[i]);}
-    // Close both ends with triangulated planar caps. This supports simple convex and concave profiles.
-    const cap=(ring,reverse)=>{
-      const contour=ring.map(p=>new THREE.Vector2(p.x,p.y));
-      const triangles=THREE.ShapeUtils.triangulateShape(contour,[]);
-      triangles.forEach(tri=>{const ids=reverse?[tri[2],tri[1],tri[0]]:tri;appendCadTriangle(vertices,ring[ids[0]],ring[ids[1]],ring[ids[2]]);});
+    const selection=selectedObjects.length?selectedObjects.slice():(selected?[selected]:[]);
+    if(selection.length<2||selection.length>18||(selection.length-2)%2!==0)throw new Error('Für Loft wähle zwei Aussenprofile. Für Innenlöcher ergänze je Loch zwei weitere Profile: Aussen A, Aussen B, Loch A, Loch B usw.');
+    if(!selection.every(obj=>Array.isArray(obj.userData.sketchOutline)&&obj.userData.sketchOutline.length>=3))throw new Error('Alle ausgewählten Loft-Profile brauchen eine gespeicherte geschlossene Skizzenkontur.');
+    const [a,b]=selection;
+    const worldRing=obj=>{
+      obj.updateMatrixWorld(true);
+      return window.SILMOSketchGeometry.resampleClosedOutline(obj.userData.sketchOutline,64,window.SILMOTolerances.PROFILE_MIN_PERIMETER_WORLD_UNITS)
+        .map(point=>obj.localToWorld(new THREE.Vector3(point.x,point.y,0)));
     };
-    cap(ra,true);cap(rb,false);
-    const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
-    if(!geometry.boundingBox||geometry.boundingBox.isEmpty()){geometry.dispose();throw new Error('Loft konnte keine gültige Geometrie erzeugen.');}
+    const outerA=worldRing(a),outerB=worldRing(b),holesA=[],holesB=[],holeSources=[];
+    for(let index=2;index<selection.length;index+=2){
+      holesA.push(worldRing(selection[index]));
+      holesB.push(worldRing(selection[index+1]));
+      holeSources.push({a:selection[index].uuid,b:selection[index+1].uuid});
+    }
+    const geometry=window.SILMOSketchGeometry.createLoftGeometry(outerA,outerB,{holesA,holesB});
     const loftSize=new THREE.Vector3();geometry.boundingBox.getSize(loftSize);
-    recordHistory();const mesh=new THREE.Mesh(geometry,a.material.clone());mesh.userData={label:'Loft-Körper',baseDimensions:{x:loftSize.x,y:loftSize.y,z:loftSize.z},percent:{x:100,y:100,z:100},loft:{sourceA:a.uuid,sourceB:b.uuid,sections:2}};
+    recordHistory();const mesh=new THREE.Mesh(geometry,a.material.clone());
+    mesh.userData={label:holesA.length?'Loft-Körper mit Innenlöchern':'Loft-Körper',baseDimensions:{x:loftSize.x,y:loftSize.y,z:loftSize.z},percent:{x:100,y:100,z:100},loft:{sourceA:a.uuid,sourceB:b.uuid,sections:2,innerContourCount:holesA.length,sourceHoles:holeSources}};
     scene.add(mesh);objects.push(mesh);selectObject(mesh);updateObjects();showProperties();updateMoveGizmo();
-    status.textContent='Loft erstellt: zwei Skizzenprofile wurden zu einem Körper verbunden.';
+    status.textContent=holesA.length
+      ? 'Hohl-Loft erstellt: '+holesA.length+' Innenkontur(en) wurden als echte Öffnungen verbunden.'
+      : 'Loft erstellt: zwei Skizzenprofile wurden zu einem Körper verbunden.';
   }
+  window.__silmoSketchHoleMetadataSnapshot=()=>objects.filter(obj=>obj.userData?.sketch?.type==='freeform2d').map(obj=>({
+    holeCount:Array.isArray(obj.userData.sketch.holes)?obj.userData.sketch.holes.length:0,
+    outerPointCount:Array.isArray(obj.userData.sketchOutline)?obj.userData.sketchOutline.length:0
+  }));
+  window.__silmoLoftMetadataSnapshot=()=>objects.filter(obj=>obj.userData?.loft).map(obj=>{
+    const loft=obj.userData.loft;
+    const sourceIds=[loft.sourceA,loft.sourceB,...(Array.isArray(loft.sourceHoles)?loft.sourceHoles.flatMap(pair=>[pair.a,pair.b]):[])];
+    return {
+      innerContourCount:loft.innerContourCount,
+      sourceHoleCount:Array.isArray(loft.sourceHoles)?loft.sourceHoles.length:0,
+      sections:loft.sections,
+      sourceReferencesResolve:sourceIds.every(id=>objects.some(source=>source.uuid===id))
+    };
+  });
+  function updateSelectedLoftFromSources(){
+    const loft=selectedCadObject(),metadata=loft.userData.loft;
+    if(!metadata||!metadata.sourceA||!metadata.sourceB)throw new Error('Wähle zuerst einen Loft-Körper mit gespeicherten Quellprofilen aus.');
+    if(loft.userData.locked===true)throw new Error('Der Loft-Körper ist gesperrt. Entsperre ihn zuerst.');
+    const sourceA=objects.find(obj=>obj.uuid===metadata.sourceA),sourceB=objects.find(obj=>obj.uuid===metadata.sourceB);
+    if(!sourceA||!sourceB)throw new Error('Mindestens ein ursprüngliches Aussenprofil fehlt. Der Loft kann nicht automatisch aktualisiert werden.');
+    const sourceHoles=Array.isArray(metadata.sourceHoles)?metadata.sourceHoles:[];
+    if(sourceHoles.length!==(metadata.innerContourCount||0))throw new Error('Die gespeicherte Zuordnung der Loft-Innenprofile ist unvollständig.');
+    const holePairs=sourceHoles.map(pair=>{
+      const a=objects.find(obj=>obj.uuid===pair.a),b=objects.find(obj=>obj.uuid===pair.b);
+      if(!a||!b)throw new Error('Ein ursprüngliches Innenprofil fehlt. Der Loft kann nicht vollständig aktualisiert werden.');
+      return [a,b];
+    });
+    const worldRing=obj=>{
+      if(!Array.isArray(obj.userData.sketchOutline)||obj.userData.sketchOutline.length<3)throw new Error('Ein Quellprofil besitzt keine gültige geschlossene Kontur mehr.');
+      obj.updateMatrixWorld(true);
+      return window.SILMOSketchGeometry.resampleClosedOutline(obj.userData.sketchOutline,64,window.SILMOTolerances.PROFILE_MIN_PERIMETER_WORLD_UNITS)
+        .map(point=>obj.localToWorld(new THREE.Vector3(point.x,point.y,0)));
+    };
+    const holesA=holePairs.map(pair=>worldRing(pair[0])),holesB=holePairs.map(pair=>worldRing(pair[1]));
+    let geometry;
+    try {
+      geometry=window.SILMOSketchGeometry.createLoftGeometry(worldRing(sourceA),worldRing(sourceB),{holesA,holesB});
+      loft.updateMatrixWorld(true);
+      geometry.applyMatrix4(loft.matrixWorld.clone().invert());
+      geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+      const size=new THREE.Vector3();geometry.boundingBox.getSize(size);
+      if(![size.x,size.y,size.z].every(value=>Number.isFinite(value)&&value>CSG_EPSILON))throw new Error('Die aktualisierten Profile erzeugen keine gültige Loft-Geometrie.');
+      recordHistory();
+      loft.geometry.dispose();loft.geometry=geometry;
+      loft.userData.baseDimensions={x:size.x,y:size.y,z:size.z};
+      loft.userData.loft={...metadata,innerContourCount:holePairs.length,sourceHoles:sourceHoles.map(pair=>({a:pair.a,b:pair.b}))};
+      updateObjects();showProperties();updateMoveGizmo();
+      status.textContent='Loft aktualisiert: '+(holePairs.length?'Aussen- und Innenprofile':'Aussenprofile')+' wurden aus den aktuellen Quellskizzen neu aufgebaut.';
+    } catch(error) {
+      if(geometry&&geometry!==loft.geometry)geometry.dispose();
+      throw error;
+    }
+  }
+
   function createSweepFromSelection(){
     const pair=selectedObjects.length===2?selectedObjects.slice():[];
     if(pair.length!==2)throw new Error('Für Sweep genau zwei Objekte auswählen: zuerst Profil, danach Pfad.');
     const [profile,pathObject]=pair,outline=profile.userData.sketchOutline,pathData=pathObject.userData.sketch;
     if(!Array.isArray(outline)||!pathData||!Array.isArray(pathData.pathPoints)||pathData.pathPoints.length<2)throw new Error('Sweep braucht ein geschlossenes Profil und eine gespeicherte Linien-/Kurvenbahn.');
     profile.updateMatrixWorld(true);pathObject.updateMatrixWorld(true);
-    const shape=new THREE.Shape();shape.moveTo(outline[0][0],outline[0][1]);outline.slice(1).forEach(p=>shape.lineTo(p[0],p[1]));shape.closePath();
     const points=pathData.pathPoints.map(p=>pathObject.localToWorld(new THREE.Vector3(p[0],p[1],p[2])));
-    const curve=new THREE.CatmullRomCurve3(points);
-    const geometry=new THREE.ExtrudeGeometry(shape,{steps:Math.max(48,points.length*16),bevelEnabled:false,extrudePath:curve,curveSegments:24});
-    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
-    if(!geometry.boundingBox||geometry.boundingBox.isEmpty()){geometry.dispose();throw new Error('Sweep konnte keine gültige Geometrie erzeugen.');}
+    const geometry=window.SILMOSketchGeometry.createSweepGeometry(outline,points);
     const sweepSize=new THREE.Vector3();geometry.boundingBox.getSize(sweepSize);
     recordHistory();const mesh=new THREE.Mesh(geometry,profile.material.clone());mesh.userData={label:'Sweep-Körper',baseDimensions:{x:sweepSize.x,y:sweepSize.y,z:sweepSize.z},percent:{x:100,y:100,z:100},sweep:{profile:profile.uuid,path:pathObject.uuid}};
     scene.add(mesh);objects.push(mesh);selectObject(mesh);updateObjects();showProperties();updateMoveGizmo();
@@ -2668,10 +4300,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         }
         const points = sketchDraft.points.map(point => point.clone());
         if (points.length < 2) throw new Error('Eine Linie oder Kurve braucht mindestens zwei Punkte.');
-        const curve = tool === 'line2d' ? new THREE.LineCurve3(points[0], points[points.length - 1]) : new THREE.CatmullRomCurve3(points);
-        const radius = mmToWorldUnits(diameterMM) / 2;
-        geometry = new THREE.TubeGeometry(curve, tool === 'line2d' ? 24 : Math.max(24, Math.min(300, points.length * 4)), radius, 8, false);
-        geometry.computeBoundingBox();
+        const pathData=points.map(point=>[point.x,point.y,point.z]);
+        const pathResult=window.SILMOSketchGeometry.createPathTubeGeometry(pathData,tool,mmToWorldUnits(diameterMM)/2,tool==='line2d'?24:Math.max(24,Math.min(300,points.length*4)),8);
+        const curve=pathResult.curve;
+        geometry=pathResult.geometry;
         const center = geometry.boundingBox.getCenter(new THREE.Vector3());
         geometry.translate(-center.x, -center.y, -center.z);
         meshPosition.copy(center);
@@ -2699,7 +4331,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           perimeter += point.distanceTo(next);
         });
         const area = Math.abs(twiceArea) / 2;
-        if (area < 0.0001) throw new Error('Die Freiform ist zu klein oder bildet keine geschlossene Fläche.');
+        if (area < window.SILMOTolerances.FREEFORM_MIN_AREA_WORLD_UNITS2) throw new Error('Die Freiform ist zu klein oder bildet keine geschlossene Fläche.');
         const heightMM = Number(document.getElementById('sketchHeightMM').value);
         if (!Number.isFinite(heightMM) || heightMM < 0.1 || heightMM > 2000) throw new Error('Die Extrusionshöhe muss zwischen 0,1 und 2000 mm liegen.');
         const shape = new THREE.Shape();
@@ -2709,7 +4341,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const localHoles = Array.isArray(sketchDraft.holes) ? sketchDraft.holes : [];
         const holeMetadata = [];
         for (const holePoints of localHoles) {
-          if (!Array.isArray(holePoints) || holePoints.length < 3) continue;
+          validateSketchHole(points,holePoints,localHoles.filter(candidate=>candidate!==holePoints));
           const holeVectors = holePoints.map(point => new THREE.Vector2(point.x - centerX, point.y - centerY));
           const holePath = new THREE.Path();
           holePath.moveTo(holeVectors[0].x, holeVectors[0].y);
@@ -2718,8 +4350,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           shape.holes.push(holePath);
           holeMetadata.push(holeVectors.map(point => [point.x, point.y]));
         }
-        geometry = new THREE.ExtrudeGeometry(shape, { depth: mmToWorldUnits(heightMM), bevelEnabled: false });
-        geometry.computeVertexNormals();
+        geometry = window.SILMOSketchGeometry.createExtrusionGeometry(shape, { depth: mmToWorldUnits(heightMM), bevelEnabled: false });
         meshPosition.set(centerX, centerY, 0);
         sketchMetadata = {
           type: 'freeform2d', points: localPoints.length, holes: holeMetadata,
@@ -2733,25 +4364,15 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         label = 'Freiform-Skizze';
       } else {
         const dims = sketchDimensionsFromInputs();
-        const shape = new THREE.Shape();
-        if (tool === 'circle') {
-          shape.absarc(0, 0, dims.width / 2, 0, Math.PI * 2, false);
-        } else if (tool === 'ellipse') {
-          shape.absellipse(0, 0, dims.width / 2, dims.depth / 2, 0, Math.PI * 2, false, 0);
-        } else if (tool === 'triangle') {
-          const x = dims.width / 2, y = dims.depth / 2;
-          shape.moveTo(-x, -y); shape.lineTo(x, -y); shape.lineTo(0, y); shape.closePath();
-        } else if(tool==='roundedRectangle') {
+        let cornerRadius = 0;
+        if (tool === 'roundedRectangle') {
           const radiusMM=Number(document.getElementById('sketchCornerRadiusMM').value);
           if(!Number.isFinite(radiusMM)||radiusMM<0||radiusMM>worldUnitsToMm(Math.min(dims.width,dims.depth))/2) throw new Error('Der Eckenradius muss zwischen 0 und der halben kleineren Seitenlänge liegen.');
-          addRoundedRectPath(shape,dims.width,dims.depth,mmToWorldUnits(radiusMM));
-        } else {
-          const x = dims.width / 2, y = dims.depth / 2;
-          shape.moveTo(-x, -y); shape.lineTo(x, -y); shape.lineTo(x, y); shape.lineTo(-x, y); shape.closePath();
+          cornerRadius = mmToWorldUnits(radiusMM);
         }
-        geometry = new THREE.ExtrudeGeometry(shape, { depth: dims.height, bevelEnabled: false, curveSegments: 64 });
-        geometry.computeVertexNormals();
-        const profileOutline=shape.getPoints(32);if(profileOutline.length>1&&profileOutline[0].distanceTo(profileOutline[profileOutline.length-1])<1e-7)profileOutline.pop();
+        const shape = window.SILMOSketchGeometry.createParametricProfile(tool, dims, cornerRadius);
+        geometry = window.SILMOSketchGeometry.createExtrusionGeometry(shape, { depth: dims.height, bevelEnabled: false, curveSegments: 64 });
+        const profileOutline=shape.getPoints(32);if(profileOutline.length>1&&profileOutline[0].distanceTo(profileOutline[profileOutline.length-1])<window.SILMOTolerances.SKETCH_PROFILE_CLOSURE_WORLD_UNITS)profileOutline.pop();
         meshPosition.set(sketchDraft.centerX, sketchDraft.centerY, 0);
         sketchMetadata = {
           type: tool,
@@ -2793,10 +4414,15 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       mesh.userData.percent = { x: 100, y: 100, z: 100 };
       mesh.userData.label = label;
       mesh.userData.sketch = sketchMetadata;
+      document.getElementById('clickContourHoleToggle').disabled = true;
       if(Array.isArray(sketchMetadata.outlinePoints)&&sketchMetadata.outlinePoints.length>=3)mesh.userData.sketchOutline=sketchMetadata.outlinePoints;
       scene.add(mesh);
       objects.push(mesh);
       selectObject(mesh);
+      if (Array.isArray(sketchMetadata?.outlinePoints) && sketchMetadata.outlinePoints.length >= 3) {
+        mesh.userData.geometryKernel = 'three-mesh-pending-occt';
+        void upgradeSketchMeshToOcct(mesh, sketchMetadata);
+      }
       clearSketchPreview();
       sketchDraft = null;
       document.getElementById('createSketchSolid').disabled = true;
@@ -2846,7 +4472,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     clearSketchPreview();
     sketchDraft = null;
     sketchDrawing = false;
-    clickContourPoints = []; clickContourMode = false;
+    clickContourPoints = []; clickContourMode = false; clickContourHoleMode = false;
+    document.getElementById('clickContourHoleToggle').disabled = true;
+    document.getElementById('clickContourToggle').disabled = false;
     document.getElementById('clickContourToggle').setAttribute('aria-pressed','false');
     document.getElementById('clickContourToggle').textContent = '＋ Punktmodus einschalten';
     document.getElementById('clickContourUndo').disabled = true;
@@ -2874,11 +4502,16 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   document.getElementById('loadSketchDimensions').addEventListener('click',()=>{try{loadSelectedSketchDimensions();}catch(e){status.textContent=e.message;}});
   document.getElementById('applySketchDimensions').addEventListener('click',()=>{try{applySelectedSketchDimensions();}catch(e){status.textContent='Masse konnten nicht übernommen werden: '+e.message;}});
   document.getElementById('loadSketchPoints').addEventListener('click',()=>{try{loadSelectedSketchPoints();}catch(e){status.textContent=e.message;}});
+  document.getElementById('sketchContourIndex').addEventListener('change',()=>{try{loadSelectedSketchPoints();}catch(e){status.textContent=e.message;}});
   document.getElementById('sketchPointIndex').addEventListener('change',()=>{try{loadSelectedSketchPoint();}catch(e){status.textContent=e.message;}});
   document.getElementById('applySketchPoint').addEventListener('click',()=>{try{applySelectedSketchPoint();}catch(e){status.textContent='Punkt konnte nicht übernommen werden: '+e.message;}});
+  document.getElementById('insertSketchPoint').addEventListener('click',()=>{try{insertSelectedSketchPoint();}catch(e){status.textContent='Punkt konnte nicht eingefügt werden: '+e.message;}});
+  document.getElementById('deleteSketchPoint').addEventListener('click',()=>{try{deleteSelectedSketchPoint();}catch(e){status.textContent='Punkt konnte nicht entfernt werden: '+e.message;}});
+  document.getElementById('removeSketchHole').addEventListener('click',()=>{try{removeSelectedSketchContour();}catch(e){status.textContent='Innenloch konnte nicht entfernt werden: '+e.message;}});
   document.getElementById('applyEdgeFillet').addEventListener('click',()=>{try{createEdgeTreatment('fillet');}catch(e){status.textContent='Abrundung nicht möglich: '+e.message;}});
   document.getElementById('applyEdgeChamfer').addEventListener('click',()=>{try{createEdgeTreatment('chamfer');}catch(e){status.textContent='Fase nicht möglich: '+e.message;}});
   document.getElementById('createLoft').addEventListener('click',()=>{try{createLoftFromSelection();}catch(e){status.textContent='Loft nicht möglich: '+e.message;}});
+  document.getElementById('updateLoftFromSources').addEventListener('click',()=>{try{updateSelectedLoftFromSources();}catch(e){status.textContent='Loft konnte nicht aktualisiert werden: '+e.message;}});
   document.getElementById('createSweep').addEventListener('click',()=>{try{createSweepFromSelection();}catch(e){status.textContent='Sweep nicht möglich: '+e.message;}});
   document.getElementById('applySketchRelation').addEventListener('click',()=>{try{applySketchRelation();}catch(e){status.textContent='Bedingung nicht möglich: '+e.message;}});
   document.getElementById('loadPathLength').addEventListener('click',()=>{try{loadSelectedPathLength();}catch(e){status.textContent=e.message;}});
@@ -2889,6 +4522,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   document.getElementById('subtractSelected').addEventListener('click',()=>runBooleanOperation('subtract'));
   document.getElementById('cancelSketch').addEventListener('click', () => {
     sketchMode = false; sketchDrawing = false; sketchPointerId = null; sketchDraft = null;
+    clickContourMode=false; clickContourHoleMode=false; clickContourPoints=[];
+    document.getElementById('clickContourHoleToggle').disabled=true;
+    document.getElementById('clickContourToggle').disabled=false;
     updateGizmoModeButton();
     rotationAngleLabel.hidden = false;
     document.getElementById('sketchViewLockNote').textContent = 'Zeichenmodus beendet. Kamera- und Objektdrehung sind wieder verfügbar.';
@@ -2975,7 +4611,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       ...obj.userData.sketch,
       actualWidthMM: worldUnitsToMm(size.x),
       actualDepthMM: worldUnitsToMm(size.y),
-      actualHeightMM: worldUnitsToMm(size.z)
+      actualHeightMM: worldUnitsToMm(size.z),
+      geometryKernel: obj.userData.geometryKernel || 'three-mesh',
+      occtVolumeMM3: obj.userData.occtVolumeMM3 ?? null
     };
   };
 
@@ -2985,7 +4623,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const a = ray.direction.dot(ray.direction), b = ray.direction.dot(direction);
     const c = direction.dot(direction), d = ray.direction.dot(w0), e = direction.dot(w0);
     const denom = a*c - b*b;
-    if (Math.abs(denom) < 1e-6) return -e / c;
+    if (Math.abs(denom) < window.SILMOTolerances.SKETCH_RAY_PARALLEL_DENOMINATOR_MIN) return -e / c;
     return (a*e - b*d) / denom;
   }
 
@@ -2996,16 +4634,16 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       setPointerRay(e);
       if (!raycaster.ray.intersectPlane(sketchPlane, sketchPoint)) return;
       const point = straightenContourPoint(snapSketchPoint(sketchPoint.clone()));
-      if (clickContourPoints.length && clickContourPoints[0].distanceTo(point) < 0.025 && clickContourPoints.length >= 3) {
+      if (clickContourPoints.length && clickContourPoints[0].distanceTo(point) < window.SILMOTolerances.CLICK_CONTOUR_CLOSE_DISTANCE_WORLD_UNITS && clickContourPoints.length >= 3) {
         document.getElementById('clickContourFinish').click();
         return;
       }
-      if (!clickContourPoints.length || clickContourPoints[clickContourPoints.length-1].distanceTo(point) > 0.01) clickContourPoints.push(point);
+      if (!clickContourPoints.length || clickContourPoints[clickContourPoints.length-1].distanceTo(point) > window.SILMOTolerances.CLICK_CONTOUR_POINT_MIN_DISTANCE_WORLD_UNITS) clickContourPoints.push(point);
       document.getElementById('clickContourUndo').disabled = clickContourPoints.length === 0;
       document.getElementById('clickContourFinish').disabled = clickContourPoints.length < 3;
       document.getElementById('sketchStatus').textContent = clickContourPoints.length + ' Konturpunkte gesetzt. Klicke weitere Ecken oder schliesse die Kontur ab.';
       if (clickContourPoints.length >= 3) {
-        sketchDraft = { type:'freeform2d', points:clickContourPoints.map(p=>p.clone()) };
+        if (!clickContourHoleMode) sketchDraft = { type:'freeform2d', points:clickContourPoints.map(p=>p.clone()), holes:[] };
         updateSketchPreview();
       }
       return;
@@ -3046,6 +4684,56 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const rotationHit = rotationHits.find(hit => hit.object.userData.rotationAxis);
       const gizmoHits = moveGizmo ? raycaster.intersectObjects(moveGizmo.children, true) : [];
       const axisHit = gizmoHits.find(hit => hit.object.userData.axis || (hit.object.parent && hit.object.parent.userData.axis));
+      if (occtFacePickMode && window.__silmoOcctFaceOverlay?.sourceMesh === selected) {
+        const faceHits = raycaster.intersectObjects(window.__silmoOcctFaceOverlay.group.children, false);
+        const faceIndex = faceHits[0]?.object.userData.occtFaceIndex;
+        if (Number.isInteger(faceIndex)) {
+          window.__silmoOcctFaceOverlay.selectedIndex = faceIndex;
+          updateOcctFaceHighlight();
+          status.textContent = 'Native Fläche ' + (faceIndex + 1) + ' ausgewählt.';
+        } else {
+          status.textContent = 'Keine Fläche getroffen. Klicke auf die sichtbare Oberfläche des Körpers.';
+        }
+        dragging = false;
+        draggingObject = false;
+        rotatingView = false;
+        activeAxis = null;
+        pointerId = null;
+        canvas.style.cursor = 'crosshair';
+        e.preventDefault();
+        return;
+      }
+      if (occtEdgePickMode && window.__silmoOcctEdgeOverlay?.sourceMesh === selected) {
+        const previousThreshold = raycaster.params.Line.threshold;
+        raycaster.params.Line.threshold = window.SILMOUnits.mmToWorldUnits(1.8);
+        const edgeHits = raycaster.intersectObjects(window.__silmoOcctEdgeOverlay.group.children, false);
+        raycaster.params.Line.threshold = previousThreshold;
+        // Der Three.js-Line-Raycaster ist je nach Zoomstufe und Gerätedichte
+        // empfindlich. Ergänzend prüfen wir den tatsächlichen Bildschirmabstand
+        // zur projizierten nativen Kanten-Polylinie (max. 14 CSS-Pixel).
+        const screenHit = findOcctEdgeAtScreenPoint(e.clientX, e.clientY);
+        // Der Bildschirmabstand unterscheidet nahe parallele Kanten zuverlässiger
+        // als der räumliche Linien-Raycaster, der mehrere Kanten treffen kann.
+        const edgeIndex = screenHit
+          ? screenHit.edgeIndex
+          : edgeHits[0]?.object.userData.occtEdgeIndex;
+        if (Number.isInteger(edgeIndex)) {
+          const picked = window.__silmoOcctEdgeOverlay.selectedIndices;
+          if (picked.has(edgeIndex)) picked.delete(edgeIndex); else picked.add(edgeIndex);
+          updateOcctEdgeHighlight();
+          status.textContent = 'Kante ' + (edgeIndex + 1) + (picked.has(edgeIndex) ? ' ausgewählt.' : ' abgewählt.');
+        } else {
+          status.textContent = 'Keine Kante getroffen. Zoome näher heran oder klicke direkt auf eine blaue Kante.';
+        }
+        dragging = false;
+        draggingObject = false;
+        rotatingView = false;
+        activeAxis = null;
+        pointerId = null;
+        canvas.style.cursor = 'crosshair';
+        e.preventDefault();
+        return;
+      }
       const hits = raycaster.intersectObjects(objects, false);
       if (rotationHit && selected && getSelectedTargets().length) {
         const axis = rotationHit.object.userData.rotationAxis;
@@ -3132,7 +4820,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const tool = document.getElementById('sketchTool').value;
         if (tool === 'line3d' || tool === 'curve2d') {
           const points = sketchDraft?.type === tool ? sketchDraft.points : [sketchStart.clone()];
-          if (points[points.length - 1].distanceTo(sketchPoint) > 0.02) {
+          if (points[points.length - 1].distanceTo(sketchPoint) > window.SILMOTolerances.SKETCH_DRAW_POINT_MIN_DISTANCE_WORLD_UNITS) {
             points.push(sketchPoint.clone());
             sketchDraft = { type: tool, points };
             updateSketchPreview();
@@ -3142,7 +4830,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           updateSketchPreview();
         } else if (tool === 'freeform2d') {
           const points = sketchDraft?.type === 'freeform2d' ? sketchDraft.points : [sketchStart.clone()];
-          if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > 0.02) {
+          if (!points.length || points[points.length - 1].distanceTo(sketchPoint) > window.SILMOTolerances.SKETCH_DRAW_POINT_MIN_DISTANCE_WORLD_UNITS) {
             points.push(sketchPoint.clone());
             if (points.length > 500) points.splice(1, points.length - 500);
             sketchDraft = { type: 'freeform2d', points };
@@ -3348,7 +5036,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         const size = new THREE.Vector3(); box.getSize(size);
         const mm = [size.x,size.y,size.z].map(worldUnitsToMm);
         dimensionText = mm.map(v => Number.isFinite(v) ? v.toFixed(2) : 'ungültig').join(' × ') + ' mm';
-        if (mm.some(v => !Number.isFinite(v) || v < 0.01)) warnings.push('Abmessungen ungültig oder kleiner als 0,01 mm');
+        if (mm.some(v => !Number.isFinite(v) || v < window.SILMOTolerances.PRINT_MIN_MODEL_DIMENSION_MM)) warnings.push('Abmessungen ungültig oder kleiner als 0,01 mm');
         const bedTolerance = window.SILMOTolerances.PRINT_BED_BOUNDS_WORLD_UNITS;
         if (box.min.x < -halfW-bedTolerance || box.max.x > halfW+bedTolerance || box.min.y < -halfD-bedTolerance || box.max.y > halfD+bedTolerance) warnings.push('ausserhalb des Druckbetts');
         if (box.min.z < -window.SILMOTolerances.PRINT_BED_BOUNDS_WORLD_UNITS) warnings.push('unterhalb der Druckbettfläche');
@@ -3387,6 +5075,17 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   function isTypingTarget(target) {
     return target && (target.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(target.tagName));
   }
+  function releaseOcctObjectHandle(obj) {
+    const handles = window.__silmoOcctObjectHandles;
+    const shapeId = handles?.get(obj);
+    if (handles) handles.delete(obj);
+    if (shapeId !== undefined && shapeId !== null && window.__silmoOcctClient) {
+      window.__silmoOcctClient.releaseShape(shapeId).catch(error => {
+        console.warn('OCCT-Körper konnte nicht sofort freigegeben werden:', error);
+      });
+    }
+  }
+
   function deleteSelectedObjects() {
     const requested = selectedObjects.length ? selectedObjects.slice() : (selected ? [selected] : []);
     const targets = requested.filter(obj => obj.userData.locked !== true);
@@ -3396,6 +5095,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
     recordHistory();
     targets.forEach(obj => {
+      releaseOcctObjectHandle(obj);
       const idx = objects.indexOf(obj);
       if (idx >= 0) objects.splice(idx, 1);
       scene.remove(obj);
@@ -3541,16 +5241,16 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const clean=[];
     for(const point of points){
       const last=clean[clean.length-1];
-      if(!last||Math.hypot(point[0]-last[0],point[1]-last[1],point[2]-last[2])>1e-5)clean.push(point);
+      if(!last||Math.hypot(point[0]-last[0],point[1]-last[1],point[2]-last[2])>window.SILMOTolerances.HEART_OUTLINE_POINT_DEDUPLICATION_WORLD_UNITS)clean.push(point);
     }
-    if(clean.length>2&&Math.hypot(clean[0][0]-clean[clean.length-1][0],clean[0][1]-clean[clean.length-1][1],clean[0][2]-clean[clean.length-1][2])<1e-5)clean.pop();
+    if(clean.length>2&&Math.hypot(clean[0][0]-clean[clean.length-1][0],clean[0][1]-clean[clean.length-1][1],clean[0][2]-clean[clean.length-1][2])<window.SILMOTolerances.HEART_OUTLINE_POINT_DEDUPLICATION_WORLD_UNITS)clean.pop();
     if(clean.length<8)return {recognized:false,score:0,pointCount:clean.length,reason:'Zeichne eine zusammenhängende Herz-Umrandung mit mindestens acht Punkten.'};
     const spans=[0,1,2].map(axis=>Math.max(...clean.map(p=>p[axis]))-Math.min(...clean.map(p=>p[axis])));
     const pairs=[[0,1],[0,2],[1,2]].sort((a,b)=>spans[b[0]]*spans[b[1]]-spans[a[0]]*spans[a[1]]);
     const axes=pairs[0],xs=clean.map(p=>p[axes[0]]),ys=clean.map(p=>p[axes[1]]);
     const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
-    const width=maxX-minX,height=maxY-minY,ratio=width/Math.max(height,1e-9);
-    if(width<1e-5||height<1e-5||ratio<0.35||ratio>2.5)return {recognized:false,score:0,pointCount:clean.length,aspectRatio:ratio,reason:'Die Form braucht eine erkennbare Breite und Höhe.'};
+    const width=maxX-minX,height=maxY-minY,ratio=width/Math.max(height,window.SILMOTolerances.HEART_OUTLINE_HEIGHT_DENOMINATOR_MIN_WORLD_UNITS);
+    if(width<window.SILMOTolerances.HEART_OUTLINE_MIN_SPAN_WORLD_UNITS||height<window.SILMOTolerances.HEART_OUTLINE_MIN_SPAN_WORLD_UNITS||ratio<0.35||ratio>2.5)return {recognized:false,score:0,pointCount:clean.length,aspectRatio:ratio,reason:'Die Form braucht eine erkennbare Breite und Höhe.'};
     const polygon=clean.map(p=>[(p[axes[0]]-minX)/width,(p[axes[1]]-minY)/height]);
     const inside=(x,y,poly)=>{
       let hit=false;
@@ -3622,7 +5322,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   };
   // Testzugang: nutzt denselben Freiform- und Extrusionsweg wie die normale Zeichenfunktion.
   window.__silmoTestRecognizeHeart=points=>classifyHeartOutline(points);
-  window.__silmoTestSimplifySketchPolyline=points=>simplifySketchPolyline(points.map(point=>new THREE.Vector3(Number(point[0]),Number(point[1]),0)),0.5).map(point=>[point.x,point.y]);
+  window.__silmoTestSimplifySketchPolyline=points=>simplifySketchPolyline(points.map(point=>new THREE.Vector3(Number(point[0]),Number(point[1]),0)),window.SILMOTolerances.SKETCH_POLYLINE_SIMPLIFICATION_TOLERANCE_MM).map(point=>[point.x,point.y]);
   window.__silmoTestCreateHeartSketch=points=>{
     document.getElementById('sketchTool').value='freeform2d';
     sketchDraft={type:'freeform2d',points:points.map(p=>new THREE.Vector3(Number(p[0]),Number(p[1]),0))};

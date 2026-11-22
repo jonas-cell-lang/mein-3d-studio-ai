@@ -1,6 +1,6 @@
 # SILMO – Modul-Extraktionskarte
 
-**Stand:** Entwicklungsbranch `phase1/central-units-api`  
+**Stand:** Entwicklungsbranch `phase1/history-foundation`  
 **Zweck:** Die grosse Inline-Anwendung schrittweise aufteilen, ohne ihre Laufzeitreihenfolge, Zuständigkeiten oder vorhandenen CAD-Funktionen zu beschädigen.
 
 ## 1. Bereits ausgelagerte Module
@@ -12,11 +12,17 @@
 | `src/project-schema.js` | Projekt-Hülle und serialisierte Geometrie validieren | Keine Three.js-Abhängigkeit |
 | `src/project-geometry.js` | BufferGeometry serialisieren/wiederherstellen; Union-Formteile speichern/wiederherstellen | Factory erhält `THREE` und `SILMOProjectSchema`; stellt `window.SILMOProjectGeometry` bereit |
 | `src/project-io.js` | Projektdateien speichern und öffnen; alle Objekte vor dem Ersetzen des aktuellen Modells aufbauen | Factory erhält Three.js, Schema und Projektgeometrie; der App-Zustand wird über explizite Getter-/Commit-/UI-Callbacks angebunden |
+| `src/history.js` | Undo-/Redo-Stack, Begrenzung, Redo-Verwerfung und Snapshot-Freigabe | Factory erhält `captureState`, `restoreState` und `disposeState`; Three.js und DOM bleiben ausserhalb des Moduls |
+| `src/stl-io.js` | STL-Dateien importieren und als ASCII-STL exportieren; Einheitenumrechnung und temporäre Exportgeometrien verwalten | Factory erhält Three.js und Einheiten-API; App-Zustand wird über Objekt-/Status-Callbacks angebunden |
 | `src/csg.js` | BSP-basierte Boolesche Geometrieoperationen (Verbindung und Differenz) | Factory erhält `THREE` und `SILMOTolerances`; stellt `window.SILMOCSG.combineMeshes` bereit |
+| `src/primitive-geometry.js` | Erzeugung der sechs vorhandenen Grundkörper inklusive Z-Höhenorientierung und Bounding Box | Factory erhält `THREE`; stellt `window.SILMOPrimitiveGeometry.createPrimitiveGeometry(type)` bereit |
+| `src/sketch-geometry.js` | Parametrische 2D-Profile, Konturpfade, Extrusion, Loft, Sweep, CAD-Pfadkurven/-rohre und Hohlrahmen-Offset-/Extrusionsgeometrie | Factory erhält `THREE`; stellt Profil-, Pfad-, Konturrahmen-, Extrusions-, Loft- und Sweep-Factories bereit |
 | `src/developer-diagnostics.js` | Diagnosefenster, Laufzeit- und Bedienprotokoll | Eigenständige DOM-/Browser-IIFE; bleibt im Dokumentkopf |
 | `src/tool-navigation.js` | Hauptnavigation, Werkzeugbereiche und Unterreiter organisieren | Eigenständige DOM-IIFE; wird vor Three.js ausgeführt |
 | `src/tutorial.js` | Geführter Lernkurs und Erfolgskontrolle | Eigenständige DOM-IIFE; nutzt vorhandene `window`-Test-/App-Schnittstellen |
 | `src/image-studio.js` | 2D-Bildbereich, Konturerkennung und Übergabe an CAD | Eigenständige DOM-/Canvas-IIFE; Übergabe über `window.__silmoImageStudioCreateFromPoints` |
+
+Der Undo-/Redo-Stack ist in `src/history.js` ausgelagert. Die Snapshots bleiben vorerst vollständige Kopien der bestehenden Mesh-Geometrien und Materialien; eine befehlsbasierte Historie und echte Speicher-/Leistungs-Baselines sind noch offen.
 
 Die ausgelagerten Dateien werden in ihrer bisherigen Ausführungsreihenfolge geladen. Die lokalen Pages-Prüfungen vergleichen die vorhandenen Dateien und die Browser-Tests blockieren externe HTTPS-Zugriffe.
 
@@ -26,11 +32,13 @@ Das verbleibende Inline-CAD-Skript hält weiterhin den zentralen Laufzeitzustand
 
 - Three.js-Szene, Kamera, Renderer und Animationsschleife
 - Modellobjektliste, Auswahl und Mehrfachauswahl
-- Undo/Redo und Zustandsaufnahme
+- Objektanlage, Materialzuweisung und Auswahl bleiben im Hauptskript; die reine Geometrieerzeugung der sechs Grundkörper liegt jetzt in `src/primitive-geometry.js`
+- Zustandsaufnahme und Anbindung der Undo-/Redo-History über `src/history.js`
 - Transformationen, Gizmos, Ausrichtung und Gruppierung
 - Boolesche Geometrieoperationen und BSP-CSG
-- Skizzen, Extrusion, Kontur- und Pfadwerkzeuge
-- STL-Import/-Export und andere dateiformatbezogene Abläufe (Projektdatei-Speichern/-Öffnen ist bereits in `src/project-io.js` ausgelagert)
+- Skizzenaufnahme, Constraints, Profilaufbau, Metadaten und Modell-Commit bleiben im Hauptskript; die beiden regulären 2D-Skizzen-Extrusionspfade verwenden jetzt `src/sketch-geometry.js`
+- Kontur- und Pfadwerkzeuge: Profil-/Kurven-/Rohr-/Loft-/Sweep-Geometrie liegt nun in `src/sketch-geometry.js`; Pfadbearbeitung, Auswahlprüfung, Objekttransformationen, History, Material, Szene-Commit und Statusmeldungen bleiben im Hauptskript
+- STL-Datei-Auswahl, Drag-and-drop und Web-Link-Interaktion; der eigentliche STL-Import/-Export ist in `src/stl-io.js` ausgelagert
 - DOM-Ereignisse und Statusmeldungen
 
 Diese Bereiche sollten nicht als grosse Textblöcke verschoben werden. Zuerst müssen ihre Daten- und Seiteneffekt-Abhängigkeiten als explizite Schnittstellen sichtbar werden.
@@ -51,9 +59,11 @@ Die Browser-Regression prüft weiterhin Speichern, Wiederöffnen, Objektanzahl u
 
 ## 4. Weitere spätere Kandidaten
 
+Der STL-Import/-Export ist jetzt als `src/stl-io.js` ausgelagert. Dateiauswahl, Drag-and-drop und Web-Link-Interaktion bleiben im Hauptskript; Geometrieparsing, mm-/Welteinheiten-Konvertierung, Exportkopien und Statusmeldungen laufen über explizite Callbacks.
+
 Der BSP-CSG-Kern ist als `src/csg.js` ausgelagert. Der vollständige Browserlauf hat sowohl die bestehende Union-Prüfung als auch die neue Differenz-Prüfung erfolgreich bestanden.
 
-1. Geometrie- und Skizzenfunktionen in getrennte Werkzeuge, sobald gemeinsame Modelloperationen über eine stabile API laufen.
+1. Skizzen-/Extrusions- und Pfadfunktionen in getrennte Werkzeuge, sobald gemeinsame Modelloperationen über eine stabile API laufen.
 2. Import-/Export-Adapter weiter trennen, falls sie unabhängig von Projektdatei-I/O werden können.
 3. Renderer-/Kamera-/Gizmo-Bereich erst nach klarer Trennung vom Modellzustand.
 
@@ -65,3 +75,70 @@ Der BSP-CSG-Kern ist als `src/csg.js` ausgelagert. Der vollständige Browserlauf
 - Das Modul im lokalen Pages-Paket und in der Browserlaufzeit prüfen.
 - Betroffene Arbeitsabläufe mit Regressionstests abdecken.
 - Erst nach bestandenen Code- und Browser-Tests den nächsten Bereich extrahieren.
+
+
+## 6. Loft- und Sweep-Extraktion (20.11.2026)
+
+- `src/sketch-geometry.js` enthält jetzt auch das gleichmässige Abtasten geschlossener Profilkonturen, die Loft-Mesh-Erzeugung inklusive triangulierter Endflächen und die Sweep-Erzeugung entlang einer Catmull-Rom-3D-Kurve.
+- Das Hauptskript übernimmt weiterhin Auswahl und Validierung der Quellobjekte, Welttransformationen, Materialkopie, Undo-History, Modell-Commit und UI-Status.
+- Tests decken ein analytisches Loft-Volumen von 8 Einheiten³, ein Sweep-Volumen von 12 Einheiten³, Sollabmessungen, endliche Vertexdaten und ungültige Eingaben ab.
+- Bekannte fachliche Grenze des bestehenden Loft-Verfahrens: Die Endkappen-Triangulation verwendet die XY-Projektion der Weltkoordinaten. Beliebig orientierte Profile bzw. Profile mit Innenlöchern benötigen eine spätere, explizit ebeneunabhängige Kontur-/Kappenbehandlung. Die Extraktion hat diese bisherige Einschränkung nicht stillschweigend verändert.
+- Die Kontur-Abtastung gleicht Punktzahlen und Abstände an, bestimmt aber noch keine semantisch optimale Startpunkt-/Drehrichtungszuordnung zwischen Profilen. Verdrehungsarme Korrespondenz bleibt ein eigener Qualitäts-/Algorithmusschritt.
+
+
+## 7. CAD-Pfadkurven und Pfadrohre (20.11.2026)
+
+- `src/sketch-geometry.js` stellt jetzt gemeinsame Factory-Funktionen für gespeicherte CAD-Pfade bereit: `createPathCurve` erhält die bisherige Unterscheidung zwischen gerader 2D-Linie und Catmull-Rom-Kurve; `createPathTubeGeometry` baut das Rohr mit den angeforderten Segmentzahlen und berechnet Normalen sowie Bounding-Volumen.
+- Das Hauptskript nutzt die Factory bei der ursprünglichen Skizzenanlage, beim erneuten Aufbau nach einer Pfadlängenänderung und beim Auslesen der Kurvenlänge.
+- Pfadpunkte, mm-Eingabe, Längenskalierung, Mittelpunktverschiebung, Metadaten, History und Modell-Commit bleiben im Hauptskript.
+
+
+### Verifikation Pfadkurven-/Rohr-Factories
+- Code-Head `fdb0139a9b48188b39f92ecbe1beb5260618781c`: 51/51 Unit-Tests bestanden; Browser-Regression und OCCT-/WebWorker-Test erfolgreich.
+- GitHub Actions: Code Checks `44765048481`, Browser-Regression `44765048493`, OCCT-Prototyp `44765048667` – alle erfolgreich.
+
+
+## 8. Hohlrahmen-Geometrie (20.11.2026)
+
+- Die reine Geometrieerzeugung für den selbst gezeichneten Hohlrahmen liegt jetzt ebenfalls in `src/sketch-geometry.js`.
+- Die Factory berechnet die nach innen versetzte Kontur, prüft die resultierende Innenkontur und erzeugt den extrudierten Rahmen mit echtem Innenloch.
+- Die App behält Auswahl-/Sperrprüfung, mm-Eingaben, UI-Meldungen, Quellobjektposition, Material, History und Szene-Commit.
+- Ein zusätzlicher Mindestabstandscheck verhindert, dass eine zu grosse Wandstärke bei einem kleinen Profil über die Innenkontur hinweg kollabiert und fälschlich wieder eine kleine gültige Kontur erzeugt.
+- Unit-Tests prüfen beide Konturrichtungen, Aussenabmessungen, analytisches Hohlrahmenvolumen und ungültige/zu grosse Wandstärken.
+- Code-Head `208815fd7d101f1af4520d2834c8437a9ea8bad4`: 54/54 Unit-Tests, Browser-Regression und OCCT-/WebWorker-Test erfolgreich.
+
+
+- `src/sketch-geometry.js` enthält zusätzlich die reine Geometrieerzeugung für Skizzen-Abrundungen und -Fasen. Auswahl, Eingabevalidierung, History und UI bleiben im Hauptskript.
+- Der Kantenbearbeitungs-Unit-Test prüft Fillet-/Chamfer-Modus, Abmessungen, Normalen, Bounding-Daten und ungültige Eingaben.
+
+
+## 9. Loft-Geometrie erweitert (20.11.2026)
+- `createLoftGeometry` unterstützt jetzt beliebig im 3D-Raum orientierte, jeweils planare Endprofile statt nur XY-Kappen.
+- Mehrere paarweise zugeordnete Innenkonturen können über `holesA` und `holesB` übergeben werden. Die Triangulation der Endflächen berücksichtigt diese Innenkonturen; die Innenwände werden als eigene Mantelflächen verbunden.
+- Profilstartpunkt und Laufrichtung werden standardmässig anhand der zentrierten Konturform auf möglichst geringe Verdrehung ausgerichtet. Mit `alignProfiles: false` lässt sich die ursprüngliche Punktkorrespondenz beibehalten.
+- Nicht planare oder entartete Endprofile und unpassende Innenkonturen werden abgewiesen. Planaritäts- und Mindestnormalentoleranz liegen zentral in `src/tolerances.js`.
+- Unit- und Browser-Regressionen ergänzen geneigte Profile, umgekehrte Punktreihenfolgen, Hohl-Loft mit analytischem Volumen sowie ungültige Profile.
+- Hinweis: Die Geometrie-Factory kann Innenkonturen verarbeiten; der aktuelle App-Dialog übergibt weiterhin nur eine gespeicherte Aussenkontur. Die UI-/Projektmetadaten-Unterstützung für mehrere Skizzen-Innenkonturen ist ein separater nächster Schritt.
+
+
+## 10. Hohl-Loft – App-Integration und Projektformat (20.11.2026)
+- `createLoftFromSelection` unterstützt zwei Aussenprofile plus 1–8 Paare separater Innenprofile.
+- Auswahlreihenfolge: Aussen A, Aussen B, Innen A1, Innen B1, Innen A2, Innen B2 usw.
+- Die UI-Hilfe beschreibt die Reihenfolge; Profilobjekte müssen geschlossene Skizzenkonturen besitzen.
+- `src/project-io.js` speichert die Loft-Metadaten einschliesslich Anzahl der Innenkonturen und Quell-UUIDs. Der Import stellt sie wieder her.
+- `src/project-schema.js` validiert Sections, Referenzen, Innenkonturanzahl und Quellpaare.
+- Browser-Test deckt vier Profile, echtes Hohl-Loft-Mesh, Projekt-Download und Import in eine frische Browserinstanz ab.
+- Grenzen: Innenkonturen sind separate Skizzenobjekte; eine einzelne Skizze mit mehreren bearbeitbaren Insel-/Lochkonturen ist noch nicht Teil der Zeichenoberfläche.
+
+- Objekt-UUIDs werden im Projektformat gesichert und beim Wiederaufbau wieder gesetzt. So bleiben die im Loft gespeicherten Quellprofil-Verweise über Speichern/Öffnen hinweg gültig; doppelte oder ungültige Objektkennungen werden abgewiesen.
+
+
+## 11. Innenkonturen in einer einzelnen Freiform-Skizze (20.11.2026)
+- `src/tool-navigation.js` ergänzt einen eigenen Modus zum Zeichnen von Innenlöchern nach Abschluss der Aussenkontur.
+- `index.html` hält Aussenkontur, fertige Innenringe und den gerade gezeichneten Innenring in einem `sketchDraft` zusammen. Die Vorschau zeigt alle Ringe.
+- Ein Innenloch kann Punkt für Punkt gezeichnet, mit Rückgängig korrigiert oder vor Abschluss abgebrochen werden, ohne bereits fertige Innenlöcher zu verlieren.
+- Validierung prüft Punktanzahl, Mindestabstände, Fläche, Selbstüberschneidung, vollständige Lage innerhalb der Aussenkontur sowie Berührungen/Überlappungen zwischen Löchern.
+- Die vorhandene `THREE.Shape.holes`-Extrusion erzeugt tatsächliche Öffnungen; es wird keine zweite Geometrie-Engine eingeführt.
+- `src/project-io.js` speichert jetzt zusätzlich die editierbaren Skizzen-Metadaten. `src/project-schema.js` begrenzt die Anzahl und Punktzahl der gespeicherten Innenringe; alte v3-Projekte ohne dieses optionale Feld bleiben kompatibel.
+- Browser-Regression prüft eine Freiform mit echtem Innenloch, Ablehnung eines ausserhalb liegenden Lochs und den Projekt-Roundtrip der Skizzen-Metadaten.
+- Grenze: Bereits extrudierte Körper besitzen noch keinen assoziativen Skizzen-Feature-Editor; das Bearbeiten erfolgt im offenen Skizzenentwurf vor dem Erzeugen des 3D-Körpers.
