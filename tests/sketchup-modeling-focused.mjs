@@ -16,6 +16,15 @@ try {
   await page.locator('[data-tab="create"]').click();
   assert.equal((await page.locator('[data-tab="create"]').innerText()).trim(), 'Modellieren', 'Hauptreiter ist nicht als Modellieren beschriftet');
   assert.equal(await page.locator('#pane-create-left #booleanUnion').count(), 0, 'Boolesche CAD-Funktion befindet sich noch im normalen Modellierbereich');
+  // Der neue Ein/Aus-Schalter blendet Spezialfunktionen wirklich aus und wieder ein.
+  assert.match(await page.locator('#modeToggle').innerText(), /AUS/, 'Erweiterte Funktionen sind nicht standardmässig ausgeschaltet');
+  assert.equal(await page.locator('#addOcctBox').isVisible(), false, 'OCCT-Spezialwerkzeug ist im Normalmodus sichtbar');
+  await page.locator('#modeToggle').click();
+  assert.match(await page.locator('#modeToggle').innerText(), /EIN/, 'Schalter zeigt den eingeschalteten Zustand nicht');
+  assert.equal(await page.locator('#addOcctBox').isVisible(), true, 'OCCT-Spezialwerkzeug wird beim Einschalten nicht eingeblendet');
+  await page.locator('#modeToggle').click();
+  assert.equal(await page.locator('#addOcctBox').isVisible(), false, 'OCCT-Spezialwerkzeug wird beim Ausschalten nicht ausgeblendet');
+
 
   // Erweiterte CAD-Funktionen bleiben erreichbar, sind aber standardmässig im Expertenbereich.
   await page.locator('#expertCenterToggle').click();
