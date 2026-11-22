@@ -222,8 +222,9 @@
               Number.isInteger(face.mesh.triangleCount) && face.mesh.triangleCount > 0 &&
               face.mesh.triangleCount <= 250000 &&
               face.mesh.triangleCount === face.mesh.indices.length / 3 &&
-              Array.from(face.mesh.positions).every(Number.isFinite) &&
-              Array.from(face.mesh.indices).every(value => value < face.mesh.positions.length / 3)) ||
+              face.mesh.positions.length / 3 <= face.mesh.triangleCount * 3 &&
+              face.mesh.positions.every(Number.isFinite) &&
+              face.mesh.indices.every(value => value < face.mesh.positions.length / 3)) ||
             !Number.isInteger(result.triangleCount) || result.triangleCount < 1 ||
             result.triangleCount > 250000 ||
             result.triangleCount !== result.faces.reduce((sum, face) => sum + face.mesh.triangleCount, 0)) {
