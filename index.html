@@ -1059,8 +1059,17 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const face = overlay?.faces?.[overlay.selectedIndex];
     const angleDeg = Number($('occtDraftAngle').value);
     const faceIndices = face ? [face.index] : [];
-    const direction = { x: 0, y: 0, z: 1 };
-    const neutralPlane = { origin: { x: 0, y: 0, z: 0 }, normal: { x: 0, y: 0, z: 1 } };
+    const readVector = prefix => ({
+      x: Number($(prefix + 'X').value),
+      y: Number($(prefix + 'Y').value),
+      z: Number($(prefix + 'Z').value)
+    });
+    const direction = readVector('occtDraftDirection');
+    const planeOrigin = readVector('occtDraftOrigin');
+    const planeNormal = readVector('occtDraftNormal');
+    const isValidVector = value => [value.x, value.y, value.z].every(Number.isFinite) &&
+      Math.hypot(value.x, value.y, value.z) > 1e-9;
+    const neutralPlane = { origin: planeOrigin, normal: planeNormal };
     if (!sourceMesh || !Number.isInteger(shapeId) || shapeId <= 0) {
       status.textContent = 'Der ausgewählte Körper besitzt keinen aktiven OCCT-B-Rep-Handle.'; return;
     }
@@ -1069,6 +1078,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
     if (!Number.isFinite(angleDeg) || Math.abs(angleDeg) < 0.1 || Math.abs(angleDeg) > 20) {
       status.textContent = 'Der Neigungswinkel muss zwischen −20° und −0,1° oder 0,1° und 20° liegen.'; return;
+    }
+    if (!isValidVector(direction) || !isValidVector(planeNormal) ||
+        ![planeOrigin.x, planeOrigin.y, planeOrigin.z].every(Number.isFinite)) {
+      status.textContent = 'Zugrichtung und Normalenvektor müssen gültige, von null verschiedene Vektoren sein. Der Ursprung der Neutralebene muss aus gültigen Zahlen bestehen.'; return;
     }
     const baseSource = sourceMesh.userData.occtSource;
     if (!baseSource || typeof baseSource !== 'object') {
@@ -1121,7 +1134,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       sourceMesh.geometry.dispose();
       (Array.isArray(sourceMesh.material) ? sourceMesh.material : [sourceMesh.material]).forEach(material => material.dispose());
       selectObject(mesh);
-      window.__silmoOcctLastDraft = { shapeId: result.shapeId, volumeMM3: result.volumeMM3, faceIndices, angleDeg };
+      window.__silmoOcctLastDraft = { shapeId: result.shapeId, volumeMM3: result.volumeMM3, faceIndices, angleDeg, direction, neutralPlane };
       await window.__silmoOcctClient.releaseShape(shapeId).catch(() => {});
       status.textContent = 'Echte OCCT-Flächenneigung erfolgreich angewendet. Undo/Redo kann den Körper aus seiner Konstruktionsquelle rekonstruieren.';
     } catch (error) {
@@ -3106,7 +3119,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     <div class="field"><label for="occtFaceList">Native Flächen</label><select id="occtFaceList" size="5" disabled style="width:100%;min-height:96px;padding:7px;background:#0b1422;color:#edf4ff;border:1px solid #2b405a;border-radius:8px"></select></div>
     <p class="note" id="occtFaceSummary">Lade zuerst die Topologie eines OCCT-Körpers.</p>
     <div class="field"><label for="occtDraftAngle">Neigungswinkel (Grad)</label><input id="occtDraftAngle" type="number" min="-20" max="20" step="0.5" value="5"></div>
-    <p class="note">Neigt eine ausgewählte ebene, zylindrische oder konische Fläche. Zugrichtung: +Z. Neutralebene: XY bei Z = 0.</p>
+    <p class="note">Alle Vektoren beziehen sich auf die lokalen Modellkoordinaten in mm. Zugrichtung bestimmt die Neigungsrichtung. Die Neutralebene wird durch ihren Ursprung und ihre Normale festgelegt.</p>
+    <div class="field"><label>Zugrichtung (X / Y / Z)</label><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px"><input id="occtDraftDirectionX" aria-label="Zugrichtung X" type="number" step="0.1" value="0"><input id="occtDraftDirectionY" aria-label="Zugrichtung Y" type="number" step="0.1" value="0"><input id="occtDraftDirectionZ" aria-label="Zugrichtung Z" type="number" step="0.1" value="1"></div></div>
+    <div class="field"><label>Neutralebenen-Ursprung (X / Y / Z, mm)</label><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px"><input id="occtDraftOriginX" aria-label="Neutralebenen-Ursprung X" type="number" step="0.1" value="0"><input id="occtDraftOriginY" aria-label="Neutralebenen-Ursprung Y" type="number" step="0.1" value="0"><input id="occtDraftOriginZ" aria-label="Neutralebenen-Ursprung Z" type="number" step="0.1" value="0"></div></div>
+    <div class="field"><label>Neutralebenen-Normale (X / Y / Z)</label><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px"><input id="occtDraftNormalX" aria-label="Neutralebenen-Normale X" type="number" step="0.1" value="0"><input id="occtDraftNormalY" aria-label="Neutralebenen-Normale Y" type="number" step="0.1" value="0"><input id="occtDraftNormalZ" aria-label="Neutralebenen-Normale Z" type="number" step="0.1" value="1"></div></div>
     <button class="wide primary" id="applyOcctDraft" type="button" disabled>↗ Ausgewählte Fläche neigen</button>
     <div class="panel-rule"></div>
     <h2>OCCT-Kantenbearbeitung</h2>
