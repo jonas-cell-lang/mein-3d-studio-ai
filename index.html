@@ -774,7 +774,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(result.mesh.indices), 1));
       geometry.computeVertexNormals();
       if (faceSketchPlaneActive) {
-        geometry.applyQuaternion(faceSketchFrame.quaternion);
+        geometry.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(faceSketchFrame.quaternion));
         meshPosition.copy(sketchPointToWorld(meshPosition));
       }
       geometry.computeBoundingBox();
