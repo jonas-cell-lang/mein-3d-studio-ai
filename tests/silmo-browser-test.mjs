@@ -42,6 +42,13 @@ async function showCreateSubtab(index) {
     throw new Error('Grundformen-Unterreiter wurde aktiviert, aber Würfel-Button bleibt unsichtbar: ' + JSON.stringify(state));
   }
 }
+async function showExpertBooleanTools() {
+  const toggle = page.locator('#expertCenterToggle');
+  if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
+  await page.locator('[data-tab="expert"]').click();
+  const details = page.locator('#pane-expert-left details.advanced-cad-tools');
+  if (!(await details.evaluate(el => el.open))) await details.locator('summary').click();
+}
 async function showDrawRightSubtab(index) {
   await page.locator('#pane-draw-right > .inner-tab-nav button').nth(index).click();
 }
@@ -2723,12 +2730,12 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#addCube').click();
   await page.locator('[data-tab="edit"]').click();
   await page.locator('#multiSelectToggle').click();
-  await showCreateSubtab(2);
+  await showCreateSubtab(1);
   await page.locator('#objects .object-select').nth(csgFailureStartCount).click();
   await page.locator('#objects .object-select').nth(csgFailureStartCount + 1).click();
   assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 3,
     'CSG-Fehlerfall konnte nicht alle drei Originalobjekte auswählen');
-  await showCreateSubtab(1);
+  await showExpertBooleanTools();
   await page.evaluate(() => {
     const originalCSG = window.SILMOCSG;
     const originalCombine = originalCSG.combineMeshes;
@@ -2775,10 +2782,10 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#addCube').click(); await page.locator('#addSphere').click();
   await page.locator('[data-tab="edit"]').click();
   await page.locator('#multiSelectToggle').click();
-  await showCreateSubtab(2);
+  await showCreateSubtab(1);
   await page.locator('#objects .object-select').nth(unionStartCount).click();
   assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(),2,'Union-Test konnte nicht beide Formen auswählen');
-  await showCreateSubtab(1);
+  await showExpertBooleanTools();
   await page.locator('#booleanUnion').click();
   assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+1,'Verbinden erzeugt nicht genau ein Ergebnisobjekt');
   assert.equal((await page.evaluate(()=>window.__silmoUnionSnapshot())).partCount,2,'Verbundene Form speichert die ursprünglichen Einzelteile nicht');
@@ -2790,7 +2797,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#projectFileInput').setInputFiles(await unionDownload.path());
   await page.waitForFunction(()=>window.__silmoUnionSnapshot().partCount===2,null,{timeout:10000});
   assert.equal((await page.evaluate(()=>window.__silmoUnionSnapshot())).partCount,2,'Projektimport verliert die gespeicherten Einzelteile');
-  await showCreateSubtab(1);
+  await showExpertBooleanTools();
   await page.locator('#booleanSeparate').click();
   assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+2,'Verbindung lösen stellt die ursprünglichen Objekte nicht wieder her');
   assert.match(await page.locator('#status').innerText(),/Verbindung gelöst: 2 ursprüngliche Einzelobjekte/,'Trennen meldet keinen Erfolg');
@@ -2808,11 +2815,11 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#addSphere').click();
   await page.locator('[data-tab="edit"]').click();
   await page.locator('#multiSelectToggle').click();
-  await showCreateSubtab(2);
+  await showCreateSubtab(1);
   // Die Kugel ist nach dem Erstellen bereits ausgewählt; nur den Würfel ergänzen.
   await page.locator('#objects .object-select').nth(subtractStartCount).click();
   assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 2, 'Differenz-Test konnte nicht beide Formen auswählen');
-  await showCreateSubtab(1);
+  await showExpertBooleanTools();
   await page.locator('#booleanSubtract').click();
   assert.equal(await page.locator('#objects .object-row').count(), subtractStartCount + 1, 'Differenz erzeugt nicht genau ein Ergebnisobjekt');
   assert.match(await page.locator('#status').innerText(), /Ausschnitt erfolgreich berechnet/, 'Boolesche Differenz wurde nicht erfolgreich ausgeführt');
@@ -2834,7 +2841,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await xField.press('Enter');
   await page.waitForTimeout(150);
   await page.locator('#multiSelectToggle').click();
-  await showCreateSubtab(2);
+  await showCreateSubtab(1);
 
   // Das neu erstellte Würfel-Objekt zusätzlich zur Kugel auswählen.
   await page.locator('#objects .object-select').nth(initialCount).click();
@@ -2873,7 +2880,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   // Gruppierung wieder aufheben.
   await page.locator('#ungroupObjects').click();
   assert.match(await page.locator('#status').innerText(), /Gruppierung von 2 Objekten aufgehoben/, 'Gruppierung aufheben hat nicht funktioniert');
-  await showCreateSubtab(2);
+  await showCreateSubtab(1);
   assert.equal(await page.locator('#objects .object-edit').count(), 0, 'Gruppenkennzeichnung ist nach dem Aufheben noch vorhanden');
   assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 1, 'Nach dem Aufheben darf nur ein Objekt ausgewählt bleiben');
   assert.equal(await page.locator('#multiSelectToggle').getAttribute('aria-pressed'), 'false', 'Mehrfachauswahl muss nach dem Aufheben ausgeschaltet sein');
