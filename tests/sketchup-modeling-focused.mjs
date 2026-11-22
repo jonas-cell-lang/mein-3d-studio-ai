@@ -35,6 +35,8 @@ try {
   const facePoint = await page.evaluate(id => window.__silmoFaceSketchTestPoint?.(id), faceObject);
   assert.ok(facePoint, 'Keine sichtbare seitliche Würfelfläche für den Flächentest gefunden');
   await page.locator('[data-tab="draw"]').click();
+  // Die Zeichenwerkzeuge sind zusätzlich in Unterreitern gruppiert.
+  await page.locator('#pane-draw-left > .inner-tab-nav button').first().click();
   await page.locator('#pickFaceSketchPlane').click();
   await page.mouse.click(facePoint.x, facePoint.y);
   const faceFrame = await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot?.());
