@@ -97,7 +97,7 @@ try {
   assert.deepEqual(runtimeInfo, { revision: '128', loader: 'function', exporter: 'function' }, 'Lokale Three.js r128 Runtime oder STL-Erweiterungen fehlen');
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
   assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v95/, 'Build-Metadaten zeigen nicht v95');
-  const mainTabs = await page.locator('.tool-tabs').evaluate(nav => Array.from(nav.children).filter(el => el.matches('button[data-tab]') && !el.hidden).map(el => el.textContent.trim()));
+  const mainTabs = await page.locator('nav.tool-tabs[aria-label="Werkzeugbereiche"]').evaluate(nav => Array.from(nav.querySelectorAll(':scope > button.tool-tab[data-tab]')).filter(el => !el.hidden).map(el => el.textContent.trim()));
   assert.deepEqual(mainTabs, ['Modellieren','Zeichnen','Bearbeiten','Messen & Prüfen','Projekt','3D-Druck'], 'Hauptreiter sind nicht vollständig oder falsch sortiert');
   await page.locator('[data-tab="project"]').click();
   const projectSubtabs = page.locator('#pane-project-left > .inner-tab-nav button');
