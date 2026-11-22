@@ -2352,6 +2352,14 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   if (!await page.locator('#cancelSketch').isDisabled()) {
     await page.locator('#cancelSketch').click();
   }
+  // Das Tutorial erstellt den Würfel und wählt ihn automatisch aus. Für den
+  // Hover-Test muss er unselektiert sein, da die Hover-Kontur ausgewählte
+  // Objekte absichtlich nicht überlagert. Strg-Klick auf die aktive Zeile
+  // hebt die Auswahl über denselben UI-Weg wie ein Benutzer auf.
+  await page.locator('#objects .object-select').last().click({ modifiers: ['Control'] });
+  const selectionAfterDeselect = await page.evaluate(() => window.__silmoModelingTestSnapshot?.());
+  assert.equal(selectionAfterDeselect?.selectedId, null,
+    'Testobjekt konnte vor der Hover-Prüfung nicht abgewählt werden');
   const hoverPoint = await page.evaluate(() => window.__silmoHoverTestPoint?.());
   assert.ok(hoverPoint, 'Kein nicht ausgewähltes Testobjekt für die Hover-Auswahlhilfe gefunden');
   assert.equal(hoverPoint.targetElement, 'CANVAS', 'Hover-Testpunkt liegt nicht auf der 3D-Canvas: ' + JSON.stringify(hoverPoint));
