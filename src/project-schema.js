@@ -298,6 +298,38 @@
       validateOcctSource(source.base, depth + 1);
       return;
     }
+    if (source.kind === 'chamfer') {
+      if (!Array.isArray(source.edgeIndices) || source.edgeIndices.length < 1 ||
+          source.edgeIndices.length > 12 ||
+          !source.edgeIndices.every(index => Number.isInteger(index) && index >= 0 && index <= 100000) ||
+          new Set(source.edgeIndices).size !== source.edgeIndices.length ||
+          !Number.isFinite(source.distanceMM) || source.distanceMM < 0.01 || source.distanceMM > 2000 ||
+          !source.base || typeof source.base !== 'object' || Array.isArray(source.base)) {
+        throw new Error('Ungültige OCCT-Kantenfasendaten.');
+      }
+      validateOcctSource(source.base, depth + 1);
+      return;
+    }
+    if (source.kind === 'draft') {
+      const validVector = (vector, allowZero = false) => vector && typeof vector === 'object' &&
+        !Array.isArray(vector) &&
+        [vector.x, vector.y, vector.z].every(value => Number.isFinite(value) && Math.abs(value) <= 1000000) &&
+        (allowZero || Math.hypot(vector.x, vector.y, vector.z) > 1e-9);
+      if (!Array.isArray(source.faceIndices) || source.faceIndices.length !== 1 ||
+          !source.faceIndices.every(index => Number.isInteger(index) && index >= 0 && index <= 100000) ||
+          !Number.isFinite(source.angleDeg) || Math.abs(source.angleDeg) < 0.1 || Math.abs(source.angleDeg) > 20 ||
+          !validVector(source.direction) ||
+          !source.neutralPlane || typeof source.neutralPlane !== 'object' || Array.isArray(source.neutralPlane) ||
+          !validVector(source.neutralPlane.origin, true) ||
+          !validVector(source.neutralPlane.normal) ||
+          [source.neutralPlane.origin.x, source.neutralPlane.origin.y, source.neutralPlane.origin.z]
+            .some(value => Math.abs(value) > 200000) ||
+          !source.base || typeof source.base !== 'object' || Array.isArray(source.base)) {
+        throw new Error('Ungültige OCCT-Flächenneigungsdaten.');
+      }
+      validateOcctSource(source.base, depth + 1);
+      return;
+    }
     if (source.kind === 'boolean') {
       const validMatrix = matrix => {
         if (!Array.isArray(matrix) || matrix.length !== 12 ||
