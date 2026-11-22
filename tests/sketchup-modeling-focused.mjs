@@ -15,7 +15,7 @@ try {
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
   await page.locator('[data-tab="create"]').click();
   assert.equal((await page.locator('[data-tab="create"]').innerText()).trim(), 'Modellieren', 'Hauptreiter ist nicht als Modellieren beschriftet');
-  assert.equal(await page.locator('#booleanUnion').isVisible(), false, 'Boolesche CAD-Funktion ist noch im normalen Modellierbereich sichtbar');
+  assert.equal(await page.locator('#pane-create-left #booleanUnion').count(), 0, 'Boolesche CAD-Funktion befindet sich noch im normalen Modellierbereich');
 
   // Erweiterte CAD-Funktionen bleiben erreichbar, sind aber standardmässig im Expertenbereich.
   await page.locator('#expertCenterToggle').click();
