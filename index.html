@@ -3383,9 +3383,15 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const hit = raycaster.intersectObjects(objects, false)[0];
     hoverDebug = { reason: hit ? 'Treffer vorhanden' : 'Kein Objekt getroffen',
       pointerType: event.pointerType || null, hitObjectId: hit?.object?.uuid || null };
-    const nextObject = hit && hit.object !== selected && !selectedObjects.includes(hit.object)
-      ? hit.object
-      : null;
+    const hitIsSelected = !!hit && (hit.object === selected || selectedObjects.includes(hit.object));
+    const nextObject = hit && !hitIsSelected ? hit.object : null;
+    hoverDebug = {
+      reason: !hit ? 'Kein Objekt getroffen' : hitIsSelected ? 'Vorderstes Objekt ist bereits ausgewählt' : 'Nicht ausgewähltes Objekt erkannt',
+      pointerType: event.pointerType || null,
+      hitObjectId: hit?.object?.uuid || null,
+      selectedObjectId: selected?.uuid || null,
+      selectedObjectIds: selectedObjects.map(object => object.uuid)
+    };
     if (nextObject !== hoverObject) {
       clearHoverOutline();
       if (nextObject) {
