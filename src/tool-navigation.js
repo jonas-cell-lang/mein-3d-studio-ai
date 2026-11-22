@@ -20,7 +20,7 @@
   const legacyIds = ['addOcctBox','addOcctCylinder','addOcctSphere','addOcctCone','addOcctTorus','importStepModel','exportStepModel','inspectOcctShape'];
   legacyIds.forEach(id => {
     const el = nodes.get(id) || document.getElementById(id);
-    if (el) (el.closest('.field') || el).classList.add('expert-only');
+    if (el) el.classList.add('expert-only');
   });
   const bedNote = document.createElement('p');
   bedNote.className = 'note expert-only';
@@ -114,17 +114,17 @@
   sketchPositionYWrap.append(sketchPositionYLabel,sketchPositionY);
 
   const contourToolsHeading=document.createElement('h2');contourToolsHeading.classList.add('expert-only');contourToolsHeading.textContent='Kontur- und Wandwerkzeuge';paneMap.draw.left.appendChild(contourToolsHeading);
-  const contourHelp=document.createElement('p');contourHelp.classList.add('expert-only');contourHelp.className='note';contourHelp.textContent='Erzeuge aus einer selbst gezeichneten geschlossenen Kontur einen hohlen Rahmen oder Wandkörper. Für Bohrungen und Ausschnitte wählst du den Grundkörper zuerst und den Schneidkörper danach.';paneMap.draw.left.appendChild(contourHelp);
-  const wallThicknessWrap=document.createElement('div');wallThicknessWrap.classList.add('expert-only');wallThicknessWrap.className='field';
+  const contourHelp=document.createElement('p');contourHelp.className='note expert-only';contourHelp.textContent='Erzeuge aus einer selbst gezeichneten geschlossenen Kontur einen hohlen Rahmen oder Wandkörper. Für Bohrungen und Ausschnitte wählst du den Grundkörper zuerst und den Schneidkörper danach.';paneMap.draw.left.appendChild(contourHelp);
+  const wallThicknessWrap=document.createElement('div');wallThicknessWrap.className='field expert-only';
   const wallThicknessLabel=document.createElement('label');wallThicknessLabel.htmlFor='wallThicknessMM';wallThicknessLabel.textContent='Wandstärke (mm)';
   const wallThickness=document.createElement('input');wallThickness.id='wallThicknessMM';wallThickness.type='number';wallThickness.min='0.2';wallThickness.max='100';wallThickness.step='0.1';wallThickness.value='1.4';
   wallThicknessWrap.append(wallThicknessLabel,wallThickness);paneMap.draw.left.appendChild(wallThicknessWrap);
-  const frameHeightWrap=document.createElement('div');frameHeightWrap.classList.add('expert-only');frameHeightWrap.className='field';
+  const frameHeightWrap=document.createElement('div');frameHeightWrap.className='field expert-only';
   const frameHeightLabel=document.createElement('label');frameHeightLabel.htmlFor='frameHeightMM';frameHeightLabel.textContent='Rahmenhöhe (mm)';
   const frameHeight=document.createElement('input');frameHeight.id='frameHeightMM';frameHeight.type='number';frameHeight.min='0.2';frameHeight.max='2000';frameHeight.step='0.1';frameHeight.value='12';
   frameHeightWrap.append(frameHeightLabel,frameHeight);paneMap.draw.left.appendChild(frameHeightWrap);
-  const contourFrameButton=document.createElement('button');contourFrameButton.classList.add('expert-only');contourFrameButton.type='button';contourFrameButton.id='createContourFrame';contourFrameButton.className='wide';contourFrameButton.textContent='▱ Hohlrahmen aus Kontur erzeugen';paneMap.draw.left.appendChild(contourFrameButton);
-  const subtractSelectedButton=document.createElement('button');subtractSelectedButton.classList.add('expert-only');subtractSelectedButton.type='button';subtractSelectedButton.id='subtractSelected';subtractSelectedButton.className='wide';subtractSelectedButton.textContent='− Auswahl voneinander abziehen';paneMap.draw.left.appendChild(subtractSelectedButton);
+  const contourFrameButton=document.createElement('button');contourFrameButton.type='button';contourFrameButton.id='createContourFrame';contourFrameButton.className='wide expert-only';contourFrameButton.textContent='▱ Hohlrahmen aus Kontur erzeugen';paneMap.draw.left.appendChild(contourFrameButton);
+  const subtractSelectedButton=document.createElement('button');subtractSelectedButton.type='button';subtractSelectedButton.id='subtractSelected';subtractSelectedButton.className='wide expert-only';subtractSelectedButton.textContent='− Auswahl voneinander abziehen';paneMap.draw.left.appendChild(subtractSelectedButton);
   const sketchLockNote=document.createElement('p'); sketchLockNote.id='sketchViewLockNote'; sketchLockNote.className='note'; sketchLockNote.textContent='Während des Zeichnens ist die Kameradrehung gesperrt. Zoomen bleibt möglich.'; paneMap.draw.left.appendChild(sketchLockNote);
   const pickFacePlaneButton=document.createElement('button'); pickFacePlaneButton.type='button'; pickFacePlaneButton.id='pickFaceSketchPlane'; pickFacePlaneButton.className='wide'; pickFacePlaneButton.textContent='▱ Zeichenfläche auf Modell wählen'; paneMap.draw.left.appendChild(pickFacePlaneButton);
   const pickFacePlaneNote=document.createElement('p'); pickFacePlaneNote.className='note'; pickFacePlaneNote.textContent='Erster Schritt: Wähle die obere, waagerechte Fläche eines Körpers. Danach kannst du darauf skizzieren.'; paneMap.draw.left.appendChild(pickFacePlaneNote);
