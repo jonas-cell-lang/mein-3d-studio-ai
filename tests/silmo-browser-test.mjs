@@ -3265,6 +3265,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await roundTripPage.locator('#objects .object-row').count(),savedProject.objects.length,'Ungültige Geometriedaten haben das zuvor geöffnete Projekt verändert');
 
   await roundTripPage.locator('[data-tab="project"]').click();
+  await roundTripPage.locator('#pane-project-left > .inner-tab-nav button').nth(2).click();
   await roundTripPage.waitForFunction(() => typeof window.THREE?.STLExporter === 'function', null, {timeout:15000});
   const roundTripExportPromise = roundTripPage.waitForEvent('download',{timeout:5000}).catch(() => null);
   await roundTripPage.locator('#exportModel').click();
