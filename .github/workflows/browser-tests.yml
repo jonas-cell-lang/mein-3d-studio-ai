@@ -18,7 +18,7 @@ permissions:
 jobs:
   browser-test:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
       - name: Install Playwright
         run: |
           npm install --no-save playwright@1.65.1
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps chromium webkit
 
       - name: Prepare local Three.js runtime
         run: npm run prepare:runtime
@@ -49,5 +49,9 @@ jobs:
           done
           cat /tmp/silmo-http.log
           exit 1
-      - name: Test real browser interactions
+      - name: Test Chromium browser interactions
+        run: node tests/silmo-browser-test.mjs
+      - name: Test Safari-compatible WebKit interactions
+        env:
+          SILMO_BROWSER: webkit
         run: node tests/silmo-browser-test.mjs
