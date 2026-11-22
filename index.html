@@ -397,7 +397,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     <div class="brand-mark">⬡</div>
     <div><h1>SILMO 3D Studio AI</h1><div class="subtitle">Einfach bauen. Präzise modellieren.</div></div>
   </div>
-  <div class="header-actions"><button id="imageStudioLaunch" type="button">▧ Image Studio</button><button id="inspectOcctShape" type="button" title="Prüft Volumen und Abmessungen des ausgewählten nativen OCCT-Körpers">⌕ Körper prüfen</button><button id="tutorialLaunch" type="button">✦ Tutorial</button><button id="modeToggle" type="button" aria-pressed="false" title="Zwischen Anfänger- und Expertenmodus wechseln">Anfängermodus</button><button id="expandToggle" type="button" aria-pressed="false">3D maximieren</button><div class="top-status"><span class="status-dot"></span><span>3D-Arbeitsplatz bereit</span></div></div>
+  <div class="header-actions"><button id="imageStudioLaunch" type="button">▧ Image Studio</button><button id="inspectOcctShape" type="button" title="Prüft Volumen und Abmessungen des ausgewählten nativen OCCT-Körpers">⌕ Körper prüfen</button><button id="tutorialLaunch" type="button">✦ Tutorial</button><button id="modeToggle" type="button" aria-pressed="false" title="Erweiterte Spezialfunktionen ein- oder ausblenden">Erweiterte Funktionen: AUS</button><button id="expandToggle" type="button" aria-pressed="false">3D maximieren</button><div class="top-status"><span class="status-dot"></span><span>3D-Arbeitsplatz bereit</span></div></div>
 </header>
 <nav class="tool-tabs" role="tablist" aria-label="Werkzeugbereiche">
   <button class="tool-tab" type="button" role="tab" data-tab="create" aria-selected="true">Modellieren</button>
@@ -539,7 +539,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const expert = !document.body.classList.contains('expert-mode');
     document.body.classList.toggle('expert-mode', expert);
     document.body.classList.toggle('beginner-mode', !expert);
-    modeToggle.textContent = expert ? 'Expertenmodus' : 'Anfängermodus';
+    modeToggle.textContent = expert ? 'Erweiterte Funktionen: EIN' : 'Erweiterte Funktionen: AUS';
     modeToggle.setAttribute('aria-pressed', String(expert));
     status.textContent = expert ? 'Expertenmodus: alle präzisen Werkzeuge sichtbar.' : 'Anfängermodus: übersichtliche Grundwerkzeuge sichtbar.';
 
