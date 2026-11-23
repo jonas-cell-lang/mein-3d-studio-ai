@@ -2622,7 +2622,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     faceSketchResult.position.x-faceSketchResult.origin[0],
     faceSketchResult.position.y-faceSketchResult.origin[1],
     faceSketchResult.position.z-faceSketchResult.origin[2]
-  )<0.02, 'Extrudierter Körper wurde nicht am Ursprung der gewählten Modellfläche platziert');
+  )<0.02, 'Extrudierter Körper wurde nicht am Ursprung der gewählten Modellfläche platziert: '+JSON.stringify(faceSketchResult));
   await page.locator('#cancelSketch').click();
 
   // Ellipse: unabhängige Breite und Tiefe sowie Extrusion prüfen.
