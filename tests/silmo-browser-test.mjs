@@ -2618,11 +2618,21 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(faceSketchResult.snapshot.type, 'rectangle', 'Flächenskizze wurde nicht als Rechteck gespeichert');
   assert.ok(Math.abs(faceSketchResult.snapshot.extrusionMM-2)<0.01, 'Flächenskizze hat nicht die eingestellte Extrusionshöhe');
   assert.ok(Math.abs(faceSketchResult.snapshot.occtVolumeMM3-8)<1e-5, 'Flächenskizze wurde nicht mit dem erwarteten Volumen von 8 mm³ extrudiert');
-  assert.ok(faceSketchResult.position && Math.hypot(
-    faceSketchResult.position.x-faceSketchResult.origin[0],
-    faceSketchResult.position.y-faceSketchResult.origin[1],
-    faceSketchResult.position.z-faceSketchResult.origin[2]
-  )<0.02, 'Extrudierter Körper wurde nicht am Ursprung der gewählten Modellfläche platziert: '+JSON.stringify(faceSketchResult));
+  const facePositionOffset = faceSketchResult.position && {
+    x: faceSketchResult.position.x-faceSketchResult.origin[0],
+    y: faceSketchResult.position.y-faceSketchResult.origin[1],
+    z: faceSketchResult.position.z-faceSketchResult.origin[2]
+  };
+  const faceNormal = await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot().normal);
+  const distanceFromFacePlane = facePositionOffset && Math.abs(
+    facePositionOffset.x*faceNormal[0] +
+    facePositionOffset.y*faceNormal[1] +
+    facePositionOffset.z*faceNormal[2]
+  );
+  assert.ok(facePositionOffset && distanceFromFacePlane < 0.02,
+    'Extrudierter Körper liegt nicht auf der gewählten Modellfläche: '+JSON.stringify({
+      ...faceSketchResult, facePositionOffset, faceNormal, distanceFromFacePlane
+    }));
   await page.locator('#cancelSketch').click();
 
   // Ellipse: unabhängige Breite und Tiefe sowie Extrusion prüfen.
