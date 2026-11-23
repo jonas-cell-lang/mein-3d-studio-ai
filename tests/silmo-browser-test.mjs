@@ -2591,8 +2591,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#sketchTool').selectOption('rectangle');
   // Vorherige Präzisionskoordinaten aus dem separaten XY-Test dürfen die lokale
   // Position auf der ausgewählten Modellfläche nicht verschieben.
-  await page.locator('#sketchPositionXMM').fill('');
-  await page.locator('#sketchPositionYMM').fill('');
+  await page.locator('#sketchPositionXMM').evaluate(element => { element.value = ''; element.dispatchEvent(new Event('input', { bubbles: true })); element.dispatchEvent(new Event('change', { bubbles: true })); });
+  await page.locator('#sketchPositionYMM').evaluate(element => { element.value = ''; element.dispatchEvent(new Event('input', { bubbles: true })); element.dispatchEvent(new Event('change', { bubbles: true })); });
   await page.locator('#startSketch').click();
   const faceSketchStart = await page.evaluate(() => window.__silmoFaceSketchScreenPointForTest(-0.2,-0.2));
   const faceSketchEnd = await page.evaluate(() => window.__silmoFaceSketchScreenPointForTest(0.2,0.2));
