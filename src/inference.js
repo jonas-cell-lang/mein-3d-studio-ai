@@ -20,6 +20,41 @@
     return best ? { ...best, distancePx: Math.sqrt(bestDistanceSquared) } : null;
   }
 
+
+  function findNearestPointOnSegments(segments, pointer, maxDistancePx = 12, acceptSegment = null) {
+    if (!Array.isArray(segments) || !pointer ||
+        !Number.isFinite(pointer.x) || !Number.isFinite(pointer.y) ||
+        !Number.isFinite(maxDistancePx) || maxDistancePx < 0) return null;
+    const maxDistanceSquared = maxDistancePx * maxDistancePx;
+    let best = null;
+    let bestDistanceSquared = maxDistanceSquared;
+    for (const segment of segments) {
+      if (!segment || !segment.start || !segment.end) continue;
+      if (typeof acceptSegment === 'function' && !acceptSegment(segment)) continue;
+      const a = segment.start, b = segment.end;
+      if (![a.screenX, a.screenY, b.screenX, b.screenY].every(Number.isFinite)) continue;
+      const dx = b.screenX - a.screenX;
+      const dy = b.screenY - a.screenY;
+      const lengthSquared = dx * dx + dy * dy;
+      if (lengthSquared <= 1e-12) continue;
+      const rawT = ((pointer.x - a.screenX) * dx + (pointer.y - a.screenY) * dy) / lengthSquared;
+      const t = Math.max(0, Math.min(1, rawT));
+      const screenX = a.screenX + dx * t;
+      const screenY = a.screenY + dy * t;
+      const distanceSquared = (pointer.x - screenX) ** 2 + (pointer.y - screenY) ** 2;
+      if (distanceSquared >= bestDistanceSquared) continue;
+      let world = null;
+      if (Array.isArray(a.world) && Array.isArray(b.world) &&
+          a.world.length >= 3 && b.world.length >= 3 &&
+          [...a.world.slice(0, 3), ...b.world.slice(0, 3)].every(Number.isFinite)) {
+        world = a.world.slice(0, 3).map((value, index) => value + (b.world[index] - value) * t);
+      }
+      best = { ...segment, screenX, screenY, t, distancePx: Math.sqrt(distanceSquared), world };
+      bestDistanceSquared = distanceSquared;
+    }
+    return best;
+  }
+
   function findFeatureEdgeMidpoints(positions, indices = null, options = {}) {
     if (!positions || typeof positions.length !== 'number' || positions.length < 9 || positions.length % 3 !== 0) return [];
     const vertexCount = positions.length / 3;
@@ -102,7 +137,7 @@
     return result;
   }
 
-  const api = Object.freeze({ findNearestPoint, findFeatureEdgeMidpoints });
+  const api = Object.freeze({ findNearestPoint, findNearestPointOnSegments, findFeatureEdgeMidpoints });
   if (typeof window !== 'undefined') window.SILMOInference = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();
