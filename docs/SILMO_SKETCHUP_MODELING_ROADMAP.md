@@ -196,3 +196,14 @@ Die Prozentanzeige wird bewusst streng und konservativ geführt. Sie ist keine S
 - Die Prozentwerte sind eine konservative Projektmessung anhand der Roadmap, keine Behauptung einer mathematisch exakten Gleichheit mit SketchUp.
 
 **Aktuelle konservative Gesamteinschätzung:** 8 %. Die vorhandenen Grundfunktionen und ersten Interaktionsverbesserungen sind ein Anfang; zentrale SketchUp-Arbeitsabläufe wie zuverlässiges Inferenz-/Fangsystem, vollständiges Flächenzeichnen, Push/Pull, Offset und die umfassende Bedien- und Regressionstest-Abdeckung fehlen noch.
+
+
+## Erster Fangtyp: sichtbare Modell-Eckpunkte – 24. November 2026
+
+- Im Zeichenbereich gibt es nun einen separaten Schalter für den Eckpunktfang; der vorhandene Rasterfang bleibt unabhängig davon erhalten.
+- Beim Zeichnen werden sichtbare Mesh-Eckpunkte auf der aktiven Zeichenebene innerhalb einer Bildschirmtoleranz von 12 Pixeln gesucht.
+- Verdeckte Eckpunkte werden durch einen zusätzlichen Sichtbarkeitstest verworfen.
+- Ein grüner Punkt markiert die tatsächlich eingerastete Position.
+- Die Kandidatensuche ist pro Zeichenstart zwischengespeichert und auf höchstens 6'000 Modellpunkte begrenzt.
+- Unit-Tests decken die Bildschirmdistanz, Toleranzgrenze, ungültige Kandidaten und Sichtbarkeitsfilterung ab.
+- Ein fokussierter Browser-Test prüft das Einrasten auf einer ausgewählten Würfelfläche. Die Funktion gilt erst nach erfolgreichem Code- und Browserlauf als verifiziert.
