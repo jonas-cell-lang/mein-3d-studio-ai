@@ -129,6 +129,30 @@ try {
   await page.locator('#sketchEndpointSnapEnabled').check();
   await page.locator('#sketchMidpointSnapEnabled').uncheck();
 
+  // Kantenprojektion: Eckpunkt- und Mittelpunktfang aus, Projektion auf eine
+  // beliebige Position entlang einer sichtbaren Kante allein aktiv.
+  await page.locator('#sketchEndpointSnapEnabled').uncheck();
+  await page.locator('#sketchMidpointSnapEnabled').uncheck();
+  await page.locator('#sketchEdgeProjectionSnapEnabled').check();
+  const edgeProjectionTarget = await page.evaluate(() => window.__silmoEndpointSnapTestSegment?.());
+  assert.ok(edgeProjectionTarget, 'Keine sichtbare Modellkante für den Projektionstest gefunden');
+  await page.locator('#startSketch').click();
+  await page.waitForTimeout(300);
+  await page.mouse.move(edgeProjectionTarget.x + 3, edgeProjectionTarget.y + 2);
+  await page.mouse.down();
+  const edgeProjectionState = await page.evaluate(() => window.__silmoEndpointSnapSnapshot?.());
+  assert.equal(edgeProjectionState?.visible, true, 'Kantenprojektion zeigt keinen Fangmarker');
+  assert.ok(edgeProjectionState.snappedWorld && Math.hypot(
+    edgeProjectionState.snappedWorld[0] - edgeProjectionTarget.world[0],
+    edgeProjectionState.snappedWorld[1] - edgeProjectionTarget.world[1],
+    edgeProjectionState.snappedWorld[2] - edgeProjectionTarget.world[2]
+  ) < 1e-5, 'Zeichenstart wurde nicht auf die projizierte Position der Modellkante eingerastet');
+  await page.mouse.up();
+  await page.locator('#cancelSketch').click();
+  await page.locator('#sketchEndpointSnapEnabled').check();
+  await page.locator('#sketchMidpointSnapEnabled').uncheck();
+  await page.locator('#sketchEdgeProjectionSnapEnabled').uncheck();
+
   // Nach dem Snap-Test die aktuell sichtbare Seitenfläche neu bestimmen.
   // Der Kamerastand kann sich zwischen den beiden Skizzierdurchläufen unterscheiden.
   const extrusionFacePoint = await page.evaluate(id => window.__silmoFaceSketchTestPoint?.(id), faceObject);
