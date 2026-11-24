@@ -3792,9 +3792,20 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       1 - ((candidate.screenY - rect.top) / rect.height) * 2
     );
     endpointSnapRaycaster.setFromCamera(ndc, camera);
-    const hit = endpointSnapRaycaster.intersectObjects(objects, true)[0];
+    const hits = endpointSnapRaycaster.intersectObjects(objects, true);
+    const hit = hits[0];
     endpointSnapDebug.visibilityChecks++;
-    const visible = !!hit && hit.point.distanceTo(world) <= mmToWorldUnits(1.5);
+    const hitDistance = hit ? hit.point.distanceTo(world) : null;
+    const tolerance = mmToWorldUnits(1.5);
+    const visible = !!hit && hitDistance <= tolerance;
+    if (endpointSnapDebug.samples.length < 8) endpointSnapDebug.samples.push({
+      projectedWorld: world.toArray(),
+      hitWorld: hit?.point?.toArray() || null,
+      hitDistance,
+      tolerance,
+      hitObjectId: hit?.object?.parent?.uuid || hit?.object?.uuid || null,
+      hitCount: hits.length
+    });
     if (visible) endpointSnapDebug.visibleCount++;
     return visible;
   }
