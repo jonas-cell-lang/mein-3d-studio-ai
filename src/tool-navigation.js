@@ -83,7 +83,7 @@
   midpointSnapWrap.appendChild(midpointSnapNote); paneMap.draw.left.appendChild(midpointSnapWrap);
   const edgeProjectionSnapWrap=document.createElement('div'); edgeProjectionSnapWrap.className='field';
   const edgeProjectionSnapLabel=document.createElement('label'); edgeProjectionSnapLabel.htmlFor='sketchEdgeProjectionSnapEnabled'; edgeProjectionSnapLabel.textContent='Auf Kanten projizieren';
-  const edgeProjectionSnapEnabled=document.createElement('input'); edgeProjectionSnapEnabled.id='sketchEdgeProjectionSnapEnabled'; edgeProjectionSnapEnabled.type='checkbox'; edgeProjectionSnapEnabled.checked=true;
+  const edgeProjectionSnapEnabled=document.createElement('input'); edgeProjectionSnapEnabled.id='sketchEdgeProjectionSnapEnabled'; edgeProjectionSnapEnabled.type='checkbox'; edgeProjectionSnapEnabled.checked=false;
   edgeProjectionSnapWrap.append(edgeProjectionSnapLabel,edgeProjectionSnapEnabled);
   const edgeProjectionSnapNote=document.createElement('p'); edgeProjectionSnapNote.className='note'; edgeProjectionSnapNote.textContent='Fängt jeden Punkt direkt auf einer sichtbaren Modellkante ein (12 Pixel Bildschirmabstand).';
   edgeProjectionSnapWrap.appendChild(edgeProjectionSnapNote); paneMap.draw.left.appendChild(edgeProjectionSnapWrap);
