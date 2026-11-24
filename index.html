@@ -3805,7 +3805,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         screenX,
         screenY,
         world: candidate.world.toArray(),
-        objectId: candidate.objectId
+        objectId: candidate.objectId,
+        kind: candidate.kind
       });
     }
     return { rect, candidates };
