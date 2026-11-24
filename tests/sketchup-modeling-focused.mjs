@@ -107,6 +107,28 @@ try {
   ) < 1e-5, 'Zeichenstart wurde nicht auf den sichtbaren Modell-Eckpunkt eingerastet');
   await page.mouse.up();
   await page.locator('#cancelSketch').click();
+
+  // Separater Test für Kantenmitten: Eckpunktfang aus, Kantenmittefang an.
+  await page.locator('#sketchEndpointSnapEnabled').uncheck();
+  await page.locator('#sketchMidpointSnapEnabled').check();
+  const midpointTarget = await page.evaluate(() => window.__silmoEndpointSnapTestPoint?.('midpoint'));
+  assert.ok(midpointTarget, 'Keine sichtbare scharfe Kantenmitte auf der Zeichenfläche gefunden: ' + JSON.stringify(await page.evaluate(() => window.__silmoEndpointSnapSnapshot?.())));
+  await page.locator('#startSketch').click();
+  await page.waitForTimeout(300);
+  await page.mouse.move(midpointTarget.x + 4, midpointTarget.y + 3);
+  await page.mouse.down();
+  const midpointState = await page.evaluate(() => window.__silmoEndpointSnapSnapshot?.());
+  assert.equal(midpointState?.visible, true, 'Kantenmittefang-Marker wird nicht angezeigt');
+  assert.ok(midpointState.snappedWorld && Math.hypot(
+    midpointState.snappedWorld[0] - midpointTarget.world[0],
+    midpointState.snappedWorld[1] - midpointTarget.world[1],
+    midpointState.snappedWorld[2] - midpointTarget.world[2]
+  ) < 1e-5, 'Zeichenstart wurde nicht auf die Kantenmitte eingerastet');
+  await page.mouse.up();
+  await page.locator('#cancelSketch').click();
+  await page.locator('#sketchEndpointSnapEnabled').check();
+  await page.locator('#sketchMidpointSnapEnabled').uncheck();
+
   await page.locator('#pickFaceSketchPlane').click();
   await page.mouse.click(facePoint.x, facePoint.y);
   await page.locator('#startSketch').click();
