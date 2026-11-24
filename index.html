@@ -3955,6 +3955,23 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const target = candidates.find(candidate => candidate.kind === kind && endpointSnapCandidateIsVisible(candidate, rect));
     return target ? { x: target.screenX, y: target.screenY, world: target.world, objectId: target.objectId } : null;
   };
+  window.__silmoEndpointSnapTestSegment = () => {
+    const { rect, segments } = projectEndpointSnapCandidates();
+    const target = segments
+      .map(segment => {
+        const t = 0.37;
+        const world = segment.start.world.map((value, index) => value + (segment.end.world[index] - value) * t);
+        const screen = {
+          x: segment.start.screenX + (segment.end.screenX - segment.start.screenX) * t,
+          y: segment.start.screenY + (segment.end.screenY - segment.start.screenY) * t
+        };
+        return { ...segment, t, world, screen };
+      })
+      .filter(segment => endpointSnapCandidateIsVisible({ world: segment.world, objectId: segment.objectId }, rect))
+      .sort((a, b) => Math.hypot(b.end.screenX - b.start.screenX, b.end.screenY - b.start.screenY) -
+        Math.hypot(a.end.screenX - a.start.screenX, a.end.screenY - a.start.screenY))[0];
+    return target ? { x: target.screen.x, y: target.screen.y, world: target.world, objectId: target.objectId } : null;
+  };
   window.__silmoSketchStartSnapshot = () => sketchStart.toArray();
 
   function snapSketchPoint(point) {
