@@ -65,3 +65,34 @@ test('returns no feature edges for malformed or degenerate geometry', () => {
   assert.deepEqual(require('../src/inference.js').findFeatureEdgeMidpoints([0,0,0, 1,0,0]), []);
   assert.deepEqual(require('../src/inference.js').findFeatureEdgeMidpoints([0,0,0, 1,0,0, 2,0,0]), []);
 });
+
+
+test('projects the pointer onto the nearest visible segment and interpolates its world position', () => {
+  const { findNearestPointOnSegments } = require('../src/inference.js');
+  const result = findNearestPointOnSegments([
+    { id: 'edge', start: { screenX: 0, screenY: 0, world: [0, 0, 0] }, end: { screenX: 100, screenY: 0, world: [10, 0, 0] } }
+  ], { x: 35, y: 4 }, 12);
+  assert.equal(result.id, 'edge');
+  assert.equal(result.t, 0.35);
+  assert.deepEqual(result.world, [3.5, 0, 0]);
+  assert.equal(result.distancePx, 4);
+});
+
+test('clamps segment projection to its endpoints and respects pixel tolerance', () => {
+  const { findNearestPointOnSegments } = require('../src/inference.js');
+  const segment = { start: { screenX: 10, screenY: 10 }, end: { screenX: 20, screenY: 10 } };
+  assert.equal(findNearestPointOnSegments([segment], { x: 2, y: 10 }, 7), null);
+  const result = findNearestPointOnSegments([segment], { x: 2, y: 10 }, 8);
+  assert.equal(result.t, 0);
+  assert.equal(result.screenX, 10);
+});
+
+test('ignores malformed, zero-length and rejected segments', () => {
+  const { findNearestPointOnSegments } = require('../src/inference.js');
+  const result = findNearestPointOnSegments([
+    null,
+    { start: { screenX: 1, screenY: 1 }, end: { screenX: 1, screenY: 1 } },
+    { id: 'hidden', start: { screenX: 0, screenY: 0 }, end: { screenX: 10, screenY: 0 } }
+  ], { x: 5, y: 1 }, 12, segment => segment.id !== 'hidden');
+  assert.equal(result, null);
+});
