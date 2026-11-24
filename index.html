@@ -3757,7 +3757,24 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           const key = [world.x, world.y, world.z].map(value => Math.round(value * 10000)).join(':');
           if (seen.has(key)) continue;
           seen.add(key);
-          candidates.push({ world, objectId: root.uuid });
+          candidates.push({ world, objectId: root.uuid, kind: 'vertex' });
+        }
+        if (window.SILMOInference?.findFeatureEdgeMidpoints && candidates.length < maxCandidates) {
+          const featureEdges = window.SILMOInference.findFeatureEdgeMidpoints(
+            positions.array,
+            node.geometry.index?.array || null
+          );
+          for (const edge of featureEdges) {
+            if (candidates.length >= maxCandidates) break;
+            const world = new THREE.Vector3(...edge.midpoint).applyMatrix4(node.matrixWorld);
+            if (![world.x, world.y, world.z].every(Number.isFinite)) continue;
+            const planeDistance = Math.abs(sketchPlane.distanceToPoint(world));
+            if (planeDistance > mmToWorldUnits(0.5)) continue;
+            const key = 'mid:' + [world.x, world.y, world.z].map(value => Math.round(value * 10000)).join(':');
+            if (seen.has(key)) continue;
+            seen.add(key);
+            candidates.push({ world, objectId: root.uuid, kind: 'midpoint' });
+          }
         }
       });
     }
@@ -3860,14 +3877,18 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   }
 
   function findEndpointSnapCandidate() {
-    if (!window.SILMOInference || !document.getElementById('sketchEndpointSnapEnabled')?.checked) return null;
+    if (!window.SILMOInference) return null;
+    const endpointsEnabled = !!document.getElementById('sketchEndpointSnapEnabled')?.checked;
+    const midpointsEnabled = !!document.getElementById('sketchMidpointSnapEnabled')?.checked;
+    if (!endpointsEnabled && !midpointsEnabled) return null;
     const { rect, candidates } = projectEndpointSnapCandidates();
     const pointer = {
       x: rect.left + (pointerNDC.x + 1) * rect.width / 2,
       y: rect.top + (1 - pointerNDC.y) * rect.height / 2
     };
     return window.SILMOInference.findNearestPoint(candidates, pointer, 12,
-      candidate => endpointSnapCandidateIsVisible(candidate, rect));
+      candidate => (candidate.kind === 'vertex' ? endpointsEnabled : midpointsEnabled) &&
+        endpointSnapCandidateIsVisible(candidate, rect));
   }
 
   function updateEndpointSnapMarker(worldPoint) {
@@ -3886,14 +3907,15 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 
   window.__silmoEndpointSnapSnapshot = () => ({
     enabled: !!document.getElementById('sketchEndpointSnapEnabled')?.checked,
+    midpointEnabled: !!document.getElementById('sketchMidpointSnapEnabled')?.checked,
     visible: endpointSnapMarker.visible,
     snappedWorld: endpointSnapLastWorld?.toArray() || null,
     candidateCount: collectEndpointSnapWorldCandidates().length,
     debug: { ...endpointSnapDebug }
   });
-  window.__silmoEndpointSnapTestPoint = () => {
+  window.__silmoEndpointSnapTestPoint = (kind = 'vertex') => {
     const { rect, candidates } = projectEndpointSnapCandidates();
-    const target = candidates.find(candidate => endpointSnapCandidateIsVisible(candidate, rect));
+    const target = candidates.find(candidate => candidate.kind === kind && endpointSnapCandidateIsVisible(candidate, rect));
     return target ? { x: target.screenX, y: target.screenY, world: target.world, objectId: target.objectId } : null;
   };
   window.__silmoSketchStartSnapshot = () => sketchStart.toArray();
