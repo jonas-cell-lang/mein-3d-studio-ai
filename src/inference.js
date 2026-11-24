@@ -30,7 +30,6 @@
     let bestDistanceSquared = maxDistanceSquared;
     for (const segment of segments) {
       if (!segment || !segment.start || !segment.end) continue;
-      if (typeof acceptSegment === 'function' && !acceptSegment(segment)) continue;
       const a = segment.start, b = segment.end;
       if (![a.screenX, a.screenY, b.screenX, b.screenY].every(Number.isFinite)) continue;
       const dx = b.screenX - a.screenX;
@@ -49,7 +48,9 @@
           [...a.world.slice(0, 3), ...b.world.slice(0, 3)].every(Number.isFinite)) {
         world = a.world.slice(0, 3).map((value, index) => value + (b.world[index] - value) * t);
       }
-      best = { ...segment, screenX, screenY, t, distancePx: Math.sqrt(distanceSquared), world };
+      const projected = { ...segment, screenX, screenY, t, distancePx: Math.sqrt(distanceSquared), world };
+      if (typeof acceptSegment === 'function' && !acceptSegment(projected)) continue;
+      best = projected;
       bestDistanceSquared = distanceSquared;
     }
     return best;
