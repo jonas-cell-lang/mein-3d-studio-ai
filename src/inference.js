@@ -12,7 +12,7 @@
       const dx = candidate.screenX - pointer.x;
       const dy = candidate.screenY - pointer.y;
       const distanceSquared = dx * dx + dy * dy;
-      if (distanceSquared <= bestDistanceSquared) {
+      if (distanceSquared < bestDistanceSquared) {
         best = candidate;
         bestDistanceSquared = distanceSquared;
       }
