@@ -70,7 +70,7 @@ try {
   // direkt ausgelöst; die Flächenauswahl selbst wird anschliessend per Maus geprüft.
   await page.locator('#pickFaceSketchPlane').evaluate(el => el.click());
   await page.mouse.click(facePoint.x, facePoint.y);
-  const faceFrame = await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot?.());
+  let faceFrame = await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot?.());
   assert.equal(faceFrame?.active, true, 'Seitliche Modellfläche wurde nicht als Zeichenebene übernommen');
   assert.ok(Math.max(Math.abs(faceFrame.normal[0]), Math.abs(faceFrame.normal[1])) > 0.5, 'Flächennormale zeigt nicht auf eine seitliche Fläche');
   const quaternionAxis = await page.evaluate(() => {
@@ -129,8 +129,15 @@ try {
   await page.locator('#sketchEndpointSnapEnabled').check();
   await page.locator('#sketchMidpointSnapEnabled').uncheck();
 
+  // Nach dem Snap-Test die aktuell sichtbare Seitenfläche neu bestimmen.
+  // Der Kamerastand kann sich zwischen den beiden Skizzierdurchläufen unterscheiden.
+  const extrusionFacePoint = await page.evaluate(id => window.__silmoFaceSketchTestPoint?.(id), faceObject);
+  assert.ok(extrusionFacePoint, 'Keine aktuelle Seitenfläche für den Extrusionstest gefunden');
   await page.locator('#pickFaceSketchPlane').click();
-  await page.mouse.click(facePoint.x, facePoint.y);
+  await page.mouse.click(extrusionFacePoint.x, extrusionFacePoint.y);
+  faceFrame = await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot?.());
+  assert.equal(faceFrame?.active, true, 'Seitenfläche wurde vor dem Extrusionstest nicht erneut ausgewählt');
+  assert.ok(Math.max(Math.abs(faceFrame.normal[0]), Math.abs(faceFrame.normal[1])) > 0.5, 'Neu ausgewählte Zeichenfläche ist keine Seitenfläche: ' + JSON.stringify(faceFrame));
   await page.locator('#startSketch').click();
   await page.waitForTimeout(500);
   const faceDrag = await page.evaluate(() => {
