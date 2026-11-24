@@ -195,7 +195,7 @@ Die Prozentanzeige wird bewusst streng und konservativ geführt. Sie ist keine S
 - Bei jeder Entwicklungsrückmeldung werden Gesamtfortschritt und aktueller Arbeitsschritt getrennt angezeigt.
 - Die Prozentwerte sind eine konservative Projektmessung anhand der Roadmap, keine Behauptung einer mathematisch exakten Gleichheit mit SketchUp.
 
-**Aktuelle konservative Gesamteinschätzung:** 8 %. Die vorhandenen Grundfunktionen und ersten Interaktionsverbesserungen sind ein Anfang; zentrale SketchUp-Arbeitsabläufe wie zuverlässiges Inferenz-/Fangsystem, vollständiges Flächenzeichnen, Push/Pull, Offset und die umfassende Bedien- und Regressionstest-Abdeckung fehlen noch.
+**Aktuelle konservative Gesamteinschätzung:** 9 %. Die Prozentzahl bleibt bewusst niedrig: Es gibt bereits einen getesteten Grundablauf für das Zeichnen auf ebenen Flächen und den ersten Endpunktfang, aber zahlreiche Kernwerkzeuge und die vollständige Modellierabdeckung fehlen noch. Die frühere 8-%-Angabe ist historisch und wurde durch den nachfolgenden, erfolgreich geprüften Meilenstein ersetzt.
 
 
 ## Erster Fangtyp: sichtbare Modell-Eckpunkte – 24. November 2026
@@ -206,4 +206,17 @@ Die Prozentanzeige wird bewusst streng und konservativ geführt. Sie ist keine S
 - Ein grüner Punkt markiert die tatsächlich eingerastete Position.
 - Die Kandidatensuche ist pro Zeichenstart zwischengespeichert und auf höchstens 6'000 Modellpunkte begrenzt.
 - Unit-Tests decken die Bildschirmdistanz, Toleranzgrenze, ungültige Kandidaten und Sichtbarkeitsfilterung ab.
-- Ein fokussierter Browser-Test prüft das Einrasten auf einer ausgewählten Würfelfläche. Die Funktion gilt erst nach erfolgreichem Code- und Browserlauf als verifiziert.
+- Ein fokussierter Browser-Test prüft das Einrasten auf einer ausgewählten Würfelfläche. Der vollständige Browser-Workflow wurde am 24. November 2026 erfolgreich abgeschlossen: Chromium und Safari-kompatibles WebKit bestanden. Auch die Code-Prüfungen waren erfolgreich.
+
+## Verifizierter Fang-/Zeichen-Meilenstein – 24. November 2026
+
+- Der Eckpunktfang und der Rasterfang sind getrennt schaltbar. Der Regressionstest deaktiviert den Eckpunktfang gezielt, wenn ausschliesslich das 5-mm-Raster geprüft wird.
+- Code-Prüfungen: erfolgreich.
+- Isolierte SketchUp-Modellierinteraktionen: erfolgreich.
+- Vollständige Browserinteraktionen in Chromium: erfolgreich.
+- Vollständige Browserinteraktionen in Safari-kompatiblem WebKit: erfolgreich.
+- Der Branch bleibt in Draft-PR #74. Es wurde nichts gemergt oder veröffentlicht.
+
+## Nächster Umsetzungsschritt
+
+Als Nächstes wird das Inferenzsystem um echte Kanten-Mittelpunkte erweitert. Dabei dürfen Dreiecksdiagonalen eines triangulierten Meshes nicht fälschlich als Modellkanten erscheinen. Vor der Implementierung wird deshalb die vorhandene Geometrie-/Kantenrepräsentation geprüft; erst danach folgen Kandidatenerzeugung, Sichtbarkeitsfilter und gezielte Tests. Der Endpunktfang bleibt separat schaltbar und wird durch neue Fangtypen nicht destabilisiert.
