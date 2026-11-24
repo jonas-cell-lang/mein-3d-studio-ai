@@ -217,6 +217,18 @@ Die Prozentanzeige wird bewusst streng und konservativ geführt. Sie ist keine S
 - Vollständige Browserinteraktionen in Safari-kompatiblem WebKit: erfolgreich.
 - Der Branch bleibt in Draft-PR #74. Es wurde nichts gemergt oder veröffentlicht.
 
+## Zweiter Fangtyp: sichtbare Kanten-Mittelpunkte – 24. November 2026
+
+- Der Fangalgorithmus erkennt Mittelpunkte von Randkanten und scharfen Modellkanten.
+- Doppelte Mesh-Vertices werden vor der Kantenanalyse innerhalb einer kleinen geometrischen Toleranz zusammengeführt.
+- Koplanare Dreiecksdiagonalen werden nicht als Modellkanten behandelt.
+- Eckpunktfang und Kantenmittefang besitzen getrennte, standardmässig aktivierte Schalter.
+- Die Kandidaten werden in Weltkoordinaten transformiert, auf die aktive Zeichenebene begrenzt und durch einen Sichtbarkeitstest gefiltert.
+- Der grüne Fangmarker zeigt auch bei Kantenmitten die tatsächlich verwendete Position.
+- Unit-Tests prüfen ein trianguliertes flaches Viereck, scharfe Kanten mit duplizierten Vertices sowie ungültige/degenerierte Geometrie.
+- Der fokussierte Modellier-Browser-Test prüft Eckpunkt- und Kantenmittefang. Die Rasterprüfung schaltet beide Fangtypen gezielt aus, damit die Fangsysteme unabhängig getestet werden.
+- Code-Prüfungen sowie vollständige Browserinteraktionen in Chromium und Safari-kompatiblem WebKit sind erfolgreich abgeschlossen (Workflow 45456547678). Auch der isolierte SketchUp-Modelliertest war erfolgreich.
+
 ## Nächster Umsetzungsschritt
 
-Als Nächstes wird das Inferenzsystem um echte Kanten-Mittelpunkte erweitert. Dabei dürfen Dreiecksdiagonalen eines triangulierten Meshes nicht fälschlich als Modellkanten erscheinen. Vor der Implementierung wird deshalb die vorhandene Geometrie-/Kantenrepräsentation geprüft; erst danach folgen Kandidatenerzeugung, Sichtbarkeitsfilter und gezielte Tests. Der Endpunktfang bleibt separat schaltbar und wird durch neue Fangtypen nicht destabilisiert.
+Als Nächstes wird die Fanglogik um weitere für SketchUp wichtige geometrische Beziehungen erweitert. Priorität haben robuste Schnitt-/Kreuzungspunkte und die Projektion auf Modellkanten. Vor jeder Erweiterung werden Laufzeitkosten und die Interaktion mit Eckpunkt-, Kantenmitte- und Rasterfang geprüft. Der aktuelle Meilenstein wird nicht als vollständiges SketchUp-Inferenzsystem gewertet.
