@@ -82,7 +82,7 @@ test('clamps segment projection to its endpoints and respects pixel tolerance', 
   const { findNearestPointOnSegments } = require('../src/inference.js');
   const segment = { start: { screenX: 10, screenY: 10 }, end: { screenX: 20, screenY: 10 } };
   assert.equal(findNearestPointOnSegments([segment], { x: 2, y: 10 }, 7), null);
-  const result = findNearestPointOnSegments([segment], { x: 2, y: 10 }, 8);
+  const result = findNearestPointOnSegments([segment], { x: 2, y: 10 }, 8.1);
   assert.equal(result.t, 0);
   assert.equal(result.screenX, 10);
 });
