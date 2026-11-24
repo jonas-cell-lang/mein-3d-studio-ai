@@ -2688,6 +2688,8 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(Math.abs(boundedPoint.x) <= 10.00001, 'Zeichenpunkt kann über die X-Grenze der 200-mm-Druckplatte hinaus');
   assert.ok(Math.abs(boundedPoint.y) <= 10.00001, 'Zeichenpunkt kann über die Y-Grenze der 200-mm-Druckplatte hinaus');
 
+  // Rasterfang isoliert prüfen: Der separate Eckpunktfang darf dieses Raster-Ergebnis nicht verändern.
+  await page.locator('#sketchEndpointSnapEnabled').uncheck();
   // Rasterfang: gezeichnete Rechteckkanten werden auf das gewählte 5-mm-Raster gesetzt.
   await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('rectangle');
