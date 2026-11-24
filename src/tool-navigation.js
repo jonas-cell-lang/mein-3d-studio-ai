@@ -75,6 +75,12 @@
   endpointSnapWrap.append(endpointSnapLabel,endpointSnapEnabled);
   const endpointSnapNote=document.createElement('p'); endpointSnapNote.className='note'; endpointSnapNote.textContent='Fängt beim Zeichnen sichtbare Eckpunkte von Modellflächen ein (12 Pixel Bildschirmabstand).';
   endpointSnapWrap.appendChild(endpointSnapNote); paneMap.draw.left.appendChild(endpointSnapWrap);
+  const midpointSnapWrap=document.createElement('div'); midpointSnapWrap.className='field';
+  const midpointSnapLabel=document.createElement('label'); midpointSnapLabel.htmlFor='sketchMidpointSnapEnabled'; midpointSnapLabel.textContent='Kantenmittefang aktivieren';
+  const midpointSnapEnabled=document.createElement('input'); midpointSnapEnabled.id='sketchMidpointSnapEnabled'; midpointSnapEnabled.type='checkbox'; midpointSnapEnabled.checked=true;
+  midpointSnapWrap.append(midpointSnapLabel,midpointSnapEnabled);
+  const midpointSnapNote=document.createElement('p'); midpointSnapNote.className='note'; midpointSnapNote.textContent='Fängt die Mitte sichtbarer scharfer Modellkanten ein. Flache Dreiecksdiagonalen werden ignoriert (12 Pixel Bildschirmabstand).';
+  midpointSnapWrap.appendChild(midpointSnapNote); paneMap.draw.left.appendChild(midpointSnapWrap);
   const sketchSmoothWrap=document.createElement('div'); sketchSmoothWrap.className='field';
   const sketchSmoothLabel=document.createElement('label'); sketchSmoothLabel.htmlFor='sketchSmoothEnabled'; sketchSmoothLabel.textContent='Freihand-Linien beruhigen';
   const sketchSmoothEnabled=document.createElement('input'); sketchSmoothEnabled.id='sketchSmoothEnabled'; sketchSmoothEnabled.type='checkbox'; sketchSmoothEnabled.checked=true;
