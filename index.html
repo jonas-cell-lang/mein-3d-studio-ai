@@ -3775,9 +3775,18 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       const projected = candidate.world.clone().project(camera);
       if (!Number.isFinite(projected.x + projected.y + projected.z) || projected.z < -1 || projected.z > 1) continue;
       endpointSnapDebug.projectedCount++;
+      const screenX = rect.left + (projected.x + 1) * rect.width / 2;
+      const screenY = rect.top + (1 - projected.y) * rect.height / 2;
+      if (endpointSnapDebug.samples.length < 12) endpointSnapDebug.samples.push({
+        projectedWorld: candidate.world.toArray(),
+        ndc: { x: projected.x, y: projected.y, z: projected.z },
+        screen: { x: screenX, y: screenY },
+        canvas: { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
+      });
+      if (projected.x < -1 || projected.x > 1 || projected.y < -1 || projected.y > 1) continue;
       candidates.push({
-        screenX: rect.left + (projected.x + 1) * rect.width / 2,
-        screenY: rect.top + (1 - projected.y) * rect.height / 2,
+        screenX,
+        screenY,
         world: candidate.world.toArray(),
         objectId: candidate.objectId
       });
