@@ -3736,7 +3736,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const segments = [];
     const seen = new Set();
     const maxCandidates = 6000;
-    endpointSnapDebug = { objectCount: objects.length, meshCount: 0, vertexCount: 0, planeMatches: 0, projectedCount: 0, visibilityChecks: 0, visibleCount: 0, minPlaneDistance: null, samples: [], projectionSamples: [], raycastSamples: [] };
+    endpointSnapDebug = { objectCount: objects.length, meshCount: 0, vertexCount: 0, planeMatches: 0, projectedCount: 0, visibilityChecks: 0, visibleCount: 0, minPlaneDistance: null, samples: [], projectionSamples: [], raycastSamples: [], featureEdgeCount: 0, edgePlaneMatches: 0, edgeSamples: [] };
     for (const root of objects) {
       if (candidates.length >= maxCandidates) break;
       root.updateMatrixWorld(true);
@@ -3766,12 +3766,17 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
             positions.array,
             node.geometry.index?.array || null
           );
+          endpointSnapDebug.featureEdgeCount += featureEdges.length;
           for (const edge of featureEdges) {
             const worldStart = new THREE.Vector3(...edge.start).applyMatrix4(node.matrixWorld);
             const worldEnd = new THREE.Vector3(...edge.end).applyMatrix4(node.matrixWorld);
             const startPlaneDistance = Math.abs(sketchPlane.distanceToPoint(worldStart));
             const endPlaneDistance = Math.abs(sketchPlane.distanceToPoint(worldEnd));
+            if (endpointSnapDebug.edgeSamples.length < 8) endpointSnapDebug.edgeSamples.push({
+              startPlaneDistance, endPlaneDistance, start: worldStart.toArray(), end: worldEnd.toArray()
+            });
             if (startPlaneDistance <= mmToWorldUnits(0.5) && endPlaneDistance <= mmToWorldUnits(0.5) && segments.length < maxCandidates) {
+              endpointSnapDebug.edgePlaneMatches++;
               segments.push({ start: worldStart, end: worldEnd, objectId: root.uuid, kind: 'edge' });
             }
             if (candidates.length >= maxCandidates) continue;
@@ -3975,8 +3980,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const target = projected[0];
     return target ? {
       count: segments.length, visible: target.visible, x: target.screen.x, y: target.screen.y,
-      world: target.world, objectId: target.objectId, length: target.length
-    } : { count: 0, visible: false };
+      world: target.world, objectId: target.objectId, length: target.length, debug: { ...endpointSnapDebug }
+    } : { count: 0, visible: false, debug: { ...endpointSnapDebug } };
   };
   window.__silmoSketchStartSnapshot = () => sketchStart.toArray();
 
