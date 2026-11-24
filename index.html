@@ -3805,6 +3805,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     let bestHit = null;
     let bestDistance = Infinity;
     let totalHits = 0;
+    let firstRayDiagnostic = null;
+    const candidateRoot = objects.find(root => root.uuid === candidate.objectId) || null;
     for (const offsetY of pixelOffsets) {
       for (const offsetX of pixelOffsets) {
         const ndc = new THREE.Vector2(
@@ -3813,6 +3815,23 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         );
         endpointSnapRaycaster.setFromCamera(ndc, camera);
         const hits = endpointSnapRaycaster.intersectObjects(objects, true);
+        if (!firstRayDiagnostic) {
+          firstRayDiagnostic = {
+            ndc: ndc.toArray(),
+            rayOrigin: endpointSnapRaycaster.ray.origin.toArray(),
+            rayDirection: endpointSnapRaycaster.ray.direction.toArray(),
+            cameraPosition: camera.position.toArray(),
+            cameraNear: camera.near,
+            cameraFar: camera.far,
+            rayNear: endpointSnapRaycaster.near,
+            rayFar: endpointSnapRaycaster.far,
+            candidateRootFound: !!candidateRoot,
+            candidateRootVisible: candidateRoot?.visible ?? null,
+            candidateRootType: candidateRoot?.type || null,
+            rootChildren: candidateRoot?.children?.length ?? null,
+            directRootHits: candidateRoot ? endpointSnapRaycaster.intersectObject(candidateRoot, true).length : null
+          };
+        }
         totalHits += hits.length;
         for (const hit of hits) {
           const distance = hit.point.distanceTo(world);
@@ -3832,7 +3851,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       tolerance,
       hitObjectId: bestHit?.object?.parent?.uuid || bestHit?.object?.uuid || null,
       hitCount: totalHits,
-      pixelWindow: 3
+      pixelWindow: 3,
+      rayDiagnostic: firstRayDiagnostic,
+      objectRoots: objects.map(root => ({ id: root.uuid, type: root.type, visible: root.visible, children: root.children?.length ?? 0 }))
     });
     if (visible) endpointSnapDebug.visibleCount++;
     return visible;
