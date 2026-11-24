@@ -3796,24 +3796,43 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 
   function endpointSnapCandidateIsVisible(candidate, rect) {
     const world = new THREE.Vector3(...candidate.world);
-    const ndc = new THREE.Vector2(
-      ((candidate.screenX - rect.left) / rect.width) * 2 - 1,
-      1 - ((candidate.screenY - rect.top) / rect.height) * 2
-    );
-    endpointSnapRaycaster.setFromCamera(ndc, camera);
-    const hits = endpointSnapRaycaster.intersectObjects(objects, true);
-    const hit = hits[0];
-    endpointSnapDebug.visibilityChecks++;
-    const hitDistance = hit ? hit.point.distanceTo(world) : null;
     const tolerance = mmToWorldUnits(1.5);
-    const visible = !!hit && hitDistance <= tolerance;
+    camera.updateMatrixWorld(true);
+    // Ein Strahl exakt durch einen Mesh-Eckpunkt kann wegen Rundungsfehlern
+    // knapp neben den angrenzenden Dreiecken landen. Deshalb prüfen wir ein
+    // kleines 3x3-Pixel-Fenster um die projizierte Ecke.
+    const pixelOffsets = [0, -1.5, 1.5];
+    let bestHit = null;
+    let bestDistance = Infinity;
+    let totalHits = 0;
+    for (const offsetY of pixelOffsets) {
+      for (const offsetX of pixelOffsets) {
+        const ndc = new THREE.Vector2(
+          ((candidate.screenX + offsetX - rect.left) / rect.width) * 2 - 1,
+          1 - ((candidate.screenY + offsetY - rect.top) / rect.height) * 2
+        );
+        endpointSnapRaycaster.setFromCamera(ndc, camera);
+        const hits = endpointSnapRaycaster.intersectObjects(objects, true);
+        totalHits += hits.length;
+        for (const hit of hits) {
+          const distance = hit.point.distanceTo(world);
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            bestHit = hit;
+          }
+        }
+      }
+    }
+    endpointSnapDebug.visibilityChecks++;
+    const visible = !!bestHit && bestDistance <= tolerance;
     if (endpointSnapDebug.raycastSamples.length < 8) endpointSnapDebug.raycastSamples.push({
       projectedWorld: world.toArray(),
-      hitWorld: hit?.point?.toArray() || null,
-      hitDistance,
+      hitWorld: bestHit?.point?.toArray() || null,
+      hitDistance: Number.isFinite(bestDistance) ? bestDistance : null,
       tolerance,
-      hitObjectId: hit?.object?.parent?.uuid || hit?.object?.uuid || null,
-      hitCount: hits.length
+      hitObjectId: bestHit?.object?.parent?.uuid || bestHit?.object?.uuid || null,
+      hitCount: totalHits,
+      pixelWindow: 3
     });
     if (visible) endpointSnapDebug.visibleCount++;
     return visible;
