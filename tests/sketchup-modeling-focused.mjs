@@ -135,7 +135,7 @@ try {
   await page.locator('#sketchMidpointSnapEnabled').uncheck();
   await page.locator('#sketchEdgeProjectionSnapEnabled').check();
   const edgeProjectionTarget = await page.evaluate(() => window.__silmoEndpointSnapTestSegment?.());
-  assert.ok(edgeProjectionTarget, 'Keine sichtbare Modellkante für den Projektionstest gefunden');
+  assert.ok(edgeProjectionTarget?.visible, 'Keine sichtbare Modellkante für den Projektionstest gefunden: ' + JSON.stringify(edgeProjectionTarget));
   await page.locator('#startSketch').click();
   await page.waitForTimeout(300);
   await page.mouse.move(edgeProjectionTarget.x + 3, edgeProjectionTarget.y + 2);
