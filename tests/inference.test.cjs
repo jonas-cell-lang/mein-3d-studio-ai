@@ -36,3 +36,32 @@ test('skips candidates rejected by the visibility predicate', () => {
   ], { x: 10, y: 10 }, 12, candidate => candidate.id === 'visible');
   assert.equal(result.id, 'visible');
 });
+
+
+test('finds feature edges but ignores the diagonal inside a flat triangulated quad', () => {
+  const positions = [
+    0,0,0, 1,0,0, 1,1,0,
+    0,0,0, 1,1,0, 0,1,0
+  ];
+  const edges = require('../src/inference.js').findFeatureEdgeMidpoints(positions);
+  assert.equal(edges.length, 4);
+  assert.ok(edges.every(edge => edge.boundary));
+  assert.equal(edges.some(edge => edge.start[0] === 0 && edge.start[1] === 0 && edge.end[0] === 1 && edge.end[1] === 1), false);
+});
+
+test('detects a sharp crease after welding duplicated triangle vertices', () => {
+  const positions = [
+    0,0,0, 1,0,0, 0,1,0,
+    0,0,0, 0,0,1, 1,0,0
+  ];
+  const edges = require('../src/inference.js').findFeatureEdgeMidpoints(positions);
+  const shared = edges.find(edge =>
+    edge.midpoint[0] === 0.5 && edge.midpoint[1] === 0 && edge.midpoint[2] === 0);
+  assert.ok(shared, 'gemeinsame scharfe Kante fehlt');
+  assert.equal(shared.boundary, false);
+});
+
+test('returns no feature edges for malformed or degenerate geometry', () => {
+  assert.deepEqual(require('../src/inference.js').findFeatureEdgeMidpoints([0,0,0, 1,0,0]), []);
+  assert.deepEqual(require('../src/inference.js').findFeatureEdgeMidpoints([0,0,0, 1,0,0, 2,0,0]), []);
+});
