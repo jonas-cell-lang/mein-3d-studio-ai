@@ -28,3 +28,11 @@ test('rejects invalid pointers and malformed candidates safely', () => {
   assert.equal(findNearestPoint([{ screenX: 1, screenY: 1 }], { x: NaN, y: 1 }, 10), null);
   assert.equal(findNearestPoint([null, { screenX: Infinity, screenY: 0 }], { x: 0, y: 0 }, 10), null);
 });
+
+test('skips candidates rejected by the visibility predicate', () => {
+  const result = findNearestPoint([
+    { id: 'hidden', screenX: 10, screenY: 10 },
+    { id: 'visible', screenX: 12, screenY: 10 }
+  ], { x: 10, y: 10 }, 12, candidate => candidate.id === 'visible');
+  assert.equal(result.id, 'visible');
+});
