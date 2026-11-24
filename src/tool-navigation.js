@@ -81,6 +81,12 @@
   midpointSnapWrap.append(midpointSnapLabel,midpointSnapEnabled);
   const midpointSnapNote=document.createElement('p'); midpointSnapNote.className='note'; midpointSnapNote.textContent='Fängt die Mitte sichtbarer scharfer Modellkanten ein. Flache Dreiecksdiagonalen werden ignoriert (12 Pixel Bildschirmabstand).';
   midpointSnapWrap.appendChild(midpointSnapNote); paneMap.draw.left.appendChild(midpointSnapWrap);
+  const edgeProjectionSnapWrap=document.createElement('div'); edgeProjectionSnapWrap.className='field';
+  const edgeProjectionSnapLabel=document.createElement('label'); edgeProjectionSnapLabel.htmlFor='sketchEdgeProjectionSnapEnabled'; edgeProjectionSnapLabel.textContent='Auf Kanten projizieren';
+  const edgeProjectionSnapEnabled=document.createElement('input'); edgeProjectionSnapEnabled.id='sketchEdgeProjectionSnapEnabled'; edgeProjectionSnapEnabled.type='checkbox'; edgeProjectionSnapEnabled.checked=true;
+  edgeProjectionSnapWrap.append(edgeProjectionSnapLabel,edgeProjectionSnapEnabled);
+  const edgeProjectionSnapNote=document.createElement('p'); edgeProjectionSnapNote.className='note'; edgeProjectionSnapNote.textContent='Fängt jeden Punkt direkt auf einer sichtbaren Modellkante ein (12 Pixel Bildschirmabstand).';
+  edgeProjectionSnapWrap.appendChild(edgeProjectionSnapNote); paneMap.draw.left.appendChild(edgeProjectionSnapWrap);
   const sketchSmoothWrap=document.createElement('div'); sketchSmoothWrap.className='field';
   const sketchSmoothLabel=document.createElement('label'); sketchSmoothLabel.htmlFor='sketchSmoothEnabled'; sketchSmoothLabel.textContent='Freihand-Linien beruhigen';
   const sketchSmoothEnabled=document.createElement('input'); sketchSmoothEnabled.id='sketchSmoothEnabled'; sketchSmoothEnabled.type='checkbox'; sketchSmoothEnabled.checked=true;
