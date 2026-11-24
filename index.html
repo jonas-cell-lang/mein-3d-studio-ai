@@ -3734,7 +3734,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const candidates = [];
     const seen = new Set();
     const maxCandidates = 6000;
-    endpointSnapDebug = { objectCount: objects.length, meshCount: 0, vertexCount: 0, planeMatches: 0, projectedCount: 0, visibilityChecks: 0, visibleCount: 0, minPlaneDistance: null, samples: [] };
+    endpointSnapDebug = { objectCount: objects.length, meshCount: 0, vertexCount: 0, planeMatches: 0, projectedCount: 0, visibilityChecks: 0, visibleCount: 0, minPlaneDistance: null, samples: [], projectionSamples: [], raycastSamples: [] };
     for (const root of objects) {
       if (candidates.length >= maxCandidates) break;
       root.updateMatrixWorld(true);
@@ -3777,7 +3777,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       endpointSnapDebug.projectedCount++;
       const screenX = rect.left + (projected.x + 1) * rect.width / 2;
       const screenY = rect.top + (1 - projected.y) * rect.height / 2;
-      if (endpointSnapDebug.samples.length < 12) endpointSnapDebug.samples.push({
+      if (endpointSnapDebug.projectionSamples.length < 8) endpointSnapDebug.projectionSamples.push({
         projectedWorld: candidate.world.toArray(),
         ndc: { x: projected.x, y: projected.y, z: projected.z },
         screen: { x: screenX, y: screenY },
@@ -3807,7 +3807,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const hitDistance = hit ? hit.point.distanceTo(world) : null;
     const tolerance = mmToWorldUnits(1.5);
     const visible = !!hit && hitDistance <= tolerance;
-    if (endpointSnapDebug.samples.length < 8) endpointSnapDebug.samples.push({
+    if (endpointSnapDebug.raycastSamples.length < 8) endpointSnapDebug.raycastSamples.push({
       projectedWorld: world.toArray(),
       hitWorld: hit?.point?.toArray() || null,
       hitDistance,
