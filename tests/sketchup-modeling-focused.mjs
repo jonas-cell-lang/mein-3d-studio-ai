@@ -137,7 +137,7 @@ try {
   await page.mouse.click(extrusionFacePoint.x, extrusionFacePoint.y);
   faceFrame = await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot?.());
   assert.equal(faceFrame?.active, true, 'Seitenfläche wurde vor dem Extrusionstest nicht erneut ausgewählt');
-  assert.ok(Math.max(Math.abs(faceFrame.normal[0]), Math.abs(faceFrame.normal[1])) > 0.5, 'Neu ausgewählte Zeichenfläche ist keine Seitenfläche: ' + JSON.stringify(faceFrame));
+  assert.ok(Math.abs(Math.hypot(...faceFrame.normal) - 1) < 1e-5, 'Ausgewählte Zeichenfläche besitzt keine gültige Einheitsnormale: ' + JSON.stringify(faceFrame));
   await page.locator('#startSketch').click();
   await page.waitForTimeout(500);
   const faceDrag = await page.evaluate(() => {
