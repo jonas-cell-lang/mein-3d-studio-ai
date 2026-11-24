@@ -90,6 +90,27 @@ try {
   await page.locator('#sketchTool').selectOption('rectangle');
   await page.locator('#startSketch').click();
   await page.waitForTimeout(700);
+  assert.equal(await page.locator('#sketchEndpointSnapEnabled').isChecked(), true, 'Eckpunktfang ist nicht standardmässig aktiviert');
+  const snapTarget = await page.evaluate(() => window.__silmoEndpointSnapTestPoint?.());
+  assert.ok(snapTarget, 'Kein sichtbarer Eckpunkt auf der gewählten Zeichenfläche gefunden');
+  await page.mouse.move(snapTarget.x + 5, snapTarget.y + 4);
+  await page.mouse.down();
+  const snapState = await page.evaluate(() => ({
+    state: window.__silmoEndpointSnapSnapshot?.(),
+    start: window.__silmoSketchStartSnapshot?.()
+  }));
+  assert.equal(snapState.state?.visible, true, 'Eckpunktfang-Marker wird beim Einrasten nicht angezeigt');
+  assert.ok(snapState.state?.snappedWorld && Math.hypot(
+    snapState.state.snappedWorld[0] - snapTarget.world[0],
+    snapState.state.snappedWorld[1] - snapTarget.world[1],
+    snapState.state.snappedWorld[2] - snapTarget.world[2]
+  ) < 1e-5, 'Zeichenstart wurde nicht auf den sichtbaren Modell-Eckpunkt eingerastet');
+  await page.mouse.up();
+  await page.locator('#cancelSketch').click();
+  await page.locator('#pickFaceSketchPlane').click();
+  await page.mouse.click(facePoint.x, facePoint.y);
+  await page.locator('#startSketch').click();
+  await page.waitForTimeout(500);
   const faceDrag = await page.evaluate(() => {
     const half = window.SILMOUnits.mmToWorldUnits(10);
     return {
