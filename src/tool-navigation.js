@@ -69,6 +69,12 @@
   const sketchSnapLabel=document.createElement('label'); sketchSnapLabel.htmlFor='sketchSnapEnabled'; sketchSnapLabel.textContent='Rasterfang aktivieren';
   const sketchSnapEnabled=document.createElement('input'); sketchSnapEnabled.id='sketchSnapEnabled'; sketchSnapEnabled.type='checkbox'; sketchSnapEnabled.checked=false;
   sketchSnapWrap.append(sketchSnapLabel,sketchSnapEnabled); paneMap.draw.left.appendChild(sketchSnapWrap);
+  const endpointSnapWrap=document.createElement('div'); endpointSnapWrap.className='field';
+  const endpointSnapLabel=document.createElement('label'); endpointSnapLabel.htmlFor='sketchEndpointSnapEnabled'; endpointSnapLabel.textContent='Eckpunktfang aktivieren';
+  const endpointSnapEnabled=document.createElement('input'); endpointSnapEnabled.id='sketchEndpointSnapEnabled'; endpointSnapEnabled.type='checkbox'; endpointSnapEnabled.checked=true;
+  endpointSnapWrap.append(endpointSnapLabel,endpointSnapEnabled);
+  const endpointSnapNote=document.createElement('p'); endpointSnapNote.className='note'; endpointSnapNote.textContent='Fängt beim Zeichnen sichtbare Eckpunkte von Modellflächen ein (12 Pixel Bildschirmabstand).';
+  endpointSnapWrap.appendChild(endpointSnapNote); paneMap.draw.left.appendChild(endpointSnapWrap);
   const sketchSmoothWrap=document.createElement('div'); sketchSmoothWrap.className='field';
   const sketchSmoothLabel=document.createElement('label'); sketchSmoothLabel.htmlFor='sketchSmoothEnabled'; sketchSmoothLabel.textContent='Freihand-Linien beruhigen';
   const sketchSmoothEnabled=document.createElement('input'); sketchSmoothEnabled.id='sketchSmoothEnabled'; sketchSmoothEnabled.type='checkbox'; sketchSmoothEnabled.checked=true;
