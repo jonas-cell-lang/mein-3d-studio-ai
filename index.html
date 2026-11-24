@@ -519,6 +519,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 <script src="./vendor/three/STLExporter.js"></script>
 <script src="./src/units.js"></script>
 <script src="./src/tolerances.js"></script>
+  <script src="./src/inference.js"></script>
 <script src="./src/sketch-geometry.js"></script>
 <script src="./src/csg.js"></script>
 <script src="./src/occt-kernel-client.js"></script>
@@ -3716,11 +3717,119 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     }
     return points.filter((point, index) => keep[index]).map(point => point.clone());
   }
+  let endpointSnapWorldCandidates = null;
+  let endpointSnapLastWorld = null;
+  const endpointSnapMarkerGeometry = new THREE.BufferGeometry();
+  endpointSnapMarkerGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3));
+  const endpointSnapMarker = new THREE.Points(endpointSnapMarkerGeometry,
+    new THREE.PointsMaterial({ color: 0x22c55e, size: 13, sizeAttenuation: false, depthTest: false, depthWrite: false }));
+  endpointSnapMarker.visible = false;
+  endpointSnapMarker.renderOrder = 2000;
+  scene.add(endpointSnapMarker);
+  const endpointSnapRaycaster = new THREE.Raycaster();
+
+  function collectEndpointSnapWorldCandidates() {
+    if (endpointSnapWorldCandidates) return endpointSnapWorldCandidates;
+    const candidates = [];
+    const seen = new Set();
+    const maxCandidates = 6000;
+    for (const root of objects) {
+      if (candidates.length >= maxCandidates) break;
+      root.updateMatrixWorld(true);
+      root.traverse(node => {
+        if (!node.isMesh || !node.geometry || candidates.length >= maxCandidates) return;
+        const positions = node.geometry.getAttribute('position');
+        if (!positions || positions.itemSize !== 3) return;
+        const stride = Math.max(1, Math.ceil(positions.count / 1500));
+        for (let index = 0; index < positions.count && candidates.length < maxCandidates; index += stride) {
+          const world = new THREE.Vector3().fromBufferAttribute(positions, index).applyMatrix4(node.matrixWorld);
+          if (![world.x, world.y, world.z].every(Number.isFinite)) continue;
+          if (Math.abs(sketchPlane.distanceToPoint(world)) > mmToWorldUnits(0.5)) continue;
+          const key = [world.x, world.y, world.z].map(value => Math.round(value * 10000)).join(':');
+          if (seen.has(key)) continue;
+          seen.add(key);
+          candidates.push({ world, objectId: root.uuid });
+        }
+      });
+    }
+    endpointSnapWorldCandidates = candidates;
+    return candidates;
+  }
+
+  function projectEndpointSnapCandidates() {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return { rect, candidates: [] };
+    camera.updateMatrixWorld(true);
+    camera.updateProjectionMatrix();
+    const candidates = [];
+    for (const candidate of collectEndpointSnapWorldCandidates()) {
+      const projected = candidate.world.clone().project(camera);
+      if (!Number.isFinite(projected.x + projected.y + projected.z) || projected.z < -1 || projected.z > 1) continue;
+      candidates.push({
+        screenX: rect.left + (projected.x + 1) * rect.width / 2,
+        screenY: rect.top + (1 - projected.y) * rect.height / 2,
+        world: candidate.world.toArray(),
+        objectId: candidate.objectId
+      });
+    }
+    return { rect, candidates };
+  }
+
+  function endpointSnapCandidateIsVisible(candidate, rect) {
+    const world = new THREE.Vector3(...candidate.world);
+    const ndc = new THREE.Vector2(
+      ((candidate.screenX - rect.left) / rect.width) * 2 - 1,
+      1 - ((candidate.screenY - rect.top) / rect.height) * 2
+    );
+    endpointSnapRaycaster.setFromCamera(ndc, camera);
+    const hit = endpointSnapRaycaster.intersectObjects(objects, true)[0];
+    return !!hit && hit.point.distanceTo(world) <= mmToWorldUnits(1.5);
+  }
+
+  function findEndpointSnapCandidate() {
+    if (!window.SILMOInference || !document.getElementById('sketchEndpointSnapEnabled')?.checked) return null;
+    const { rect, candidates } = projectEndpointSnapCandidates();
+    const pointer = {
+      x: rect.left + (pointerNDC.x + 1) * rect.width / 2,
+      y: rect.top + (1 - pointerNDC.y) * rect.height / 2
+    };
+    return window.SILMOInference.findNearestPoint(candidates, pointer, 12,
+      candidate => endpointSnapCandidateIsVisible(candidate, rect));
+  }
+
+  function updateEndpointSnapMarker(worldPoint) {
+    if (!worldPoint) {
+      endpointSnapMarker.visible = false;
+      endpointSnapLastWorld = null;
+      return;
+    }
+    const position = endpointSnapMarker.geometry.getAttribute('position');
+    position.setXYZ(0, worldPoint.x, worldPoint.y, worldPoint.z);
+    position.needsUpdate = true;
+    endpointSnapMarker.geometry.computeBoundingSphere();
+    endpointSnapMarker.visible = true;
+    endpointSnapLastWorld = worldPoint.clone();
+  }
+
+  window.__silmoEndpointSnapSnapshot = () => ({
+    enabled: !!document.getElementById('sketchEndpointSnapEnabled')?.checked,
+    visible: endpointSnapMarker.visible,
+    snappedWorld: endpointSnapLastWorld?.toArray() || null,
+    candidateCount: collectEndpointSnapWorldCandidates().length
+  });
+  window.__silmoEndpointSnapTestPoint = () => {
+    const { rect, candidates } = projectEndpointSnapCandidates();
+    const target = candidates.find(candidate => endpointSnapCandidateIsVisible(candidate, rect));
+    return target ? { x: target.screenX, y: target.screenY, world: target.world, objectId: target.objectId } : null;
+  };
+  window.__silmoSketchStartSnapshot = () => sketchStart.toArray();
+
   function snapSketchPoint(point) {
     if (document.getElementById('sketchSnapEnabled')?.checked) {
       const stepMM = Number(document.getElementById('sketchGridMM')?.value);
       if (!Number.isFinite(stepMM) || stepMM < 0.1 || stepMM > 100) {
         document.getElementById('sketchStatus').textContent = 'Die Rasterweite muss zwischen 0,1 und 100 mm liegen.';
+        updateEndpointSnapMarker(null);
         return clampSketchPoint(point, sketchDrawingMarginMM());
       }
       const step = mmToWorldUnits(stepMM);
@@ -3729,6 +3838,19 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         Math.round(point.y / step) * step,
         Math.round(point.z / step) * step
       );
+    }
+    const endpoint = findEndpointSnapCandidate();
+    if (endpoint) {
+      const world = new THREE.Vector3(...endpoint.world);
+      if (faceSketchPlaneActive) {
+        const offset = world.clone().sub(faceSketchFrame.origin);
+        point.set(offset.dot(faceSketchFrame.u), offset.dot(faceSketchFrame.v), 0);
+      } else {
+        point.copy(world);
+      }
+      updateEndpointSnapMarker(world);
+    } else {
+      updateEndpointSnapMarker(null);
     }
     return clampSketchPoint(point, sketchDrawingMarginMM());
   }
@@ -4761,6 +4883,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   };
 
   document.getElementById('startSketch').addEventListener('click', () => {
+    endpointSnapWorldCandidates = null;
+    updateEndpointSnapMarker(null);
     clearSketchPreview();
     sketchDraft = null;
     sketchDrawing = false;
@@ -4818,6 +4942,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   document.getElementById('subtractSelected').addEventListener('click',()=>runBooleanOperation('subtract'));
   document.getElementById('cancelSketch').addEventListener('click', () => {
     sketchMode = false; sketchDrawing = false; sketchPointerId = null; sketchDraft = null;
+    endpointSnapWorldCandidates = null;
+    updateEndpointSnapMarker(null);
     faceSketchPlaneActive = false;
     faceSketchPlanePickMode = false;
     document.getElementById('sketchPlaneSelect').disabled = false;
@@ -4851,6 +4977,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     document.getElementById('sketchStatus').textContent = document.getElementById('sketchSnapEnabled').checked
       ? 'Rasterfang aktiv: Zeichenpunkte rasten auf ' + Number(document.getElementById('sketchGridMM').value) + ' mm ein.'
       : 'Rasterfang aus: Du kannst frei innerhalb der Druckplatte zeichnen.';
+  });
+  document.getElementById('sketchEndpointSnapEnabled').addEventListener('change', () => {
+    updateEndpointSnapMarker(null);
+    document.getElementById('sketchStatus').textContent = document.getElementById('sketchEndpointSnapEnabled').checked
+      ? 'Eckpunktfang aktiv: sichtbare Modell-Eckpunkte rasten im Abstand von 12 Pixeln ein.'
+      : 'Eckpunktfang aus: Zeichenpunkte werden nicht an Modell-Eckpunkten ausgerichtet.';
   });
   function updateSketchToolFields() {
     const tool = document.getElementById('sketchTool').value;
