@@ -163,6 +163,7 @@ try {
   const normalAxis = faceFrame.normal.reduce((best, value, index, values) =>
     Math.abs(value) > Math.abs(values[best]) ? index : best, 0);
   const extents = [extruded.actualWidthMM, extruded.actualDepthMM, extruded.actualHeightMM];
+  console.log('SILMO-EXTRUSION-DIAG', JSON.stringify({ normal: faceFrame.normal, normalAxis, extents, extrusionMM: extruded.extrusionMM, actualWidthMM: extruded.actualWidthMM, actualDepthMM: extruded.actualDepthMM, actualHeightMM: extruded.actualHeightMM, faceFrameAfter: await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot?.()) }));
   assert.ok(
     Math.abs(extents[normalAxis] - extruded.extrusionMM) < 0.8,
     'Extrusion verläuft nicht entlang der ausgewählten Flächennormalen: ' + JSON.stringify({ normal: faceFrame.normal, extents, extrusionMM: extruded.extrusionMM, snapshot: extruded, faceFrameAfter: await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot?.()) })
