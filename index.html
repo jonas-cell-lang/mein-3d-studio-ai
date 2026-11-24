@@ -3718,6 +3718,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     return points.filter((point, index) => keep[index]).map(point => point.clone());
   }
   let endpointSnapWorldCandidates = null;
+  let endpointSnapWorldSegments = null;
   let endpointSnapLastWorld = null;
   let endpointSnapDebug = {};
   const endpointSnapMarkerGeometry = new THREE.BufferGeometry();
@@ -3732,6 +3733,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   function collectEndpointSnapWorldCandidates() {
     if (endpointSnapWorldCandidates) return endpointSnapWorldCandidates;
     const candidates = [];
+    const segments = [];
     const seen = new Set();
     const maxCandidates = 6000;
     endpointSnapDebug = { objectCount: objects.length, meshCount: 0, vertexCount: 0, planeMatches: 0, projectedCount: 0, visibilityChecks: 0, visibleCount: 0, minPlaneDistance: null, samples: [], projectionSamples: [], raycastSamples: [] };
@@ -3765,7 +3767,14 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
             node.geometry.index?.array || null
           );
           for (const edge of featureEdges) {
-            if (candidates.length >= maxCandidates) break;
+            const worldStart = new THREE.Vector3(...edge.start).applyMatrix4(node.matrixWorld);
+            const worldEnd = new THREE.Vector3(...edge.end).applyMatrix4(node.matrixWorld);
+            const startPlaneDistance = Math.abs(sketchPlane.distanceToPoint(worldStart));
+            const endPlaneDistance = Math.abs(sketchPlane.distanceToPoint(worldEnd));
+            if (startPlaneDistance <= mmToWorldUnits(0.5) && endPlaneDistance <= mmToWorldUnits(0.5) && segments.length < maxCandidates) {
+              segments.push({ start: worldStart, end: worldEnd, objectId: root.uuid, kind: 'edge' });
+            }
+            if (candidates.length >= maxCandidates) continue;
             const world = new THREE.Vector3(...edge.midpoint).applyMatrix4(node.matrixWorld);
             if (![world.x, world.y, world.z].every(Number.isFinite)) continue;
             const planeDistance = Math.abs(sketchPlane.distanceToPoint(world));
@@ -3779,6 +3788,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       });
     }
     endpointSnapWorldCandidates = candidates;
+    endpointSnapWorldSegments = segments;
     return candidates;
   }
 
@@ -3788,7 +3798,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     camera.updateMatrixWorld(true);
     camera.updateProjectionMatrix();
     const candidates = [];
-    for (const candidate of collectEndpointSnapWorldCandidates()) {
+    const segments = [];
+    collectEndpointSnapWorldCandidates();
+    for (const candidate of endpointSnapWorldCandidates || []) {
       const projected = candidate.world.clone().project(camera);
       if (!Number.isFinite(projected.x + projected.y + projected.z) || projected.z < -1 || projected.z > 1) continue;
       endpointSnapDebug.projectedCount++;
@@ -3809,7 +3821,21 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         kind: candidate.kind
       });
     }
-    return { rect, candidates };
+    for (const segment of endpointSnapWorldSegments || []) {
+      const start = segment.start.clone().project(camera);
+      const end = segment.end.clone().project(camera);
+      if (![start.x, start.y, start.z, end.x, end.y, end.z].every(Number.isFinite) ||
+          start.z < -1 || start.z > 1 || end.z < -1 || end.z > 1 ||
+          start.x < -1 || start.x > 1 || start.y < -1 || start.y > 1 ||
+          end.x < -1 || end.x > 1 || end.y < -1 || end.y > 1) continue;
+      segments.push({
+        start: { screenX: rect.left + (start.x + 1) * rect.width / 2, screenY: rect.top + (1 - start.y) * rect.height / 2, world: segment.start.toArray() },
+        end: { screenX: rect.left + (end.x + 1) * rect.width / 2, screenY: rect.top + (1 - end.y) * rect.height / 2, world: segment.end.toArray() },
+        objectId: segment.objectId,
+        kind: 'edge'
+      });
+    }
+    return { rect, candidates, segments };
   }
 
   function endpointSnapCandidateIsVisible(candidate, rect) {
@@ -3882,14 +3908,23 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const endpointsEnabled = !!document.getElementById('sketchEndpointSnapEnabled')?.checked;
     const midpointsEnabled = !!document.getElementById('sketchMidpointSnapEnabled')?.checked;
     if (!endpointsEnabled && !midpointsEnabled) return null;
-    const { rect, candidates } = projectEndpointSnapCandidates();
+    const { rect, candidates, segments } = projectEndpointSnapCandidates();
     const pointer = {
       x: rect.left + (pointerNDC.x + 1) * rect.width / 2,
       y: rect.top + (1 - pointerNDC.y) * rect.height / 2
     };
-    return window.SILMOInference.findNearestPoint(candidates, pointer, 12,
+    const pointSnap = window.SILMOInference.findNearestPoint(candidates, pointer, 12,
       candidate => (candidate.kind === 'vertex' ? endpointsEnabled : midpointsEnabled) &&
         endpointSnapCandidateIsVisible(candidate, rect));
+    const edgeEnabled = !!document.getElementById('sketchEdgeProjectionSnapEnabled')?.checked;
+    const edgeSnap = edgeEnabled && window.SILMOInference.findNearestPointOnSegments
+      ? window.SILMOInference.findNearestPointOnSegments(segments, pointer, 12,
+          segment => endpointSnapCandidateIsVisible({ world: segment.world, objectId: segment.objectId }, rect))
+      : null;
+    if (edgeSnap && (!pointSnap || edgeSnap.distancePx < pointSnap.distancePx) && edgeSnap.world) {
+      return { ...edgeSnap, kind: 'edge', world: edgeSnap.world };
+    }
+    return pointSnap;
   }
 
   function updateEndpointSnapMarker(worldPoint) {
@@ -3909,6 +3944,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   window.__silmoEndpointSnapSnapshot = () => ({
     enabled: !!document.getElementById('sketchEndpointSnapEnabled')?.checked,
     midpointEnabled: !!document.getElementById('sketchMidpointSnapEnabled')?.checked,
+    edgeProjectionEnabled: !!document.getElementById('sketchEdgeProjectionSnapEnabled')?.checked,
     visible: endpointSnapMarker.visible,
     snappedWorld: endpointSnapLastWorld?.toArray() || null,
     candidateCount: collectEndpointSnapWorldCandidates().length,
@@ -4981,6 +5017,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
 
   document.getElementById('startSketch').addEventListener('click', () => {
     endpointSnapWorldCandidates = null;
+    endpointSnapWorldSegments = null;
     updateEndpointSnapMarker(null);
     clearSketchPreview();
     sketchDraft = null;
