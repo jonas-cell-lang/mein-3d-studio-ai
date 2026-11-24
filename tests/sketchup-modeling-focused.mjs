@@ -158,7 +158,7 @@ try {
   const extents = [extruded.actualWidthMM, extruded.actualDepthMM, extruded.actualHeightMM];
   assert.ok(
     Math.abs(extents[normalAxis] - extruded.extrusionMM) < 0.8,
-    'Extrusion verläuft nicht entlang der ausgewählten Flächennormalen'
+    'Extrusion verläuft nicht entlang der ausgewählten Flächennormalen: ' + JSON.stringify({ normal: faceFrame.normal, extents, extrusionMM: extruded.extrusionMM, snapshot: extruded, faceFrameAfter: await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot?.()) })
   );
   await page.locator('[data-tab="create"]').click();
   // Der folgende Escape-Test beendet den Zeichenmodus und setzt die Flächenauswahl zurück.
