@@ -3839,15 +3839,19 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       });
     }
     for (const segment of endpointSnapWorldSegments || []) {
-      const start = segment.start.clone().project(camera);
-      const end = segment.end.clone().project(camera);
-      if (![start.x, start.y, start.z, end.x, end.y, end.z].every(Number.isFinite) ||
-          start.z < -1 || start.z > 1 || end.z < -1 || end.z > 1 ||
-          start.x < -1 || start.x > 1 || start.y < -1 || start.y > 1 ||
-          end.x < -1 || end.x > 1 || end.y < -1 || end.y > 1) continue;
+      // Die Maus bewegt sich auf der tatsächlich sichtbaren 3D-Kante.
+      // Der Fangpunkt wird mit demselben Segmentparameter auf die Zeichenebene
+      // übertragen. So stimmen Bildschirmposition, Sichtbarkeitsprüfung und
+      // projizierte Weltposition geometrisch überein.
+      const sourceStart = segment.sourceStart.clone().project(camera);
+      const sourceEnd = segment.sourceEnd.clone().project(camera);
+      if (![sourceStart.x, sourceStart.y, sourceStart.z, sourceEnd.x, sourceEnd.y, sourceEnd.z].every(Number.isFinite) ||
+          sourceStart.z < -1 || sourceStart.z > 1 || sourceEnd.z < -1 || sourceEnd.z > 1 ||
+          sourceStart.x < -1 || sourceStart.x > 1 || sourceStart.y < -1 || sourceStart.y > 1 ||
+          sourceEnd.x < -1 || sourceEnd.x > 1 || sourceEnd.y < -1 || sourceEnd.y > 1) continue;
       segments.push({
-        start: { screenX: rect.left + (start.x + 1) * rect.width / 2, screenY: rect.top + (1 - start.y) * rect.height / 2, world: segment.start.toArray() },
-        end: { screenX: rect.left + (end.x + 1) * rect.width / 2, screenY: rect.top + (1 - end.y) * rect.height / 2, world: segment.end.toArray() },
+        start: { screenX: rect.left + (sourceStart.x + 1) * rect.width / 2, screenY: rect.top + (1 - sourceStart.y) * rect.height / 2, world: segment.start.toArray() },
+        end: { screenX: rect.left + (sourceEnd.x + 1) * rect.width / 2, screenY: rect.top + (1 - sourceEnd.y) * rect.height / 2, world: segment.end.toArray() },
         sourceStart: segment.sourceStart.toArray(),
         sourceEnd: segment.sourceEnd.toArray(),
         objectId: segment.objectId,
