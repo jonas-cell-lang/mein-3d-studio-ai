@@ -4012,13 +4012,25 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         screenY: rect.top + (1 - sourceNdc.y) * rect.height / 2
       };
       let separation = Infinity;
+      const targetDx = segment.end.screenX - segment.start.screenX;
+      const targetDy = segment.end.screenY - segment.start.screenY;
+      const targetLength = Math.hypot(targetDx, targetDy);
       for (let otherIndex = 0; otherIndex < segments.length; otherIndex++) {
         if (otherIndex === index) continue;
         const other = segments[otherIndex];
         const dx = other.end.screenX - other.start.screenX;
         const dy = other.end.screenY - other.start.screenY;
+        const length = Math.hypot(dx, dy);
+        if (length <= 1e-6 || targetLength <= 1e-6) continue;
+        // Identische/kollineare Kanten können durch überlagerte Testobjekte
+        // mehrfach vorkommen. Sie sind kein konkurrierendes Fangziel.
+        const parallel = Math.abs(targetDx * dy - targetDy * dx) / (targetLength * length);
+        const lineOffset = Math.abs(
+          targetDx * (other.start.screenY - screen.y) -
+          targetDy * (other.start.screenX - screen.x)
+        ) / targetLength;
+        if (parallel < 0.02 && lineOffset < 1) continue;
         const lengthSquared = dx * dx + dy * dy;
-        if (lengthSquared <= 1e-12) continue;
         const rawT = ((screen.x - other.start.screenX) * dx +
           (screen.y - other.start.screenY) * dy) / lengthSquared;
         const otherT = Math.max(0, Math.min(1, rawT));
