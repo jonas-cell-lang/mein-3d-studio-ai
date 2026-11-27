@@ -42,13 +42,21 @@
       const screenY = a.screenY + dy * t;
       const distanceSquared = (pointer.x - screenX) ** 2 + (pointer.y - screenY) ** 2;
       if (distanceSquared >= bestDistanceSquared) continue;
+      let worldT = t;
+      // Bei perspektivischer Projektion ist die Bildschirm-Interpolation
+      // nicht linear zur Position entlang der 3D-Kante.
+      if (Number.isFinite(a.cameraDepth) && a.cameraDepth > 0 &&
+          Number.isFinite(b.cameraDepth) && b.cameraDepth > 0) {
+        const denominator = (1 - t) * b.cameraDepth + t * a.cameraDepth;
+        if (denominator > 1e-12) worldT = t * a.cameraDepth / denominator;
+      }
       let world = null;
       if (Array.isArray(a.world) && Array.isArray(b.world) &&
           a.world.length >= 3 && b.world.length >= 3 &&
           [...a.world.slice(0, 3), ...b.world.slice(0, 3)].every(Number.isFinite)) {
-        world = a.world.slice(0, 3).map((value, index) => value + (b.world[index] - value) * t);
+        world = a.world.slice(0, 3).map((value, index) => value + (b.world[index] - value) * worldT);
       }
-      const projected = { ...segment, screenX, screenY, t, distancePx: Math.sqrt(distanceSquared), world };
+      const projected = { ...segment, screenX, screenY, t, worldT, distancePx: Math.sqrt(distanceSquared), world };
       if (typeof acceptSegment === 'function' && !acceptSegment(projected)) continue;
       best = projected;
       bestDistanceSquared = distanceSquared;
