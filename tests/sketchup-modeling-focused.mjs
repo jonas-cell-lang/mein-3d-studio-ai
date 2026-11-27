@@ -148,7 +148,9 @@ try {
   assert.ok(edgeProjectionTarget?.visible, 'Keine sichtbare Modellkante für den Projektionstest gefunden: ' + JSON.stringify(edgeProjectionTarget));
   await page.locator('#startSketch').click();
   await page.waitForTimeout(300);
-  await page.mouse.move(edgeProjectionTarget.x + 3, edgeProjectionTarget.y + 2);
+  // Genau auf den bekannten Testpunkt zielen: Ein seitlicher Versatz entlang
+  // der Kante verändert den korrekten Projektionsparameter und damit den Sollpunkt.
+  await page.mouse.move(edgeProjectionTarget.x, edgeProjectionTarget.y);
   await page.mouse.down();
   const edgeProjectionState = await page.evaluate(() => window.__silmoEndpointSnapSnapshot?.());
   assert.equal(edgeProjectionState?.visible, true, 'Kantenprojektion zeigt keinen Fangmarker');
