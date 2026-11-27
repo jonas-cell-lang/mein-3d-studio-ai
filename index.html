@@ -3992,35 +3992,59 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   };
   window.__silmoEndpointSnapTestSegment = () => {
     const { rect, segments } = projectEndpointSnapCandidates();
-    const projected = segments
-      .map(segment => {
-        const t = 0.37;
-        const world = segment.start.world.map((value, index) => value + (segment.end.world[index] - value) * t);
-        const screen = {
-          x: segment.start.screenX + (segment.end.screenX - segment.start.screenX) * t,
-          y: segment.start.screenY + (segment.end.screenY - segment.start.screenY) * t
-        };
-        const sourceWorld = segment.sourceStart.map((value, index) =>
-          value + (segment.sourceEnd[index] - value) * t);
-        const sourceScreenNdc = new THREE.Vector3(...sourceWorld).project(camera);
-        const sourceScreen = {
-          screenX: rect.left + (sourceScreenNdc.x + 1) * rect.width / 2,
-          screenY: rect.top + (1 - sourceScreenNdc.y) * rect.height / 2
-        };
-        return {
-          ...segment, t, world, screen,
-          visible: endpointSnapCandidateIsVisible({
-            world: sourceWorld, objectId: segment.objectId, ...sourceScreen
-          }, rect),
-          length: Math.hypot(segment.end.screenX - segment.start.screenX, segment.end.screenY - segment.start.screenY)
-        };
-      })
-      .sort((a, b) => Number(b.visible) - Number(a.visible) || b.length - a.length);
-    const target = projected[0];
+    const projected = segments.map((segment, index) => {
+      const t = 0.37;
+      const world = segment.start.world.map((value, axis) =>
+        value + (segment.end.world[axis] - value) * t);
+      const screen = {
+        x: segment.start.screenX + (segment.end.screenX - segment.start.screenX) * t,
+        y: segment.start.screenY + (segment.end.screenY - segment.start.screenY) * t
+      };
+      const sourceWorld = segment.sourceStart.map((value, axis) =>
+        value + (segment.sourceEnd[axis] - value) * t);
+      const sourceNdc = new THREE.Vector3(...sourceWorld).project(camera);
+      const sourceScreen = {
+        screenX: rect.left + (sourceNdc.x + 1) * rect.width / 2,
+        screenY: rect.top + (1 - sourceNdc.y) * rect.height / 2
+      };
+      let separation = Infinity;
+      for (let otherIndex = 0; otherIndex < segments.length; otherIndex++) {
+        if (otherIndex === index) continue;
+        const other = segments[otherIndex];
+        const dx = other.end.screenX - other.start.screenX;
+        const dy = other.end.screenY - other.start.screenY;
+        const lengthSquared = dx * dx + dy * dy;
+        if (lengthSquared <= 1e-12) continue;
+        const rawT = ((screen.x - other.start.screenX) * dx +
+          (screen.y - other.start.screenY) * dy) / lengthSquared;
+        const otherT = Math.max(0, Math.min(1, rawT));
+        const distance = Math.hypot(
+          screen.x - (other.start.screenX + dx * otherT),
+          screen.y - (other.start.screenY + dy * otherT)
+        );
+        separation = Math.min(separation, distance);
+      }
+      const visible = Number.isFinite(sourceNdc.x + sourceNdc.y + sourceNdc.z) &&
+        sourceNdc.z >= -1 && sourceNdc.z <= 1 &&
+        endpointSnapCandidateIsVisible({
+          world: sourceWorld, objectId: segment.objectId, ...sourceScreen
+        }, rect);
+      return { ...segment, t, world, screen, visible, separation,
+        length: Math.hypot(segment.end.screenX - segment.start.screenX,
+          segment.end.screenY - segment.start.screenY) };
+    });
+    const target = projected
+      .filter(candidate => candidate.visible && candidate.separation >= 18)
+      .sort((a, b) => b.separation - a.separation || b.length - a.length)[0];
     return target ? {
-      count: segments.length, visible: target.visible, x: target.screen.x, y: target.screen.y,
-      world: target.world, objectId: target.objectId, length: target.length, debug: { ...endpointSnapDebug }
-    } : { count: 0, visible: false, debug: { ...endpointSnapDebug } };
+      count: segments.length, visible: true, x: target.screen.x, y: target.screen.y,
+      world: target.world, objectId: target.objectId, length: target.length,
+      separation: target.separation, debug: { ...endpointSnapDebug }
+    } : {
+      count: segments.length, visible: false,
+      bestSeparation: projected.reduce((best, candidate) => Math.max(best, candidate.separation), 0),
+      debug: { ...endpointSnapDebug }
+    };
   };
   window.__silmoSketchStartSnapshot = () => sketchStart.toArray();
 
