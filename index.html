@@ -3849,9 +3849,21 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           sourceStart.z < -1 || sourceStart.z > 1 || sourceEnd.z < -1 || sourceEnd.z > 1 ||
           sourceStart.x < -1 || sourceStart.x > 1 || sourceStart.y < -1 || sourceStart.y > 1 ||
           sourceEnd.x < -1 || sourceEnd.x > 1 || sourceEnd.y < -1 || sourceEnd.y > 1) continue;
+      const sourceStartView = segment.sourceStart.clone().applyMatrix4(camera.matrixWorldInverse);
+      const sourceEndView = segment.sourceEnd.clone().applyMatrix4(camera.matrixWorldInverse);
       segments.push({
-        start: { screenX: rect.left + (sourceStart.x + 1) * rect.width / 2, screenY: rect.top + (1 - sourceStart.y) * rect.height / 2, world: segment.start.toArray() },
-        end: { screenX: rect.left + (sourceEnd.x + 1) * rect.width / 2, screenY: rect.top + (1 - sourceEnd.y) * rect.height / 2, world: segment.end.toArray() },
+        start: {
+          screenX: rect.left + (sourceStart.x + 1) * rect.width / 2,
+          screenY: rect.top + (1 - sourceStart.y) * rect.height / 2,
+          world: segment.start.toArray(),
+          cameraDepth: -sourceStartView.z
+        },
+        end: {
+          screenX: rect.left + (sourceEnd.x + 1) * rect.width / 2,
+          screenY: rect.top + (1 - sourceEnd.y) * rect.height / 2,
+          world: segment.end.toArray(),
+          cameraDepth: -sourceEndView.z
+        },
         sourceStart: segment.sourceStart.toArray(),
         sourceEnd: segment.sourceEnd.toArray(),
         objectId: segment.objectId,
@@ -3944,8 +3956,9 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       ? window.SILMOInference.findNearestPointOnSegments(segments, pointer, 12,
           segment => {
             if (!segment.world || !Array.isArray(segment.sourceStart) || !Array.isArray(segment.sourceEnd)) return false;
+            const sourceT = Number.isFinite(segment.worldT) ? segment.worldT : segment.t;
             const sourceWorld = segment.sourceStart.map((value, index) =>
-              value + (segment.sourceEnd[index] - value) * segment.t);
+              value + (segment.sourceEnd[index] - value) * sourceT);
             // Die Zeichenebenen-Projektion kann auf einem anderen Pixel liegen
             // als die echte 3D-Kante. Sichtbarkeit deshalb am projizierten
             // Originalpunkt prüfen, nicht am künstlich auf die Ebene verschobenen Punkt.
@@ -3998,14 +4011,20 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const { rect, segments } = projectEndpointSnapCandidates();
     const projected = segments.map((segment, index) => {
       const t = 0.37;
+      const depthA = segment.start.cameraDepth;
+      const depthB = segment.end.cameraDepth;
+      const denominator = (1 - t) * depthB + t * depthA;
+      const worldT = Number.isFinite(depthA) && depthA > 0 &&
+        Number.isFinite(depthB) && depthB > 0 && denominator > 1e-12
+        ? t * depthA / denominator : t;
       const world = segment.start.world.map((value, axis) =>
-        value + (segment.end.world[axis] - value) * t);
+        value + (segment.end.world[axis] - value) * worldT);
       const screen = {
         x: segment.start.screenX + (segment.end.screenX - segment.start.screenX) * t,
         y: segment.start.screenY + (segment.end.screenY - segment.start.screenY) * t
       };
       const sourceWorld = segment.sourceStart.map((value, axis) =>
-        value + (segment.sourceEnd[axis] - value) * t);
+        value + (segment.sourceEnd[axis] - value) * worldT);
       const sourceNdc = new THREE.Vector3(...sourceWorld).project(camera);
       const sourceScreen = {
         screenX: rect.left + (sourceNdc.x + 1) * rect.width / 2,
@@ -4045,7 +4064,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         endpointSnapCandidateIsVisible({
           world: sourceWorld, objectId: segment.objectId, ...sourceScreen
         }, rect);
-      return { ...segment, t, world, screen, visible, separation,
+      return { ...segment, t, worldT, world, screen, visible, separation,
         length: Math.hypot(segment.end.screenX - segment.start.screenX,
           segment.end.screenY - segment.start.screenY) };
     });
