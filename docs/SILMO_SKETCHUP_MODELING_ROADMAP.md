@@ -229,6 +229,16 @@ Die Prozentanzeige wird bewusst streng und konservativ geführt. Sie ist keine S
 - Der fokussierte Modellier-Browser-Test prüft Eckpunkt- und Kantenmittefang. Die Rasterprüfung schaltet beide Fangtypen gezielt aus, damit die Fangsysteme unabhängig getestet werden.
 - Code-Prüfungen sowie vollständige Browserinteraktionen in Chromium und Safari-kompatiblem WebKit sind erfolgreich abgeschlossen (Workflow 45456547678). Auch der isolierte SketchUp-Modelliertest war erfolgreich.
 
+## Dritter Fangtyp: Projektion auf sichtbare Modellkanten – in Prüfung
+
+- Ein eigener Schalter aktiviert die Projektion auf scharfe Modellkanten; Eckpunkt-, Kantenmitte- und Rasterfang bleiben unabhängig schaltbar.
+- Die Kanten werden aus der Mesh-Geometrie ermittelt und für die Bildschirmprojektion auf die aktive Zeichenebene abgebildet.
+- Die Mausposition wird auf das nächstgelegene sichtbare Kantensegment projiziert; der resultierende Punkt wird entlang des Segments interpoliert.
+- Der Sichtbarkeitstest verwendet weiterhin die ursprüngliche 3D-Kante, damit eine Projektion nicht versehentlich durch verdeckte Kanten ausgelöst wird.
+- Unit-Tests prüfen Segmentprojektion, Interpolation, Endpunktbegrenzung, Pixel-Toleranz sowie ungültige und abgewiesene Segmente.
+- Ein fokussierter Browser-Test prüft die Projektion auf einer ausgewählten Seitenfläche. Der Test enthält Diagnosewerte für Kantenanzahl, Zeichenebenenprojektion und Sichtbarkeit.
+- **Noch nicht als abgeschlossen gewertet:** Der vollständige Browserlauf muss die neue Interaktion in Chromium und WebKit erfolgreich bestätigen. Bis dahin bleibt der Gesamtfortschritt unverändert.
+
 ## Nächster Umsetzungsschritt
 
-Als Nächstes wird die Fanglogik um weitere für SketchUp wichtige geometrische Beziehungen erweitert. Priorität haben robuste Schnitt-/Kreuzungspunkte und die Projektion auf Modellkanten. Vor jeder Erweiterung werden Laufzeitkosten und die Interaktion mit Eckpunkt-, Kantenmitte- und Rasterfang geprüft. Der aktuelle Meilenstein wird nicht als vollständiges SketchUp-Inferenzsystem gewertet.
+Nach erfolgreicher Verifikation der Kantenprojektion folgt die Erkennung robuster Schnitt-/Kreuzungspunkte zwischen Modellkanten. Anschliessend werden Fangprioritäten und Laufzeitverhalten bei komplexeren Meshes geprüft. Der aktuelle Stand ist noch kein vollständiges SketchUp-Inferenzsystem.
