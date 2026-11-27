@@ -154,11 +154,16 @@ try {
   await page.mouse.down();
   const edgeProjectionState = await page.evaluate(() => window.__silmoEndpointSnapSnapshot?.());
   assert.equal(edgeProjectionState?.visible, true, 'Kantenprojektion zeigt keinen Fangmarker');
-  assert.ok(edgeProjectionState.snappedWorld && Math.hypot(
-    edgeProjectionState.snappedWorld[0] - edgeProjectionTarget.world[0],
-    edgeProjectionState.snappedWorld[1] - edgeProjectionTarget.world[1],
-    edgeProjectionState.snappedWorld[2] - edgeProjectionTarget.world[2]
-  ) < 1e-5, 'Zeichenstart wurde nicht auf die projizierte Position der Modellkante eingerastet');
+  const edgeProjectionError = edgeProjectionState.snappedWorld
+    ? Math.hypot(
+        edgeProjectionState.snappedWorld[0] - edgeProjectionTarget.world[0],
+        edgeProjectionState.snappedWorld[1] - edgeProjectionTarget.world[1],
+        edgeProjectionState.snappedWorld[2] - edgeProjectionTarget.world[2]
+      )
+    : Infinity;
+  assert.ok(edgeProjectionError < 1e-5,
+    'Zeichenstart wurde nicht auf die projizierte Position der Modellkante eingerastet: ' +
+    JSON.stringify({ target: edgeProjectionTarget, snappedWorld: edgeProjectionState.snappedWorld, error: edgeProjectionError, debug: edgeProjectionState.debug }));
   await page.mouse.up();
   await page.locator('#cancelSketch').click();
   await page.locator('#sketchEndpointSnapEnabled').check();
