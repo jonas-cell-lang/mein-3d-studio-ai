@@ -4000,9 +4000,18 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           x: segment.start.screenX + (segment.end.screenX - segment.start.screenX) * t,
           y: segment.start.screenY + (segment.end.screenY - segment.start.screenY) * t
         };
+        const sourceWorld = segment.sourceStart.map((value, index) =>
+          value + (segment.sourceEnd[index] - value) * t);
+        const sourceScreenNdc = new THREE.Vector3(...sourceWorld).project(camera);
+        const sourceScreen = {
+          screenX: rect.left + (sourceScreenNdc.x + 1) * rect.width / 2,
+          screenY: rect.top + (1 - sourceScreenNdc.y) * rect.height / 2
+        };
         return {
           ...segment, t, world, screen,
-          visible: endpointSnapCandidateIsVisible({ world, objectId: segment.objectId }, rect),
+          visible: endpointSnapCandidateIsVisible({
+            world: sourceWorld, objectId: segment.objectId, ...sourceScreen
+          }, rect),
           length: Math.hypot(segment.end.screenX - segment.start.screenX, segment.end.screenY - segment.start.screenY)
         };
       })
