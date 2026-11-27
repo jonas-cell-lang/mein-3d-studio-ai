@@ -129,6 +129,16 @@ try {
   await page.locator('#sketchEndpointSnapEnabled').check();
   await page.locator('#sketchMidpointSnapEnabled').uncheck();
 
+  // cancelSketch setzt die Flächenmodus-Markierung zurück. Für diesen
+  // unabhängigen Durchlauf wird die Seitenfläche deshalb erneut ausgewählt,
+  // damit die getesteten Modellkanten tatsächlich in der Zeichenebene liegen.
+  const edgeFacePoint = await page.evaluate(id => window.__silmoFaceSketchTestPoint?.(id), faceObject);
+  assert.ok(edgeFacePoint, 'Keine Seitenfläche für den Kantenprojektionstest gefunden');
+  await page.locator('#pickFaceSketchPlane').click();
+  await page.mouse.click(edgeFacePoint.x, edgeFacePoint.y);
+  const edgeFaceFrame = await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot?.());
+  assert.equal(edgeFaceFrame?.active, true, 'Seitenfläche wurde für die Kantenprojektion nicht aktiviert');
+
   // Kantenprojektion: Eckpunkt- und Mittelpunktfang aus, Projektion auf eine
   // beliebige Position entlang einer sichtbaren Kante allein aktiv.
   await page.locator('#sketchEndpointSnapEnabled').uncheck();
