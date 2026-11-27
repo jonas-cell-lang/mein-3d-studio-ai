@@ -96,3 +96,15 @@ test('ignores malformed, zero-length and rejected segments', () => {
   ], { x: 5, y: 1 }, 12, segment => segment.id !== 'hidden');
   assert.equal(result, null);
 });
+
+
+test('uses perspective-correct interpolation for projected 3D edges', () => {
+  const { findNearestPointOnSegments } = require('../src/inference.js');
+  const result = findNearestPointOnSegments([{
+    start: { screenX: 0, screenY: 0, world: [0, 0, 0], cameraDepth: 10 },
+    end: { screenX: 100, screenY: 0, world: [3, 0, 0], cameraDepth: 20 }
+  }], { x: 50, y: 0 }, 1);
+  assert.equal(result.t, 0.5);
+  assert.ok(Math.abs(result.worldT - 1 / 3) < 1e-12);
+  assert.ok(Math.abs(result.world[0] - 1) < 1e-12);
+});
