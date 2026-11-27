@@ -3926,7 +3926,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     if (!window.SILMOInference) return null;
     const endpointsEnabled = !!document.getElementById('sketchEndpointSnapEnabled')?.checked;
     const midpointsEnabled = !!document.getElementById('sketchMidpointSnapEnabled')?.checked;
-    if (!endpointsEnabled && !midpointsEnabled) return null;
+    const edgeEnabled = !!document.getElementById('sketchEdgeProjectionSnapEnabled')?.checked;
+    if (!endpointsEnabled && !midpointsEnabled && !edgeEnabled) return null;
     const { rect, candidates, segments } = projectEndpointSnapCandidates();
     const pointer = {
       x: rect.left + (pointerNDC.x + 1) * rect.width / 2,
@@ -3935,7 +3936,6 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const pointSnap = window.SILMOInference.findNearestPoint(candidates, pointer, 12,
       candidate => (candidate.kind === 'vertex' ? endpointsEnabled : midpointsEnabled) &&
         endpointSnapCandidateIsVisible(candidate, rect));
-    const edgeEnabled = !!document.getElementById('sketchEdgeProjectionSnapEnabled')?.checked;
     const edgeSnap = edgeEnabled && window.SILMOInference.findNearestPointOnSegments
       ? window.SILMOInference.findNearestPointOnSegments(segments, pointer, 12,
           segment => {
