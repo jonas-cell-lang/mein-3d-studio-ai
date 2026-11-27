@@ -3942,11 +3942,17 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
             if (!segment.world || !Array.isArray(segment.sourceStart) || !Array.isArray(segment.sourceEnd)) return false;
             const sourceWorld = segment.sourceStart.map((value, index) =>
               value + (segment.sourceEnd[index] - value) * segment.t);
+            // Die Zeichenebenen-Projektion kann auf einem anderen Pixel liegen
+            // als die echte 3D-Kante. Sichtbarkeit deshalb am projizierten
+            // Originalpunkt prüfen, nicht am künstlich auf die Ebene verschobenen Punkt.
+            const sourceScreen = new THREE.Vector3(...sourceWorld).project(camera);
+            if (!Number.isFinite(sourceScreen.x + sourceScreen.y + sourceScreen.z) ||
+                sourceScreen.z < -1 || sourceScreen.z > 1) return false;
             return endpointSnapCandidateIsVisible({
               world: sourceWorld,
               objectId: segment.objectId,
-              screenX: segment.screenX,
-              screenY: segment.screenY
+              screenX: rect.left + (sourceScreen.x + 1) * rect.width / 2,
+              screenY: rect.top + (1 - sourceScreen.y) * rect.height / 2
             }, rect);
           })
       : null;
