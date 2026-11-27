@@ -144,10 +144,13 @@ try {
   await page.locator('#sketchEndpointSnapEnabled').uncheck();
   await page.locator('#sketchMidpointSnapEnabled').uncheck();
   await page.locator('#sketchEdgeProjectionSnapEnabled').check();
-  const edgeProjectionTarget = await page.evaluate(() => window.__silmoEndpointSnapTestSegment?.());
-  assert.ok(edgeProjectionTarget?.visible, 'Keine sichtbare Modellkante für den Projektionstest gefunden: ' + JSON.stringify(edgeProjectionTarget));
   await page.locator('#startSketch').click();
   await page.waitForTimeout(300);
+  // startSketch kann die Kamera auf die Zeichenebene ausrichten. Das Testziel
+  // deshalb erst danach berechnen, damit Mausposition und Projektion dieselbe
+  // aktuelle Kamerapose verwenden.
+  const edgeProjectionTarget = await page.evaluate(() => window.__silmoEndpointSnapTestSegment?.());
+  assert.ok(edgeProjectionTarget?.visible, 'Keine sichtbare Modellkante für den Projektionstest gefunden: ' + JSON.stringify(edgeProjectionTarget));
   // Genau auf den bekannten Testpunkt zielen: Ein seitlicher Versatz entlang
   // der Kante verändert den korrekten Projektionsparameter und damit den Sollpunkt.
   await page.mouse.move(edgeProjectionTarget.x, edgeProjectionTarget.y);
