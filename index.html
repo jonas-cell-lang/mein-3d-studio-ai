@@ -3775,9 +3775,21 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
             if (endpointSnapDebug.edgeSamples.length < 8) endpointSnapDebug.edgeSamples.push({
               startPlaneDistance, endPlaneDistance, start: worldStart.toArray(), end: worldEnd.toArray()
             });
-            if (startPlaneDistance <= mmToWorldUnits(0.5) && endPlaneDistance <= mmToWorldUnits(0.5) && segments.length < maxCandidates) {
+            // Scharfe 3D-Kanten orthogonal auf die aktive Zeichenebene projizieren.
+            // So können auch Kanten verwendet werden, die räumlich vor oder hinter der Ebene liegen.
+            const projectedStart = sketchPlane.projectPoint(worldStart, new THREE.Vector3());
+            const projectedEnd = sketchPlane.projectPoint(worldEnd, new THREE.Vector3());
+            const projectedLength = projectedStart.distanceTo(projectedEnd);
+            if (projectedLength > 1e-8 && segments.length < maxCandidates) {
               endpointSnapDebug.edgePlaneMatches++;
-              segments.push({ start: worldStart, end: worldEnd, objectId: root.uuid, kind: 'edge' });
+              segments.push({
+                start: projectedStart,
+                end: projectedEnd,
+                sourceStart: worldStart,
+                sourceEnd: worldEnd,
+                objectId: root.uuid,
+                kind: 'edge'
+              });
             }
             if (candidates.length >= maxCandidates) continue;
             const world = new THREE.Vector3(...edge.midpoint).applyMatrix4(node.matrixWorld);
@@ -3836,6 +3848,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       segments.push({
         start: { screenX: rect.left + (start.x + 1) * rect.width / 2, screenY: rect.top + (1 - start.y) * rect.height / 2, world: segment.start.toArray() },
         end: { screenX: rect.left + (end.x + 1) * rect.width / 2, screenY: rect.top + (1 - end.y) * rect.height / 2, world: segment.end.toArray() },
+        sourceStart: segment.sourceStart.toArray(),
+        sourceEnd: segment.sourceEnd.toArray(),
         objectId: segment.objectId,
         kind: 'edge'
       });
@@ -3924,7 +3938,17 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const edgeEnabled = !!document.getElementById('sketchEdgeProjectionSnapEnabled')?.checked;
     const edgeSnap = edgeEnabled && window.SILMOInference.findNearestPointOnSegments
       ? window.SILMOInference.findNearestPointOnSegments(segments, pointer, 12,
-          segment => endpointSnapCandidateIsVisible({ world: segment.world, objectId: segment.objectId }, rect))
+          segment => {
+            if (!segment.world || !Array.isArray(segment.sourceStart) || !Array.isArray(segment.sourceEnd)) return false;
+            const sourceWorld = segment.sourceStart.map((value, index) =>
+              value + (segment.sourceEnd[index] - value) * segment.t);
+            return endpointSnapCandidateIsVisible({
+              world: sourceWorld,
+              objectId: segment.objectId,
+              screenX: segment.screenX,
+              screenY: segment.screenY
+            }, rect);
+          })
       : null;
     if (edgeSnap && (!pointSnap || edgeSnap.distancePx < pointSnap.distancePx) && edgeSnap.world) {
       return { ...edgeSnap, kind: 'edge', world: edgeSnap.world };
