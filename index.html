@@ -5527,6 +5527,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   });
   window.__silmoSketchCameraLockSnapshot = () => ({ active: sketchMode, targetRX, targetRY, rotatingView, gizmoMode, rotateButtonDisabled: $('gizmoModeToggle').disabled, rotationInputHidden: rotationAngleLabel.hidden });
   window.__silmoSketchDraftSnapshot = () => sketchDraft ? ({ type: sketchDraft.type, pointCount: sketchDraft.points?.length || 0 }) : null;
+  window.__silmoSketchDraftPointsSnapshot = () => sketchDraft ? ({ type: sketchDraft.type, points: sketchDraft.points?.map(point => point.toArray()) || [] }) : null;
   window.__silmoSketchSnapshot = () => {
     const obj = selected;
     if (!obj || !obj.userData.sketch) return null;
