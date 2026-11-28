@@ -4089,6 +4089,55 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     candidateCount: collectEndpointSnapWorldCandidates().length,
     debug: { ...endpointSnapDebug }
   });
+  window.__silmoCreateMultiMeshSnapFixture = (count = 16) => {
+    const ids = [];
+    const normal = sketchPlane.normal.clone().normalize();
+    const basisX = new THREE.Vector3(1, 0, 0);
+    if (Math.abs(basisX.dot(normal)) > 0.9) basisX.set(0, 1, 0);
+    basisX.addScaledVector(normal, -basisX.dot(normal)).normalize();
+    const basisY = new THREE.Vector3().crossVectors(normal, basisX).normalize();
+    const planeOrigin = sketchPlane.projectPoint(new THREE.Vector3(0, 0, 0), new THREE.Vector3());
+    const orientation = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+    const safeCount = Math.max(1, Math.min(36, Math.floor(count)));
+    const columns = Math.ceil(Math.sqrt(safeCount));
+    for (let index = 0; index < safeCount; index++) {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(mmToWorldUnits(6), mmToWorldUnits(6), mmToWorldUnits(0.6)),
+        new THREE.MeshStandardMaterial({ color: '#78a9d8', roughness: 0.8 })
+      );
+      mesh.quaternion.copy(orientation);
+      const offsetX = (column - (columns - 1) / 2) * mmToWorldUnits(9);
+      const offsetY = (row - (Math.ceil(safeCount / columns) - 1) / 2) * mmToWorldUnits(9);
+      mesh.position.copy(planeOrigin).addScaledVector(basisX, offsetX)
+        .addScaledVector(basisY, offsetY).addScaledVector(normal, mmToWorldUnits(0.3));
+      mesh.userData = { label: 'Mehrfach-Mesh-Fangtest', baseDimensions: { x: 6, y: 6, z: 0.6 },
+        percent: { x: 100, y: 100, z: 100 } };
+      scene.add(mesh);
+      objects.push(mesh);
+      ids.push(mesh.uuid);
+    }
+    endpointSnapWorldCandidates = null;
+    endpointSnapWorldSegments = null;
+    updateObjects();
+    return { ids, requestedCount: safeCount, objectCount: objects.length };
+  };
+  window.__silmoRemoveMultiMeshSnapFixture = ids => {
+    for (const id of ids || []) {
+      const index = objects.findIndex(object => object.uuid === id);
+      if (index < 0) continue;
+      const [object] = objects.splice(index, 1);
+      scene.remove(object);
+      object.geometry?.dispose?.();
+      if (Array.isArray(object.material)) object.material.forEach(material => material.dispose?.());
+      else object.material?.dispose?.();
+    }
+    endpointSnapWorldCandidates = null;
+    endpointSnapWorldSegments = null;
+    updateEndpointSnapMarker(null);
+    updateObjects();
+  };
   window.__silmoCreateIntersectionSnapFixture = () => {
     const makeBar = rotationZ => {
       const mesh = new THREE.Mesh(
