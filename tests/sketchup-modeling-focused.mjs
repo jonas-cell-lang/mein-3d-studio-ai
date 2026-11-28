@@ -56,6 +56,33 @@ try {
   assert.match(await page.locator('#modeToggle').innerText(), /AUS/, 'Expertenzentrum schliessen setzt den Schalter nicht zurück');
   assert.equal(await page.locator('#addOcctBox').isVisible(), false, 'Spezialwerkzeug bleibt nach Schliessen des Expertenzentrums sichtbar');
   await page.locator('[data-tab="create"]').click();
+  // Ende-zu-Ende-Test mit echten Mesh-Kanten: Zwei flache Quader kreuzen
+  // sich in der XY-Zeichenebene. Der Fang muss den räumlich gemeinsamen
+  // Schnittpunkt ihrer sichtbaren Oberkanten erkennen.
+  await page.locator('#sketchEndpointSnapEnabled').uncheck();
+  await page.locator('#sketchMidpointSnapEnabled').uncheck();
+  await page.locator('#sketchEdgeProjectionSnapEnabled').uncheck();
+  await page.locator('#sketchIntersectionSnapEnabled').check();
+  await page.locator('#startSketch').click();
+  await page.waitForTimeout(500);
+  const intersectionFixture = await page.evaluate(() => window.__silmoCreateIntersectionSnapFixture?.());
+  assert.ok(intersectionFixture, 'Testkörper für den echten Schnittpunktfang konnten nicht erstellt werden');
+  await page.mouse.move(intersectionFixture.x, intersectionFixture.y);
+  await page.waitForFunction(() => window.__silmoEndpointSnapSnapshot?.().visible === true,
+    null, { timeout: 5000 });
+  const actualIntersectionSnap = await page.evaluate(() => window.__silmoEndpointSnapSnapshot?.());
+  assert.ok(actualIntersectionSnap.snappedWorld && Math.hypot(
+    actualIntersectionSnap.snappedWorld[0] - intersectionFixture.expectedWorld[0],
+    actualIntersectionSnap.snappedWorld[1] - intersectionFixture.expectedWorld[1],
+    actualIntersectionSnap.snappedWorld[2] - intersectionFixture.expectedWorld[2]
+  ) < 1e-5, 'Der echte Schnittpunktfang hat den geometrischen Schnittpunkt der beiden Modellkanten verfehlt: ' +
+    JSON.stringify({ fixture: intersectionFixture, snap: actualIntersectionSnap }));
+  await page.locator('#cancelSketch').click();
+  await page.evaluate(ids => window.__silmoRemoveIntersectionSnapFixture?.(ids), intersectionFixture.ids);
+  await page.locator('#sketchIntersectionSnapEnabled').uncheck();
+  await page.locator('#sketchEndpointSnapEnabled').check();
+  await page.locator('#sketchMidpointSnapEnabled').check();
+
   // Der Würfel wird im Bereich Modellieren erstellt; die Flächenauswahl liegt im Bereich Zeichnen.
   
   // 1) Zeichenebene auf einer seitlichen Modellfläche ausrichten.
