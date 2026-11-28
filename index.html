@@ -4065,6 +4065,51 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     candidateCount: collectEndpointSnapWorldCandidates().length,
     debug: { ...endpointSnapDebug }
   });
+  window.__silmoCreateIntersectionSnapFixture = () => {
+    const makeBar = rotationZ => {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(mmToWorldUnits(40), mmToWorldUnits(4), mmToWorldUnits(2)),
+        new THREE.MeshStandardMaterial({ color: '#6b9fd8', roughness: 0.75 })
+      );
+      mesh.rotation.z = rotationZ;
+      mesh.position.set(0, 0, 0);
+      mesh.userData = {
+        label: 'Schnittpunkt-Testkörper',
+        baseDimensions: { x: 40, y: 4, z: 2 },
+        percent: { x: 100, y: 100, z: 100 }
+      };
+      scene.add(mesh);
+      objects.push(mesh);
+      return mesh.uuid;
+    };
+    const ids = [makeBar(0), makeBar(Math.PI / 2)];
+    endpointSnapWorldCandidates = null;
+    endpointSnapWorldSegments = null;
+    camera.updateMatrixWorld(true);
+    const rect = canvas.getBoundingClientRect();
+    const source = new THREE.Vector3(mmToWorldUnits(2), mmToWorldUnits(2), mmToWorldUnits(1)).project(camera);
+    return {
+      ids,
+      x: rect.left + (source.x + 1) * rect.width / 2,
+      y: rect.top + (1 - source.y) * rect.height / 2,
+      expectedWorld: [mmToWorldUnits(2), mmToWorldUnits(2), 0]
+    };
+  };
+  window.__silmoRemoveIntersectionSnapFixture = ids => {
+    for (const id of ids || []) {
+      const index = objects.findIndex(object => object.uuid === id);
+      if (index < 0) continue;
+      const [object] = objects.splice(index, 1);
+      scene.remove(object);
+      object.geometry?.dispose?.();
+      if (Array.isArray(object.material)) object.material.forEach(material => material.dispose?.());
+      else object.material?.dispose?.();
+    }
+    endpointSnapWorldCandidates = null;
+    endpointSnapWorldSegments = null;
+    updateEndpointSnapMarker(null);
+    updateObjects();
+  };
   window.__silmoEndpointSnapTestPoint = (kind = 'vertex') => {
     const { rect, candidates } = projectEndpointSnapCandidates();
     const target = candidates.find(candidate => candidate.kind === kind && endpointSnapCandidateIsVisible(candidate, rect));
