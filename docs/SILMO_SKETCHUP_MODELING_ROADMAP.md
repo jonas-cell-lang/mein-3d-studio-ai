@@ -191,7 +191,7 @@ Die Prozentanzeige wird bewusst streng und konservativ geführt. Sie ist keine S
 - Bei jeder Entwicklungsrückmeldung werden Gesamtfortschritt und aktueller Arbeitsschritt getrennt angezeigt.
 - Die Prozentwerte sind eine konservative Projektmessung anhand der Roadmap, keine Behauptung einer mathematisch exakten Gleichheit mit SketchUp.
 
-**Aktuelle konservative Gesamteinschätzung:** 9 %. Die Prozentzahl bleibt bewusst niedrig: Es gibt bereits einen getesteten Grundablauf für das Zeichnen auf ebenen Flächen und den ersten Endpunktfang, aber zahlreiche Kernwerkzeuge und die vollständige Modellierabdeckung fehlen noch. Die frühere 8-%-Angabe ist historisch und wurde durch den nachfolgenden, erfolgreich geprüften Meilenstein ersetzt.
+**Aktuelle konservative Gesamteinschätzung:** 10 %. Der zusätzliche Prozentpunkt basiert auf dem Ende-zu-Ende verifizierten Schnittpunktfang mit zwei realen 3D-Testkörpern sowie erfolgreich abgeschlossenen Code- und Browser-Prüfungen in Chromium und Safari-kompatiblem WebKit. Die Prozentzahl bleibt bewusst niedrig: Zahlreiche SketchUp-Kernwerkzeuge, die vollständige Modellierabdeckung und die persönliche UI-Abnahme fehlen noch. Frühere Prozentangaben sind historische Zwischenstände.
 
 ## Erster Fangtyp: sichtbare Modell-Eckpunkte – 24. November 2026
 
@@ -254,4 +254,4 @@ Die Prozentanzeige wird bewusst streng und konservativ geführt. Sie ist keine S
 
 ## Nächster Umsetzungsschritt
 
-Als Nächstes wird der Schnittpunktfang mit realen Modellkanten im Viewport Ende-zu-Ende getestet. Danach werden Fangprioritäten und Laufzeitverhalten bei komplexeren Meshes geprüft. Das aktuelle Fangsystem ist ein weiterer Baustein, aber noch kein vollständiges SketchUp-Inferenzsystem.
+Der Ende-zu-Ende-Test mit zwei realen Mesh-Körpern ist inzwischen erfolgreich abgeschlossen. Als Nächstes werden die Fangprioritäten geprüft: Wenn mehrere Fangarten nahe beieinander liegen, muss SILMO eine stabile und nachvollziehbare Position wählen, ohne dass ein optionaler Fang einen präziseren Treffer verdrängt. Danach folgt ein Belastungstest mit komplexeren Meshes und vielen Kanten. Anschliessend wird die Achsenbindung (Richtungs-Lock) als weiterer zentraler SketchUp-Inferenzbaustein umgesetzt. Das aktuelle Fangsystem ist weiterhin nur ein Teil des vollständigen Inferenzsystems.
