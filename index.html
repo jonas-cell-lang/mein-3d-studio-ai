@@ -3992,6 +3992,12 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       nearby.sort((a, b) => a.distancePx - b.distancePx);
       const localSegments = nearby.slice(0, 64).map(entry => entry.segment);
       const intersections = window.SILMOInference.findSegmentIntersections(localSegments, { maxWorldSeparation: mmToWorldUnits(0.5) });
+      endpointSnapDebug.intersectionSnap = {
+        segmentCount: segments.length,
+        nearbySegmentCount: localSegments.length,
+        rawIntersectionCount: intersections.length,
+        samples: []
+      };
       for (const candidate of intersections) {
         const distancePx = Math.hypot(pointer.x - candidate.screenX, pointer.y - candidate.screenY);
         if (distancePx > 12) continue;
@@ -4016,6 +4022,15 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
           firstSource[1] - secondSource[1],
           firstSource[2] - secondSource[2]
         );
+        const sample = {
+          screenX: candidate.screenX,
+          screenY: candidate.screenY,
+          distancePx,
+          firstSource,
+          secondSource,
+          sourceSeparation
+        };
+        if (endpointSnapDebug.intersectionSnap.samples.length < 8) endpointSnapDebug.intersectionSnap.samples.push(sample);
         if (sourceSeparation > mmToWorldUnits(0.5)) continue;
         const firstScreen = new THREE.Vector3(...firstSource).project(camera);
         const secondScreen = new THREE.Vector3(...secondSource).project(camera);
@@ -4028,7 +4043,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
             screenX: rect.left + (projected.x + 1) * rect.width / 2,
             screenY: rect.top + (1 - projected.y) * rect.height / 2
           }, rect);
-        if (!isVisible(first, firstSource, firstScreen) || !isVisible(second, secondSource, secondScreen)) continue;
+        const firstVisible = isVisible(first, firstSource, firstScreen);
+        const secondVisible = isVisible(second, secondSource, secondScreen);
+        sample.firstVisible = firstVisible;
+        sample.secondVisible = secondVisible;
+        if (!firstVisible || !secondVisible) continue;
         if (!intersectionSnap || distancePx < intersectionSnap.distancePx) {
           intersectionSnap = { ...candidate, distancePx, kind: 'intersection' };
         }
