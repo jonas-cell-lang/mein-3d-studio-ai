@@ -201,3 +201,27 @@ test('uses perspective-correct interpolation for crossing world positions', () =
   assert.ok(Math.abs(intersections[0].world[0] - 1) < 1e-12);
   assert.ok(Math.abs(intersections[0].world[1] - 1) < 1e-12);
 });
+
+
+test('constrains a point to the dominant axis of an arbitrary sketch plane', () => {
+  const { constrainPointToPlaneAxis } = require('../src/inference.js');
+  assert.deepEqual(
+    constrainPointToPlaneAxis([1, 2, 3], [4, 7, 3], [1, 0, 0], [0, 1, 0]),
+    [4, 2, 3]
+  );
+  assert.deepEqual(
+    constrainPointToPlaneAxis([1, 2, 3], [4, 7, 3], [1, 0, 0], [0, 0, 1]),
+    [4, 2, 3]
+  );
+  assert.deepEqual(
+    constrainPointToPlaneAxis([0, 0, 0], [1, 5, 0], [0, 1, 0], [0, 0, 1]),
+    [0, 5, 0]
+  );
+});
+
+test('rejects invalid axes and preserves the start point when movement is zero', () => {
+  const { constrainPointToPlaneAxis } = require('../src/inference.js');
+  assert.equal(constrainPointToPlaneAxis([0,0,0], [1,1,1], [0,0,0], [0,1,0]), null);
+  assert.equal(constrainPointToPlaneAxis([0,0,0], [1,1,1], [1,0,0], [0,1]), null);
+  assert.deepEqual(constrainPointToPlaneAxis([2,3,4], [2,3,4], [1,0,0], [0,1,0]), [2,3,4]);
+});
