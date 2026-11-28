@@ -115,7 +115,7 @@ In dieser Reihenfolge entwickeln bzw. vervollständigen:
 
 ## Nächster konkreter Umsetzungsschritt
 
-Als Nächstes wird das Inferenz-/Fangsystem vorbereitet. Vor einer Änderung werden die vorhandenen Skizzenebenen und Fangpunkte kartiert. Der aktuelle Rasterfang arbeitet in globalen X/Y/Z-Koordinaten; das reicht nicht für ein echtes Zeichnen auf beliebig ausgerichteten Modellflächen. Deshalb werden zuerst Fangziele, Bildschirmtoleranzen und die spätere Flächenebene sauber getrennt, bevor die Zeichenwerkzeuge umgebaut werden. Anschließend folgt ein kleiner, testbarer erster Fangtyp (Endpunkt) und danach das Zeichnen auf ebenen Flächen.
+Als Nächstes wird das Inferenz-/Fangsystem vorbereitet. Vor einer Änderung werden die vorhandenen Skizzenebenen und Fangpunkte kartiert. Der aktuelle Rasterfang arbeitet in globalen X/Y/Z-Koordinaten; das reicht nicht für ein echtes Zeichnen auf beliebig ausgerichteten Modellflächen. Deshalb werden zuerst Fangziele, Bildschirmtoleranzen und die spätere Flächenebene sauber getrennt, bevor die Zeichenwerkzeuge umgebaut werden. Anschliessend folgt ein kleiner, testbarer erster Fangtyp (Endpunkt) und danach das Zeichnen auf ebenen Flächen.
 
 ## Definition von „fertig“
 
@@ -129,7 +129,6 @@ SILMO gilt nicht schon dann als SketchUp-ähnlich, wenn die Oberfläche ähnlich
 - Testanpassung auf dem Feature-Branch: Vor der Hover-Prüfung wird ein eventuell noch aktiver Zeichenmodus über die normale UI beendet.
 - Diese Anpassung ist noch nicht erneut durch CI bestätigt. Keine Aussage, dass der Browser-Test jetzt bestanden ist.
 
-
 ## Isolierter Modellier-Kurztest – 22. November 2026
 
 - Hover-Erkennung prüft jetzt rekursiv auch Kind-Meshes und ordnet einen Treffer dem obersten SILMO-Szenenobjekt zu. So wird bei Gruppen nicht versehentlich nur ein Unter-Mesh hervorgehoben.
@@ -140,9 +139,7 @@ SILMO gilt nicht schon dann als SketchUp-ähnlich, wenn die Oberfläche ähnlich
 - Der isolierte Browser-Kurztest ist erfolgreich durchgelaufen: L/R/C/Escape, blaue Hover-Kontur mit korrekter Objektzuordnung und freies Objektziehen bestanden.
 - Der grosse Browser-Workflow stoppt weiterhin an einem bereits vorher vorhandenen Test zur OCCT-Kantenerkennung (14-Pixel-Bildschirmtoleranz, Testzeile 598); der neue Kurztest läuft davor erfolgreich. WebKit wird wegen dieses vorherigen Chromium-Fehlers in diesem Workflow nicht mehr gestartet.
 - Zeichnen direkt auf Objektflächen und Push/Pull sind weiterhin noch nicht implementiert. Der nächste Umsetzungsschritt ist die lokale Zeichenebene auf einer tatsächlich getroffenen ebenen Fläche; erst danach wird die Extrusion entlang der Flächennormalen umgesetzt.
-
 - Der Kurztest wurde anschliessend erweitert, um zusätzlich einen Screenshot genau während der sichtbaren Hover-Kontur zu speichern; diese Screenshot-Erweiterung wartet noch auf einen eigenen CI-Lauf.
-
 
 ## Fokuswechsel: SketchUp zuerst, Spezialfunktionen im Hintergrund – 22. November 2026
 
@@ -174,7 +171,6 @@ Der Standardarbeitsbereich wird auf den häufigsten SketchUp-Modellierablauf aus
 ### Nächste Entwicklungspriorität
 Nach dieser Aufräumrunde geht es nicht um zusätzliche Spezialfunktionen, sondern um den eigentlichen SketchUp-Kern: **auf Flächen zeichnen → Kontur auswählen → Drücken/Ziehen → mit Fangpunkten und numerischen Eingaben präzisieren**.
 
-
 ## Verbindliche Fortschrittsmessung – 22. November 2026
 
 Die Prozentanzeige wird bewusst streng und konservativ geführt. Sie ist keine Schätzung, wie viel Code bereits geschrieben wurde, sondern misst den Weg zum vom Projektinhaber definierten Endziel.
@@ -196,7 +192,6 @@ Die Prozentanzeige wird bewusst streng und konservativ geführt. Sie ist keine S
 - Die Prozentwerte sind eine konservative Projektmessung anhand der Roadmap, keine Behauptung einer mathematisch exakten Gleichheit mit SketchUp.
 
 **Aktuelle konservative Gesamteinschätzung:** 9 %. Die Prozentzahl bleibt bewusst niedrig: Es gibt bereits einen getesteten Grundablauf für das Zeichnen auf ebenen Flächen und den ersten Endpunktfang, aber zahlreiche Kernwerkzeuge und die vollständige Modellierabdeckung fehlen noch. Die frühere 8-%-Angabe ist historisch und wurde durch den nachfolgenden, erfolgreich geprüften Meilenstein ersetzt.
-
 
 ## Erster Fangtyp: sichtbare Modell-Eckpunkte – 24. November 2026
 
@@ -242,6 +237,21 @@ Die Prozentanzeige wird bewusst streng und konservativ geführt. Sie ist keine S
 - Das Test-Screenshot-Artefakt wurde erfolgreich hochgeladen. Es ist ein CI-Artefakt und keine hier eingebettete Live-Aufnahme.
 - Der Branch bleibt in Draft-PR #74. Kein Merge und keine Veröffentlichung.
 
+## Vierter Fangtyp: Schnittpunkte sichtbarer Modellkanten – 28. November 2026
+
+- Eine neue reine Geometrie-Hilfsfunktion `findSegmentIntersections` erkennt innere Kreuzungen zweier projizierter Kantensegmente.
+- Parallele, kollineare und reine Endpunktkontakte werden nicht als Schnittpunkte ausgegeben.
+- Ein Bildschirmkreuzungspunkt wird nur akzeptiert, wenn die perspektivisch interpolierten 3D-Punkte der beiden Kanten räumlich höchstens 0,5 mm auseinanderliegen.
+- Die Interpolation berücksichtigt unterschiedliche Kameratiefen. Die resultierende Fangposition wird aus den räumlich passenden Punkten gebildet.
+- Der Schnittpunktfang hat einen eigenen Schalter und ist standardmässig ausgeschaltet, damit bestehende Zeichenabläufe und Rastertests unverändert bleiben.
+- Zur Laufzeit werden nur nahe Kantensegmente betrachtet; die Kandidatenmenge wird vor der paarweisen Schnittprüfung auf höchstens 64 Segmente begrenzt.
+- Der Schnittpunkt wird zusätzlich mit der vorhandenen Sichtbarkeitsprüfung kontrolliert und konkurriert anhand des Bildschirmabstands mit den anderen Fangtypen.
+- Unit-Tests prüfen korrekte Kreuzungen, parallele/kollineare/Endpunktfälle, räumlich auseinanderliegende Kanten und perspektivische Interpolation.
+- Ein fokussierter Browser-Test prüft, dass die geladene Laufzeit-API die erwartete Schnittpunktposition für ein Testsegmentpaar berechnet.
+- **Verifiziert:** Code-Prüfungen für Commit `606ea3f` erfolgreich (Workflow 46120288500). Der vollständige Browser-Workflow 46120288527 ist ebenfalls erfolgreich abgeschlossen: isolierte Modellierinteraktionen, Screenshot-Artefakt, Chromium und Safari-kompatibles WebKit bestanden.
+- Hinweis zur Testabdeckung: Der neue Browser-Zusatztest prüft die geladene Schnittpunkt-Hilfsfunktion mit kontrollierten Testsegmenten. Ein eigener vollständiger End-to-End-Test des Schnittpunktfangs an zwei tatsächlich sichtbaren Modellkanten steht noch aus.
+- Der Branch bleibt in Draft-PR #74. Kein Merge, keine Veröffentlichung und kein Deployment.
+
 ## Nächster Umsetzungsschritt
 
-Als Nächstes folgt die Erkennung robuster Schnitt-/Kreuzungspunkte zwischen Modellkanten. Danach werden Fangprioritäten und Laufzeitverhalten bei komplexeren Meshes geprüft. Das aktuelle Fangsystem ist ein weiterer Baustein, aber noch kein vollständiges SketchUp-Inferenzsystem.
+Als Nächstes wird der Schnittpunktfang mit realen Modellkanten im Viewport Ende-zu-Ende getestet. Danach werden Fangprioritäten und Laufzeitverhalten bei komplexeren Meshes geprüft. Das aktuelle Fangsystem ist ein weiterer Baustein, aber noch kein vollständiges SketchUp-Inferenzsystem.
