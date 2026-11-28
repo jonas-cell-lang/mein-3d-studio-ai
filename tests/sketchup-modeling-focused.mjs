@@ -70,9 +70,15 @@ try {
   const intersectionFixture = await page.evaluate(() => window.__silmoCreateIntersectionSnapFixture?.());
   assert.ok(intersectionFixture, 'Testkörper für den echten Schnittpunktfang konnten nicht erstellt werden');
   await page.mouse.move(intersectionFixture.x, intersectionFixture.y);
-  await page.waitForFunction(() => window.__silmoEndpointSnapSnapshot?.().visible === true,
-    null, { timeout: 5000 });
+  await page.waitForTimeout(500);
   const actualIntersectionSnap = await page.evaluate(() => window.__silmoEndpointSnapSnapshot?.());
+  console.log('SILMO-ECHTER-SCHNITTPUNKT-DIAG', JSON.stringify({
+    fixture: intersectionFixture,
+    canvas: await page.locator('#viewport canvas').boundingBox(),
+    snap: actualIntersectionSnap
+  }));
+  assert.equal(actualIntersectionSnap?.visible, true,
+    'Kein Fangmarker am realen Kanten-Schnittpunkt: ' + JSON.stringify({ fixture: intersectionFixture, snap: actualIntersectionSnap }));
   assert.ok(actualIntersectionSnap.snappedWorld && Math.hypot(
     actualIntersectionSnap.snappedWorld[0] - intersectionFixture.expectedWorld[0],
     actualIntersectionSnap.snappedWorld[1] - intersectionFixture.expectedWorld[1],
