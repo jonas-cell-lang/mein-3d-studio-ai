@@ -49,6 +49,15 @@ jobs:
           done
           cat /tmp/silmo-http.log
           exit 1
+      - name: Test isolated SketchUp modeling interactions
+        run: node tests/sketchup-modeling-focused.mjs
+      - name: Upload modeling test screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: silmo-sketchup-modeling-preview
+          path: test-results/
+          if-no-files-found: ignore
       - name: Test Chromium browser interactions
         run: node tests/silmo-browser-test.mjs
       - name: Test Safari-compatible WebKit interactions

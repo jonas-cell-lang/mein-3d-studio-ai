@@ -16,6 +16,12 @@
     if (!el) continue;
     nodes.set(id, ['bedWidth','bedDepth','color'].includes(id) ? (el.closest('.field') || el) : el);
   }
+  // Erweiterte/ältere Spezialwerkzeuge bleiben erhalten, sind im normalen Modelliermodus aber ausgeblendet.
+  const legacyIds = ['addOcctBox','addOcctCylinder','addOcctSphere','addOcctCone','addOcctTorus','importStepModel','exportStepModel','inspectOcctShape'];
+  legacyIds.forEach(id => {
+    const el = nodes.get(id) || document.getElementById(id);
+    if (el) el.classList.add('expert-only');
+  });
   const bedNote = document.createElement('p');
   bedNote.className = 'note expert-only';
   bedNote.textContent = 'Stelle Breite und Tiefe passend zu deinem 3D-Drucker ein.';
@@ -27,7 +33,7 @@
   const rightContainer = document.createElement('div'); rightContainer.className = 'tab-content';
   const paneMap = {};
   const tabDefs = [
-    ['create','Erstellen'],['draw','Zeichnen'],['edit','Bearbeiten'],['measure','Messen & Prüfen'],['project','Projekt'],['print','3D-Druck'],['expert','Expertenzentrum']
+    ['create','Modellieren'],['draw','Zeichnen'],['edit','Bearbeiten'],['measure','Messen & Prüfen'],['project','Projekt'],['print','3D-Druck'],['expert','Expertenzentrum']
   ];
   for (const [key] of tabDefs) {
     paneMap[key] = {};
@@ -63,6 +69,30 @@
   const sketchSnapLabel=document.createElement('label'); sketchSnapLabel.htmlFor='sketchSnapEnabled'; sketchSnapLabel.textContent='Rasterfang aktivieren';
   const sketchSnapEnabled=document.createElement('input'); sketchSnapEnabled.id='sketchSnapEnabled'; sketchSnapEnabled.type='checkbox'; sketchSnapEnabled.checked=false;
   sketchSnapWrap.append(sketchSnapLabel,sketchSnapEnabled); paneMap.draw.left.appendChild(sketchSnapWrap);
+  const endpointSnapWrap=document.createElement('div'); endpointSnapWrap.className='field';
+  const endpointSnapLabel=document.createElement('label'); endpointSnapLabel.htmlFor='sketchEndpointSnapEnabled'; endpointSnapLabel.textContent='Eckpunktfang aktivieren';
+  const endpointSnapEnabled=document.createElement('input'); endpointSnapEnabled.id='sketchEndpointSnapEnabled'; endpointSnapEnabled.type='checkbox'; endpointSnapEnabled.checked=true;
+  endpointSnapWrap.append(endpointSnapLabel,endpointSnapEnabled);
+  const endpointSnapNote=document.createElement('p'); endpointSnapNote.className='note'; endpointSnapNote.textContent='Fängt beim Zeichnen sichtbare Eckpunkte von Modellflächen ein (12 Pixel Bildschirmabstand).';
+  endpointSnapWrap.appendChild(endpointSnapNote); paneMap.draw.left.appendChild(endpointSnapWrap);
+  const midpointSnapWrap=document.createElement('div'); midpointSnapWrap.className='field';
+  const midpointSnapLabel=document.createElement('label'); midpointSnapLabel.htmlFor='sketchMidpointSnapEnabled'; midpointSnapLabel.textContent='Kantenmittefang aktivieren';
+  const midpointSnapEnabled=document.createElement('input'); midpointSnapEnabled.id='sketchMidpointSnapEnabled'; midpointSnapEnabled.type='checkbox'; midpointSnapEnabled.checked=true;
+  midpointSnapWrap.append(midpointSnapLabel,midpointSnapEnabled);
+  const midpointSnapNote=document.createElement('p'); midpointSnapNote.className='note'; midpointSnapNote.textContent='Fängt die Mitte sichtbarer scharfer Modellkanten ein. Flache Dreiecksdiagonalen werden ignoriert (12 Pixel Bildschirmabstand).';
+  midpointSnapWrap.appendChild(midpointSnapNote); paneMap.draw.left.appendChild(midpointSnapWrap);
+  const edgeProjectionSnapWrap=document.createElement('div'); edgeProjectionSnapWrap.className='field';
+  const edgeProjectionSnapLabel=document.createElement('label'); edgeProjectionSnapLabel.htmlFor='sketchEdgeProjectionSnapEnabled'; edgeProjectionSnapLabel.textContent='Auf Kanten projizieren';
+  const edgeProjectionSnapEnabled=document.createElement('input'); edgeProjectionSnapEnabled.id='sketchEdgeProjectionSnapEnabled'; edgeProjectionSnapEnabled.type='checkbox'; edgeProjectionSnapEnabled.checked=false;
+  edgeProjectionSnapWrap.append(edgeProjectionSnapLabel,edgeProjectionSnapEnabled);
+  const edgeProjectionSnapNote=document.createElement('p'); edgeProjectionSnapNote.className='note'; edgeProjectionSnapNote.textContent='Fängt jeden Punkt direkt auf einer sichtbaren scharfen Modellkante ein (12 Pixel Bildschirmabstand).';
+  edgeProjectionSnapWrap.appendChild(edgeProjectionSnapNote); paneMap.draw.left.appendChild(edgeProjectionSnapWrap);
+  const intersectionSnapWrap=document.createElement('div'); intersectionSnapWrap.className='field';
+  const intersectionSnapLabel=document.createElement('label'); intersectionSnapLabel.htmlFor='sketchIntersectionSnapEnabled'; intersectionSnapLabel.textContent='Schnittpunktfang aktivieren';
+  const intersectionSnapEnabled=document.createElement('input'); intersectionSnapEnabled.id='sketchIntersectionSnapEnabled'; intersectionSnapEnabled.type='checkbox'; intersectionSnapEnabled.checked=false;
+  intersectionSnapWrap.append(intersectionSnapLabel,intersectionSnapEnabled);
+  const intersectionSnapNote=document.createElement('p'); intersectionSnapNote.className='note'; intersectionSnapNote.textContent='Fängt Kreuzungen sichtbarer scharfer Kanten, wenn die Kanten auch räumlich höchstens 0,5 mm auseinanderliegen (12 Pixel Bildschirmabstand).';
+  intersectionSnapWrap.appendChild(intersectionSnapNote); paneMap.draw.left.appendChild(intersectionSnapWrap);
   const sketchSmoothWrap=document.createElement('div'); sketchSmoothWrap.className='field';
   const sketchSmoothLabel=document.createElement('label'); sketchSmoothLabel.htmlFor='sketchSmoothEnabled'; sketchSmoothLabel.textContent='Freihand-Linien beruhigen';
   const sketchSmoothEnabled=document.createElement('input'); sketchSmoothEnabled.id='sketchSmoothEnabled'; sketchSmoothEnabled.type='checkbox'; sketchSmoothEnabled.checked=true;
@@ -107,19 +137,21 @@
   const sketchPositionY=document.createElement('input'); sketchPositionY.id='sketchPositionYMM'; sketchPositionY.type='number'; sketchPositionY.step='0.1'; sketchPositionY.placeholder='Mausposition';
   sketchPositionYWrap.append(sketchPositionYLabel,sketchPositionY);
 
-  const contourToolsHeading=document.createElement('h2');contourToolsHeading.textContent='Kontur- und Wandwerkzeuge';paneMap.draw.left.appendChild(contourToolsHeading);
-  const contourHelp=document.createElement('p');contourHelp.className='note';contourHelp.textContent='Erzeuge aus einer selbst gezeichneten geschlossenen Kontur einen hohlen Rahmen oder Wandkörper. Für Bohrungen und Ausschnitte wählst du den Grundkörper zuerst und den Schneidkörper danach.';paneMap.draw.left.appendChild(contourHelp);
-  const wallThicknessWrap=document.createElement('div');wallThicknessWrap.className='field';
+  const contourToolsHeading=document.createElement('h2');contourToolsHeading.classList.add('expert-only');contourToolsHeading.textContent='Kontur- und Wandwerkzeuge';paneMap.draw.left.appendChild(contourToolsHeading);
+  const contourHelp=document.createElement('p');contourHelp.className='note expert-only';contourHelp.textContent='Erzeuge aus einer selbst gezeichneten geschlossenen Kontur einen hohlen Rahmen oder Wandkörper. Für Bohrungen und Ausschnitte wählst du den Grundkörper zuerst und den Schneidkörper danach.';paneMap.draw.left.appendChild(contourHelp);
+  const wallThicknessWrap=document.createElement('div');wallThicknessWrap.className='field expert-only';
   const wallThicknessLabel=document.createElement('label');wallThicknessLabel.htmlFor='wallThicknessMM';wallThicknessLabel.textContent='Wandstärke (mm)';
   const wallThickness=document.createElement('input');wallThickness.id='wallThicknessMM';wallThickness.type='number';wallThickness.min='0.2';wallThickness.max='100';wallThickness.step='0.1';wallThickness.value='1.4';
   wallThicknessWrap.append(wallThicknessLabel,wallThickness);paneMap.draw.left.appendChild(wallThicknessWrap);
-  const frameHeightWrap=document.createElement('div');frameHeightWrap.className='field';
+  const frameHeightWrap=document.createElement('div');frameHeightWrap.className='field expert-only';
   const frameHeightLabel=document.createElement('label');frameHeightLabel.htmlFor='frameHeightMM';frameHeightLabel.textContent='Rahmenhöhe (mm)';
   const frameHeight=document.createElement('input');frameHeight.id='frameHeightMM';frameHeight.type='number';frameHeight.min='0.2';frameHeight.max='2000';frameHeight.step='0.1';frameHeight.value='12';
   frameHeightWrap.append(frameHeightLabel,frameHeight);paneMap.draw.left.appendChild(frameHeightWrap);
-  const contourFrameButton=document.createElement('button');contourFrameButton.type='button';contourFrameButton.id='createContourFrame';contourFrameButton.className='wide';contourFrameButton.textContent='▱ Hohlrahmen aus Kontur erzeugen';paneMap.draw.left.appendChild(contourFrameButton);
-  const subtractSelectedButton=document.createElement('button');subtractSelectedButton.type='button';subtractSelectedButton.id='subtractSelected';subtractSelectedButton.className='wide';subtractSelectedButton.textContent='− Auswahl voneinander abziehen';paneMap.draw.left.appendChild(subtractSelectedButton);
+  const contourFrameButton=document.createElement('button');contourFrameButton.type='button';contourFrameButton.id='createContourFrame';contourFrameButton.className='wide expert-only';contourFrameButton.textContent='▱ Hohlrahmen aus Kontur erzeugen';paneMap.draw.left.appendChild(contourFrameButton);
+  const subtractSelectedButton=document.createElement('button');subtractSelectedButton.type='button';subtractSelectedButton.id='subtractSelected';subtractSelectedButton.className='wide expert-only';subtractSelectedButton.textContent='− Auswahl voneinander abziehen';paneMap.draw.left.appendChild(subtractSelectedButton);
   const sketchLockNote=document.createElement('p'); sketchLockNote.id='sketchViewLockNote'; sketchLockNote.className='note'; sketchLockNote.textContent='Während des Zeichnens ist die Kameradrehung gesperrt. Zoomen bleibt möglich.'; paneMap.draw.left.appendChild(sketchLockNote);
+  const pickFacePlaneButton=document.createElement('button'); pickFacePlaneButton.type='button'; pickFacePlaneButton.id='pickFaceSketchPlane'; pickFacePlaneButton.className='wide'; pickFacePlaneButton.textContent='▱ Zeichenfläche auf Modell wählen'; paneMap.draw.left.appendChild(pickFacePlaneButton);
+  const pickFacePlaneNote=document.createElement('p'); pickFacePlaneNote.className='note'; pickFacePlaneNote.textContent='Erster Schritt: Wähle die obere, waagerechte Fläche eines Körpers. Danach kannst du darauf skizzieren.'; paneMap.draw.left.appendChild(pickFacePlaneNote);
   const startSketchButton=document.createElement('button'); startSketchButton.type='button'; startSketchButton.id='startSketch'; startSketchButton.className='wide primary'; startSketchButton.textContent='✎ Zeichnen starten'; paneMap.draw.left.appendChild(startSketchButton);
   const createSketchButton=document.createElement('button'); createSketchButton.type='button'; createSketchButton.id='createSketchSolid'; createSketchButton.className='wide'; createSketchButton.textContent='▰ Als 3D-Körper erstellen'; createSketchButton.disabled=true; paneMap.draw.left.appendChild(createSketchButton);
   const cancelSketchButton=document.createElement('button'); cancelSketchButton.type='button'; cancelSketchButton.id='cancelSketch'; cancelSketchButton.className='wide'; cancelSketchButton.textContent='Skizze abbrechen'; cancelSketchButton.disabled=true; paneMap.draw.left.appendChild(cancelSketchButton);
@@ -135,8 +167,9 @@
     ['rectangle','▭','Rechteck'],['roundedRectangle','▢','Rundung'],['circle','○','Kreis'],['ellipse','⬭','Ellipse'],
     ['triangle','△','Dreieck'],['line2d','／','Linie'],['curve2d','〰','Kurve'],['freeform2d','✎','Freiform'],['line3d','⌁','3D-Linie']
   ];
+  const advancedSketchTools = new Set(['roundedRectangle','ellipse','triangle','curve2d','freeform2d','line3d']);
   paletteTools.forEach(([value,glyph,label])=>{
-    const button=document.createElement('button');button.type='button';button.className='cad-tool-button';button.dataset.sketchTool=value;button.setAttribute('aria-pressed',String(sketchTool.value===value));
+    const button=document.createElement('button');button.type='button';button.className='cad-tool-button'+(advancedSketchTools.has(value)?' expert-only':'');button.dataset.sketchTool=value;button.setAttribute('aria-pressed',String(sketchTool.value===value));
     const icon=document.createElement('span');icon.className='cad-tool-icon';icon.textContent=glyph;
     const text=document.createElement('span');text.textContent=label;button.append(icon,text);
     button.addEventListener('click',()=>{sketchTool.value=value;sketchTool.dispatchEvent(new Event('change',{bubbles:true}));});
@@ -260,6 +293,8 @@
   const actionWrap=document.createElement('div');actionWrap.className='cad-draw-actions';actionWrap.append(startSketchButton,createSketchButton,cancelSketchButton);
   paneMap.draw.left.insertBefore(clickContourPanel,contourToolsHeading);
   paneMap.draw.left.insertBefore(sketchLockNote,contourToolsHeading);
+  paneMap.draw.left.insertBefore(pickFacePlaneButton,contourToolsHeading);
+  paneMap.draw.left.insertBefore(pickFacePlaneNote,contourToolsHeading);
   paneMap.draw.left.insertBefore(actionWrap,contourToolsHeading);
   paneMap.draw.left.insertBefore(sketchStatus,contourToolsHeading);
   // Die Werkzeugauswahl und Parameter liegen nun bewusst rechts; links bleibt die Werkzeugpalette.
@@ -377,6 +412,26 @@
   heading(paneMap.expert.right,'Erweiterte Hinweise','expert-only');
   paneMap.expert.right.appendChild(sizeNote);
 
+  // Erweiterte Boolesche CAD-Operationen bleiben vollständig erhalten,
+  // verlassen aber den normalen SketchUp-orientierten Modellierbereich.
+  const booleanCadDetails=document.createElement('details');
+  booleanCadDetails.className='advanced-cad-tools expert-only';
+  const booleanCadSummary=document.createElement('summary');
+  booleanCadSummary.textContent='Erweiterte CAD-Formoperationen';
+  booleanCadDetails.appendChild(booleanCadSummary);
+  const booleanHeading=[...paneMap.create.left.querySelectorAll(':scope > h2')].find(h=>h.textContent==='Formen kombinieren');
+  const objectListHeading=[...paneMap.create.left.querySelectorAll(':scope > h2')].find(h=>h.textContent==='Objektliste');
+  if(booleanHeading && objectListHeading){
+    paneMap.expert.left.appendChild(booleanCadDetails);
+    let node=booleanHeading;
+    while(node && node!==objectListHeading){
+      const next=node.nextSibling;
+      booleanCadDetails.appendChild(node);
+      node=next;
+    }
+  }
+
+
 
   // v90: Echte Unterreiter – sichtbar bleibt ausschliesslich der aktive Bereich.
   function addSectionTabs(container, targets, ariaLabel, groupHeadings=false) {
@@ -440,7 +495,7 @@
   }
   const directHeadings=(pane)=>[...pane.querySelectorAll(':scope > h2')];
   const createHeadings=directHeadings(paneMap.create.left);
-  addSectionTabs(paneMap.create.left,createHeadings.map((h,i)=>({label:['Grundformen','Kombinieren','Objektliste'][i]||h.textContent,target:h})),'Unterbereiche Erstellen',true);
+  addSectionTabs(paneMap.create.left,createHeadings.map(h=>({label:h.textContent==='Objekte'?'Grundformen':h.textContent,target:h})),'Unterbereiche Modellieren',true);
   const drawHeadings=directHeadings(paneMap.draw.left);
   addSectionTabs(paneMap.draw.left,drawHeadings.map((h,i)=>({label:['Skizzieren','Kontur','Aktionen'][i]||h.textContent,target:h})),'Unterbereiche Zeichnen',true);
   const projectHeadings=directHeadings(paneMap.project.left);
@@ -505,9 +560,13 @@
     expertToggle.textContent=opening?'⚙ Expertenzentrum schliessen':'⚙ Expertenzentrum öffnen';
     if(opening){
       document.body.classList.add('expert-mode'); document.body.classList.remove('beginner-mode');
-      const mode=document.getElementById('modeToggle'); if(mode){mode.textContent='Expertenmodus';mode.setAttribute('aria-pressed','true');}
+      const mode=document.getElementById('modeToggle'); if(mode){mode.textContent='Erweiterte Funktionen: EIN';mode.setAttribute('aria-pressed','true');}
       selectTab('expert');
     } else {
+      document.body.classList.remove('expert-mode');
+      document.body.classList.add('beginner-mode');
+      const mode=document.getElementById('modeToggle');
+      if(mode){mode.textContent='Erweiterte Funktionen: AUS';mode.setAttribute('aria-pressed','false');}
       selectTab('measure');
     }
   });

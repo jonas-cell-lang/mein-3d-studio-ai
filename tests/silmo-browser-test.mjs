@@ -42,8 +42,47 @@ async function showCreateSubtab(index) {
     throw new Error('Grundformen-Unterreiter wurde aktiviert, aber Würfel-Button bleibt unsichtbar: ' + JSON.stringify(state));
   }
 }
+async function showExpertBooleanTools() {
+  const toggle = page.locator('#expertCenterToggle');
+  if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
+  await page.locator('[data-tab="expert"]').click();
+  const details = page.locator('#pane-expert-left details.advanced-cad-tools');
+  if (!(await details.evaluate(el => el.open))) await details.locator('summary').click();
+}
 async function showDrawRightSubtab(index) {
   await page.locator('#pane-draw-right > .inner-tab-nav button').nth(index).click();
+}
+async function showDrawLeftSubtab(index) {
+  await page.locator('[data-tab="draw"]').click();
+  const pane = page.locator('#pane-draw-left');
+  await pane.waitFor({ state: 'visible' });
+  const tabs = pane.locator(':scope > .inner-tab-nav button');
+  await tabs.nth(index).waitFor({ state: 'visible' });
+  const tabLabels = await tabs.allTextContents();
+  await tabs.nth(index).click();
+  await pane.locator('.inner-tab-panel').nth(index).waitFor({ state: 'visible' });
+  const targetId = index === 0 ? '#pickFaceSketchPlane' : null;
+  if (targetId && !(await page.locator(targetId).isVisible())) {
+    const diagnostic = await pane.evaluate(root => ({
+      tabs: [...root.querySelectorAll(':scope > .inner-tab-nav button')].map(button => ({
+        label: button.textContent.trim(), selected: button.getAttribute('aria-selected')
+      })),
+      panels: [...root.querySelectorAll(':scope > .inner-tab-panel')].map((panel, panelIndex) => ({
+        panelIndex, hidden: panel.hidden,
+        headings: [...panel.querySelectorAll(':scope > h2')].map(heading => heading.textContent.trim()),
+        containsFacePicker: !!panel.querySelector('#pickFaceSketchPlane')
+      })),
+      facePicker: (() => {
+        const button = root.querySelector('#pickFaceSketchPlane');
+        if (!button) return null;
+        const style = getComputedStyle(button);
+        return { parentId: button.parentElement?.id, parentClass: button.parentElement?.className,
+          hidden: button.hidden, display: style.display, visibility: style.visibility };
+      })()
+    }));
+    throw new Error('Flächenwahl nach Aktivierung des Zeichen-Unterreiters nicht sichtbar. ' +
+      JSON.stringify({ requestedIndex: index, tabLabels, diagnostic }));
+  }
 }
 async function waitForSelectedSketchOcct() {
   await page.waitForFunction(() => window.__silmoSketchSnapshot()?.geometryKernel === 'occt-wasm', null, { timeout: 45000 });
@@ -71,6 +110,24 @@ try {
     return { available: !!gl, version: gl ? gl.getParameter(gl.VERSION) : null };
   });
   assert.equal(webglInfo.available, true, '3D-Arbeitsfläche besitzt keinen aktiven WebGL-Kontext');
+  assert.match(await page.locator('#modeToggle').innerText(), /AUS/, 'Erweiterte Funktionen sind beim Start nicht ausgeschaltet');
+  assert.equal(await page.locator('#occtFilletPanel').isVisible(), false, 'Alte OCCT-Flächen- und Kantenwerkzeuge sind im Normalmodus sichtbar');
+  await page.locator('#modeToggle').click();
+  assert.match(await page.locator('#modeToggle').innerText(), /EIN/, 'Erweiterte Funktionen lassen sich für den vollständigen CAD-Test nicht einschalten');
+  await showCreateSubtab(0);
+  assert.equal(await page.locator('#occtFilletPanel').isVisible(), true, 'OCCT-Flächen- und Kantenwerkzeuge bleiben im Expertenmodus im Grundformen-Untertab verborgen');
+  // SketchUp-orientierte Grundkürzel müssen vorhandene Skizzierwerkzeuge aktivieren.
+  await page.keyboard.press('l');
+  assert.equal(await page.locator('#sketchTool').inputValue(), 'line2d', 'L aktiviert nicht das Linienwerkzeug');
+  assert.equal(await page.locator('#cancelSketch').isDisabled(), false, 'L startet den Zeichenmodus nicht');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#cancelSketch').isDisabled(), true, 'Escape beendet den Zeichenmodus nicht');
+  await page.keyboard.press('r');
+  assert.equal(await page.locator('#sketchTool').inputValue(), 'rectangle', 'R aktiviert nicht das Rechteckwerkzeug');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('c');
+  assert.equal(await page.locator('#sketchTool').inputValue(), 'circle', 'C aktiviert nicht das Kreiswerkzeug');
+  await page.keyboard.press('Escape');
   const runtimeInfo = await page.evaluate(() => ({
     revision: window.THREE?.REVISION,
     loader: typeof window.THREE?.STLLoader,
@@ -79,8 +136,9 @@ try {
   assert.deepEqual(runtimeInfo, { revision: '128', loader: 'function', exporter: 'function' }, 'Lokale Three.js r128 Runtime oder STL-Erweiterungen fehlen');
   await page.waitForFunction(() => typeof window.__silmoTutorialAllPositions === 'function', null, { timeout: 20000 });
   assert.match(await page.locator('meta[name="silmo-build"]').getAttribute('content'), /^v95/, 'Build-Metadaten zeigen nicht v95');
-  const mainTabs = await page.locator('.tool-tabs [role="tab"]:not([hidden])').allTextContents();
-  assert.deepEqual(mainTabs, ['Erstellen','Zeichnen','Bearbeiten','Messen & Prüfen','Projekt','3D-Druck'], 'Hauptreiter sind nicht vollständig oder falsch sortiert');
+  assert.equal(await page.locator('[data-tab="expert"]').isVisible(), true, 'Expertenzentrum-Reiter wird bei eingeschalteten erweiterten Funktionen nicht angezeigt');
+  const mainTabs = await page.locator('nav.tool-tabs[aria-label="Werkzeugbereiche"]').evaluate(nav => Array.from(nav.querySelectorAll(':scope > button.tool-tab[data-tab]')).filter(el => !el.hidden).map(el => el.textContent.trim()));
+  assert.deepEqual(mainTabs, ['Modellieren','Zeichnen','Bearbeiten','Messen & Prüfen','Projekt','3D-Druck','Expertenzentrum'], 'Hauptreiter sind nicht vollständig oder falsch sortiert');
   await page.locator('[data-tab="project"]').click();
   const projectSubtabs = page.locator('#pane-project-left > .inner-tab-nav button');
   assert.deepEqual(await projectSubtabs.allTextContents(), ['Projektdatei','Import','Export'], 'Projekt-Unterreiter fehlen oder sind falsch sortiert');
@@ -565,9 +623,17 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.equal(await page.locator('#occtEdgeList option:not([disabled])').count(), 12,
     'Nicht alle zwölf Quaderkanten sind für die 3D-Auswahl verfügbar');
   await page.locator('#toggleOcctEdgePick').click();
-  const edgeScreenPoint = await page.evaluate(() => window.__silmoOcctEdgePickPoint(0));
-  assert.ok(edgeScreenPoint && Number.isFinite(edgeScreenPoint.x) && Number.isFinite(edgeScreenPoint.y),
-    'Für Kante 1 wurde kein sichtbarer 3D-Auswahlpunkt berechnet');
+  let edgePickTarget = null;
+  for (let edgeIndex = 0; edgeIndex < 12; edgeIndex++) {
+    const point = await page.evaluate(index => window.__silmoOcctEdgePickPoint(index), edgeIndex);
+    if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+      edgePickTarget = { edgeIndex, point };
+      break;
+    }
+  }
+  assert.ok(edgePickTarget,
+    'Für keine der zwölf nativen Quaderkanten wurde ein eindeutig sichtbarer 3D-Auswahlpunkt berechnet');
+  const { edgeIndex: pickedEdgeIndex, point: edgeScreenPoint } = edgePickTarget;
   const edgePickState = await page.evaluate(point => ({
     ...window.__silmoOcctEdgePickReady(),
     point,
@@ -583,24 +649,24 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
     near: window.__silmoOcctFindEdgeAtScreenPoint(point.x + 8, point.y + 6),
     far: window.__silmoOcctFindEdgeAtScreenPoint(point.x + 40, point.y + 40)
   }), edgeScreenPoint);
-  assert.equal(edgePickTolerance.near?.edgeIndex, 0,
-    'Die bildschirmbasierte Kantenerkennung verfehlt einen Klick innerhalb der 14-Pixel-Toleranz');
-  assert.equal(edgePickTolerance.far, null,
-    'Die bildschirmbasierte Kantenerkennung akzeptiert einen Klick ausserhalb der Toleranz');
+  assert.equal(edgePickTolerance.near?.edgeIndex, pickedEdgeIndex,
+    'Die bildschirmbasierte Kantenerkennung verfehlt einen Klick innerhalb der 14-Pixel-Toleranz: ' + JSON.stringify(edgePickTolerance));
+  assert.notEqual(edgePickTolerance.far?.edgeIndex, pickedEdgeIndex,
+    'Die bildschirmbasierte Kantenerkennung akzeptiert einen weit entfernten Klick weiterhin als dieselbe Zielkante');
   await page.mouse.click(edgeScreenPoint.x + 8, edgeScreenPoint.y + 6);
   await page.waitForTimeout(300);
-  const edgePickEventDebug = await page.evaluate(() => ({
+  const edgePickEventDebug = await page.evaluate(index => ({
     event: window.__silmoOcctLastEdgePickEvent || null,
-    selected: document.querySelector('#occtEdgeList option[value="0"]')?.selected === true
-  }));
+    selected: document.querySelector(`#occtEdgeList option[value="${index}"]`)?.selected === true
+  }), pickedEdgeIndex);
   assert.ok(edgePickEventDebug.selected,
     '3D-Klick hat Kante 1 nicht ausgewählt. Ereignisdiagnose: ' + JSON.stringify(edgePickEventDebug));
-  const viewportEdgePick = await page.evaluate(() => ({
+  const viewportEdgePick = await page.evaluate(index => ({
     selected: Array.from(window.__silmoOcctEdgeOverlay?.selectedIndices || []),
     highlighted: window.__silmoOcctEdgeOverlay?.group.children
-      .find(line => line.userData.occtEdgeIndex === 0)?.material.color.getHex()
-  }));
-  assert.deepEqual(viewportEdgePick.selected, [0],
+      .find(line => line.userData.occtEdgeIndex === index)?.material.color.getHex()
+  }), pickedEdgeIndex);
+  assert.deepEqual(viewportEdgePick.selected, [pickedEdgeIndex],
     'Ein Klick auf die 3D-Kante hat die native Kante nicht ausgewählt');
   assert.equal(viewportEdgePick.highlighted, 0xffbd4a,
     'Die ausgewählte 3D-Kante wurde nicht hervorgehoben');
@@ -615,7 +681,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(visibleFillet.volumeMM3 > 0 && visibleFillet.volumeMM3 < 8000 &&
     Math.abs(visibleFillet.workerVolumeMM3 - visibleFillet.volumeMM3) < 1e-7,
     'Sichtbare Kantenrundung hat keinen gültigen nativen OCCT-Solid erzeugt');
-  assert.deepEqual(visibleFillet.edgeIndices, [0]);
+  assert.deepEqual(visibleFillet.edgeIndices, [pickedEdgeIndex]);
   assert.equal(visibleFillet.radiusMM, 1);
   const filletUndoGeneration = await page.evaluate(() => window.__silmoOcctRestoreGeneration || 0);
   await page.keyboard.press('Control+z');
@@ -2319,6 +2385,57 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   const tutorialStartRows = await page.locator('#objects .object-row').count();
   await page.locator('#addCube').click();
   assert.equal(await page.locator('#objects .object-row').count(), tutorialStartRows + 1, 'Tutorial-Testobjekt wurde nicht erstellt');
+  // Hover-Auswahlhilfe ist im Zeichenmodus absichtlich deaktiviert. Der Test
+  // beendet einen eventuell aus vorherigen Tests verbliebenen Zeichenmodus,
+  // bevor er die Maus-Auswahlhilfe prüft.
+  if (!await page.locator('#cancelSketch').isDisabled()) {
+    await page.locator('#cancelSketch').click();
+  }
+  // Das Tutorial erstellt den Würfel und wählt ihn automatisch aus. Für den
+  // Hover-Test muss er unselektiert sein, da die Hover-Kontur ausgewählte
+  // Objekte absichtlich nicht überlagert. Strg-Klick auf die aktive Zeile
+  // hebt die Auswahl über denselben UI-Weg wie ein Benutzer auf.
+  const lastObjectButton = page.locator('#objects .object-select').last();
+  assert.equal(await lastObjectButton.count(), 1, 'Tutorial-Objekt fehlt in der Objektliste');
+  // Der Test läuft hier mit einem offenen Tutorial-Overlay. Die Objektliste
+  // kann dadurch visuell verdeckt sein; dispatchEvent löst denselben
+  // Button-Handler aus, ohne Playwrights Sichtbarkeitsprüfung zu umgehen.
+  await lastObjectButton.evaluate(button => button.dispatchEvent(
+    new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true, metaKey: true })
+  ));
+  const selectionAfterDeselect = await page.evaluate(() => window.__silmoModelingTestSnapshot?.());
+  assert.equal(selectionAfterDeselect?.selectedId, null,
+    'Testobjekt konnte vor der Hover-Prüfung nicht abgewählt werden');
+  // Das Tutorial-Panel verdeckt im Browser-Viewport den zentralen 3D-Bereich.
+  // Für den unabhängigen Hover-Test wird es kurz ausgeblendet und danach wiederhergestellt.
+  // Das Tutorial selbst wird anschliessend weiterhin mit sichtbarem Panel geprüft.
+  const tutorialCard = page.locator('#tutorialCard');
+  const tutorialVisibility = await tutorialCard.evaluate(element => element.style.visibility);
+  await tutorialCard.evaluate(element => { element.style.visibility = 'hidden'; });
+  const hoverPoint = await page.evaluate(() => window.__silmoHoverTestPoint?.());
+  assert.ok(hoverPoint, 'Kein nicht ausgewähltes Testobjekt für die Hover-Auswahlhilfe gefunden. Diagnose: ' +
+    JSON.stringify(await page.evaluate(() => ({
+      model: window.__silmoModelingTestSnapshot?.(),
+      canvas: (() => { const r = document.querySelector('canvas')?.getBoundingClientRect(); return r ? {x:r.x,y:r.y,width:r.width,height:r.height} : null; })(),
+      tutorial: (() => { const e=document.querySelector('#tutorialCard'); return e ? {display:getComputedStyle(e).display,visibility:getComputedStyle(e).visibility,rect:(()=>{const r=e.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};})()} : null; })()
+    }))));
+  assert.equal(hoverPoint.targetElement, 'CANVAS', 'Hover-Testpunkt liegt nicht auf der 3D-Canvas: ' + JSON.stringify(hoverPoint));
+  await page.mouse.move(hoverPoint.x, hoverPoint.y);
+  try {
+    await page.waitForFunction(() => window.__silmoHoverSnapshot?.().outlineVisible === true, null, { timeout: 3000 });
+  } catch (error) {
+    const hoverState = await page.evaluate(() => window.__silmoHoverSnapshot?.());
+    throw new Error('Hover-Kontur nach Mausbewegung nicht sichtbar. Testpunkt: ' + JSON.stringify(hoverPoint) + '. Diagnose: ' + JSON.stringify(hoverState) + '. Ursache: ' + error.message);
+  }
+  const hoverState = await page.evaluate(() => window.__silmoHoverSnapshot());
+  assert.equal(hoverState.objectId, hoverPoint.objectId,
+    'Blaue Hover-Kontur gehört nicht zum Objekt unter dem Mauszeiger');
+  assert.ok(Math.abs(hoverState.debug.pointerClient.x - hoverPoint.x) < 1 &&
+    Math.abs(hoverState.debug.pointerClient.y - hoverPoint.y) < 1,
+    'Die 3D-Canvas hat nicht die berechnete Mausposition erhalten: ' + JSON.stringify({ hoverPoint, pointerClient: hoverState.debug.pointerClient }));
+  await page.mouse.move(5, 5);
+  await page.waitForFunction(() => window.__silmoHoverSnapshot?.().outlineVisible === false, null, { timeout: 3000 });
+  await tutorialCard.evaluate((element, visibility) => { element.style.visibility = visibility; }, tutorialVisibility);
   await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 5000 });
   assert.match(await page.locator('#tutorialFeedback').innerText(), /Erfolgskontrolle bestanden/, 'Tutorial erkennt das neu erstellte Objekt nicht');
   assert.equal(await page.locator('#tutorialNext').isDisabled(), false, 'Weiter wird nach erkannter Aufgabe nicht freigeschaltet');
@@ -2329,7 +2446,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.waitForFunction(() => document.querySelector('#tutorialNext')?.disabled === false, null, { timeout: 5000 });
   await page.locator('#tutorialNext').click();
   assert.match(await page.locator('#tutorialStepLabel').innerText(), /AUFGABE 8 VON/, 'Tutorial kann die zweite CAD-Aufgabe nicht abschliessen');
-  await showCreateSubtab(2); // Objektliste
+  await showCreateSubtab(1); // Objektliste (Grundformen = 0, Objektliste = 1; Kombinieren liegt im Expertenzentrum)
   await page.locator('#objects .object-select').last().click();
   await showCreateSubtab(0); // Grundformen und Duplizieren
   await page.locator('#duplicate').click();
@@ -2448,6 +2565,76 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await showDrawRightSubtab(1);
   assert.equal(await page.locator('#sketchDepthMM').isVisible(), false, 'Kreis zeigt ein unnötiges separates Tiefenfeld');
 
+  // Direkt auf einer ebenen Modellfläche zeichnen und senkrecht zur Fläche extrudieren.
+  await page.locator('#cancelSketch').click();
+  await showDrawLeftSubtab(0); // Flächenwahl liegt im linken Bereich „Skizzieren“.
+  const faceBaseId = await page.evaluate(() => window.__silmoModelingTestSnapshot().selectedId);
+  assert.ok(faceBaseId, 'Kein ausgewählter Körper für den Flächenskizzen-Test vorhanden');
+  const facePickPoint = await page.evaluate(id => window.__silmoFaceSketchTestPoint(id), faceBaseId);
+  assert.ok(facePickPoint, 'Keine sichtbare Seitenfläche für den Flächenskizzen-Test gefunden');
+  await page.locator('#pickFaceSketchPlane').click();
+  await page.mouse.click(facePickPoint.x, facePickPoint.y);
+  await page.waitForFunction(() => window.__silmoFaceSketchFrameSnapshot()?.active === true, null, { timeout: 5000 });
+  const pickedFaceFrame = await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot());
+  const faceFrameChecks = await page.evaluate(() => {
+    const frame = window.__silmoFaceSketchFrameSnapshot();
+    const vector = values => ({ x: values[0], y: values[1], z: values[2] });
+    const dot = (a,b) => a.x*b.x + a.y*b.y + a.z*b.z;
+    const length = a => Math.hypot(a.x,a.y,a.z);
+    const u=vector(frame.u), v=vector(frame.v), normal=vector(frame.normal);
+    return { uLength:length(u), vLength:length(v), normalLength:length(normal), uvDot:dot(u,v), unDot:dot(u,normal), vnDot:dot(v,normal) };
+  });
+  for (const key of ['uLength','vLength','normalLength']) assert.ok(Math.abs(faceFrameChecks[key]-1)<1e-6, 'Flächenkoordinatensystem ist nicht normiert: '+key);
+  for (const key of ['uvDot','unDot','vnDot']) assert.ok(Math.abs(faceFrameChecks[key])<1e-6, 'Flächenkoordinatensystem ist nicht rechtwinklig: '+key);
+  assert.equal(await page.locator('#sketchPlaneSelect').isDisabled(), true, 'Globale Zeichenebene bleibt trotz gewählter Modellfläche änderbar');
+  await showDrawRightSubtab(0);
+  await page.locator('#sketchTool').selectOption('rectangle');
+  // Vorherige Präzisionskoordinaten aus dem separaten XY-Test dürfen die lokale
+  // Position auf der ausgewählten Modellfläche nicht verschieben.
+  await page.locator('#sketchPositionXMM').evaluate(element => { element.value = ''; element.dispatchEvent(new Event('input', { bubbles: true })); element.dispatchEvent(new Event('change', { bubbles: true })); });
+  await page.locator('#sketchPositionYMM').evaluate(element => { element.value = ''; element.dispatchEvent(new Event('input', { bubbles: true })); element.dispatchEvent(new Event('change', { bubbles: true })); });
+  await page.locator('#startSketch').click();
+  const faceSketchStart = await page.evaluate(() => window.__silmoFaceSketchScreenPointForTest(-0.2,-0.2));
+  const faceSketchEnd = await page.evaluate(() => window.__silmoFaceSketchScreenPointForTest(0.2,0.2));
+  assert.ok(faceSketchStart && faceSketchEnd, 'Punkte auf der gewählten Modellfläche lassen sich nicht projizieren');
+  await page.mouse.move(faceSketchStart.x,faceSketchStart.y);
+  await page.mouse.down();
+  await page.mouse.move(faceSketchEnd.x,faceSketchEnd.y,{steps:8});
+  await page.mouse.up();
+  assert.equal(await page.locator('#createSketchSolid').isEnabled(), true, 'Rechteck auf Modellfläche wurde nicht als Skizze vorbereitet');
+  await showDrawRightSubtab(1);
+  await page.locator('#sketchWidthMM').fill('2');
+  await page.locator('#sketchDepthMM').fill('2');
+  await page.locator('#sketchHeightMM').fill('2');
+  await page.locator('#createSketchSolid').click();
+  await waitForSelectedSketchOcct();
+  const faceSketchResult = await page.evaluate(() => {
+    const snapshot = window.__silmoSketchSnapshot();
+    const model = window.__silmoModelingTestSnapshot();
+    const frame = window.__silmoFaceSketchFrameSnapshot();
+    const object = model.objects.find(item => item.id === model.selectedId);
+    return { snapshot, position: object?.position || null, origin: frame.origin };
+  });
+  assert.equal(faceSketchResult.snapshot.type, 'rectangle', 'Flächenskizze wurde nicht als Rechteck gespeichert');
+  assert.ok(Math.abs(faceSketchResult.snapshot.extrusionMM-2)<0.01, 'Flächenskizze hat nicht die eingestellte Extrusionshöhe');
+  assert.ok(Math.abs(faceSketchResult.snapshot.occtVolumeMM3-8)<1e-5, 'Flächenskizze wurde nicht mit dem erwarteten Volumen von 8 mm³ extrudiert');
+  const facePositionOffset = faceSketchResult.position && {
+    x: faceSketchResult.position.x-faceSketchResult.origin[0],
+    y: faceSketchResult.position.y-faceSketchResult.origin[1],
+    z: faceSketchResult.position.z-faceSketchResult.origin[2]
+  };
+  const faceNormal = await page.evaluate(() => window.__silmoFaceSketchFrameSnapshot().normal);
+  const distanceFromFacePlane = facePositionOffset && Math.abs(
+    facePositionOffset.x*faceNormal[0] +
+    facePositionOffset.y*faceNormal[1] +
+    facePositionOffset.z*faceNormal[2]
+  );
+  assert.ok(facePositionOffset && distanceFromFacePlane < 0.02,
+    'Extrudierter Körper liegt nicht auf der gewählten Modellfläche: '+JSON.stringify({
+      ...faceSketchResult, facePositionOffset, faceNormal, distanceFromFacePlane
+    }));
+  await page.locator('#cancelSketch').click();
+
   // Ellipse: unabhängige Breite und Tiefe sowie Extrusion prüfen.
   await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('ellipse');
@@ -2501,6 +2688,10 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   assert.ok(Math.abs(boundedPoint.x) <= 10.00001, 'Zeichenpunkt kann über die X-Grenze der 200-mm-Druckplatte hinaus');
   assert.ok(Math.abs(boundedPoint.y) <= 10.00001, 'Zeichenpunkt kann über die Y-Grenze der 200-mm-Druckplatte hinaus');
 
+  // Rasterfang isoliert prüfen: Eckpunkt- und Kantenmittefang dürfen dieses Raster-Ergebnis nicht verändern.
+  await page.locator('#sketchEndpointSnapEnabled').uncheck();
+  await page.locator('#sketchMidpointSnapEnabled').uncheck();
+  await page.locator('#sketchIntersectionSnapEnabled').uncheck();
   // Rasterfang: gezeichnete Rechteckkanten werden auf das gewählte 5-mm-Raster gesetzt.
   await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('rectangle');
@@ -2645,12 +2836,12 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#addCube').click();
   await page.locator('[data-tab="edit"]').click();
   await page.locator('#multiSelectToggle').click();
-  await showCreateSubtab(2);
+  await showCreateSubtab(1);
   await page.locator('#objects .object-select').nth(csgFailureStartCount).click();
   await page.locator('#objects .object-select').nth(csgFailureStartCount + 1).click();
   assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 3,
     'CSG-Fehlerfall konnte nicht alle drei Originalobjekte auswählen');
-  await showCreateSubtab(1);
+  await showExpertBooleanTools();
   await page.evaluate(() => {
     const originalCSG = window.SILMOCSG;
     const originalCombine = originalCSG.combineMeshes;
@@ -2697,10 +2888,10 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#addCube').click(); await page.locator('#addSphere').click();
   await page.locator('[data-tab="edit"]').click();
   await page.locator('#multiSelectToggle').click();
-  await showCreateSubtab(2);
+  await showCreateSubtab(1);
   await page.locator('#objects .object-select').nth(unionStartCount).click();
   assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(),2,'Union-Test konnte nicht beide Formen auswählen');
-  await showCreateSubtab(1);
+  await showExpertBooleanTools();
   await page.locator('#booleanUnion').click();
   assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+1,'Verbinden erzeugt nicht genau ein Ergebnisobjekt');
   assert.equal((await page.evaluate(()=>window.__silmoUnionSnapshot())).partCount,2,'Verbundene Form speichert die ursprünglichen Einzelteile nicht');
@@ -2712,7 +2903,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#projectFileInput').setInputFiles(await unionDownload.path());
   await page.waitForFunction(()=>window.__silmoUnionSnapshot().partCount===2,null,{timeout:10000});
   assert.equal((await page.evaluate(()=>window.__silmoUnionSnapshot())).partCount,2,'Projektimport verliert die gespeicherten Einzelteile');
-  await showCreateSubtab(1);
+  await showExpertBooleanTools();
   await page.locator('#booleanSeparate').click();
   assert.equal(await page.locator('#objects .object-row').count(),unionStartCount+2,'Verbindung lösen stellt die ursprünglichen Objekte nicht wieder her');
   assert.match(await page.locator('#status').innerText(),/Verbindung gelöst: 2 ursprüngliche Einzelobjekte/,'Trennen meldet keinen Erfolg');
@@ -2730,11 +2921,11 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await page.locator('#addSphere').click();
   await page.locator('[data-tab="edit"]').click();
   await page.locator('#multiSelectToggle').click();
-  await showCreateSubtab(2);
+  await showCreateSubtab(1);
   // Die Kugel ist nach dem Erstellen bereits ausgewählt; nur den Würfel ergänzen.
   await page.locator('#objects .object-select').nth(subtractStartCount).click();
   assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 2, 'Differenz-Test konnte nicht beide Formen auswählen');
-  await showCreateSubtab(1);
+  await showExpertBooleanTools();
   await page.locator('#booleanSubtract').click();
   assert.equal(await page.locator('#objects .object-row').count(), subtractStartCount + 1, 'Differenz erzeugt nicht genau ein Ergebnisobjekt');
   assert.match(await page.locator('#status').innerText(), /Ausschnitt erfolgreich berechnet/, 'Boolesche Differenz wurde nicht erfolgreich ausgeführt');
@@ -2756,7 +2947,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   await xField.press('Enter');
   await page.waitForTimeout(150);
   await page.locator('#multiSelectToggle').click();
-  await showCreateSubtab(2);
+  await showCreateSubtab(1);
 
   // Das neu erstellte Würfel-Objekt zusätzlich zur Kugel auswählen.
   await page.locator('#objects .object-select').nth(initialCount).click();
@@ -2795,7 +2986,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   // Gruppierung wieder aufheben.
   await page.locator('#ungroupObjects').click();
   assert.match(await page.locator('#status').innerText(), /Gruppierung von 2 Objekten aufgehoben/, 'Gruppierung aufheben hat nicht funktioniert');
-  await showCreateSubtab(2);
+  await showCreateSubtab(1);
   assert.equal(await page.locator('#objects .object-edit').count(), 0, 'Gruppenkennzeichnung ist nach dem Aufheben noch vorhanden');
   assert.equal(await page.locator('#objects .object-select[aria-pressed="true"]').count(), 1, 'Nach dem Aufheben darf nur ein Objekt ausgewählt bleiben');
   assert.equal(await page.locator('#multiSelectToggle').getAttribute('aria-pressed'), 'false', 'Mehrfachauswahl muss nach dem Aufheben ausgeschaltet sein');
@@ -2895,12 +3086,17 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   // Allgemeine CAD-Werkzeuge: keine produktgebundene Sonderfunktion, sondern wiederverwendbare Konstruktion.
   await page.locator('[data-tab="create"]').click();
   const createSubtabs=page.locator('#pane-create-left > .inner-tab-nav button');
-  assert.equal(await createSubtabs.count(),3,'v89: Unterreiter Erstellen fehlen');
-  await createSubtabs.nth(1).click();
-  assert.equal(await createSubtabs.nth(1).getAttribute('aria-selected'),'true','v90: Unterreiter Kombinieren wird nicht aktiviert');
-  assert.equal(await page.locator('#pane-create-left .inner-tab-panel').nth(0).isVisible(),false,'v90: Grundformen bleibt trotz anderem Unterreiter sichtbar');
-  assert.equal(await page.locator('#pane-create-left .inner-tab-panel').nth(1).isVisible(),true,'v90: aktiver Bereich Kombinieren ist nicht sichtbar');
+  assert.equal(await createSubtabs.count(),2,'SketchUp-Modellieren muss Grundformen und Objektliste als zwei Unterreiter zeigen');
+  assert.match(await createSubtabs.nth(0).innerText(),/Grundformen/,'Grundformen-Unterreiter fehlt');
+  assert.match(await createSubtabs.nth(1).innerText(),/Objektliste/,'Objektliste-Unterreiter fehlt');
+  // Der Modellieren-Bereich darf den zuletzt gewählten Unterreiter behalten.
+  // Für die folgenden Grundformen-Prüfungen wird er ausdrücklich aktiviert.
   await createSubtabs.nth(0).click();
+  assert.equal(await createSubtabs.nth(0).getAttribute('aria-selected'),'true','Grundformen-Unterreiter lässt sich nicht aktivieren');
+  assert.equal(await page.locator('#pane-create-left .inner-tab-panel').nth(0).isVisible(),true,'Grundformen-Bereich ist nach Aktivierung nicht sichtbar');
+  await showExpertBooleanTools();
+  assert.equal(await page.locator('#pane-expert-left details.advanced-cad-tools').isVisible(),true,'Erweiterte Boolean-CAD-Werkzeuge fehlen im Expertenzentrum');
+  await showCreateSubtab(0);
   for (const id of ['addCone','addHexPrism','addTorus']) assert.equal(await page.locator('#'+id).count(),1,`Allgemeines CAD-Grundwerkzeug ${id} fehlt`);
   const primitiveStart = await page.locator('#objects .object-row').count();
   await page.locator('#addCone').click(); await page.locator('#addHexPrism').click(); await page.locator('#addTorus').click();
