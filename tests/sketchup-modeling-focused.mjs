@@ -28,6 +28,32 @@ try {
   assert.deepEqual(axisLockRuntime.xy, [1, 7, 3], 'XY-Achsenfang wählt nicht die dominante Bewegungsachse');
   assert.deepEqual(axisLockRuntime.xz, [4, 2, 3], 'XZ-Achsenfang wählt nicht die dominante Bewegungsachse');
   assert.deepEqual(axisLockRuntime.yz, [1, 7, 3], 'YZ-Achsenfang wählt nicht die dominante Bewegungsachse');
+
+  // Echter Maus-/Tastatur-Ende-zu-Ende-Test: Shift während einer 2D-Linie halten.
+  await page.locator('[data-tab="draw"]').click();
+  await page.locator('#sketchPlaneSelect').selectOption('xy');
+  await page.locator('#sketchTool').selectOption('line2d');
+  await page.locator('#startSketch').click();
+  await page.waitForTimeout(150);
+  const axisDrag = await page.evaluate(() => ({
+    start: window.__silmoSketchPointForTest(0.15, 0.15, 0),
+    end: window.__silmoSketchPointForTest(0.75, 0.25, 0)
+  }));
+  assert.ok(axisDrag.start && axisDrag.end, 'Shift-Achsenfang-Testpunkte liegen nicht im sichtbaren Zeichenbereich');
+  await page.mouse.move(axisDrag.start.x, axisDrag.start.y);
+  await page.mouse.down();
+  await page.keyboard.down('Shift');
+  await page.mouse.move(axisDrag.end.x, axisDrag.end.y, { steps: 8 });
+  const axisDraftDuringDrag = await page.evaluate(() => window.__silmoSketchDraftPointsSnapshot?.());
+  await page.keyboard.up('Shift');
+  await page.mouse.up();
+  assert.equal(axisDraftDuringDrag?.type, 'line2d', 'Shift-Test hat keine 2D-Linie gezeichnet');
+  assert.equal(axisDraftDuringDrag?.points?.length, 2, 'Shift-Test-Linie enthält nicht genau zwei Endpunkte');
+  const [axisStart, axisEnd] = axisDraftDuringDrag.points;
+  assert.ok(Math.abs(axisEnd[0] - axisStart[0]) > 0.2, 'Shift-Achsenfang hat die dominante X-Bewegung blockiert: ' + JSON.stringify(axisDraftDuringDrag));
+  assert.ok(Math.abs(axisEnd[1] - axisStart[1]) < 1e-5, 'Shift-Achsenfang hat die Linie nicht auf der X-Achse gehalten: ' + JSON.stringify(axisDraftDuringDrag));
+  await page.locator('#cancelSketch').click();
+
   await page.locator('[data-tab="create"]').click();
   assert.equal((await page.locator('[data-tab="create"]').innerText()).trim(), 'Modellieren', 'Hauptreiter ist nicht als Modellieren beschriftet');
   assert.equal(await page.locator('#pane-create-left #booleanUnion').count(), 0, 'Boolesche CAD-Funktion befindet sich noch im normalen Modellierbereich');
