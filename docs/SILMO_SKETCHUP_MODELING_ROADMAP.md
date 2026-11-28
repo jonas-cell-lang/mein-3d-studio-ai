@@ -229,16 +229,19 @@ Die Prozentanzeige wird bewusst streng und konservativ geführt. Sie ist keine S
 - Der fokussierte Modellier-Browser-Test prüft Eckpunkt- und Kantenmittefang. Die Rasterprüfung schaltet beide Fangtypen gezielt aus, damit die Fangsysteme unabhängig getestet werden.
 - Code-Prüfungen sowie vollständige Browserinteraktionen in Chromium und Safari-kompatiblem WebKit sind erfolgreich abgeschlossen (Workflow 45456547678). Auch der isolierte SketchUp-Modelliertest war erfolgreich.
 
-## Dritter Fangtyp: Projektion auf sichtbare Modellkanten – in Prüfung
+## Dritter Fangtyp: Projektion auf sichtbare Modellkanten – 27. November 2026
 
 - Ein eigener Schalter aktiviert die Projektion auf scharfe Modellkanten; Eckpunkt-, Kantenmitte- und Rasterfang bleiben unabhängig schaltbar.
 - Die Kanten werden aus der Mesh-Geometrie ermittelt und für die Bildschirmprojektion auf die aktive Zeichenebene abgebildet.
-- Die Mausposition wird auf das nächstgelegene sichtbare Kantensegment projiziert; der resultierende Punkt wird entlang des Segments interpoliert.
-- Der Sichtbarkeitstest verwendet weiterhin die ursprüngliche 3D-Kante, damit eine Projektion nicht versehentlich durch verdeckte Kanten ausgelöst wird.
-- Unit-Tests prüfen Segmentprojektion, Interpolation, Endpunktbegrenzung, Pixel-Toleranz sowie ungültige und abgewiesene Segmente.
-- Ein fokussierter Browser-Test prüft die Projektion auf einer ausgewählten Seitenfläche. Der Test enthält Diagnosewerte für Kantenanzahl, Zeichenebenenprojektion und Sichtbarkeit.
-- **Noch nicht als abgeschlossen gewertet:** Der vollständige Browserlauf muss die neue Interaktion in Chromium und WebKit erfolgreich bestätigen. Bis dahin bleibt der Gesamtfortschritt unverändert.
+- Die Mausposition wird auf das nächstgelegene sichtbare Kantensegment projiziert; die Position wird perspektivisch korrekt entlang des 3D-Segments interpoliert.
+- Der Sichtbarkeitstest verwendet die ursprüngliche 3D-Kante, damit eine Projektion nicht versehentlich durch verdeckte Kanten ausgelöst wird.
+- Unit-Tests prüfen Segmentprojektion, Interpolation, Endpunktbegrenzung, Pixel-Toleranz sowie ungültige und abgewiesene Segmente. Ein zusätzlicher Test prüft die perspektivisch korrekte Interpolation bei unterschiedlichen Kameratiefen.
+- Der fokussierte Modellier-Browser-Test prüft die Projektion auf einer ausgewählten Fläche; die Testhilfe verwendet dieselbe Nächstsegment- und Sichtbarkeitsregel wie die Laufzeitfunktion.
+- **Verifiziert:** Code-Prüfungen erfolgreich (Workflow 46034339121). Isolierter Modellier-Test erfolgreich; vollständige Browserinteraktionen in Chromium und Safari-kompatiblem WebKit erfolgreich (Workflow 46034339249).
+- Der Browserlauf bestätigte zusätzlich den 24'999-Punkte-Geometrie-Roundtrip mit identischen Positionen, Normalen, UV-Koordinaten und Indizes sowie fünf zusätzliche OCCT-Ladezyklen.
+- Das Test-Screenshot-Artefakt wurde erfolgreich hochgeladen. Es ist ein CI-Artefakt und keine hier eingebettete Live-Aufnahme.
+- Der Branch bleibt in Draft-PR #74. Kein Merge und keine Veröffentlichung.
 
 ## Nächster Umsetzungsschritt
 
-Nach erfolgreicher Verifikation der Kantenprojektion folgt die Erkennung robuster Schnitt-/Kreuzungspunkte zwischen Modellkanten. Anschliessend werden Fangprioritäten und Laufzeitverhalten bei komplexeren Meshes geprüft. Der aktuelle Stand ist noch kein vollständiges SketchUp-Inferenzsystem.
+Als Nächstes folgt die Erkennung robuster Schnitt-/Kreuzungspunkte zwischen Modellkanten. Danach werden Fangprioritäten und Laufzeitverhalten bei komplexeren Meshes geprüft. Das aktuelle Fangsystem ist ein weiterer Baustein, aber noch kein vollständiges SketchUp-Inferenzsystem.
