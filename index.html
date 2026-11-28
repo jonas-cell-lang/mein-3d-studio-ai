@@ -3720,6 +3720,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
   let endpointSnapWorldCandidates = null;
   let endpointSnapWorldSegments = null;
   let endpointSnapLastWorld = null;
+  let endpointSnapLastKind = null;
   let endpointSnapDebug = {};
   const endpointSnapMarkerGeometry = new THREE.BufferGeometry();
   endpointSnapMarkerGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3));
@@ -4061,10 +4062,11 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     return null;
   }
 
-  function updateEndpointSnapMarker(worldPoint) {
+  function updateEndpointSnapMarker(worldPoint, snapKind = null) {
     if (!worldPoint) {
       endpointSnapMarker.visible = false;
       endpointSnapLastWorld = null;
+      endpointSnapLastKind = null;
       return;
     }
     const position = endpointSnapMarker.geometry.getAttribute('position');
@@ -4073,6 +4075,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     endpointSnapMarker.geometry.computeBoundingSphere();
     endpointSnapMarker.visible = true;
     endpointSnapLastWorld = worldPoint.clone();
+    endpointSnapLastKind = typeof snapKind === 'string' ? snapKind : null;
   }
 
   window.__silmoEndpointSnapSnapshot = () => ({
@@ -4082,6 +4085,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     intersectionSnapEnabled: !!document.getElementById('sketchIntersectionSnapEnabled')?.checked,
     visible: endpointSnapMarker.visible,
     snappedWorld: endpointSnapLastWorld?.toArray() || null,
+    snappedKind: endpointSnapLastKind,
     candidateCount: collectEndpointSnapWorldCandidates().length,
     debug: { ...endpointSnapDebug }
   });
@@ -4253,7 +4257,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
       } else {
         point.copy(world);
       }
-      updateEndpointSnapMarker(world);
+      updateEndpointSnapMarker(world, endpoint.kind);
     } else {
       updateEndpointSnapMarker(null);
     }
