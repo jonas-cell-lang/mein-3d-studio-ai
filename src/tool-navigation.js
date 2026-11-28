@@ -89,7 +89,7 @@
   edgeProjectionSnapWrap.appendChild(edgeProjectionSnapNote); paneMap.draw.left.appendChild(edgeProjectionSnapWrap);
   const intersectionSnapWrap=document.createElement('div'); intersectionSnapWrap.className='field';
   const intersectionSnapLabel=document.createElement('label'); intersectionSnapLabel.htmlFor='sketchIntersectionSnapEnabled'; intersectionSnapLabel.textContent='Schnittpunktfang aktivieren';
-  const intersectionSnapEnabled=document.createElement('input'); intersectionSnapEnabled.id='sketchIntersectionSnapEnabled'; intersectionSnapEnabled.type='checkbox'; intersectionSnapEnabled.checked=true;
+  const intersectionSnapEnabled=document.createElement('input'); intersectionSnapEnabled.id='sketchIntersectionSnapEnabled'; intersectionSnapEnabled.type='checkbox'; intersectionSnapEnabled.checked=false;
   intersectionSnapWrap.append(intersectionSnapLabel,intersectionSnapEnabled);
   const intersectionSnapNote=document.createElement('p'); intersectionSnapNote.className='note'; intersectionSnapNote.textContent='Fängt Kreuzungen sichtbarer scharfer Kanten, wenn die Kanten auch räumlich höchstens 0,5 mm auseinanderliegen (12 Pixel Bildschirmabstand).';
   intersectionSnapWrap.appendChild(intersectionSnapNote); paneMap.draw.left.appendChild(intersectionSnapWrap);
