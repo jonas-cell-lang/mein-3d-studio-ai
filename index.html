@@ -4053,9 +4053,10 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
         }
       }
     }
-    const snaps = [pointSnap, edgeSnap, intersectionSnap].filter(Boolean)
-      .sort((a, b) => a.distancePx - b.distancePx);
-    const best = snaps[0];
+    const snaps = [pointSnap, edgeSnap, intersectionSnap].filter(Boolean);
+    const best = window.SILMOInference.chooseBestSnapCandidate
+      ? window.SILMOInference.chooseBestSnapCandidate(snaps, 0.35)
+      : snaps.sort((a, b) => a.distancePx - b.distancePx)[0];
     if (best?.world) return { ...best, world: best.world };
     return null;
   }
