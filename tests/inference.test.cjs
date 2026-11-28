@@ -147,7 +147,7 @@ test('rejects screen crossings whose projected world positions disagree', () => 
 test('uses perspective-correct interpolation for crossing world positions', () => {
   const { findSegmentIntersections } = require('../src/inference.js');
   const intersections = findSegmentIntersections([
-    { start: { screenX: 0, screenY: 5, world: [0,5,0], cameraDepth: 10 }, end: { screenX: 10, screenY: 5, world: [3,5,0], cameraDepth: 20 } },
+    { start: { screenX: 0, screenY: 5, world: [0,1,0], cameraDepth: 10 }, end: { screenX: 10, screenY: 5, world: [3,1,0], cameraDepth: 20 } },
     { start: { screenX: 5, screenY: 0, world: [1,0,0], cameraDepth: 10 }, end: { screenX: 5, screenY: 10, world: [1,3,0], cameraDepth: 20 } }
   ]);
   assert.equal(intersections.length, 1);
