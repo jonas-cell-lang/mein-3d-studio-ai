@@ -21,6 +21,21 @@
   }
 
 
+  function constrainPointToPlaneAxis(start, end, axisU, axisV) {
+    const validVector = value => Array.isArray(value) && value.length >= 3 && value.slice(0, 3).every(Number.isFinite);
+    if (!validVector(start) || !validVector(end) || !validVector(axisU) || !validVector(axisV)) return null;
+    const uLength = Math.hypot(...axisU.slice(0, 3));
+    const vLength = Math.hypot(...axisV.slice(0, 3));
+    if (uLength <= 1e-12 || vLength <= 1e-12) return null;
+    const u = axisU.slice(0, 3).map(value => value / uLength);
+    const v = axisV.slice(0, 3).map(value => value / vLength);
+    const delta = end.slice(0, 3).map((value, index) => value - start[index]);
+    const du = delta.reduce((sum, value, index) => sum + value * u[index], 0);
+    const dv = delta.reduce((sum, value, index) => sum + value * v[index], 0);
+    const chosen = Math.abs(du) >= Math.abs(dv) ? u.map(value => value * du) : v.map(value => value * dv);
+    return start.slice(0, 3).map((value, index) => value + chosen[index]);
+  }
+
   function chooseBestSnapCandidate(candidates, tieTolerancePx = 0.35) {
     if (!Array.isArray(candidates) || !Number.isFinite(tieTolerancePx) || tieTolerancePx < 0) return null;
     const priority = { vertex: 0, intersection: 1, midpoint: 2, edge: 3 };
@@ -225,7 +240,7 @@
     return result;
   }
 
-  const api = Object.freeze({ findNearestPoint, chooseBestSnapCandidate, findNearestPointOnSegments, findSegmentIntersections, findFeatureEdgeMidpoints });
+  const api = Object.freeze({ findNearestPoint, chooseBestSnapCandidate, findNearestPointOnSegments, findSegmentIntersections, findFeatureEdgeMidpoints, constrainPointToPlaneAxis });
   if (typeof window !== 'undefined') window.SILMOInference = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();
