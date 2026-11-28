@@ -21,6 +21,26 @@
   }
 
 
+  function chooseBestSnapCandidate(candidates, tieTolerancePx = 0.35) {
+    if (!Array.isArray(candidates) || !Number.isFinite(tieTolerancePx) || tieTolerancePx < 0) return null;
+    const priority = { vertex: 0, intersection: 1, midpoint: 2, edge: 3 };
+    let best = null;
+    for (const candidate of candidates) {
+      if (!candidate || !Number.isFinite(candidate.distancePx) || candidate.distancePx < 0 ||
+          !Number.isFinite(candidate.screenX) || !Number.isFinite(candidate.screenY)) continue;
+      if (!best || candidate.distancePx < best.distancePx - tieTolerancePx) {
+        best = candidate;
+        continue;
+      }
+      if (Math.abs(candidate.distancePx - best.distancePx) <= tieTolerancePx) {
+        const candidatePriority = priority[candidate.kind] ?? 99;
+        const bestPriority = priority[best.kind] ?? 99;
+        if (candidatePriority < bestPriority) best = candidate;
+      }
+    }
+    return best;
+  }
+
   function findNearestPointOnSegments(segments, pointer, maxDistancePx = 12, acceptSegment = null) {
     if (!Array.isArray(segments) || !pointer ||
         !Number.isFinite(pointer.x) || !Number.isFinite(pointer.y) ||
@@ -208,7 +228,7 @@
     return result;
   }
 
-  const api = Object.freeze({ findNearestPoint, findNearestPointOnSegments, findSegmentIntersections, findFeatureEdgeMidpoints });
+  const api = Object.freeze({ findNearestPoint, chooseBestSnapCandidate, findNearestPointOnSegments, findSegmentIntersections, findFeatureEdgeMidpoints });
   if (typeof window !== 'undefined') window.SILMOInference = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();
