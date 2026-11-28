@@ -295,8 +295,10 @@ try {
   // Schnittpunkt ihrer sichtbaren Oberkanten erkennen.
   await page.locator('[data-tab="draw"]').click();
   await page.locator('#pane-draw-right .inner-tab-nav button').filter({ hasText: 'Werkzeug' }).click();
-  await page.locator('#sketchEndpointSnapEnabled').uncheck();
-  await page.locator('#sketchMidpointSnapEnabled').uncheck();
+  // Mehrere Fangarten gleichzeitig aktivieren: Die exakte Kantenkreuzung
+  // muss gegenüber weiter entfernten Eckpunkten und Kantenmitten gewinnen.
+  await page.locator('#sketchEndpointSnapEnabled').check();
+  await page.locator('#sketchMidpointSnapEnabled').check();
   await page.locator('#sketchEdgeProjectionSnapEnabled').uncheck();
   await page.locator('#sketchIntersectionSnapEnabled').check();
   await page.locator('#startSketch').click();
@@ -314,6 +316,8 @@ try {
   }));
   assert.equal(actualIntersectionSnap?.visible, true,
     'Kein Fangmarker am realen Kanten-Schnittpunkt: ' + JSON.stringify({ fixture: intersectionFixture, snap: actualIntersectionSnap }));
+  assert.equal(actualIntersectionSnap.snappedKind, 'intersection',
+    'Bei gleichzeitig aktivem Eckpunkt-, Kantenmitte- und Schnittpunktfang wurde nicht der Schnittpunkt gewählt: ' + JSON.stringify({ fixture: intersectionFixture, snap: actualIntersectionSnap }));
   assert.ok(actualIntersectionSnap.snappedWorld && Math.hypot(
     actualIntersectionSnap.snappedWorld[0] - intersectionFixture.expectedWorld[0],
     actualIntersectionSnap.snappedWorld[1] - intersectionFixture.expectedWorld[1],
