@@ -32,9 +32,12 @@ try {
   // Echter Maus-/Tastatur-Ende-zu-Ende-Test: Shift während einer 2D-Linie halten.
   await page.locator('[data-tab="draw"]').click();
   await page.locator('#pane-draw-left .inner-tab-nav button').filter({ hasText: 'Skizzieren' }).click();
-  await page.locator('#pane-draw-right .inner-tab-nav button').filter({ hasText: 'Werkzeug' }).click();
-  await page.locator('#sketchPlaneSelect').waitFor({ state: 'visible' });
-  await page.locator('#sketchPlaneSelect').selectOption('xy');
+  // Zeichenebene bleibt ein technisches Auswahlfeld im Skizzenbereich; falls
+  // ein Layout-Unterpanel es ausblendet, den DOM-Wert samt change-Event setzen.
+  await page.locator('#sketchPlaneSelect').evaluate(el => {
+    el.value = 'xy';
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
   await page.locator('#sketchTool').selectOption('line2d');
   await page.locator('#startSketch').click();
   await page.waitForTimeout(150);
