@@ -50,6 +50,17 @@ test('prefers a more precise snap kind when candidates are effectively tied', ()
   assert.equal(chooseBestSnapCandidate(candidates).id, 'vertex');
 });
 
+test('snap priority is independent of input ordering within the tie band', () => {
+  const { chooseBestSnapCandidate } = require('../src/inference.js');
+  const candidates = [
+    { id: 'edge-near', kind: 'edge', screenX: 10, screenY: 10, distancePx: 1 },
+    { id: 'vertex-mid', kind: 'vertex', screenX: 10, screenY: 10, distancePx: 1.3 },
+    { id: 'edge-far', kind: 'edge', screenX: 10, screenY: 10, distancePx: 1.6 }
+  ];
+  assert.equal(chooseBestSnapCandidate(candidates).id, 'vertex-mid');
+  assert.equal(chooseBestSnapCandidate([...candidates].reverse()).id, 'vertex-mid');
+});
+
 test('chooses the genuinely closer snap when the distance gap exceeds the tie tolerance', () => {
   const { chooseBestSnapCandidate } = require('../src/inference.js');
   const result = chooseBestSnapCandidate([
