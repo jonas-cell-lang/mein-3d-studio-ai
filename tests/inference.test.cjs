@@ -207,7 +207,7 @@ test('constrains a point to the dominant axis of an arbitrary sketch plane', () 
   const { constrainPointToPlaneAxis } = require('../src/inference.js');
   assert.deepEqual(
     constrainPointToPlaneAxis([1, 2, 3], [4, 7, 3], [1, 0, 0], [0, 1, 0]),
-    [4, 2, 3]
+    [1, 7, 3]
   );
   assert.deepEqual(
     constrainPointToPlaneAxis([1, 2, 3], [4, 7, 3], [1, 0, 0], [0, 0, 1]),
