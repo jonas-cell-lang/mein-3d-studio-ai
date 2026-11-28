@@ -91,6 +91,9 @@ try {
   await page.locator('#startSketch').click();
   await page.waitForTimeout(700);
   assert.equal(await page.locator('#sketchEndpointSnapEnabled').isChecked(), true, 'Eckpunktfang ist nicht standardmässig aktiviert');
+  assert.equal(await page.locator('#sketchIntersectionSnapEnabled').isChecked(), true, 'Schnittpunktfang ist nicht standardmässig aktiviert');
+  assert.equal((await page.evaluate(() => window.__silmoEndpointSnapSnapshot?.()))?.intersectionSnapEnabled, true,
+    'Schnittpunktfang wird im Laufzeitstatus nicht als aktiviert gemeldet');
   const snapTarget = await page.evaluate(() => window.__silmoEndpointSnapTestPoint?.());
   assert.ok(snapTarget, 'Kein sichtbarer Eckpunkt auf der gewählten Zeichenfläche gefunden: ' + JSON.stringify(await page.evaluate(() => window.__silmoEndpointSnapSnapshot?.())));
   await page.mouse.move(snapTarget.x + 5, snapTarget.y + 4);
