@@ -59,6 +59,8 @@ try {
   // Ende-zu-Ende-Test mit echten Mesh-Kanten: Zwei flache Quader kreuzen
   // sich in der XY-Zeichenebene. Der Fang muss den räumlich gemeinsamen
   // Schnittpunkt ihrer sichtbaren Oberkanten erkennen.
+  await page.locator('[data-tab="draw"]').click();
+  await page.locator('#pane-draw-right .inner-tab-nav button').filter({ hasText: 'Werkzeug' }).click();
   await page.locator('#sketchEndpointSnapEnabled').uncheck();
   await page.locator('#sketchMidpointSnapEnabled').uncheck();
   await page.locator('#sketchEdgeProjectionSnapEnabled').uncheck();
@@ -82,6 +84,7 @@ try {
   await page.locator('#sketchIntersectionSnapEnabled').uncheck();
   await page.locator('#sketchEndpointSnapEnabled').check();
   await page.locator('#sketchMidpointSnapEnabled').check();
+  await page.locator('[data-tab="create"]').click();
 
   // Der Würfel wird im Bereich Modellieren erstellt; die Flächenauswahl liegt im Bereich Zeichnen.
   
