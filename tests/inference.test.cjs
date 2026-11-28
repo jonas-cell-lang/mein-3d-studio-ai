@@ -38,6 +38,42 @@ test('skips candidates rejected by the visibility predicate', () => {
 });
 
 
+
+test('prefers a more precise snap kind when candidates are effectively tied', () => {
+  const { chooseBestSnapCandidate } = require('../src/inference.js');
+  const candidates = [
+    { id: 'edge', kind: 'edge', screenX: 10, screenY: 10, distancePx: 2.1 },
+    { id: 'midpoint', kind: 'midpoint', screenX: 10, screenY: 10, distancePx: 2.0 },
+    { id: 'intersection', kind: 'intersection', screenX: 10, screenY: 10, distancePx: 2.05 },
+    { id: 'vertex', kind: 'vertex', screenX: 10, screenY: 10, distancePx: 2.2 }
+  ];
+  assert.equal(chooseBestSnapCandidate(candidates).id, 'vertex');
+});
+
+test('chooses the genuinely closer snap when the distance gap exceeds the tie tolerance', () => {
+  const { chooseBestSnapCandidate } = require('../src/inference.js');
+  const result = chooseBestSnapCandidate([
+    { id: 'vertex', kind: 'vertex', screenX: 10, screenY: 10, distancePx: 2 },
+    { id: 'edge', kind: 'edge', screenX: 10, screenY: 10, distancePx: 1.5 }
+  ]);
+  assert.equal(result.id, 'edge');
+});
+
+test('keeps the first candidate when distance and snap priority are equal', () => {
+  const { chooseBestSnapCandidate } = require('../src/inference.js');
+  const result = chooseBestSnapCandidate([
+    { id: 'first', kind: 'midpoint', screenX: 10, screenY: 10, distancePx: 2 },
+    { id: 'second', kind: 'midpoint', screenX: 10, screenY: 10, distancePx: 2.1 }
+  ]);
+  assert.equal(result.id, 'first');
+});
+
+test('ignores malformed snap candidates and invalid tolerances', () => {
+  const { chooseBestSnapCandidate } = require('../src/inference.js');
+  assert.equal(chooseBestSnapCandidate([null, { kind: 'vertex', distancePx: NaN, screenX: 0, screenY: 0 }]), null);
+  assert.equal(chooseBestSnapCandidate([{ kind: 'vertex', distancePx: 1, screenX: 0, screenY: 0 }], -1), null);
+});
+
 test('finds feature edges but ignores the diagonal inside a flat triangulated quad', () => {
   const positions = [
     0,0,0, 1,0,0, 1,1,0,
