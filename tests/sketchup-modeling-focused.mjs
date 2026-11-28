@@ -70,7 +70,8 @@ try {
   const intersectionFixture = await page.evaluate(() => window.__silmoCreateIntersectionSnapFixture?.());
   assert.ok(intersectionFixture, 'Testkörper für den echten Schnittpunktfang konnten nicht erstellt werden');
   await page.mouse.move(intersectionFixture.x, intersectionFixture.y);
-  await page.waitForTimeout(500);
+  await page.mouse.down();
+  await page.waitForTimeout(100);
   const actualIntersectionSnap = await page.evaluate(() => window.__silmoEndpointSnapSnapshot?.());
   console.log('SILMO-ECHTER-SCHNITTPUNKT-DIAG', JSON.stringify({
     fixture: intersectionFixture,
@@ -85,6 +86,7 @@ try {
     actualIntersectionSnap.snappedWorld[2] - intersectionFixture.expectedWorld[2]
   ) < 1e-5, 'Der echte Schnittpunktfang hat den geometrischen Schnittpunkt der beiden Modellkanten verfehlt: ' +
     JSON.stringify({ fixture: intersectionFixture, snap: actualIntersectionSnap }));
+  await page.mouse.up();
   await page.locator('#cancelSketch').click();
   await page.evaluate(ids => window.__silmoRemoveIntersectionSnapFixture?.(ids), intersectionFixture.ids);
   await page.locator('#sketchIntersectionSnapEnabled').uncheck();
