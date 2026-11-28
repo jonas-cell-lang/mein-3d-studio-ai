@@ -64,6 +64,68 @@
     return best;
   }
 
+  function findSegmentIntersections(segments, options = {}) {
+    if (!Array.isArray(segments)) return [];
+    const minimumParameter = Number.isFinite(options.minimumParameter)
+      ? Math.max(0, Math.min(0.49, options.minimumParameter)) : 1e-4;
+    const maxWorldSeparation = Number.isFinite(options.maxWorldSeparation) && options.maxWorldSeparation >= 0
+      ? options.maxWorldSeparation : 0.5;
+    const result = [];
+    const interpolateWorld = (segment, t) => {
+      const a = segment.start, b = segment.end;
+      if (!Array.isArray(a.world) || !Array.isArray(b.world) ||
+          a.world.length < 3 || b.world.length < 3 ||
+          ![...a.world.slice(0, 3), ...b.world.slice(0, 3)].every(Number.isFinite)) return null;
+      let worldT = t;
+      if (Number.isFinite(a.cameraDepth) && a.cameraDepth > 0 &&
+          Number.isFinite(b.cameraDepth) && b.cameraDepth > 0) {
+        const denominator = (1 - t) * b.cameraDepth + t * a.cameraDepth;
+        if (denominator > 1e-12) worldT = t * a.cameraDepth / denominator;
+      }
+      return a.world.slice(0, 3).map((value, index) => value + (b.world[index] - value) * worldT);
+    };
+    for (let i = 0; i < segments.length; i++) {
+      const first = segments[i];
+      if (!first?.start || !first?.end) continue;
+      const a = first.start, b = first.end;
+      if (![a.screenX, a.screenY, b.screenX, b.screenY].every(Number.isFinite)) continue;
+      const rx = b.screenX - a.screenX, ry = b.screenY - a.screenY;
+      if (rx * rx + ry * ry <= 1e-12) continue;
+      for (let j = i + 1; j < segments.length; j++) {
+        const second = segments[j];
+        if (!second?.start || !second?.end) continue;
+        const c = second.start, d = second.end;
+        if (![c.screenX, c.screenY, d.screenX, d.screenY].every(Number.isFinite)) continue;
+        const sx = d.screenX - c.screenX, sy = d.screenY - c.screenY;
+        if (sx * sx + sy * sy <= 1e-12) continue;
+        const denominator = rx * sy - ry * sx;
+        if (Math.abs(denominator) <= 1e-9) continue;
+        const qpx = c.screenX - a.screenX, qpy = c.screenY - a.screenY;
+        const t = (qpx * sy - qpy * sx) / denominator;
+        const u = (qpx * ry - qpy * rx) / denominator;
+        if (t <= minimumParameter || t >= 1 - minimumParameter ||
+            u <= minimumParameter || u >= 1 - minimumParameter) continue;
+        const worldA = interpolateWorld(first, t);
+        const worldB = interpolateWorld(second, u);
+        if (!worldA || !worldB) continue;
+        const worldSeparation = Math.hypot(
+          worldA[0] - worldB[0], worldA[1] - worldB[1], worldA[2] - worldB[2]);
+        if (worldSeparation > maxWorldSeparation) continue;
+        result.push({
+          screenX: a.screenX + rx * t,
+          screenY: a.screenY + ry * t,
+          world: worldA.map((value, index) => (value + worldB[index]) / 2),
+          worldSeparation,
+          firstIndex: i,
+          secondIndex: j,
+          firstT: t,
+          secondT: u
+        });
+      }
+    }
+    return result;
+  }
+
   function findFeatureEdgeMidpoints(positions, indices = null, options = {}) {
     if (!positions || typeof positions.length !== 'number' || positions.length < 9 || positions.length % 3 !== 0) return [];
     const vertexCount = positions.length / 3;
@@ -146,7 +208,7 @@
     return result;
   }
 
-  const api = Object.freeze({ findNearestPoint, findNearestPointOnSegments, findFeatureEdgeMidpoints });
+  const api = Object.freeze({ findNearestPoint, findNearestPointOnSegments, findSegmentIntersections, findFeatureEdgeMidpoints });
   if (typeof window !== 'undefined') window.SILMOInference = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();
