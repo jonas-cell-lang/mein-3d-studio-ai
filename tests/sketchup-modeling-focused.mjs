@@ -333,6 +333,37 @@ try {
   await page.locator('[data-tab="create"]').click();
 
 
+  // Belastungstest für die Kantenanalyse: ein dicht trianguliertes, flaches
+  // Gitter enthält viele Dreiecke, aber nur seinen äusseren Rand als Feature-Kanten.
+  const edgeLoad = await page.evaluate(() => {
+    const gridSize = 80;
+    const positions = [];
+    const indices = [];
+    for (let y = 0; y <= gridSize; y++) {
+      for (let x = 0; x <= gridSize; x++) positions.push(x, y, 0);
+    }
+    const row = gridSize + 1;
+    for (let y = 0; y < gridSize; y++) {
+      for (let x = 0; x < gridSize; x++) {
+        const a = y * row + x;
+        const b = a + 1;
+        const c = a + row;
+        const d = c + 1;
+        indices.push(a, b, d, a, d, c);
+      }
+    }
+    const started = performance.now();
+    const edges = window.SILMOInference.findFeatureEdgeMidpoints(positions, indices);
+    return { gridSize, triangleCount: indices.length / 3, vertexCount: positions.length / 3,
+      featureEdgeCount: edges.length, durationMs: performance.now() - started };
+  });
+  assert.equal(edgeLoad.triangleCount, 12800, 'Belastungstest hat nicht die erwartete Dreiecksmenge erzeugt');
+  assert.equal(edgeLoad.featureEdgeCount, 320,
+    'Kantenanalyse erkennt bei einem grossen flachen Gitter nicht nur den Aussenrand: ' + JSON.stringify(edgeLoad));
+  assert.ok(edgeLoad.durationMs < 5000,
+    'Kantenanalyse überschreitet das grosszügige 5-Sekunden-Testlimit: ' + JSON.stringify(edgeLoad));
+  console.log('SILMO-KANTEN-BELASTUNGSTEST', JSON.stringify(edgeLoad));
+
   assert.deepEqual(errors, [], 'Browser-Konsole enthält Fehler während der Modellierprüfung');
   await page.screenshot({ path: 'test-results/sketchup-modeling-focused.png', fullPage: true });
   console.log('MODELLIER-KURZTEST BESTANDEN: Tastenkürzel, Hover-Kontur und Objektziehen.');
