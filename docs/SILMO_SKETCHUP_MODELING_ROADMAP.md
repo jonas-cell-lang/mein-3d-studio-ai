@@ -247,9 +247,9 @@ Die Prozentanzeige wird bewusst streng und konservativ geführt. Sie ist keine S
 - Zur Laufzeit werden nur nahe Kantensegmente betrachtet; die Kandidatenmenge wird vor der paarweisen Schnittprüfung auf höchstens 64 Segmente begrenzt.
 - Der Schnittpunkt wird zusätzlich mit der vorhandenen Sichtbarkeitsprüfung kontrolliert und konkurriert anhand des Bildschirmabstands mit den anderen Fangtypen.
 - Unit-Tests prüfen korrekte Kreuzungen, parallele/kollineare/Endpunktfälle, räumlich auseinanderliegende Kanten und perspektivische Interpolation.
-- Ein fokussierter Browser-Test prüft, dass die geladene Laufzeit-API die erwartete Schnittpunktposition für ein Testsegmentpaar berechnet.
+- Ein Ende-zu-Ende-Browser-Test erstellt zwei echte, flache Mesh-Quader in der Szene, richtet den Schnittpunktfang ein, bewegt den Mauszeiger auf den geometrischen Schnittpunkt und prüft den tatsächlich gesetzten Fangmarker samt Weltkoordinaten. Anschliessend werden die Testkörper entfernt und die Fangschalter zurückgesetzt.
 - **Verifiziert:** Code-Prüfungen für Commit `606ea3f` erfolgreich (Workflow 46120288500). Der vollständige Browser-Workflow 46120288527 ist ebenfalls erfolgreich abgeschlossen: isolierte Modellierinteraktionen, Screenshot-Artefakt, Chromium und Safari-kompatibles WebKit bestanden.
-- Hinweis zur Testabdeckung: Der neue Browser-Zusatztest prüft die geladene Schnittpunkt-Hilfsfunktion mit kontrollierten Testsegmenten. Ein eigener vollständiger End-to-End-Test des Schnittpunktfangs an zwei tatsächlich sichtbaren Modellkanten steht noch aus.
+- **Ende-zu-Ende bestätigt:** Der Browser-Test erzeugt zwei reale Mesh-Testkörper, prüft den aktiven Fangmarker und vergleicht dessen 3D-Weltposition mit dem erwarteten gemeinsamen Schnittpunkt. Die anschliessende Bereinigung der Testkörper und Rücksetzung der Fangschalter ist ebenfalls Teil des Tests.
 - Der Branch bleibt in Draft-PR #74. Kein Merge, keine Veröffentlichung und kein Deployment.
 
 ## Nächster Umsetzungsschritt
