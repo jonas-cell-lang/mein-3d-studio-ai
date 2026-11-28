@@ -108,3 +108,49 @@ test('uses perspective-correct interpolation for projected 3D edges', () => {
   assert.ok(Math.abs(result.worldT - 1 / 3) < 1e-12);
   assert.ok(Math.abs(result.world[0] - 1) < 1e-12);
 });
+
+test('finds an interior crossing and averages matching world positions', () => {
+  const { findSegmentIntersections } = require('../src/inference.js');
+  const intersections = findSegmentIntersections([
+    { start: { screenX: 0, screenY: 5, world: [0, 5, 0] }, end: { screenX: 10, screenY: 5, world: [10, 5, 0] } },
+    { start: { screenX: 5, screenY: 0, world: [5, 0, 0] }, end: { screenX: 5, screenY: 10, world: [5, 10, 0] } }
+  ]);
+  assert.equal(intersections.length, 1);
+  assert.deepEqual(intersections[0].world, [5, 5, 0]);
+  assert.equal(intersections[0].screenX, 5);
+  assert.equal(intersections[0].screenY, 5);
+});
+
+test('ignores parallel, collinear and endpoint-only segment contacts', () => {
+  const { findSegmentIntersections } = require('../src/inference.js');
+  const parallel = [
+    { start: { screenX: 0, screenY: 0, world: [0,0,0] }, end: { screenX: 10, screenY: 0, world: [10,0,0] } },
+    { start: { screenX: 0, screenY: 2, world: [0,2,0] }, end: { screenX: 10, screenY: 2, world: [10,2,0] } }
+  ];
+  const endpoint = [
+    { start: { screenX: 0, screenY: 0, world: [0,0,0] }, end: { screenX: 5, screenY: 5, world: [5,5,0] } },
+    { start: { screenX: 5, screenY: 5, world: [5,5,0] }, end: { screenX: 10, screenY: 0, world: [10,0,0] } }
+  ];
+  assert.deepEqual(findSegmentIntersections(parallel), []);
+  assert.deepEqual(findSegmentIntersections(endpoint), []);
+});
+
+test('rejects screen crossings whose projected world positions disagree', () => {
+  const { findSegmentIntersections } = require('../src/inference.js');
+  const intersections = findSegmentIntersections([
+    { start: { screenX: 0, screenY: 5, world: [0,5,0] }, end: { screenX: 10, screenY: 5, world: [10,5,0] } },
+    { start: { screenX: 5, screenY: 0, world: [5,0,5] }, end: { screenX: 5, screenY: 10, world: [5,10,5] } }
+  ]);
+  assert.deepEqual(intersections, []);
+});
+
+test('uses perspective-correct interpolation for crossing world positions', () => {
+  const { findSegmentIntersections } = require('../src/inference.js');
+  const intersections = findSegmentIntersections([
+    { start: { screenX: 0, screenY: 5, world: [0,5,0], cameraDepth: 10 }, end: { screenX: 10, screenY: 5, world: [3,5,0], cameraDepth: 20 } },
+    { start: { screenX: 1, screenY: 0, world: [1,0,0], cameraDepth: 10 }, end: { screenX: 1, screenY: 10, world: [1,3,0], cameraDepth: 20 } }
+  ]);
+  assert.equal(intersections.length, 1);
+  assert.ok(Math.abs(intersections[0].world[0] - 1) < 1e-12);
+  assert.ok(Math.abs(intersections[0].world[1] - 1) < 1e-12);
+});
