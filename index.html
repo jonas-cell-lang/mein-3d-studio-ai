@@ -3943,7 +3943,8 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     const endpointsEnabled = !!document.getElementById('sketchEndpointSnapEnabled')?.checked;
     const midpointsEnabled = !!document.getElementById('sketchMidpointSnapEnabled')?.checked;
     const edgeEnabled = !!document.getElementById('sketchEdgeProjectionSnapEnabled')?.checked;
-    if (!endpointsEnabled && !midpointsEnabled && !edgeEnabled) return null;
+    const intersectionsEnabled = !!document.getElementById('sketchIntersectionSnapEnabled')?.checked;
+    if (!endpointsEnabled && !midpointsEnabled && !edgeEnabled && !intersectionsEnabled) return null;
     const { rect, candidates, segments } = projectEndpointSnapCandidates();
     const pointer = {
       x: rect.left + (pointerNDC.x + 1) * rect.width / 2,
@@ -3973,10 +3974,71 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
             }, rect);
           })
       : null;
-    if (edgeSnap && (!pointSnap || edgeSnap.distancePx < pointSnap.distancePx) && edgeSnap.world) {
-      return { ...edgeSnap, kind: 'edge', world: edgeSnap.world };
+    let intersectionSnap = null;
+    if (intersectionsEnabled && segments.length > 1 && window.SILMOInference.findSegmentIntersections) {
+      // Nur Kanten in Mausnähe paarweise schneiden: vermeidet einen quadratischen
+      // Vollvergleich aller bis zu 6000 Modellkanten bei jeder Mausbewegung.
+      const nearby = [];
+      for (const segment of segments) {
+        const a = segment.start, b = segment.end;
+        const dx = b.screenX - a.screenX, dy = b.screenY - a.screenY;
+        const lengthSq = dx * dx + dy * dy;
+        if (!Number.isFinite(lengthSq) || lengthSq <= 1e-12) continue;
+        const t = Math.max(0, Math.min(1, ((pointer.x - a.screenX) * dx + (pointer.y - a.screenY) * dy) / lengthSq));
+        const px = a.screenX + dx * t, py = a.screenY + dy * t;
+        const distancePx = Math.hypot(pointer.x - px, pointer.y - py);
+        if (distancePx <= 12) nearby.push({ segment, distancePx });
+      }
+      nearby.sort((a, b) => a.distancePx - b.distancePx);
+      const localSegments = nearby.slice(0, 64).map(entry => entry.segment);
+      const intersections = window.SILMOInference.findSegmentIntersections(localSegments, { maxWorldSeparation: mmToWorldUnits(0.5) });
+      for (const candidate of intersections) {
+        const distancePx = Math.hypot(pointer.x - candidate.screenX, pointer.y - candidate.screenY);
+        if (distancePx > 12) continue;
+        const first = localSegments[candidate.firstIndex], second = localSegments[candidate.secondIndex];
+        const sourcePointAt = (segment, t) => {
+          if (!Array.isArray(segment.sourceStart) || !Array.isArray(segment.sourceEnd)) return null;
+          const a = segment.start, b = segment.end;
+          let worldT = t;
+          if (Number.isFinite(a.cameraDepth) && a.cameraDepth > 0 &&
+              Number.isFinite(b.cameraDepth) && b.cameraDepth > 0) {
+            const denominator = (1 - t) * b.cameraDepth + t * a.cameraDepth;
+            if (denominator > 1e-12) worldT = t * a.cameraDepth / denominator;
+          }
+          return segment.sourceStart.map((value, index) =>
+            value + (segment.sourceEnd[index] - value) * worldT);
+        };
+        const firstSource = sourcePointAt(first, candidate.firstT);
+        const secondSource = sourcePointAt(second, candidate.secondT);
+        if (!firstSource || !secondSource) continue;
+        const sourceSeparation = Math.hypot(
+          firstSource[0] - secondSource[0],
+          firstSource[1] - secondSource[1],
+          firstSource[2] - secondSource[2]
+        );
+        if (sourceSeparation > mmToWorldUnits(0.5)) continue;
+        const firstScreen = new THREE.Vector3(...firstSource).project(camera);
+        const secondScreen = new THREE.Vector3(...secondSource).project(camera);
+        const isVisible = (segment, source, projected) =>
+          Number.isFinite(projected.x + projected.y + projected.z) &&
+          projected.z >= -1 && projected.z <= 1 &&
+          endpointSnapCandidateIsVisible({
+            world: source,
+            objectId: segment.objectId,
+            screenX: rect.left + (projected.x + 1) * rect.width / 2,
+            screenY: rect.top + (1 - projected.y) * rect.height / 2
+          }, rect);
+        if (!isVisible(first, firstSource, firstScreen) || !isVisible(second, secondSource, secondScreen)) continue;
+        if (!intersectionSnap || distancePx < intersectionSnap.distancePx) {
+          intersectionSnap = { ...candidate, distancePx, kind: 'intersection' };
+        }
+      }
     }
-    return pointSnap;
+    const snaps = [pointSnap, edgeSnap, intersectionSnap].filter(Boolean)
+      .sort((a, b) => a.distancePx - b.distancePx);
+    const best = snaps[0];
+    if (best?.world) return { ...best, world: best.world };
+    return null;
   }
 
   function updateEndpointSnapMarker(worldPoint) {
@@ -3997,6 +4059,7 @@ body.viewport-expanded main{height:calc(100vh - 96px)}
     enabled: !!document.getElementById('sketchEndpointSnapEnabled')?.checked,
     midpointEnabled: !!document.getElementById('sketchMidpointSnapEnabled')?.checked,
     edgeProjectionEnabled: !!document.getElementById('sketchEdgeProjectionSnapEnabled')?.checked,
+    intersectionSnapEnabled: !!document.getElementById('sketchIntersectionSnapEnabled')?.checked,
     visible: endpointSnapMarker.visible,
     snappedWorld: endpointSnapLastWorld?.toArray() || null,
     candidateCount: collectEndpointSnapWorldCandidates().length,
