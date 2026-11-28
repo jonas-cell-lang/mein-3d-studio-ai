@@ -2691,6 +2691,7 @@ assert.equal(await page.evaluate(() => typeof window.SILMOCSG?.combineMeshes), '
   // Rasterfang isoliert prüfen: Eckpunkt- und Kantenmittefang dürfen dieses Raster-Ergebnis nicht verändern.
   await page.locator('#sketchEndpointSnapEnabled').uncheck();
   await page.locator('#sketchMidpointSnapEnabled').uncheck();
+  await page.locator('#sketchIntersectionSnapEnabled').uncheck();
   // Rasterfang: gezeichnete Rechteckkanten werden auf das gewählte 5-mm-Raster gesetzt.
   await showDrawRightSubtab(0);
   await page.locator('#sketchTool').selectOption('rectangle');
