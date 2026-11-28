@@ -44,9 +44,9 @@ try {
   await page.mouse.down();
   await page.keyboard.down('Shift');
   await page.mouse.move(axisDrag.end.x, axisDrag.end.y, { steps: 8 });
-  const axisDraftDuringDrag = await page.evaluate(() => window.__silmoSketchDraftPointsSnapshot?.());
-  await page.keyboard.up('Shift');
   await page.mouse.up();
+  await page.keyboard.up('Shift');
+  const axisDraftDuringDrag = await page.evaluate(() => window.__silmoSketchDraftPointsSnapshot?.());
   assert.equal(axisDraftDuringDrag?.type, 'line2d', 'Shift-Test hat keine 2D-Linie gezeichnet');
   assert.equal(axisDraftDuringDrag?.points?.length, 2, 'Shift-Test-Linie enthält nicht genau zwei Endpunkte');
   const [axisStart, axisEnd] = axisDraftDuringDrag.points;
