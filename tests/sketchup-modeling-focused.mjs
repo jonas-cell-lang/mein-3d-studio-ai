@@ -31,6 +31,7 @@ try {
 
   // Echter Maus-/Tastatur-Ende-zu-Ende-Test: Shift während einer 2D-Linie halten.
   await page.locator('[data-tab="draw"]').click();
+  await page.locator('#pane-draw-left .inner-tab-nav button').filter({ hasText: 'Skizzieren' }).click();
   await page.locator('#sketchPlaneSelect').selectOption('xy');
   await page.locator('#sketchTool').selectOption('line2d');
   await page.locator('#startSketch').click();
