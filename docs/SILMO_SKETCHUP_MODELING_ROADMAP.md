@@ -255,4 +255,15 @@ Die Prozentanzeige wird bewusst streng und konservativ geführt. Sie ist keine S
 
 ## Nächster Umsetzungsschritt
 
-Der Ende-zu-Ende-Test mit zwei realen Mesh-Körpern ist inzwischen erfolgreich abgeschlossen. Die Fangpriorität ist nun deterministisch umgesetzt; die neuen Unit-Tests prüfen Prioritätsgleichstände, echte Distanzvorteile und ungültige Kandidaten. Als Nächstes werden die Fangprioritäten im Browser mit mehreren gleichzeitig nahen realen Modellmerkmalen geprüft: Wenn mehrere Fangarten nahe beieinander liegen, muss SILMO eine stabile und nachvollziehbare Position wählen, ohne dass ein optionaler Fang einen präziseren Treffer verdrängt. Danach folgt ein Belastungstest mit komplexeren Meshes und vielen Kanten. Anschliessend wird die Achsenbindung (Richtungs-Lock) als weiterer zentraler SketchUp-Inferenzbaustein umgesetzt. Das aktuelle Fangsystem ist weiterhin nur ein Teil des vollständigen Inferenzsystems.
+Der Ende-zu-Ende-Test mit zwei realen Mesh-Körpern ist erfolgreich abgeschlossen. Die Fangpriorität wurde zusätzlich mit mehreren gleichzeitig aktivierten Fangarten in einem echten 3D-Test geprüft: Der Schnittpunktfang wird korrekt gewählt, wenn er innerhalb des definierten Tie-Bands liegt. Der vollständige Browser-Workflow mit Chromium und Safari-kompatiblem WebKit ist erfolgreich.
+
+### Belastungstest der Feature-Kantenanalyse – 28. November 2026
+
+- Ein Browser-Test erzeugt ein trianguliertes, flaches Gitter mit 6'561 Vertices und 12'800 Dreiecken.
+- Erwartet werden ausschliesslich die 320 äusseren Feature-Kanten; die inneren koplanaren Triangulationsdiagonalen dürfen nicht erscheinen.
+- **Gemessen:** 320 Feature-Kanten korrekt erkannt; Laufzeit rund 22,4 ms im Chromium-CI-Lauf.
+- Die isolierten Modellierinteraktionen und der Screenshot-Artefakt-Upload waren erfolgreich.
+- Der vollständige Browser-Workflow in Chromium und Safari-kompatiblem WebKit ist erfolgreich abgeschlossen. Auch alle Code-Prüfungen sind erfolgreich.
+- Der Test ist ein gezielter Algorithmus-Benchmark auf einem flachen synthetischen Gitter. Er beweist noch keine gleichbleibende Leistung bei beliebig grossen oder komplexen realen Modellen.
+
+Als Nächstes folgt ein Laufzeittest mit mehreren verschieden geformten Meshes und vielen Kanten, um Kandidatensammlung, Projektion und Sichtbarkeitsprüfung gemeinsam zu belasten. Danach wird die Achsenbindung (Richtungs-Lock) als weiterer zentraler SketchUp-Inferenzbaustein umgesetzt. Das aktuelle Fangsystem ist weiterhin nur ein Teil des vollständigen Inferenzsystems.
