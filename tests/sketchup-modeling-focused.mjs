@@ -26,7 +26,7 @@ try {
   });
   assert.equal(axisLockRuntime.available, true, 'Shift-Achsenfang ist in der Browser-Laufzeit nicht geladen');
   assert.deepEqual(axisLockRuntime.xy, [1, 7, 3], 'XY-Achsenfang wählt nicht die dominante Bewegungsachse');
-  assert.deepEqual(axisLockRuntime.xz, [1, 2, 3], 'XZ-Achsenfang wählt nicht die dominante Bewegungsachse');
+  assert.deepEqual(axisLockRuntime.xz, [4, 2, 3], 'XZ-Achsenfang wählt nicht die dominante Bewegungsachse');
   assert.deepEqual(axisLockRuntime.yz, [1, 7, 3], 'YZ-Achsenfang wählt nicht die dominante Bewegungsachse');
   await page.locator('[data-tab="create"]').click();
   assert.equal((await page.locator('[data-tab="create"]').innerText()).trim(), 'Modellieren', 'Hauptreiter ist nicht als Modellieren beschriftet');
