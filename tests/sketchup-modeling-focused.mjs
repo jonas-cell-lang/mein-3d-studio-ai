@@ -95,6 +95,28 @@ try {
   await page.locator('#sketchIntersectionSnapEnabled').check();
   assert.equal((await page.evaluate(() => window.__silmoEndpointSnapSnapshot?.()))?.intersectionSnapEnabled, true,
     'Schnittpunktfang wird nach dem Einschalten im Laufzeitstatus nicht als aktiviert gemeldet');
+  const intersectionRuntime = await page.evaluate(() => {
+    const find = window.SILMOInference?.findSegmentIntersections;
+    if (typeof find !== 'function') return { available: false, intersections: [] };
+    const horizontal = {
+      start: { screenX: 0, screenY: 5, world: [0, 5, 0] },
+      end: { screenX: 10, screenY: 5, world: [10, 5, 0] }
+    };
+    const vertical = {
+      start: { screenX: 5, screenY: 0, world: [5, 0, 0] },
+      end: { screenX: 5, screenY: 10, world: [5, 10, 0] }
+    };
+    const intersections = find([horizontal, vertical], { maxWorldSeparation: 0.0001 });
+    return { available: true, intersections };
+  });
+  assert.equal(intersectionRuntime.available, true, 'Schnittpunkt-Erkennung ist im Browser nicht geladen');
+  assert.equal(intersectionRuntime.intersections.length, 1,
+    'Browser-Laufzeit erkennt den Kreuzungspunkt zweier räumlich passender Modellkanten nicht: ' + JSON.stringify(intersectionRuntime));
+  assert.ok(Math.hypot(
+    intersectionRuntime.intersections[0].world[0] - 5,
+    intersectionRuntime.intersections[0].world[1] - 5,
+    intersectionRuntime.intersections[0].world[2]
+  ) < 1e-8, 'Browser-Laufzeit liefert eine falsche Weltposition für den Schnittpunkt');
   await page.locator('#sketchIntersectionSnapEnabled').uncheck();
   const snapTarget = await page.evaluate(() => window.__silmoEndpointSnapTestPoint?.());
   assert.ok(snapTarget, 'Kein sichtbarer Eckpunkt auf der gewählten Zeichenfläche gefunden: ' + JSON.stringify(await page.evaluate(() => window.__silmoEndpointSnapSnapshot?.())));
