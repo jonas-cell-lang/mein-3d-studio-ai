@@ -13,6 +13,21 @@ await page.route('https://**/*', route => route.abort());
 try {
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#viewport canvas', { timeout: 20000 });
+  // Shift-Achsenfang: Browser-Laufzeit muss die aktive Skizzenebene korrekt beschränken.
+  const axisLockRuntime = await page.evaluate(() => {
+    const constrain = window.SILMOInference?.constrainPointToPlaneAxis;
+    if (typeof constrain !== 'function') return { available: false };
+    return {
+      available: true,
+      xy: constrain([1, 2, 3], [4, 7, 3], [1, 0, 0], [0, 1, 0]),
+      xz: constrain([1, 2, 3], [4, 7, 3], [1, 0, 0], [0, 0, 1]),
+      yz: constrain([1, 2, 3], [4, 7, 6], [0, 1, 0], [0, 0, 1])
+    };
+  });
+  assert.equal(axisLockRuntime.available, true, 'Shift-Achsenfang ist in der Browser-Laufzeit nicht geladen');
+  assert.deepEqual(axisLockRuntime.xy, [1, 7, 3], 'XY-Achsenfang wählt nicht die dominante Bewegungsachse');
+  assert.deepEqual(axisLockRuntime.xz, [1, 2, 3], 'XZ-Achsenfang wählt nicht die dominante Bewegungsachse');
+  assert.deepEqual(axisLockRuntime.yz, [1, 7, 3], 'YZ-Achsenfang wählt nicht die dominante Bewegungsachse');
   await page.locator('[data-tab="create"]').click();
   assert.equal((await page.locator('[data-tab="create"]').innerText()).trim(), 'Modellieren', 'Hauptreiter ist nicht als Modellieren beschriftet');
   assert.equal(await page.locator('#pane-create-left #booleanUnion').count(), 0, 'Boolesche CAD-Funktion befindet sich noch im normalen Modellierbereich');
