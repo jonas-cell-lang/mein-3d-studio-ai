@@ -333,6 +333,32 @@ try {
   await page.locator('[data-tab="create"]').click();
 
 
+  // Mehrfach-Mesh-Laufzeittest: Kandidaten aus vielen getrennten Körpern
+  // sammeln, in den Bildschirm projizieren und per Raycast auf Sichtbarkeit prüfen.
+  const multiMeshFixture = await page.evaluate(() => window.__silmoCreateMultiMeshSnapFixture?.(16));
+  assert.ok(multiMeshFixture?.ids?.length === 16,
+    'Mehrfach-Mesh-Testkörper konnten nicht vollständig erstellt werden: ' + JSON.stringify(multiMeshFixture));
+  const multiMeshSnap = await page.evaluate(() => {
+    const target = window.__silmoEndpointSnapTestPoint?.('vertex');
+    const snapshot = window.__silmoEndpointSnapSnapshot?.();
+    return { target, snapshot };
+  });
+  console.log('SILMO-MEHRFACH-MESH-FANGTEST', JSON.stringify({
+    fixture: multiMeshFixture,
+    target: multiMeshSnap.target,
+    debug: multiMeshSnap.snapshot?.debug
+  }));
+  assert.ok(multiMeshSnap.snapshot?.debug?.meshCount >= 16,
+    'Kandidaten-Sammlung hat nicht alle getrennten Meshes verarbeitet: ' + JSON.stringify(multiMeshSnap.snapshot?.debug));
+  assert.ok(multiMeshSnap.snapshot?.candidateCount > 60,
+    'Aus den getrennten Körpern wurden zu wenige Fangpunkte gesammelt: ' + JSON.stringify(multiMeshSnap.snapshot));
+  assert.ok(multiMeshSnap.target,
+    'Kein sichtbarer projizierter Eckpunkt aus der Mehrfach-Mesh-Szene gefunden: ' + JSON.stringify(multiMeshSnap.snapshot));
+  assert.ok(multiMeshSnap.snapshot.debug.visibilityChecks > 0 &&
+    multiMeshSnap.snapshot.debug.visibleCount > 0,
+    'Raycast-Sichtbarkeitsprüfung hat keinen sichtbaren Kandidaten bestätigt: ' + JSON.stringify(multiMeshSnap.snapshot.debug));
+  await page.evaluate(ids => window.__silmoRemoveMultiMeshSnapFixture?.(ids), multiMeshFixture.ids);
+
   // Belastungstest für die Kantenanalyse: ein dicht trianguliertes, flaches
   // Gitter enthält viele Dreiecke, aber nur seinen äusseren Rand als Feature-Kanten.
   const edgeLoad = await page.evaluate(() => {
