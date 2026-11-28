@@ -24,19 +24,16 @@
   function chooseBestSnapCandidate(candidates, tieTolerancePx = 0.35) {
     if (!Array.isArray(candidates) || !Number.isFinite(tieTolerancePx) || tieTolerancePx < 0) return null;
     const priority = { vertex: 0, intersection: 1, midpoint: 2, edge: 3 };
-    let best = null;
-    for (const candidate of candidates) {
-      if (!candidate || !Number.isFinite(candidate.distancePx) || candidate.distancePx < 0 ||
-          !Number.isFinite(candidate.screenX) || !Number.isFinite(candidate.screenY)) continue;
-      if (!best || candidate.distancePx < best.distancePx - tieTolerancePx) {
-        best = candidate;
-        continue;
-      }
-      if (Math.abs(candidate.distancePx - best.distancePx) <= tieTolerancePx) {
-        const candidatePriority = priority[candidate.kind] ?? 99;
-        const bestPriority = priority[best.kind] ?? 99;
-        if (candidatePriority < bestPriority) best = candidate;
-      }
+    const valid = candidates.filter(candidate =>
+      candidate && Number.isFinite(candidate.distancePx) && candidate.distancePx >= 0 &&
+      Number.isFinite(candidate.screenX) && Number.isFinite(candidate.screenY));
+    if (!valid.length) return null;
+    const nearestDistance = Math.min(...valid.map(candidate => candidate.distancePx));
+    const tied = valid.filter(candidate => candidate.distancePx <= nearestDistance + tieTolerancePx);
+    let best = tied[0];
+    for (let index = 1; index < tied.length; index++) {
+      const candidate = tied[index];
+      if ((priority[candidate.kind] ?? 99) < (priority[best.kind] ?? 99)) best = candidate;
     }
     return best;
   }
